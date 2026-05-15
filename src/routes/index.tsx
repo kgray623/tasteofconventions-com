@@ -95,7 +95,7 @@ function Invitation() {
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin className="w-3.5 h-3.5 text-sunset" />
-                  Eagle's Landing · La Platte
+                  Eagle's Landing · La Platte, NE
                 </div>
               </div>
               <div className="mt-6 pt-6 border-t border-border flex items-center justify-between">
