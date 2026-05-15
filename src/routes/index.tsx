@@ -87,6 +87,35 @@ function Home() {
         </div>
       </section>
 
+      {/* Video intro placeholder */}
+      <section className="mx-auto max-w-6xl px-6 pt-24">
+        <div className="text-center mb-8">
+          <p className="text-xs uppercase tracking-[0.35em] text-magenta mb-3">A First Look</p>
+          <h2 className="font-display text-5xl sm:text-6xl text-ink">Watch the intro</h2>
+          <p className="mt-3 text-muted-foreground">Your event film will live here — drop in the final cut when it's ready.</p>
+        </div>
+        <div className="relative aspect-video rounded-3xl overflow-hidden border border-border bg-ink shadow-elegant">
+          <div className="absolute inset-0 bg-gradient-sunset opacity-80" />
+          <div className="absolute -top-32 -right-24 w-96 h-96 rounded-full bg-iris/40 blur-3xl" />
+          <div className="absolute -bottom-32 -left-24 w-[28rem] h-[28rem] rounded-full bg-amber-glow/40 blur-3xl" />
+          <div className="relative h-full flex flex-col items-center justify-center text-cream gap-5 px-6 text-center">
+            <div className="w-20 h-20 rounded-full bg-cream/15 backdrop-blur-md border border-cream/30 flex items-center justify-center">
+              <Play className="w-8 h-8 ml-1 fill-cream" />
+            </div>
+            <div className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.4em] text-cream/80">
+              <Film className="w-3.5 h-3.5" />
+              Video intro · placeholder
+            </div>
+            <p className="font-display text-3xl sm:text-4xl max-w-xl leading-tight">
+              Your cinematic invitation, coming soon.
+            </p>
+          </div>
+          <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-ink/60 backdrop-blur-md text-cream/90 text-[10px] uppercase tracking-[0.3em] border border-cream/20">
+            16 : 9 · Replace me
+          </div>
+        </div>
+      </section>
+
       {/* Features */}
       <section className="mx-auto max-w-6xl px-6 py-24">
         <div className="text-center mb-14">
