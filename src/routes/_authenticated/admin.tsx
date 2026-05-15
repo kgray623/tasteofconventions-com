@@ -10,13 +10,13 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminLayout,
 });
 
-const tabs = [
+const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boolean }[] = [
   { to: "/admin", label: "Overview", icon: ShieldCheck, exact: true },
   { to: "/admin/upload", label: "Upload list", icon: Upload },
   { to: "/admin/categories", label: "Assignments", icon: ListChecks },
   { to: "/admin/team", label: "Team access", icon: Users },
   { to: "/admin/chat", label: "Team chat", icon: MessagesSquare },
-] as const;
+];
 
 function AdminLayout() {
   const { isAdmin, isTeam, loading, refresh } = useRoles();
