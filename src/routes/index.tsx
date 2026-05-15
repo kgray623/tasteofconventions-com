@@ -40,17 +40,19 @@ function Invitation() {
               You're Cordially Invited
             </p>
             <h1 className="font-display text-6xl sm:text-7xl lg:text-8xl text-ink leading-[0.95]">
-              An evening to{" "}
-              <em className="text-gradient-sunset">remember</em>
+              A Taste of{" "}
+              <em className="text-gradient-sunset">Special</em>
+              <br />
+              Conventions
             </h1>
-            <p className="mt-8 text-lg text-muted-foreground leading-relaxed max-w-md">
-              You're cordially invited to a taste of Special Conventions.
-              Please join us, friends, for a special evening of association,
-              gift exchanges, getting to know new friends, and an evening of
-              wonderful memories.
+            <p className="mt-6 font-display italic text-3xl sm:text-4xl text-ink/80">
+              An evening to remember.
             </p>
-            <p className="mt-4 font-display italic text-2xl text-ink/80">
-              This side of paradise.
+            <p className="mt-6 text-lg text-muted-foreground leading-relaxed max-w-md">
+              You're cordially invited to the Taste of Special Conventions
+              event. Please join us for a special evening of association,
+              gift exchanges, cultural enrichment, meeting new friends, and an
+              evening of making wonderful memories — this side of paradise.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-3">
               <Link to="/rsvp/preview">
@@ -93,7 +95,7 @@ function Invitation() {
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin className="w-3.5 h-3.5 text-sunset" />
-                  Eagle's Landing · La Platte
+                  Eagle's Landing · La Platte, NE
                 </div>
               </div>
               <div className="mt-6 pt-6 border-t border-border flex items-center justify-between">
@@ -122,8 +124,8 @@ function Invitation() {
         </h2>
         <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
           From <strong className="text-ink">4:00 to 9:00 PM</strong> at{" "}
-          <strong className="text-ink">Eagle's Landing</strong> in La Platte.
-          For all the details, watch the video below.
+          <strong className="text-ink">Eagle's Landing</strong> in La Platte,
+          Nebraska. For details, see the video invitation below.
         </p>
         <div className="mt-10 flex justify-center">
           <Link to="/rsvp/preview">
@@ -205,7 +207,7 @@ function Invitation() {
           <div className="absolute inset-0 bg-gradient-to-br from-amber-glow/20 via-magenta/15 to-iris/20" />
           <div className="relative h-full flex flex-col items-center justify-center text-center px-6 gap-3">
             <MapPin className="w-10 h-10 text-sunset" />
-            <p className="font-display text-3xl text-ink">Eagle's Landing · La Platte</p>
+            <p className="font-display text-3xl text-ink">Eagle's Landing · La Platte, Nebraska</p>
             <p className="text-sm text-muted-foreground">
               Map will appear here once the full address is confirmed.
             </p>
@@ -241,7 +243,7 @@ const needToKnows = [
   {
     icon: MapPin,
     title: "Location",
-    body: "Eagle's Landing in La Platte. Full address and map coming soon.",
+    body: "Eagle's Landing in La Platte, Nebraska. Full address and map coming soon.",
   },
   {
     icon: Shirt,
