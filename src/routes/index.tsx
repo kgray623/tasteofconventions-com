@@ -243,7 +243,7 @@ const needToKnows = [
   {
     icon: MapPin,
     title: "Location",
-    body: "Eagle's Landing in La Platte. Full address and map coming soon.",
+    body: "Eagle's Landing in La Platte, Nebraska. Full address and map coming soon.",
   },
   {
     icon: Shirt,
