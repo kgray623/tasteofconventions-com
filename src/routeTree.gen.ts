@@ -13,6 +13,7 @@ import { Route as RestaurantsRouteImport } from './routes/restaurants'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RsvpPreviewRouteImport } from './routes/rsvp.preview'
 import { Route as RsvpTokenRouteImport } from './routes/rsvp.$token'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedInvitationsNewRouteImport } from './routes/_authenticated/invitations.new'
@@ -34,6 +35,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RsvpPreviewRoute = RsvpPreviewRouteImport.update({
+  id: '/rsvp/preview',
+  path: '/rsvp/preview',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RsvpTokenRoute = RsvpTokenRouteImport.update({
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/restaurants': typeof RestaurantsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/rsvp/$token': typeof RsvpTokenRoute
+  '/rsvp/preview': typeof RsvpPreviewRoute
   '/invitations/new': typeof AuthenticatedInvitationsNewRoute
 }
 export interface FileRoutesByTo {
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/restaurants': typeof RestaurantsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/rsvp/$token': typeof RsvpTokenRoute
+  '/rsvp/preview': typeof RsvpPreviewRoute
   '/invitations/new': typeof AuthenticatedInvitationsNewRoute
 }
 export interface FileRoutesById {
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   '/restaurants': typeof RestaurantsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/rsvp/$token': typeof RsvpTokenRoute
+  '/rsvp/preview': typeof RsvpPreviewRoute
   '/_authenticated/invitations/new': typeof AuthenticatedInvitationsNewRoute
 }
 export interface FileRouteTypes {
@@ -87,6 +96,7 @@ export interface FileRouteTypes {
     | '/restaurants'
     | '/dashboard'
     | '/rsvp/$token'
+    | '/rsvp/preview'
     | '/invitations/new'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -95,6 +105,7 @@ export interface FileRouteTypes {
     | '/restaurants'
     | '/dashboard'
     | '/rsvp/$token'
+    | '/rsvp/preview'
     | '/invitations/new'
   id:
     | '__root__'
@@ -104,6 +115,7 @@ export interface FileRouteTypes {
     | '/restaurants'
     | '/_authenticated/dashboard'
     | '/rsvp/$token'
+    | '/rsvp/preview'
     | '/_authenticated/invitations/new'
   fileRoutesById: FileRoutesById
 }
@@ -113,6 +125,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   RestaurantsRoute: typeof RestaurantsRoute
   RsvpTokenRoute: typeof RsvpTokenRoute
+  RsvpPreviewRoute: typeof RsvpPreviewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -143,6 +156,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rsvp/preview': {
+      id: '/rsvp/preview'
+      path: '/rsvp/preview'
+      fullPath: '/rsvp/preview'
+      preLoaderRoute: typeof RsvpPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/rsvp/$token': {
@@ -189,6 +209,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   RestaurantsRoute: RestaurantsRoute,
   RsvpTokenRoute: RsvpTokenRoute,
+  RsvpPreviewRoute: RsvpPreviewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
