@@ -1,0 +1,101 @@
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
+
+export const Route = createFileRoute("/auth")({
+  head: () => ({ meta: [{ title: "Sign in — A Taste of Special Conventions" }] }),
+  component: AuthPage,
+});
+
+function AuthPage() {
+  const navigate = useNavigate();
+  const { user, loading } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!loading && user) navigate({ to: "/dashboard" });
+  }, [user, loading, navigate]);
+
+  const signIn = async () => {
+    setBusy(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    navigate({ to: "/dashboard" });
+  };
+
+  const signUp = async () => {
+    setBusy(true);
+    const { error } = await supabase.auth.signUp({
+      email, password,
+      options: { emailRedirectTo: window.location.origin, data: { display_name: name } },
+    });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Check your inbox to confirm your email.");
+  };
+
+  const google = async () => {
+    const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/dashboard" });
+    if (r.error) toast.error(r.error.message);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-warm flex items-center justify-center px-6 py-12">
+      <div className="w-full max-w-md">
+        <Link to="/" className="block text-center mb-8">
+          <p className="text-xs uppercase tracking-[0.3em] text-terracotta">A Taste of</p>
+          <h1 className="font-display text-3xl text-ink">Special Conventions</h1>
+        </Link>
+        <div className="bg-card border border-border rounded-xl p-8 shadow-elegant">
+          <Tabs defaultValue="signin">
+            <TabsList className="grid grid-cols-2 w-full mb-6">
+              <TabsTrigger value="signin">Sign in</TabsTrigger>
+              <TabsTrigger value="signup">Create account</TabsTrigger>
+            </TabsList>
+            <TabsContent value="signin" className="space-y-4">
+              <Field label="Email" type="email" value={email} onChange={setEmail} />
+              <Field label="Password" type="password" value={password} onChange={setPassword} />
+              <Button onClick={signIn} disabled={busy} className="w-full bg-ink text-cream hover:bg-ink/90">
+                {busy ? "Signing in…" : "Sign in"}
+              </Button>
+            </TabsContent>
+            <TabsContent value="signup" className="space-y-4">
+              <Field label="Display name" value={name} onChange={setName} />
+              <Field label="Email" type="email" value={email} onChange={setEmail} />
+              <Field label="Password" type="password" value={password} onChange={setPassword} />
+              <Button onClick={signUp} disabled={busy} className="w-full bg-ink text-cream hover:bg-ink/90">
+                {busy ? "Creating…" : "Create account"}
+              </Button>
+            </TabsContent>
+          </Tabs>
+          <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-widest text-muted-foreground">
+            <div className="h-px bg-border flex-1" /> or <div className="h-px bg-border flex-1" />
+          </div>
+          <Button variant="outline" onClick={google} className="w-full">
+            Continue with Google
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
+  return (
+    <div className="space-y-1.5">
+      <Label>{label}</Label>
+      <Input type={type} value={value} onChange={(e) => onChange(e.target.value)} />
+    </div>
+  );
+}
