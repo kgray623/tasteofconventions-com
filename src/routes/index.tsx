@@ -207,7 +207,7 @@ function Invitation() {
           <div className="absolute inset-0 bg-gradient-to-br from-amber-glow/20 via-magenta/15 to-iris/20" />
           <div className="relative h-full flex flex-col items-center justify-center text-center px-6 gap-3">
             <MapPin className="w-10 h-10 text-sunset" />
-            <p className="font-display text-3xl text-ink">Eagle's Landing · La Platte</p>
+            <p className="font-display text-3xl text-ink">Eagle's Landing · La Platte, Nebraska</p>
             <p className="text-sm text-muted-foreground">
               Map will appear here once the full address is confirmed.
             </p>
