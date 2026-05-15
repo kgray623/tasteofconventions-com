@@ -40,17 +40,19 @@ function Invitation() {
               You're Cordially Invited
             </p>
             <h1 className="font-display text-6xl sm:text-7xl lg:text-8xl text-ink leading-[0.95]">
-              An evening to{" "}
-              <em className="text-gradient-sunset">remember</em>
+              A Taste of{" "}
+              <em className="text-gradient-sunset">Special</em>
+              <br />
+              Conventions
             </h1>
-            <p className="mt-8 text-lg text-muted-foreground leading-relaxed max-w-md">
-              You're cordially invited to a taste of Special Conventions.
-              Please join us, friends, for a special evening of association,
-              gift exchanges, getting to know new friends, and an evening of
-              wonderful memories.
+            <p className="mt-6 font-display italic text-3xl sm:text-4xl text-ink/80">
+              An evening to remember.
             </p>
-            <p className="mt-4 font-display italic text-2xl text-ink/80">
-              This side of paradise.
+            <p className="mt-6 text-lg text-muted-foreground leading-relaxed max-w-md">
+              You're cordially invited to the Taste of Special Conventions
+              event. Please join us for a special evening of association,
+              gift exchanges, cultural enrichment, meeting new friends, and an
+              evening of making wonderful memories — this side of paradise.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-3">
               <Link to="/rsvp/preview">
