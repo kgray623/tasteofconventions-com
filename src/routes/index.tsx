@@ -124,8 +124,8 @@ function Invitation() {
         </h2>
         <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
           From <strong className="text-ink">4:00 to 9:00 PM</strong> at{" "}
-          <strong className="text-ink">Eagle's Landing</strong> in La Platte.
-          For all the details, watch the video below.
+          <strong className="text-ink">Eagle's Landing</strong> in La Platte,
+          Nebraska. For details, see the video invitation below.
         </p>
         <div className="mt-10 flex justify-center">
           <Link to="/rsvp/preview">
