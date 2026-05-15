@@ -175,6 +175,61 @@ function Invitation() {
         </div>
       </section>
 
+      {/* Itinerary */}
+      <section className="mx-auto max-w-6xl px-6 pt-24">
+        <div className="text-center mb-14">
+          <p className="text-xs uppercase tracking-[0.35em] text-magenta mb-3">
+            The Itinerary
+          </p>
+          <h2 className="font-display text-5xl sm:text-6xl text-ink leading-tight">
+            A journey through <em className="text-gradient-sunset">conventions &amp; countries</em>
+          </h2>
+          <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            Doors open at <strong className="text-ink">4:00 PM</strong> — come early for
+            association beforehand. We'll travel together through four unforgettable
+            conventions, each with its own flavor.
+          </p>
+        </div>
+
+        <ol className="relative border-l-2 border-dashed border-border ml-4 sm:ml-8 space-y-10">
+          {itinerary.map((stop, i) => (
+            <li key={stop.country} className="relative pl-8 sm:pl-12">
+              <span
+                className="absolute -left-[13px] sm:-left-[15px] top-1 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold text-white shadow-glow"
+                style={{ background: gradients[i % gradients.length] }}
+              >
+                {i + 1}
+              </span>
+              <div className="bg-card rounded-2xl border border-border p-6 sm:p-7 hover:shadow-elegant transition-all duration-300">
+                <div className="flex flex-wrap items-center gap-3 mb-3">
+                  <Globe2 className="w-4 h-4 text-sunset" />
+                  <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
+                    {stop.when}
+                  </p>
+                </div>
+                <h3 className="font-display text-3xl sm:text-4xl text-ink mb-2">
+                  {stop.country}
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                  {stop.note}
+                </p>
+                {stop.restaurant ? (
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-sunset text-white text-xs uppercase tracking-widest shadow-glow">
+                    <UtensilsCrossed className="w-3.5 h-3.5" />
+                    Restaurant to order from
+                  </div>
+                ) : (
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border text-muted-foreground text-xs uppercase tracking-widest">
+                    <Clock className="w-3.5 h-3.5" />
+                    No ordering — savor the moment
+                  </div>
+                )}
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+
       {/* Need to knows */}
       <section className="mx-auto max-w-6xl px-6 py-24">
         <div className="text-center mb-14">
