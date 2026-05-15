@@ -11,6 +11,9 @@ import {
   ArrowRight,
   Play,
   Film,
+  Clock,
+  Globe2,
+  UtensilsCrossed,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
