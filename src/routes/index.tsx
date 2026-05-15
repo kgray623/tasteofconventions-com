@@ -324,3 +324,30 @@ const needToKnows = [
     body: "Live music, surprises, and moments worth remembering.",
   },
 ];
+
+const itinerary = [
+  {
+    country: "Myanmar",
+    when: "Convention · 2014",
+    note: "We open the evening with the Myanmar friends — flavors, memories, and stories from 2014.",
+    restaurant: true,
+  },
+  {
+    country: "Bolivia",
+    when: "Convention · 2016",
+    note: "Next stop, the highlands of Bolivia. A taste of 2016, shared together.",
+    restaurant: true,
+  },
+  {
+    country: "Jakarta, Indonesia",
+    when: "Convention · December 2025",
+    note: "Our most recent gathering — the warmth and color of Jakarta, fresh in everyone's heart.",
+    restaurant: true,
+  },
+  {
+    country: "New Zealand",
+    when: "Convention · January 2026",
+    note: "We close the journey in New Zealand — no menu to order from, just memories to make.",
+    restaurant: false,
+  },
+];
