@@ -30,6 +30,9 @@ export function SiteHeader() {
               <Link to="/dashboard" className="px-3 py-2 rounded-md hover:bg-secondary transition">
                 Dashboard
               </Link>
+              <Link to="/admin" className="px-3 py-2 rounded-md hover:bg-secondary transition">
+                Admin
+              </Link>
               <Button variant="ghost" size="sm" onClick={signOut}>Sign out</Button>
             </>
           ) : (
