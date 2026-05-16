@@ -24,6 +24,41 @@ function GuestMessagesPage() {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
 
+  const [broadcast, setBroadcast] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const sendBroadcast = async () => {
+    const body = broadcast.trim();
+    if (!body) return;
+    setSending(true);
+    try {
+      const { data: userRes } = await supabase.auth.getUser();
+      const uid = userRes.user?.id;
+      if (!uid) throw new Error("Not signed in");
+      const { data: invs, error: e1 } = await supabase.from("invitations").select("id");
+      if (e1) throw e1;
+      const rows = (invs ?? []).map((i) => ({
+        invitation_id: i.id,
+        sender: "admin",
+        user_id: uid,
+        body,
+      }));
+      if (rows.length === 0) {
+        toast.info("No invitations to send to yet.");
+        return;
+      }
+      const { error: e2 } = await supabase.from("guest_messages").insert(rows);
+      if (e2) throw e2;
+      toast.success(`Sent to ${rows.length} guest${rows.length === 1 ? "" : "s"}.`);
+      setBroadcast("");
+      load();
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to broadcast");
+    } finally {
+      setSending(false);
+    }
+  };
+
   const load = async () => {
     const { data: msgs } = await supabase
       .from("guest_messages")
