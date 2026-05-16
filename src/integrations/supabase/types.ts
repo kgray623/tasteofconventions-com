@@ -158,6 +158,39 @@ export type Database = {
         }
         Relationships: []
       }
+      guest_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          invitation_id: string
+          read_by_admin: boolean
+          read_by_guest: boolean
+          sender: string
+          user_id: string | null
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          invitation_id: string
+          read_by_admin?: boolean
+          read_by_guest?: boolean
+          sender: string
+          user_id?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          invitation_id?: string
+          read_by_admin?: boolean
+          read_by_guest?: boolean
+          sender?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       invitations: {
         Row: {
           created_at: string
