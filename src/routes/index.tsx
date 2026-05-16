@@ -58,12 +58,31 @@ const tabs = [
 function Invitation() {
   const [restaurants, setRestaurants] = useState<R[]>([]);
   const [items, setItems] = useState<M[]>([]);
+  const [openItems, setOpenItems] = useState<string[]>([]);
 
   useEffect(() => {
     supabase.from("restaurants").select("*").eq("active", true).order("name")
       .then(({ data }) => setRestaurants((data as R[]) ?? []));
     supabase.from("menu_items").select("*").eq("available", true)
       .then(({ data }) => setItems((data as M[]) ?? []));
+  }, []);
+
+  // Open accordion panel matching the URL hash, and re-open whenever hash changes.
+  useEffect(() => {
+    const validIds = tabs.map((t) => t.id);
+    const applyHash = () => {
+      const id = window.location.hash.replace("#", "");
+      if (!validIds.includes(id)) return;
+      setOpenItems((prev) => (prev.includes(id) ? prev : [...prev, id]));
+      // Wait a tick for the panel to expand, then scroll into view.
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
+    };
+    applyHash();
+    window.addEventListener("hashchange", applyHash);
+    return () => window.removeEventListener("hashchange", applyHash);
   }, []);
 
   return (
@@ -185,7 +204,7 @@ function Invitation() {
           </p>
         </div>
 
-        <Accordion type="multiple" className="w-full space-y-3">
+        <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="w-full space-y-3">
           {/* RSVP */}
           <AccordionItem value="rsvp" id="rsvp" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
             <AccordionTrigger className="hover:no-underline">
