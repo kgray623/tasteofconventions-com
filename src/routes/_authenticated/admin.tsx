@@ -3,7 +3,7 @@ import { useRoles } from "@/hooks/use-roles";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare } from "lucide-react";
+import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, Mail } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — A Taste of Special Conventions" }] }),
@@ -16,6 +16,7 @@ const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boole
   { to: "/admin/categories", label: "Assignments", icon: ListChecks },
   { to: "/admin/team", label: "Team access", icon: Users },
   { to: "/admin/chat", label: "Team chat", icon: MessagesSquare },
+  { to: "/admin/messages", label: "Guest messages", icon: Mail },
 ];
 
 function AdminLayout() {
@@ -49,7 +50,9 @@ function AdminLayout() {
     );
   }
 
-  const visibleTabs = tabs.filter((t) => isAdmin || t.to === "/admin/chat" || t.to === "/admin");
+  const visibleTabs = tabs.filter(
+    (t) => isAdmin || t.to === "/admin/chat" || t.to === "/admin/messages" || t.to === "/admin",
+  );
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">

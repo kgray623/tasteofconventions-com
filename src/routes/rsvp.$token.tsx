@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Calendar, MapPin, Check, X, HelpCircle, Minus, Plus } from "lucide-react";
+import { GuestThread } from "@/components/guest-thread";
 
 export const Route = createFileRoute("/rsvp/$token")({
   head: () => ({ meta: [{ title: "Your invitation — RSVP" }] }),
@@ -191,6 +192,8 @@ function RsvpPage() {
             </div>
           </Card>
         )}
+
+        <GuestThread invitationId={data.invitation.id} title="Message the host" />
       </div>
     </div>
   );
