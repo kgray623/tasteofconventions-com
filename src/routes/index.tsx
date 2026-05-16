@@ -204,7 +204,7 @@ function Invitation() {
           </p>
         </div>
 
-        <Accordion type="multiple" className="w-full space-y-3">
+        <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="w-full space-y-3">
           {/* RSVP */}
           <AccordionItem value="rsvp" id="rsvp" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
             <AccordionTrigger className="hover:no-underline">
