@@ -154,6 +154,7 @@ function GuestMessagesPage() {
           </Card>
         )}
       </div>
+      </div>
     </div>
   );
 }
