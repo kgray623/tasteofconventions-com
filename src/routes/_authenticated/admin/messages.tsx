@@ -2,7 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { GuestThread } from "@/components/guest-thread";
+import { toast } from "sonner";
+import { Megaphone } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/messages")({
   component: GuestMessagesPage,
@@ -19,6 +23,41 @@ type Thread = {
 function GuestMessagesPage() {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
+
+  const [broadcast, setBroadcast] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const sendBroadcast = async () => {
+    const body = broadcast.trim();
+    if (!body) return;
+    setSending(true);
+    try {
+      const { data: userRes } = await supabase.auth.getUser();
+      const uid = userRes.user?.id;
+      if (!uid) throw new Error("Not signed in");
+      const { data: invs, error: e1 } = await supabase.from("invitations").select("id");
+      if (e1) throw e1;
+      const rows = (invs ?? []).map((i) => ({
+        invitation_id: i.id,
+        sender: "admin",
+        user_id: uid,
+        body,
+      }));
+      if (rows.length === 0) {
+        toast.info("No invitations to send to yet.");
+        return;
+      }
+      const { error: e2 } = await supabase.from("guest_messages").insert(rows);
+      if (e2) throw e2;
+      toast.success(`Sent to ${rows.length} guest${rows.length === 1 ? "" : "s"}.`);
+      setBroadcast("");
+      load();
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to broadcast");
+    } finally {
+      setSending(false);
+    }
+  };
 
   const load = async () => {
     const { data: msgs } = await supabase
@@ -60,7 +99,25 @@ function GuestMessagesPage() {
   }, []);
 
   return (
-    <div className="grid md:grid-cols-[280px_1fr] gap-4">
+    <div className="space-y-4">
+      <Card className="p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Megaphone className="h-4 w-4 text-primary" />
+          <p className="font-medium text-sm">Broadcast to all guests</p>
+        </div>
+        <Textarea
+          value={broadcast}
+          onChange={(e) => setBroadcast(e.target.value)}
+          placeholder="Write a message that will be sent to every guest thread…"
+          rows={3}
+        />
+        <div className="flex justify-end">
+          <Button onClick={sendBroadcast} disabled={sending || !broadcast.trim()}>
+            {sending ? "Sending…" : "Send to all guests"}
+          </Button>
+        </div>
+      </Card>
+      <div className="grid md:grid-cols-[280px_1fr] gap-4">
       <Card className="p-3 max-h-[70vh] overflow-y-auto">
         <p className="text-xs uppercase tracking-wider text-muted-foreground px-2 py-2">
           Guest threads ({threads.length})
@@ -96,6 +153,7 @@ function GuestMessagesPage() {
             Select a guest thread to view and reply.
           </Card>
         )}
+      </div>
       </div>
     </div>
   );
