@@ -36,9 +36,14 @@ export function SiteHeader() {
               <Button variant="ghost" size="sm" onClick={signOut}>Sign out</Button>
             </>
           ) : (
-            <Link to="/auth">
-              <Button size="sm" className="bg-ink text-cream hover:bg-ink/90">Sign in</Button>
-            </Link>
+            <>
+              <Link to="/login">
+                <Button size="sm" variant="ghost">Log in</Button>
+              </Link>
+              <Link to="/auth">
+                <Button size="sm" className="bg-ink text-cream hover:bg-ink/90">Sign up</Button>
+              </Link>
+            </>
           )}
         </nav>
       </div>
