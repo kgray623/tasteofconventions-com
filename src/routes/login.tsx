@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,8 @@ function HelperLogin() {
     if (!loading && user) navigate({ to: "/admin" });
   }, [user, loading, navigate]);
 
-  const signIn = async () => {
+  const signIn = async (event?: FormEvent) => {
+    event?.preventDefault();
     setBusy(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
@@ -62,17 +63,19 @@ function HelperLogin() {
               For admins and team members
             </p>
           </div>
-          <div className="space-y-1.5">
-            <Label>Email</Label>
-            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Password</Label>
-            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          </div>
-          <Button onClick={signIn} disabled={busy} className="w-full bg-ink text-cream hover:bg-ink/90">
-            {busy ? "Signing in…" : "Sign in"}
-          </Button>
+          <form onSubmit={signIn} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Email</Label>
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Password</Label>
+              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
+            </div>
+            <Button type="submit" disabled={busy} className="w-full bg-ink text-cream hover:bg-ink/90">
+              {busy ? "Signing in…" : "Sign in"}
+            </Button>
+          </form>
           <button onClick={forgot} className="text-xs text-muted-foreground hover:text-ink underline w-full text-center">
             Forgot password?
           </button>
