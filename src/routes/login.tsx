@@ -9,9 +9,16 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/login")({
-  head: () => ({ meta: [{ title: "Helper login — A Taste of Special Conventions" }] }),
+  head: () => ({ meta: [{ title: "Log in — A Taste of Special Conventions" }] }),
   component: HelperLogin,
 });
+
+async function routeForUser(userId: string): Promise<string> {
+  const { data } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+  const roles = (data ?? []).map((r) => r.role as string);
+  if (roles.includes("admin") || roles.includes("team")) return "/admin";
+  return "/rsvp/preview";
+}
 
 function HelperLogin() {
   const navigate = useNavigate();
@@ -21,21 +28,22 @@ function HelperLogin() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) navigate({ to: "/admin" });
+    if (loading || !user) return;
+    routeForUser(user.id).then((to) => navigate({ to }));
   }, [user, loading, navigate]);
 
   const signIn = async (event?: FormEvent) => {
     event?.preventDefault();
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
     if (error) return toast.error(error.message);
-    navigate({ to: "/admin" });
+    if (data.user) navigate({ to: await routeForUser(data.user.id) });
   };
 
   const google = async () => {
     const r = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + "/admin",
+      redirect_uri: window.location.origin + "/login",
     });
     if (r.error) toast.error(r.error.message);
   };
@@ -63,10 +71,7 @@ function HelperLogin() {
         </div>
         <div className="bg-card border border-border rounded-xl p-8 shadow-elegant space-y-5">
           <div className="text-center space-y-1">
-            <h2 className="font-display text-2xl text-ink">Helper login</h2>
-            <p className="text-sm text-muted-foreground">
-              For admins and team members
-            </p>
+            <h2 className="font-display text-2xl text-ink">Log in</h2>
           </div>
           <form onSubmit={signIn} className="space-y-4">
             <div className="space-y-1.5">
