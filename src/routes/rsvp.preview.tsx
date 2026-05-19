@@ -20,7 +20,7 @@ const ev = {
   location: "The Conservatory · 412 Vine Street",
 };
 
-const guestName = "Avery Whitfield";
+
 
 const restaurants = [
   { id: "r1", name: "Maison Laurent", cuisine: "French" },
@@ -51,6 +51,9 @@ const menu: Record<string, { id: string; name: string; description: string; pric
 function PreviewPage() {
   const [status, setStatus] = useState<"yes" | "no">("yes");
   const [partySize, setPartySize] = useState(2);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
   const [restaurantId, setRestaurantId] = useState("r1");
   const [cart, setCart] = useState<Record<string, number>>({});
@@ -72,7 +75,6 @@ function PreviewPage() {
         <div className="text-center">
           <p className="text-xs uppercase tracking-[0.3em] text-terracotta">You're invited</p>
           <h1 className="font-display text-5xl mt-3 text-ink">{ev.title}</h1>
-          <p className="mt-3 text-lg text-muted-foreground">Hello, {guestName}</p>
         </div>
 
         <Card className="p-7 space-y-3">
@@ -104,14 +106,31 @@ function PreviewPage() {
             ))}
           </div>
           {status !== "no" && (
-            <div className="space-y-1.5">
-              <Label>Party size</Label>
-              <div className="flex items-center gap-3">
-                <Button size="icon" variant="outline" onClick={() => setPartySize(Math.max(1, partySize - 1))}><Minus className="w-4 h-4" /></Button>
-                <span className="font-display text-2xl w-10 text-center">{partySize}</span>
-                <Button size="icon" variant="outline" onClick={() => setPartySize(Math.min(20, partySize + 1))}><Plus className="w-4 h-4" /></Button>
+            <>
+              <div className="space-y-1.5">
+                <Label>Party size</Label>
+                <div className="flex items-center gap-3">
+                  <Button size="icon" variant="outline" onClick={() => setPartySize(Math.max(1, partySize - 1))}><Minus className="w-4 h-4" /></Button>
+                  <span className="font-display text-2xl w-10 text-center">{partySize}</span>
+                  <Button size="icon" variant="outline" onClick={() => setPartySize(Math.min(20, partySize + 1))}><Plus className="w-4 h-4" /></Button>
+                </div>
               </div>
-            </div>
+              <div className="space-y-3 pt-2 border-t border-border">
+                <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground pt-3">So we can stay in touch</p>
+                <div className="space-y-1.5">
+                  <Label htmlFor="name">Full name</Label>
+                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" />
+                </div>
+              </div>
+            </>
           )}
           <div className="space-y-1.5">
             <Label>Message to the host (optional)</Label>
