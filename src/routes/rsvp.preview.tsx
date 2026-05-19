@@ -77,13 +77,6 @@ function PreviewPage() {
           <h1 className="font-display text-5xl mt-3 text-ink">{ev.title}</h1>
         </div>
 
-        <Card className="p-7 space-y-3">
-          <p className="text-muted-foreground">{ev.description}</p>
-          <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-            <span className="inline-flex items-center gap-2"><Calendar className="w-4 h-4 text-gold" />{new Date(ev.starts_at).toLocaleString()}</span>
-            <span className="inline-flex items-center gap-2"><MapPin className="w-4 h-4 text-gold" />{ev.location}</span>
-          </div>
-        </Card>
 
         <Card className="p-7 space-y-5">
           <h2 className="font-display text-2xl">Will you join us?</h2>
