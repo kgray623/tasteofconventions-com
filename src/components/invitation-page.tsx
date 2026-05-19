@@ -125,10 +125,10 @@ export function InvitationPage() {
             <p className="text-xs uppercase tracking-[0.4em] text-magenta mb-3">Step One</p>
             <h2 className="font-display text-4xl sm:text-5xl text-ink mb-4">RSVP</h2>
             <p className="text-muted-foreground max-w-md mx-auto mb-3">
-              Let us know if you can join us — Yes or No — and your party size.
+              Let us know if you can join us and your party size.
             </p>
             <p className="text-xs uppercase tracking-[0.25em] text-magenta mb-7">
-              Space is limited · First come, first served
+              Space is limited
             </p>
 
             <Link to="/rsvp/preview">
@@ -136,7 +136,7 @@ export function InvitationPage() {
                 size="lg"
                 className="bg-gradient-sunset text-white hover:opacity-90 px-8 shadow-glow border-0"
               >
-                Open RSVP form
+                Click here to RSVP
                 <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </Link>
