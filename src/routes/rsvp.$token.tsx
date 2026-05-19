@@ -94,6 +94,9 @@ function RsvpPage() {
   return (
     <div className="min-h-screen bg-gradient-warm">
       <div className="mx-auto max-w-3xl px-6 py-12 space-y-6">
+        <Link to="/" className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-ink">
+          <ArrowLeft className="w-3.5 h-3.5" /> Back to invitation
+        </Link>
         <div className="text-center">
           <p className="text-xs uppercase tracking-[0.3em] text-terracotta">You're invited</p>
           <h1 className="font-display text-5xl mt-3 text-ink">{ev.title}</h1>
