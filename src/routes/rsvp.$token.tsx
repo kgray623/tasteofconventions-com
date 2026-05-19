@@ -31,7 +31,6 @@ function RsvpPage() {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<"yes" | "no">("yes");
   const [partySize, setPartySize] = useState(1);
-  const [diet, setDiet] = useState("");
   const [message, setMessage] = useState("");
   const [restaurants, setRestaurants] = useState<R[]>([]);
   const [menu, setMenu] = useState<M[]>([]);
@@ -47,7 +46,6 @@ function RsvpPage() {
         if (r.rsvp) {
           setStatus(r.rsvp.status === "yes" ? "yes" : "no");
           setPartySize(r.rsvp.party_size);
-          setDiet(r.rsvp.dietary_notes ?? "");
           setMessage(r.rsvp.message ?? "");
         }
       } finally { setLoading(false); }
@@ -63,7 +61,7 @@ function RsvpPage() {
 
   const handleSubmit = async () => {
     try {
-      await submit({ data: { token, status, party_size: partySize, dietary_notes: diet, message } });
+      await submit({ data: { token, status, party_size: partySize, dietary_notes: "", message } });
       toast.success("RSVP saved — thank you!");
     } catch (e: any) { toast.error(e.message); }
   };
@@ -131,20 +129,14 @@ function RsvpPage() {
             ))}
           </div>
           {status !== "no" && (
-            <>
-              <div className="space-y-1.5">
-                <Label>Party size</Label>
-                <div className="flex items-center gap-3">
-                  <Button size="icon" variant="outline" onClick={() => setPartySize(Math.max(1, partySize - 1))}><Minus className="w-4 h-4" /></Button>
-                  <span className="font-display text-2xl w-10 text-center">{partySize}</span>
-                  <Button size="icon" variant="outline" onClick={() => setPartySize(Math.min(20, partySize + 1))}><Plus className="w-4 h-4" /></Button>
-                </div>
+            <div className="space-y-1.5">
+              <Label>Party size</Label>
+              <div className="flex items-center gap-3">
+                <Button size="icon" variant="outline" onClick={() => setPartySize(Math.max(1, partySize - 1))}><Minus className="w-4 h-4" /></Button>
+                <span className="font-display text-2xl w-10 text-center">{partySize}</span>
+                <Button size="icon" variant="outline" onClick={() => setPartySize(Math.min(20, partySize + 1))}><Plus className="w-4 h-4" /></Button>
               </div>
-              <div className="space-y-1.5">
-                <Label>Dietary notes (optional)</Label>
-                <Input value={diet} onChange={(e) => setDiet(e.target.value)} placeholder="Allergies, preferences…" />
-              </div>
-            </>
+            </div>
           )}
           <div className="space-y-1.5">
             <Label>Message to the host (optional)</Label>
@@ -156,8 +148,8 @@ function RsvpPage() {
         {status === "yes" && restaurants.length > 0 && (
           <Card className="p-7 space-y-5">
             <div>
-              <h2 className="font-display text-2xl">Pre-order from a restaurant</h2>
-              <p className="text-sm text-muted-foreground mt-1">Pick what you'd like ready when you arrive.</p>
+              <h2 className="font-display text-2xl">Pre-order from your cultural choice restaurant</h2>
+              <p className="text-sm text-muted-foreground mt-1">Browse each kitchen's digital menu and choose what you'd like that evening.</p>
             </div>
             <Select value={restaurantId} onValueChange={(v) => { setRestaurantId(v); setCart({}); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>

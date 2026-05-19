@@ -51,7 +51,6 @@ const menu: Record<string, { id: string; name: string; description: string; pric
 function PreviewPage() {
   const [status, setStatus] = useState<"yes" | "no">("yes");
   const [partySize, setPartySize] = useState(2);
-  const [diet, setDiet] = useState("");
   const [message, setMessage] = useState("");
   const [restaurantId, setRestaurantId] = useState("r1");
   const [cart, setCart] = useState<Record<string, number>>({});
@@ -102,20 +101,14 @@ function PreviewPage() {
             ))}
           </div>
           {status !== "no" && (
-            <>
-              <div className="space-y-1.5">
-                <Label>Party size</Label>
-                <div className="flex items-center gap-3">
-                  <Button size="icon" variant="outline" onClick={() => setPartySize(Math.max(1, partySize - 1))}><Minus className="w-4 h-4" /></Button>
-                  <span className="font-display text-2xl w-10 text-center">{partySize}</span>
-                  <Button size="icon" variant="outline" onClick={() => setPartySize(Math.min(20, partySize + 1))}><Plus className="w-4 h-4" /></Button>
-                </div>
+            <div className="space-y-1.5">
+              <Label>Party size</Label>
+              <div className="flex items-center gap-3">
+                <Button size="icon" variant="outline" onClick={() => setPartySize(Math.max(1, partySize - 1))}><Minus className="w-4 h-4" /></Button>
+                <span className="font-display text-2xl w-10 text-center">{partySize}</span>
+                <Button size="icon" variant="outline" onClick={() => setPartySize(Math.min(20, partySize + 1))}><Plus className="w-4 h-4" /></Button>
               </div>
-              <div className="space-y-1.5">
-                <Label>Dietary notes (optional)</Label>
-                <Input value={diet} onChange={(e) => setDiet(e.target.value)} placeholder="Allergies, preferences…" />
-              </div>
-            </>
+            </div>
           )}
           <div className="space-y-1.5">
             <Label>Message to the host (optional)</Label>
@@ -127,7 +120,7 @@ function PreviewPage() {
         {status === "yes" && (
           <Card className="p-7 space-y-5">
             <div>
-              <h2 className="font-display text-2xl">Pre-order from a restaurant</h2>
+              <h2 className="font-display text-2xl">Pre-order from your cultural choice restaurant</h2>
               <p className="text-sm text-muted-foreground mt-1">Pick what you'd like ready when you arrive.</p>
             </div>
             <Select value={restaurantId} onValueChange={(v) => { setRestaurantId(v); setCart({}); }}>
