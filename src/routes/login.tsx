@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { FormEvent, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,11 +12,26 @@ export const Route = createFileRoute("/login")({
   component: HelperLogin,
 });
 
-async function routeForUser(userId: string): Promise<string> {
+type RouteDestination =
+  | { to: "/admin" }
+  | { to: "/rsvp/preview" }
+  | { to: "/rsvp/$token"; params: { token: string } };
+
+async function routeForUser(userId: string, email?: string | null): Promise<RouteDestination> {
   const { data } = await supabase.from("user_roles").select("role").eq("user_id", userId);
   const roles = (data ?? []).map((r) => r.role as string);
-  if (roles.includes("admin") || roles.includes("team")) return "/admin";
-  return "/rsvp/preview";
+  if (roles.includes("admin") || roles.includes("team")) return { to: "/admin" };
+  if (email) {
+    const { data: invitation } = await supabase
+      .from("invitations")
+      .select("rsvp_token")
+      .eq("guest_email_normalized", email.trim().toLowerCase())
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (invitation?.rsvp_token) return { to: "/rsvp/$token", params: { token: invitation.rsvp_token } };
+  }
+  return { to: "/rsvp/preview" };
 }
 
 function HelperLogin() {
@@ -29,7 +43,7 @@ function HelperLogin() {
 
   useEffect(() => {
     if (loading || !user) return;
-    routeForUser(user.id).then((to) => navigate({ to }));
+    routeForUser(user.id, user.email).then((destination) => navigate(destination));
   }, [user, loading, navigate]);
 
   const signIn = async (event?: FormEvent) => {
@@ -38,14 +52,7 @@ function HelperLogin() {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
     if (error) return toast.error(error.message);
-    if (data.user) navigate({ to: await routeForUser(data.user.id) });
-  };
-
-  const google = async () => {
-    const r = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + "/login",
-    });
-    if (r.error) toast.error(r.error.message);
+    if (data.user) navigate(await routeForUser(data.user.id, data.user.email));
   };
 
   const forgot = async () => {
@@ -89,12 +96,6 @@ function HelperLogin() {
           <button onClick={forgot} className="text-xs text-muted-foreground hover:text-ink underline w-full text-center">
             Forgot password?
           </button>
-          <div className="flex items-center gap-3 text-xs uppercase tracking-widest text-muted-foreground">
-            <div className="h-px bg-border flex-1" /> or <div className="h-px bg-border flex-1" />
-          </div>
-          <Button variant="outline" onClick={google} className="w-full">
-            Continue with Google
-          </Button>
           <p className="text-xs text-center text-muted-foreground pt-2">
             Accounts are created automatically when you RSVP.
           </p>

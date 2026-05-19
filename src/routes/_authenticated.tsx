@@ -11,7 +11,7 @@ function AuthLayout() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   useEffect(() => {
-    if (!loading && !user) navigate({ to: "/auth" });
+    if (!loading && !user) navigate({ to: "/login" });
   }, [user, loading, navigate]);
 
   if (loading || !user) {
