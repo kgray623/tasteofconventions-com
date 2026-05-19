@@ -163,9 +163,13 @@ function Invitation() {
           <div className="relative">
             <p className="text-xs uppercase tracking-[0.4em] text-magenta mb-3">Step One</p>
             <h2 className="font-display text-4xl sm:text-5xl text-ink mb-4">RSVP</h2>
-            <p className="text-muted-foreground max-w-md mx-auto mb-7">
-              Let us know if you can join us — Yes, No, or Maybe — and your party size.
+            <p className="text-muted-foreground max-w-md mx-auto mb-3">
+              Let us know if you can join us — Yes or No — and your party size.
             </p>
+            <p className="text-xs uppercase tracking-[0.25em] text-magenta mb-7">
+              Space is limited · First come, first served
+            </p>
+
             <Link to="/rsvp/preview">
               <Button
                 size="lg"
