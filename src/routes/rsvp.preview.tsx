@@ -68,6 +68,7 @@ function PreviewPage() {
 
   const save = useServerFn(submitPublicRsvp);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const handleSave = async () => {
     if (status !== "no" && !name.trim()) return toast.error("Please enter your name");
     setSaving(true);
@@ -80,7 +81,8 @@ function PreviewPage() {
         party_size: partySize,
         message: message.trim() || null,
       }});
-      toast.success("RSVP saved — thank you!");
+      setSaved(true);
+      toast.success("RSVP saved — to make changes later, log in with your email and password.");
     } catch (e: any) {
       toast.error(e?.message ?? "Could not save RSVP");
     } finally {
@@ -160,6 +162,17 @@ function PreviewPage() {
             <Textarea value={message} onChange={(e) => setMessage(e.target.value)} />
           </div>
           <Button onClick={handleSave} disabled={saving} className="bg-ink text-cream hover:bg-ink/90 w-full">{saving ? "Saving…" : "Save RSVP"}</Button>
+          {saved && (
+            <div className="rounded-md border border-border bg-cream/40 p-4 text-sm text-ink space-y-2">
+              <p className="font-medium">Your RSVP is saved.</p>
+              <p className="text-muted-foreground">
+                To make any changes to your RSVP, simply log in to your account with your email and password.
+              </p>
+              <Link to="/login" className="inline-flex items-center gap-1 text-terracotta font-medium hover:underline">
+                Log in to your account →
+              </Link>
+            </div>
+          )}
         </Card>
 
         {status === "yes" && (
