@@ -179,6 +179,32 @@ function Invitation() {
         </div>
       </section>
 
+      {/* RSVP — primary call to action right under the video */}
+      <section id="rsvp-cta" className="mx-auto max-w-3xl px-6 pt-16">
+        <div className="rounded-3xl border border-border bg-card shadow-elegant p-8 sm:p-10 text-center relative overflow-hidden">
+          <div className="absolute -top-24 -right-20 w-72 h-72 rounded-full bg-amber-glow/30 blur-3xl" />
+          <div className="absolute -bottom-24 -left-20 w-72 h-72 rounded-full bg-iris/30 blur-3xl" />
+          <div className="relative">
+            <p className="text-xs uppercase tracking-[0.4em] text-magenta mb-3">Step One</p>
+            <h2 className="font-display text-4xl sm:text-5xl text-ink mb-4">RSVP</h2>
+            <p className="text-muted-foreground max-w-md mx-auto mb-7">
+              Let us know if you can join us — Yes, No, or Maybe — and your party size.
+            </p>
+            <Link to="/rsvp/preview">
+              <Button
+                size="lg"
+                className="bg-gradient-sunset text-white hover:opacity-90 px-8 shadow-glow border-0"
+              >
+                Open RSVP form
+                <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+
+
       {/* Tab nav */}
       <section id="details" className="sticky top-16 z-30 bg-background/85 backdrop-blur-md border-y border-border mt-20">
         <div className="mx-auto max-w-6xl px-4 py-3 flex gap-2 overflow-x-auto">
