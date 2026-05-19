@@ -51,7 +51,6 @@ const menu: Record<string, { id: string; name: string; description: string; pric
 function PreviewPage() {
   const [status, setStatus] = useState<"yes" | "no">("yes");
   const [partySize, setPartySize] = useState(2);
-  const [diet, setDiet] = useState("");
   const [message, setMessage] = useState("");
   const [restaurantId, setRestaurantId] = useState("r1");
   const [cart, setCart] = useState<Record<string, number>>({});
