@@ -45,7 +45,7 @@ function RsvpPage() {
         const r = await fetchInv({ data: { token } });
         setData(r);
         if (r.rsvp) {
-          setStatus(r.rsvp.status === "pending" ? "yes" : r.rsvp.status);
+          setStatus(r.rsvp.status === "yes" ? "yes" : "no");
           setPartySize(r.rsvp.party_size);
           setDiet(r.rsvp.dietary_notes ?? "");
           setMessage(r.rsvp.message ?? "");
