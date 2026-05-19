@@ -108,13 +108,8 @@ function Invitation() {
               cultural enrichment, meeting new friends, and making wonderful
               memories — this side of paradise.
             </p>
-            <div className="mt-10">
-              <a href="#details">
-                <Button size="lg" variant="outline" className="px-8">
-                  See all details
-                </Button>
-              </a>
-            </div>
+
+
 
           </div>
         </div>
