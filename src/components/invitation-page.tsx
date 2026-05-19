@@ -111,17 +111,6 @@ export function InvitationPage() {
                 className="absolute inset-0 w-full h-full"
               />
             </div>
-            <div className="mt-5 flex items-center justify-center gap-4 text-cream/90 text-sm">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-3.5 h-3.5" />
-                Sun · Nov 1, 2026 · 4–9 PM
-              </div>
-              <span className="opacity-50">·</span>
-              <div className="flex items-center gap-2">
-                <MapPin className="w-3.5 h-3.5" />
-                Eagle's Landing · La Platte, NE
-              </div>
-            </div>
           </div>
         </div>
       </section>
