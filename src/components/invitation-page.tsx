@@ -157,103 +157,107 @@ export function InvitationPage() {
 
 
 
+      {/* Conventions & Countries — prominent, always-visible section */}
+      <section id="itinerary" className="mx-auto max-w-3xl px-6 pt-16">
+        <div className="text-center mb-10">
+          <p className="text-xs uppercase tracking-[0.35em] text-magenta mb-3 flex items-center justify-center gap-2">
+            <Globe2 className="w-4 h-4" /> Conventions & Countries
+          </p>
+          <h2 className="font-display text-5xl sm:text-6xl text-ink">A Journey Together</h2>
+          <p className="mt-4 text-muted-foreground">
+            Join us and journey together through the following special
+            conventions. Pre-order your cuisine from the convention country
+            of choice, featuring the restaurants below.
+          </p>
+        </div>
+
+        <div className="rounded-3xl border border-border bg-card shadow-elegant p-6 sm:p-8">
+          <ol className="relative border-l-2 border-dashed border-border ml-3 space-y-6">
+            {itinerary.map((stop, i) => (
+              <li key={stop.country} className="relative pl-6">
+                <span
+                  className="absolute -left-[11px] top-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-glow"
+                  style={{ background: gradients[i % gradients.length] }}
+                >
+                  {i + 1}
+                </span>
+                <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">{stop.when}</p>
+                <h4 className="font-display text-2xl text-ink">{stop.country}</h4>
+                <p className="text-sm text-muted-foreground mt-1">{stop.note}</p>
+                {stop.restaurant ? (
+                  <Link to="/rsvp/preview" className="inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full bg-gradient-sunset text-white text-[10px] uppercase tracking-widest shadow-glow hover:opacity-90 transition">
+                    <UtensilsCrossed className="w-3 h-3" />
+                    Pre-order the cuisine
+                  </Link>
+                ) : (
+                  <span className="inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full border border-border text-muted-foreground text-[10px] uppercase tracking-widest">
+                    Savor the moment
+                  </span>
+                )}
+              </li>
+            ))}
+          </ol>
+
+          {restaurants.length > 0 && (
+            <div className="mt-8 space-y-4">
+              <p className="text-xs uppercase tracking-[0.3em] text-magenta">Featured restaurants & menus</p>
+              {restaurants.map((r) => {
+                const menu = items.filter((m) => m.restaurant_id === r.id);
+                return (
+                  <div key={r.id} className="rounded-xl border border-border p-5 bg-background">
+                    <div className="flex items-baseline justify-between gap-3 mb-3">
+                      <div>
+                        <h3 className="font-display text-2xl">{r.name}</h3>
+                        {r.cuisine && <p className="text-xs uppercase tracking-widest text-muted-foreground mt-1">{r.cuisine}</p>}
+                      </div>
+                      <Link to="/rsvp/preview">
+                        <Button size="sm" variant="outline">
+                          Pre-order <ExternalLink className="ml-1.5 w-3 h-3" />
+                        </Button>
+                      </Link>
+                    </div>
+                    {r.description && <p className="text-sm text-muted-foreground mb-3">{r.description}</p>}
+                    {menu.length > 0 && (
+                      <div className="grid sm:grid-cols-2 gap-2">
+                        {menu.slice(0, 6).map((m) => (
+                          <div key={m.id} className="flex justify-between gap-3 text-sm py-1.5 border-t border-border first:border-t-0">
+                            <div>
+                              <p className="font-medium">{m.name}</p>
+                              {m.dietary_flags && m.dietary_flags.length > 0 && (
+                                <div className="flex gap-1 mt-0.5">
+                                  {m.dietary_flags.map((f) => (
+                                    <Badge key={f} variant="outline" className="text-[9px]">{f}</Badge>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <span className="font-display shrink-0">${Number(m.price).toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <p className="text-xs text-muted-foreground italic">
+                Pre-orders are collected here and submitted to each restaurant a few days before the event.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* Accordion details */}
       <section id="details" className="mx-auto max-w-3xl px-6 py-16 mt-8">
         <div className="text-center mb-10">
-          <p className="text-xs uppercase tracking-[0.35em] text-magenta mb-3">Everything you'll want to know</p>
+          <p className="text-xs uppercase tracking-[0.35em] text-magenta mb-3">Please see the following information</p>
           <h2 className="font-display text-5xl sm:text-6xl text-ink">Tap to open</h2>
           <p className="mt-4 text-muted-foreground">
-            Conventions and countries, date and time, location, attire, gift exchanges, and entertainment.
+            Date and time, location, attire, gift exchanges, and entertainment.
           </p>
         </div>
 
         <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="w-full space-y-3">
-          {/* Itinerary — Conventions & Countries */}
-          <AccordionItem value="itinerary" id="itinerary" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
-            <AccordionTrigger className="hover:no-underline">
-              <span className="flex items-center gap-3 font-display text-2xl text-left">
-                <Globe2 className="w-5 h-5 text-sunset shrink-0" /> Conventions & Countries
-              </span>
-            </AccordionTrigger>
-            <AccordionContent className="pb-6">
-              <p className="text-muted-foreground mb-5">
-                Doors at 4:00 PM for association. We'll journey together through four conventions — pre-order your cuisine from each country's featured restaurant below.
-              </p>
-              <ol className="relative border-l-2 border-dashed border-border ml-3 space-y-6">
-                {itinerary.map((stop, i) => (
-                  <li key={stop.country} className="relative pl-6">
-                    <span
-                      className="absolute -left-[11px] top-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-glow"
-                      style={{ background: gradients[i % gradients.length] }}
-                    >
-                      {i + 1}
-                    </span>
-                    <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">{stop.when}</p>
-                    <h4 className="font-display text-2xl text-ink">{stop.country}</h4>
-                    <p className="text-sm text-muted-foreground mt-1">{stop.note}</p>
-                    {stop.restaurant ? (
-                      <Link to="/rsvp/preview" className="inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full bg-gradient-sunset text-white text-[10px] uppercase tracking-widest shadow-glow hover:opacity-90 transition">
-                        <UtensilsCrossed className="w-3 h-3" />
-                        Pre-order the cuisine
-                      </Link>
-                    ) : (
-                      <span className="inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full border border-border text-muted-foreground text-[10px] uppercase tracking-widest">
-                        Savor the moment
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ol>
-
-              {restaurants.length > 0 && (
-                <div className="mt-8 space-y-4">
-                  <p className="text-xs uppercase tracking-[0.3em] text-magenta">Featured restaurants & menus</p>
-                  {restaurants.map((r) => {
-                    const menu = items.filter((m) => m.restaurant_id === r.id);
-                    return (
-                      <div key={r.id} className="rounded-xl border border-border p-5 bg-background">
-                        <div className="flex items-baseline justify-between gap-3 mb-3">
-                          <div>
-                            <h3 className="font-display text-2xl">{r.name}</h3>
-                            {r.cuisine && <p className="text-xs uppercase tracking-widest text-muted-foreground mt-1">{r.cuisine}</p>}
-                          </div>
-                          <Link to="/rsvp/preview">
-                            <Button size="sm" variant="outline">
-                              Pre-order <ExternalLink className="ml-1.5 w-3 h-3" />
-                            </Button>
-                          </Link>
-                        </div>
-                        {r.description && <p className="text-sm text-muted-foreground mb-3">{r.description}</p>}
-                        {menu.length > 0 && (
-                          <div className="grid sm:grid-cols-2 gap-2">
-                            {menu.slice(0, 6).map((m) => (
-                              <div key={m.id} className="flex justify-between gap-3 text-sm py-1.5 border-t border-border first:border-t-0">
-                                <div>
-                                  <p className="font-medium">{m.name}</p>
-                                  {m.dietary_flags && m.dietary_flags.length > 0 && (
-                                    <div className="flex gap-1 mt-0.5">
-                                      {m.dietary_flags.map((f) => (
-                                        <Badge key={f} variant="outline" className="text-[9px]">{f}</Badge>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                                <span className="font-display shrink-0">${Number(m.price).toFixed(2)}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                  <p className="text-xs text-muted-foreground italic">
-                    Pre-orders are collected here and submitted to each restaurant a few days before the event.
-                  </p>
-                </div>
-              )}
-            </AccordionContent>
-          </AccordionItem>
-
           {/* Date & Time */}
           <AccordionItem value="datetime" id="datetime" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
             <AccordionTrigger className="hover:no-underline">
@@ -262,8 +266,8 @@ export function InvitationPage() {
               </span>
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-2">
-              <p><strong className="text-ink">Sunday · 4:00 PM – 9:00 PM</strong></p>
-              <p>Doors open at 4:00 PM — come early for association beforehand. Exact date confirmed in the video invitation above.</p>
+              <p><strong className="text-ink">Sunday, November 1, 2026 · 4:00 PM – 9:00 PM</strong></p>
+              <p>Join us from 4:00 PM to 9:00 PM for a full evening together.</p>
             </AccordionContent>
           </AccordionItem>
 
