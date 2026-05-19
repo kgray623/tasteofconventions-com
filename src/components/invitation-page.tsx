@@ -343,7 +343,7 @@ export function InvitationPage() {
 
       <footer className="border-t border-border py-10 text-center text-sm text-muted-foreground">
         <p className="font-display text-2xl text-ink">A Taste of Special Conventions</p>
-        <p className="mt-2 italic">An evening to remember · this side of paradise.</p>
+        <p className="mt-2 italic">An event and an evening to remember · this side of paradise.</p>
       </footer>
     </div>
   );
