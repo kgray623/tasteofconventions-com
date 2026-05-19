@@ -159,7 +159,7 @@ function PreviewPage() {
             <Label>Message to the host (optional)</Label>
             <Textarea value={message} onChange={(e) => setMessage(e.target.value)} />
           </div>
-          <Button className="bg-ink text-cream hover:bg-ink/90 w-full">Save RSVP</Button>
+          <Button onClick={handleSave} disabled={saving} className="bg-ink text-cream hover:bg-ink/90 w-full">{saving ? "Saving…" : "Save RSVP"}</Button>
         </Card>
 
         {status === "yes" && (
