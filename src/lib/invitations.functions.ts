@@ -119,13 +119,12 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
         userId = users.users.find((user) => user.email?.toLowerCase() === email.toLowerCase())?.id ?? null;
       }
       if (userId) {
-        if (!createdUser.user) {
-          const { error: updateUserErr } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-            password,
-            user_metadata: { display_name: data.guest_name },
-          });
-          if (updateUserErr) throw new Error(updateUserErr.message);
-        }
+        const { error: updateUserErr } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+          password,
+          email_confirm: true,
+          user_metadata: { display_name: data.guest_name },
+        });
+        if (updateUserErr) throw new Error(updateUserErr.message);
         await supabaseAdmin.from("profiles").upsert({
           id: userId,
           email,
