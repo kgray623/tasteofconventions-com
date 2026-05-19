@@ -54,7 +54,7 @@ const tabs = [
   { id: "entertainment", label: "Entertainment" },
 ];
 
-function Invitation() {
+export function Invitation() {
   const [restaurants, setRestaurants] = useState<R[]>([]);
   const [items, setItems] = useState<M[]>([]);
   const [openItems, setOpenItems] = useState<string[]>([]);

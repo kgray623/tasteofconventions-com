@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as Char91indexChar93RouteImport } from './routes/[index]'
 import { Route as RestaurantsRouteImport } from './routes/restaurants'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -26,6 +27,11 @@ import { Route as AuthenticatedAdminMessagesRouteImport } from './routes/_authen
 import { Route as AuthenticatedAdminChatRouteImport } from './routes/_authenticated/admin/chat'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin/categories'
 
+const Char91indexChar93Route = Char91indexChar93RouteImport.update({
+  id: '/index',
+  path: '/index',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RestaurantsRoute = RestaurantsRouteImport.update({
   id: '/restaurants',
   path: '/restaurants',
@@ -113,6 +119,7 @@ const AuthenticatedAdminCategoriesRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/index': typeof Char91indexChar93Route
   '/login': typeof LoginRoute
   '/restaurants': typeof RestaurantsRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
@@ -130,6 +137,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/index': typeof Char91indexChar93Route
   '/login': typeof LoginRoute
   '/restaurants': typeof RestaurantsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -148,6 +156,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
+  '/index': typeof Char91indexChar93Route
   '/login': typeof LoginRoute
   '/restaurants': typeof RestaurantsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
@@ -167,6 +176,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/index'
     | '/login'
     | '/restaurants'
     | '/admin'
@@ -184,6 +194,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/index'
     | '/login'
     | '/restaurants'
     | '/dashboard'
@@ -201,6 +212,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/index'
     | '/login'
     | '/restaurants'
     | '/_authenticated/admin'
@@ -220,6 +232,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthRoute: typeof AuthRoute
+  Char91indexChar93Route: typeof Char91indexChar93Route
   LoginRoute: typeof LoginRoute
   RestaurantsRoute: typeof RestaurantsRoute
   RsvpTokenRoute: typeof RsvpTokenRoute
@@ -228,6 +241,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/index': {
+      id: '/index'
+      path: '/index'
+      fullPath: '/index'
+      preLoaderRoute: typeof Char91indexChar93RouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/restaurants': {
       id: '/restaurants'
       path: '/restaurants'
@@ -384,6 +404,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AuthRoute: AuthRoute,
+  Char91indexChar93Route: Char91indexChar93Route,
   LoginRoute: LoginRoute,
   RestaurantsRoute: RestaurantsRoute,
   RsvpTokenRoute: RsvpTokenRoute,
