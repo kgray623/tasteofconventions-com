@@ -85,7 +85,7 @@ export function InvitationPage() {
             <p className="mt-6 font-display italic text-3xl sm:text-4xl text-ink/80">
               An event and an evening to remember.
             </p>
-            <p className="mt-6 text-lg text-muted-foreground leading-relaxed max-w-md">
+            <p className="mt-6 text-xl sm:text-2xl text-muted-foreground leading-relaxed max-w-xl">
               Please join us for a very special evening of association, gift
               exchanges, cultural enrichment, meeting new friends, and making
               wonderful memories — all on this side of paradise. See the video
@@ -111,17 +111,6 @@ export function InvitationPage() {
                 className="absolute inset-0 w-full h-full"
               />
             </div>
-            <div className="mt-5 flex items-center justify-center gap-4 text-cream/90 text-sm">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-3.5 h-3.5" />
-                Sun · Nov 1, 2026 · 4–9 PM
-              </div>
-              <span className="opacity-50">·</span>
-              <div className="flex items-center gap-2">
-                <MapPin className="w-3.5 h-3.5" />
-                Eagle's Landing · La Platte, NE
-              </div>
-            </div>
           </div>
         </div>
       </section>
@@ -136,10 +125,10 @@ export function InvitationPage() {
             <p className="text-xs uppercase tracking-[0.4em] text-magenta mb-3">Step One</p>
             <h2 className="font-display text-4xl sm:text-5xl text-ink mb-4">RSVP</h2>
             <p className="text-muted-foreground max-w-md mx-auto mb-3">
-              Let us know if you can join us — Yes or No — and your party size.
+              Let us know if you can join us and your party size.
             </p>
             <p className="text-xs uppercase tracking-[0.25em] text-magenta mb-7">
-              Space is limited · First come, first served
+              Space is limited
             </p>
 
             <Link to="/rsvp/preview">
@@ -147,7 +136,7 @@ export function InvitationPage() {
                 size="lg"
                 className="bg-gradient-sunset text-white hover:opacity-90 px-8 shadow-glow border-0"
               >
-                Open RSVP form
+                Click here to RSVP
                 <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </Link>
@@ -160,14 +149,16 @@ export function InvitationPage() {
       {/* Conventions & Countries — prominent, always-visible section */}
       <section id="itinerary" className="mx-auto max-w-3xl px-6 pt-16">
         <div className="text-center mb-10">
+          <p className="text-xs uppercase tracking-[0.4em] text-magenta mb-3">Step Two</p>
           <p className="text-xs uppercase tracking-[0.35em] text-magenta mb-3 flex items-center justify-center gap-2">
             <Globe2 className="w-4 h-4" /> Conventions & Countries
           </p>
           <h2 className="font-display text-5xl sm:text-6xl text-ink">A Journey Together</h2>
           <p className="mt-4 text-muted-foreground">
-            Join us and journey together through the following special
-            conventions. Pre-order your cuisine from the convention country
-            of choice, featuring the restaurants below.
+            Join us and journey through the following special conventions. In
+            order to taste the conventions, included is cuisine from the
+            culture. Be sure to pre-order your cuisine of choice from the
+            convention country in the restaurants below.
           </p>
         </div>
 
@@ -250,10 +241,10 @@ export function InvitationPage() {
       {/* Accordion details */}
       <section id="details" className="mx-auto max-w-3xl px-6 py-16 mt-8">
         <div className="text-center mb-10">
-          <p className="text-xs uppercase tracking-[0.35em] text-magenta mb-3">Please see the following information</p>
+          <p className="text-xs uppercase tracking-[0.35em] text-magenta mb-3">For more details, see the following</p>
           <h2 className="font-display text-5xl sm:text-6xl text-ink">Tap to open</h2>
           <p className="mt-4 text-muted-foreground">
-            Date and time, location, attire, gift exchanges, and entertainment.
+            Date & time, location, dress code, gift exchanges, entertainment.
           </p>
         </div>
 
