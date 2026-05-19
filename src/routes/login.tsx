@@ -12,10 +12,15 @@ export const Route = createFileRoute("/login")({
   component: HelperLogin,
 });
 
-async function routeForUser(userId: string, email?: string | null): Promise<string> {
+type RouteDestination =
+  | { to: "/admin" }
+  | { to: "/rsvp/preview" }
+  | { to: "/rsvp/$token"; params: { token: string } };
+
+async function routeForUser(userId: string, email?: string | null): Promise<RouteDestination> {
   const { data } = await supabase.from("user_roles").select("role").eq("user_id", userId);
   const roles = (data ?? []).map((r) => r.role as string);
-  if (roles.includes("admin") || roles.includes("team")) return "/admin";
+  if (roles.includes("admin") || roles.includes("team")) return { to: "/admin" };
   if (email) {
     const { data: invitation } = await supabase
       .from("invitations")
@@ -24,9 +29,9 @@ async function routeForUser(userId: string, email?: string | null): Promise<stri
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (invitation?.rsvp_token) return `/rsvp/${invitation.rsvp_token}`;
+    if (invitation?.rsvp_token) return { to: "/rsvp/$token", params: { token: invitation.rsvp_token } };
   }
-  return "/rsvp/preview";
+  return { to: "/rsvp/preview" };
 }
 
 function HelperLogin() {
