@@ -128,56 +128,40 @@ function Invitation() {
           </div>
         </div>
 
-        <div className="relative bg-gradient-sunset overflow-hidden min-h-[60vh] lg:min-h-full">
+        <div className="relative bg-gradient-sunset overflow-hidden min-h-[60vh] lg:min-h-full flex items-center justify-center p-6 sm:p-10">
           <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-amber-glow/40 blur-3xl" />
           <div className="absolute bottom-0 -left-20 w-[28rem] h-[28rem] rounded-full bg-iris/50 blur-3xl" />
-          <div className="absolute top-1/3 left-1/4 w-64 h-64 rounded-full bg-magenta/40 blur-3xl" />
-          <div className="relative h-full flex items-center justify-center p-10">
-            <div className="w-full max-w-sm bg-card/95 backdrop-blur-xl rounded-2xl shadow-elegant p-8 rotate-[-3deg] hover:rotate-0 transition-transform duration-500">
-              <p className="text-[10px] uppercase tracking-[0.4em] text-magenta mb-4">You're invited</p>
-              <h3 className="font-display text-4xl text-ink leading-none mb-1">
-                A Taste of<br />
-                <em className="text-gradient-sunset">Special Conventions</em>
-              </h3>
-              <div className="mt-6 space-y-2 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-3.5 h-3.5 text-sunset" />
-                  Sunday · 4:00 – 9:00 PM
+          <div className="relative w-full max-w-xl">
+            <p className="text-[10px] uppercase tracking-[0.4em] text-cream/90 mb-3 text-center">For Details · Watch the Invitation</p>
+            <div className="relative aspect-video rounded-2xl overflow-hidden border border-cream/20 bg-ink/40 backdrop-blur-md shadow-elegant">
+              <div className="relative h-full flex flex-col items-center justify-center text-cream gap-4 px-6 text-center">
+                <div className="w-16 h-16 rounded-full bg-cream/15 backdrop-blur-md border border-cream/30 flex items-center justify-center">
+                  <Play className="w-7 h-7 ml-1 fill-cream" />
                 </div>
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-3.5 h-3.5 text-sunset" />
-                  Eagle's Landing · La Platte, NE
+                <div className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.35em] text-cream/80">
+                  <Film className="w-3.5 h-3.5" />
+                  Video intro · placeholder
                 </div>
+                <p className="font-display text-xl sm:text-2xl max-w-sm leading-tight">
+                  Your cinematic invitation, coming soon.
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex items-center justify-center gap-4 text-cream/90 text-sm">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-3.5 h-3.5" />
+                Sunday · 4:00 – 9:00 PM
+              </div>
+              <span className="opacity-50">·</span>
+              <div className="flex items-center gap-2">
+                <MapPin className="w-3.5 h-3.5" />
+                Eagle's Landing · La Platte, NE
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Video */}
-      <section className="mx-auto max-w-6xl px-6 pt-20">
-        <div className="text-center mb-8">
-          <p className="text-xs uppercase tracking-[0.35em] text-magenta mb-3">For Details · See the Video</p>
-          <h2 className="font-display text-5xl sm:text-6xl text-ink">Watch the invitation</h2>
-        </div>
-        <div className="relative aspect-video rounded-3xl overflow-hidden border border-border bg-ink shadow-elegant">
-          <div className="absolute inset-0 bg-gradient-sunset opacity-80" />
-          <div className="absolute -top-32 -right-24 w-96 h-96 rounded-full bg-iris/40 blur-3xl" />
-          <div className="absolute -bottom-32 -left-24 w-[28rem] h-[28rem] rounded-full bg-amber-glow/40 blur-3xl" />
-          <div className="relative h-full flex flex-col items-center justify-center text-cream gap-5 px-6 text-center">
-            <div className="w-20 h-20 rounded-full bg-cream/15 backdrop-blur-md border border-cream/30 flex items-center justify-center">
-              <Play className="w-8 h-8 ml-1 fill-cream" />
-            </div>
-            <div className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.4em] text-cream/80">
-              <Film className="w-3.5 h-3.5" />
-              Video intro · placeholder
-            </div>
-            <p className="font-display text-3xl sm:text-4xl max-w-xl leading-tight">
-              Your cinematic invitation, coming soon.
-            </p>
-          </div>
-        </div>
-      </section>
 
       {/* RSVP — primary call to action right under the video */}
       <section id="rsvp-cta" className="mx-auto max-w-3xl px-6 pt-16">
