@@ -49,7 +49,7 @@ const menu: Record<string, { id: string; name: string; description: string; pric
 };
 
 function PreviewPage() {
-  const [status, setStatus] = useState<"yes" | "no" | "maybe">("yes");
+  const [status, setStatus] = useState<"yes" | "no">("yes");
   const [partySize, setPartySize] = useState(2);
   const [diet, setDiet] = useState("");
   const [message, setMessage] = useState("");
