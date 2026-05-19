@@ -61,7 +61,7 @@ function RsvpPage() {
 
   const handleSubmit = async () => {
     try {
-      await submit({ data: { token, status, party_size: partySize, dietary_notes: diet, message } });
+      await submit({ data: { token, status, party_size: partySize, dietary_notes: "", message } });
       toast.success("RSVP saved — thank you!");
     } catch (e: any) { toast.error(e.message); }
   };
