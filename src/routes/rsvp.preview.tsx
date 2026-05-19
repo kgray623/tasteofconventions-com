@@ -49,7 +49,7 @@ const menu: Record<string, { id: string; name: string; description: string; pric
 };
 
 function PreviewPage() {
-  const [status, setStatus] = useState<"yes" | "no" | "maybe">("yes");
+  const [status, setStatus] = useState<"yes" | "no">("yes");
   const [partySize, setPartySize] = useState(2);
   const [diet, setDiet] = useState("");
   const [message, setMessage] = useState("");
@@ -83,11 +83,11 @@ function PreviewPage() {
 
         <Card className="p-7 space-y-5">
           <h2 className="font-display text-2xl">Will you join us?</h2>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {[
               { v: "yes", icon: Check, label: "Attending" },
-              { v: "maybe", icon: HelpCircle, label: "Maybe" },
               { v: "no", icon: X, label: "Decline" },
+
             ].map((o) => (
               <button
                 key={o.v}

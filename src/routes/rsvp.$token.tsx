@@ -29,7 +29,7 @@ function RsvpPage() {
 
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState<"yes" | "no" | "maybe">("yes");
+  const [status, setStatus] = useState<"yes" | "no">("yes");
   const [partySize, setPartySize] = useState(1);
   const [diet, setDiet] = useState("");
   const [message, setMessage] = useState("");
@@ -45,7 +45,7 @@ function RsvpPage() {
         const r = await fetchInv({ data: { token } });
         setData(r);
         if (r.rsvp) {
-          setStatus(r.rsvp.status === "pending" ? "yes" : r.rsvp.status);
+          setStatus(r.rsvp.status === "yes" ? "yes" : "no");
           setPartySize(r.rsvp.party_size);
           setDiet(r.rsvp.dietary_notes ?? "");
           setMessage(r.rsvp.message ?? "");
@@ -112,11 +112,11 @@ function RsvpPage() {
 
         <Card className="p-7 space-y-5">
           <h2 className="font-display text-2xl">Will you join us?</h2>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {[
               { v: "yes", icon: Check, label: "Attending" },
-              { v: "maybe", icon: HelpCircle, label: "Maybe" },
               { v: "no", icon: X, label: "Decline" },
+
             ].map((o) => (
               <button
                 key={o.v}

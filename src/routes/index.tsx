@@ -109,22 +109,14 @@ function Invitation() {
               cultural enrichment, meeting new friends, and making wonderful
               memories — this side of paradise.
             </p>
-            <div className="mt-10 flex flex-wrap items-center gap-3">
-              <a href="#rsvp">
-                <Button
-                  size="lg"
-                  className="bg-gradient-sunset text-white hover:opacity-90 px-8 shadow-glow border-0"
-                >
-                  RSVP — Click here
-                  <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
-              </a>
+            <div className="mt-10">
               <a href="#details">
                 <Button size="lg" variant="outline" className="px-8">
                   See all details
                 </Button>
               </a>
             </div>
+
           </div>
         </div>
 
@@ -171,9 +163,13 @@ function Invitation() {
           <div className="relative">
             <p className="text-xs uppercase tracking-[0.4em] text-magenta mb-3">Step One</p>
             <h2 className="font-display text-4xl sm:text-5xl text-ink mb-4">RSVP</h2>
-            <p className="text-muted-foreground max-w-md mx-auto mb-7">
-              Let us know if you can join us — Yes, No, or Maybe — and your party size.
+            <p className="text-muted-foreground max-w-md mx-auto mb-3">
+              Let us know if you can join us — Yes or No — and your party size.
             </p>
+            <p className="text-xs uppercase tracking-[0.25em] text-magenta mb-7">
+              Space is limited · First come, first served
+            </p>
+
             <Link to="/rsvp/preview">
               <Button
                 size="lg"
@@ -224,9 +220,11 @@ function Invitation() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 space-y-4">
               <p className="text-muted-foreground">
-                Let us know if you can join us. Click below to send your RSVP — Yes,
-                No, or Maybe — and tell us your party size.
+                Let us know if you can join us. Click below to send your RSVP — Yes
+                or No — and tell us your party size. Space is limited, first come,
+                first served.
               </p>
+
               <Link to="/rsvp/preview">
                 <Button className="bg-gradient-sunset text-white border-0 shadow-glow">
                   Open RSVP form
