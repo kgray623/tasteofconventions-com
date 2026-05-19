@@ -78,6 +78,7 @@ const PublicRsvpInput = z.object({
   guest_name: z.string().min(1).max(120),
   guest_email: z.string().email().max(200).optional().nullable(),
   guest_phone: z.string().max(40).optional().nullable(),
+  password: z.string().min(6).max(72).optional().nullable(),
   status: z.enum(["yes", "no"]),
   party_size: z.number().int().min(1).max(20),
   message: z.string().max(1000).optional().nullable(),
@@ -97,6 +98,41 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
 
     const email = data.guest_email?.trim() || null;
     const phone = data.guest_phone?.trim() || null;
+    const password = data.password?.trim() || null;
+
+    if (email && password) {
+      const { data: createdUser, error: createUserErr } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { display_name: data.guest_name },
+      });
+
+      if (createUserErr && !/already|registered|exists/i.test(createUserErr.message)) {
+        throw new Error(createUserErr.message);
+      }
+
+      let userId = createdUser.user?.id ?? null;
+      if (!userId) {
+        const { data: users, error: usersErr } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        if (usersErr) throw new Error(usersErr.message);
+        userId = users.users.find((user) => user.email?.toLowerCase() === email.toLowerCase())?.id ?? null;
+      }
+      if (userId) {
+        if (!createdUser.user) {
+          const { error: updateUserErr } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+            password,
+            user_metadata: { display_name: data.guest_name },
+          });
+          if (updateUserErr) throw new Error(updateUserErr.message);
+        }
+        await supabaseAdmin.from("profiles").upsert({
+          id: userId,
+          email,
+          display_name: data.guest_name,
+        });
+      }
+    }
 
     // Reuse existing invitation if a matching guest already RSVP'd (by email or phone)
     let invitationId: string | null = null;

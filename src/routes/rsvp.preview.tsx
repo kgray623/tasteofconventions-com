@@ -71,12 +71,15 @@ function PreviewPage() {
   const [saved, setSaved] = useState(false);
   const handleSave = async () => {
     if (status !== "no" && !name.trim()) return toast.error("Please enter your name");
+    if (!email.trim()) return toast.error("Please enter your email");
+    if (password.trim().length < 6) return toast.error("Please create a password with at least 6 characters");
     setSaving(true);
     try {
       await save({ data: {
         guest_name: name.trim() || "Guest",
         guest_email: email.trim() || null,
         guest_phone: phone.trim() || null,
+        password: password.trim() || null,
         status,
         party_size: partySize,
         message: message.trim() || null,
