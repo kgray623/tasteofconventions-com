@@ -1,8 +1,9 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
-import { InvitationPage } from "@/components/invitation-page";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/index")({
+  beforeLoad: () => {
+    throw redirect({ to: "/", replace: true });
+  },
   head: () => ({
     meta: [
       { title: "An Evening to Remember · A Taste of Special Conventions" },
@@ -13,15 +14,5 @@ export const Route = createFileRoute("/index")({
       },
     ],
   }),
-  component: IndexAliasPage,
+  component: () => null,
 });
-
-function IndexAliasPage() {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    navigate({ to: "/", replace: true });
-  }, [navigate]);
-
-  return <InvitationPage />;
-}
