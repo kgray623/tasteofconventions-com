@@ -1,9 +1,9 @@
-import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useRoles } from "@/hooks/use-roles";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, Mail } from "lucide-react";
+import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, Mail, LogOut } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — A Taste of Special Conventions" }] }),
@@ -22,6 +22,13 @@ const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boole
 function AdminLayout() {
   const { isAdmin, isTeam, loading, refresh } = useRoles();
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    toast.success("Signed out.");
+    navigate({ to: "/" });
+  };
 
   const claim = async () => {
     const { data, error } = await supabase.rpc("claim_admin");
@@ -43,9 +50,14 @@ function AdminLayout() {
           You don't have admin or team access yet. If this is a brand-new
           backend, claim master admin to get started.
         </p>
-        <Button onClick={claim} className="bg-ink text-cream hover:bg-ink/90">
-          Claim master admin
-        </Button>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <Button onClick={claim} className="bg-ink text-cream hover:bg-ink/90">
+            Claim master admin
+          </Button>
+          <Button onClick={signOut} variant="outline">
+            <LogOut className="w-4 h-4 mr-2" /> Log out
+          </Button>
+        </div>
       </div>
     );
   }
@@ -61,6 +73,9 @@ function AdminLayout() {
           <p className="text-xs uppercase tracking-[0.3em] text-terracotta">Event admin</p>
           <h1 className="font-display text-3xl mt-1">Master control</h1>
         </div>
+        <Button onClick={signOut} variant="outline" size="sm">
+          <LogOut className="w-4 h-4 mr-2" /> Log out
+        </Button>
       </div>
       <nav className="flex flex-wrap gap-1 border-b border-border mb-8">
         {visibleTabs.map((t) => {
