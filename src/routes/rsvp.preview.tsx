@@ -54,6 +54,7 @@ function PreviewPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [restaurantId, setRestaurantId] = useState("r1");
   const [cart, setCart] = useState<Record<string, number>>({});
@@ -77,13 +78,6 @@ function PreviewPage() {
           <h1 className="font-display text-5xl mt-3 text-ink">{ev.title}</h1>
         </div>
 
-        <Card className="p-7 space-y-3">
-          <p className="text-muted-foreground">{ev.description}</p>
-          <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-            <span className="inline-flex items-center gap-2"><Calendar className="w-4 h-4 text-gold" />{new Date(ev.starts_at).toLocaleString()}</span>
-            <span className="inline-flex items-center gap-2"><MapPin className="w-4 h-4 text-gold" />{ev.location}</span>
-          </div>
-        </Card>
 
         <Card className="p-7 space-y-5">
           <h2 className="font-display text-2xl">Will you join us?</h2>
@@ -129,6 +123,10 @@ function PreviewPage() {
                   <Label htmlFor="phone">Phone</Label>
                   <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" />
                 </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="password">Set a password</Label>
+                  <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Create a password" />
+                </div>
               </div>
             </>
           )}
@@ -143,7 +141,7 @@ function PreviewPage() {
           <Card className="p-7 space-y-5">
             <div>
               <h2 className="font-display text-2xl">Pre-order from your cultural choice restaurant</h2>
-              <p className="text-sm text-muted-foreground mt-1">Pick what you'd like ready when you arrive.</p>
+              <p className="text-sm text-muted-foreground mt-1">Choose from the following.</p>
             </div>
             <Select value={restaurantId} onValueChange={(v) => { setRestaurantId(v); setCart({}); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
