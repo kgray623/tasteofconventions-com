@@ -29,8 +29,6 @@ type R = { id: string; name: string; description: string | null; cuisine: string
 type M = { id: string; restaurant_id: string; name: string; description: string | null; price: number; dietary_flags: string[] | null };
 
 const tabs = [
-  { id: "itinerary", label: "Conventions & Countries" },
-  { id: "rsvp", label: "RSVP" },
   { id: "datetime", label: "Date & Time" },
   { id: "location", label: "Location" },
   { id: "dress", label: "Dress Code" },
@@ -85,12 +83,13 @@ export function InvitationPage() {
               Conventions
             </h1>
             <p className="mt-6 font-display italic text-3xl sm:text-4xl text-ink/80">
-              An evening to remember.
+              An event and an evening to remember.
             </p>
             <p className="mt-6 text-lg text-muted-foreground leading-relaxed max-w-md">
-              Please join us for an evening of association, gift exchanges,
-              cultural enrichment, meeting new friends, and making wonderful
-              memories — this side of paradise.
+              Please join us for a very special evening of association, gift
+              exchanges, cultural enrichment, meeting new friends, and making
+              wonderful memories — all on this side of paradise. See the video
+              for more details.
             </p>
 
 
@@ -115,7 +114,7 @@ export function InvitationPage() {
             <div className="mt-5 flex items-center justify-center gap-4 text-cream/90 text-sm">
               <div className="flex items-center gap-2">
                 <Calendar className="w-3.5 h-3.5" />
-                Sunday · 4:00 – 9:00 PM
+                Sun · Nov 1, 2026 · 4–9 PM
               </div>
               <span className="opacity-50">·</span>
               <div className="flex items-center gap-2">
@@ -158,103 +157,107 @@ export function InvitationPage() {
 
 
 
+      {/* Conventions & Countries — prominent, always-visible section */}
+      <section id="itinerary" className="mx-auto max-w-3xl px-6 pt-16">
+        <div className="text-center mb-10">
+          <p className="text-xs uppercase tracking-[0.35em] text-magenta mb-3 flex items-center justify-center gap-2">
+            <Globe2 className="w-4 h-4" /> Conventions & Countries
+          </p>
+          <h2 className="font-display text-5xl sm:text-6xl text-ink">A Journey Together</h2>
+          <p className="mt-4 text-muted-foreground">
+            Join us and journey together through the following special
+            conventions. Pre-order your cuisine from the convention country
+            of choice, featuring the restaurants below.
+          </p>
+        </div>
+
+        <div className="rounded-3xl border border-border bg-card shadow-elegant p-6 sm:p-8">
+          <ol className="relative border-l-2 border-dashed border-border ml-3 space-y-6">
+            {itinerary.map((stop, i) => (
+              <li key={stop.country} className="relative pl-6">
+                <span
+                  className="absolute -left-[11px] top-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-glow"
+                  style={{ background: gradients[i % gradients.length] }}
+                >
+                  {i + 1}
+                </span>
+                <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">{stop.when}</p>
+                <h4 className="font-display text-2xl text-ink">{stop.country}</h4>
+                <p className="text-sm text-muted-foreground mt-1">{stop.note}</p>
+                {stop.restaurant ? (
+                  <Link to="/rsvp/preview" className="inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full bg-gradient-sunset text-white text-[10px] uppercase tracking-widest shadow-glow hover:opacity-90 transition">
+                    <UtensilsCrossed className="w-3 h-3" />
+                    Pre-order the cuisine
+                  </Link>
+                ) : (
+                  <span className="inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full border border-border text-muted-foreground text-[10px] uppercase tracking-widest">
+                    Savor the moment
+                  </span>
+                )}
+              </li>
+            ))}
+          </ol>
+
+          {restaurants.length > 0 && (
+            <div className="mt-8 space-y-4">
+              <p className="text-xs uppercase tracking-[0.3em] text-magenta">Featured restaurants & menus</p>
+              {restaurants.map((r) => {
+                const menu = items.filter((m) => m.restaurant_id === r.id);
+                return (
+                  <div key={r.id} className="rounded-xl border border-border p-5 bg-background">
+                    <div className="flex items-baseline justify-between gap-3 mb-3">
+                      <div>
+                        <h3 className="font-display text-2xl">{r.name}</h3>
+                        {r.cuisine && <p className="text-xs uppercase tracking-widest text-muted-foreground mt-1">{r.cuisine}</p>}
+                      </div>
+                      <Link to="/rsvp/preview">
+                        <Button size="sm" variant="outline">
+                          Pre-order <ExternalLink className="ml-1.5 w-3 h-3" />
+                        </Button>
+                      </Link>
+                    </div>
+                    {r.description && <p className="text-sm text-muted-foreground mb-3">{r.description}</p>}
+                    {menu.length > 0 && (
+                      <div className="grid sm:grid-cols-2 gap-2">
+                        {menu.slice(0, 6).map((m) => (
+                          <div key={m.id} className="flex justify-between gap-3 text-sm py-1.5 border-t border-border first:border-t-0">
+                            <div>
+                              <p className="font-medium">{m.name}</p>
+                              {m.dietary_flags && m.dietary_flags.length > 0 && (
+                                <div className="flex gap-1 mt-0.5">
+                                  {m.dietary_flags.map((f) => (
+                                    <Badge key={f} variant="outline" className="text-[9px]">{f}</Badge>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <span className="font-display shrink-0">${Number(m.price).toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <p className="text-xs text-muted-foreground italic">
+                Pre-orders are collected here and submitted to each restaurant a few days before the event.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* Accordion details */}
       <section id="details" className="mx-auto max-w-3xl px-6 py-16 mt-8">
         <div className="text-center mb-10">
-          <p className="text-xs uppercase tracking-[0.35em] text-magenta mb-3">Everything you'll want to know</p>
+          <p className="text-xs uppercase tracking-[0.35em] text-magenta mb-3">Please see the following information</p>
           <h2 className="font-display text-5xl sm:text-6xl text-ink">Tap to open</h2>
           <p className="mt-4 text-muted-foreground">
-            Conventions and countries, date and time, location, attire, gift exchanges, and entertainment.
+            Date and time, location, attire, gift exchanges, and entertainment.
           </p>
         </div>
 
         <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="w-full space-y-3">
-          {/* Itinerary — Conventions & Countries */}
-          <AccordionItem value="itinerary" id="itinerary" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
-            <AccordionTrigger className="hover:no-underline">
-              <span className="flex items-center gap-3 font-display text-2xl text-left">
-                <Globe2 className="w-5 h-5 text-sunset shrink-0" /> Conventions & Countries
-              </span>
-            </AccordionTrigger>
-            <AccordionContent className="pb-6">
-              <p className="text-muted-foreground mb-5">
-                Doors at 4:00 PM for association. We'll journey together through four conventions — pre-order your cuisine from each country's featured restaurant below.
-              </p>
-              <ol className="relative border-l-2 border-dashed border-border ml-3 space-y-6">
-                {itinerary.map((stop, i) => (
-                  <li key={stop.country} className="relative pl-6">
-                    <span
-                      className="absolute -left-[11px] top-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-glow"
-                      style={{ background: gradients[i % gradients.length] }}
-                    >
-                      {i + 1}
-                    </span>
-                    <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">{stop.when}</p>
-                    <h4 className="font-display text-2xl text-ink">{stop.country}</h4>
-                    <p className="text-sm text-muted-foreground mt-1">{stop.note}</p>
-                    {stop.restaurant ? (
-                      <Link to="/rsvp/preview" className="inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full bg-gradient-sunset text-white text-[10px] uppercase tracking-widest shadow-glow hover:opacity-90 transition">
-                        <UtensilsCrossed className="w-3 h-3" />
-                        Pre-order the cuisine
-                      </Link>
-                    ) : (
-                      <span className="inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full border border-border text-muted-foreground text-[10px] uppercase tracking-widest">
-                        Savor the moment
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ol>
-
-              {restaurants.length > 0 && (
-                <div className="mt-8 space-y-4">
-                  <p className="text-xs uppercase tracking-[0.3em] text-magenta">Featured restaurants & menus</p>
-                  {restaurants.map((r) => {
-                    const menu = items.filter((m) => m.restaurant_id === r.id);
-                    return (
-                      <div key={r.id} className="rounded-xl border border-border p-5 bg-background">
-                        <div className="flex items-baseline justify-between gap-3 mb-3">
-                          <div>
-                            <h3 className="font-display text-2xl">{r.name}</h3>
-                            {r.cuisine && <p className="text-xs uppercase tracking-widest text-muted-foreground mt-1">{r.cuisine}</p>}
-                          </div>
-                          <Link to="/rsvp/preview">
-                            <Button size="sm" variant="outline">
-                              Pre-order <ExternalLink className="ml-1.5 w-3 h-3" />
-                            </Button>
-                          </Link>
-                        </div>
-                        {r.description && <p className="text-sm text-muted-foreground mb-3">{r.description}</p>}
-                        {menu.length > 0 && (
-                          <div className="grid sm:grid-cols-2 gap-2">
-                            {menu.slice(0, 6).map((m) => (
-                              <div key={m.id} className="flex justify-between gap-3 text-sm py-1.5 border-t border-border first:border-t-0">
-                                <div>
-                                  <p className="font-medium">{m.name}</p>
-                                  {m.dietary_flags && m.dietary_flags.length > 0 && (
-                                    <div className="flex gap-1 mt-0.5">
-                                      {m.dietary_flags.map((f) => (
-                                        <Badge key={f} variant="outline" className="text-[9px]">{f}</Badge>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                                <span className="font-display shrink-0">${Number(m.price).toFixed(2)}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                  <p className="text-xs text-muted-foreground italic">
-                    Pre-orders are collected here and submitted to each restaurant a few days before the event.
-                  </p>
-                </div>
-              )}
-            </AccordionContent>
-          </AccordionItem>
-
           {/* Date & Time */}
           <AccordionItem value="datetime" id="datetime" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
             <AccordionTrigger className="hover:no-underline">
@@ -263,8 +266,8 @@ export function InvitationPage() {
               </span>
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-2">
-              <p><strong className="text-ink">Sunday · 4:00 PM – 9:00 PM</strong></p>
-              <p>Doors open at 4:00 PM — come early for association beforehand. Exact date confirmed in the video invitation above.</p>
+              <p><strong className="text-ink">Sunday, November 1, 2026 · 4:00 PM – 9:00 PM</strong></p>
+              <p>Join us from 4:00 PM to 9:00 PM for a full evening together.</p>
             </AccordionContent>
           </AccordionItem>
 
@@ -280,7 +283,7 @@ export function InvitationPage() {
               <div className="relative aspect-[16/8] rounded-xl overflow-hidden border border-border bg-gradient-to-br from-amber-glow/20 via-magenta/15 to-iris/20 flex items-center justify-center">
                 <MapPin className="w-8 h-8 text-sunset" />
               </div>
-              <p className="text-sm">Full address and map will appear here once confirmed.</p>
+              <p className="text-sm">GPS coordinates and map will appear here once confirmed.</p>
             </AccordionContent>
           </AccordionItem>
 
@@ -293,9 +296,9 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-4">
               <p>
-                This is an international event — international attire is encouraged.
-                If there's a culture you'd love to dress in, please do. It'll make
-                the evening more fun and beautiful for everyone.
+                This is an international event, so international attire is
+                encouraged. Is there a culture you love to dress in? Please do —
+                it'll make the evening more fun and beautiful for everyone.
               </p>
               <VideoPlaceholder label="Dress code · video coming soon" />
             </AccordionContent>
@@ -310,9 +313,9 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-4">
               <p>
-                In the spirit of the special and international conventions, friends
-                bring gifts to exchange. See the video below — we'll walk you
-                through exactly how it works.
+                In the spirit of the special and international conventions,
+                friends bring gifts to exchange. See the video below — it'll
+                walk you through exactly how it works.
               </p>
               <VideoPlaceholder label="Gift exchanges · video coming soon" />
             </AccordionContent>
@@ -327,9 +330,9 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-4">
               <p>
-                Do you have a talent you'd like to share at the event? We're
-                looking for guests who'd like to submit a video to perform.
-                Please reach out — we'd love to feature you.
+                Do you have a talent you'd like to share at the event? We are
+                looking for entertainment — please submit a video on this
+                platform, and we'll reach out if we have time.
               </p>
               <VideoPlaceholder label="Entertainment · video coming soon" />
             </AccordionContent>
@@ -340,7 +343,7 @@ export function InvitationPage() {
 
       <footer className="border-t border-border py-10 text-center text-sm text-muted-foreground">
         <p className="font-display text-2xl text-ink">A Taste of Special Conventions</p>
-        <p className="mt-2 italic">An evening to remember · this side of paradise.</p>
+        <p className="mt-2 italic">An event and an evening to remember · this side of paradise.</p>
       </footer>
     </div>
   );
