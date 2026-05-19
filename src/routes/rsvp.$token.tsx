@@ -47,7 +47,6 @@ function RsvpPage() {
           setStatus(r.rsvp.status === "yes" ? "yes" : "no");
           setPartySize(r.rsvp.party_size);
           setMessage(r.rsvp.message ?? "");
-          setMessage(r.rsvp.message ?? "");
         }
       } finally { setLoading(false); }
       const [{ data: rs }, { data: ms }] = await Promise.all([
