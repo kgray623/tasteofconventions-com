@@ -29,8 +29,6 @@ type R = { id: string; name: string; description: string | null; cuisine: string
 type M = { id: string; restaurant_id: string; name: string; description: string | null; price: number; dietary_flags: string[] | null };
 
 const tabs = [
-  { id: "itinerary", label: "Conventions & Countries" },
-  { id: "rsvp", label: "RSVP" },
   { id: "datetime", label: "Date & Time" },
   { id: "location", label: "Location" },
   { id: "dress", label: "Dress Code" },
