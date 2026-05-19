@@ -43,7 +43,7 @@ function HelperLogin() {
 
   useEffect(() => {
     if (loading || !user) return;
-    routeForUser(user.id, user.email).then((to) => navigate({ to }));
+    routeForUser(user.id, user.email).then((destination) => navigate(destination));
   }, [user, loading, navigate]);
 
   const signIn = async (event?: FormEvent) => {
@@ -52,7 +52,7 @@ function HelperLogin() {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
     if (error) return toast.error(error.message);
-    if (data.user) navigate({ to: await routeForUser(data.user.id, data.user.email) });
+    if (data.user) navigate(await routeForUser(data.user.id, data.user.email));
   };
 
   const forgot = async () => {
