@@ -101,16 +101,14 @@ function PreviewPage() {
             ))}
           </div>
           {status !== "no" && (
-            <>
-              <div className="space-y-1.5">
-                <Label>Party size</Label>
-                <div className="flex items-center gap-3">
-                  <Button size="icon" variant="outline" onClick={() => setPartySize(Math.max(1, partySize - 1))}><Minus className="w-4 h-4" /></Button>
-                  <span className="font-display text-2xl w-10 text-center">{partySize}</span>
-                  <Button size="icon" variant="outline" onClick={() => setPartySize(Math.min(20, partySize + 1))}><Plus className="w-4 h-4" /></Button>
-                </div>
+            <div className="space-y-1.5">
+              <Label>Party size</Label>
+              <div className="flex items-center gap-3">
+                <Button size="icon" variant="outline" onClick={() => setPartySize(Math.max(1, partySize - 1))}><Minus className="w-4 h-4" /></Button>
+                <span className="font-display text-2xl w-10 text-center">{partySize}</span>
+                <Button size="icon" variant="outline" onClick={() => setPartySize(Math.min(20, partySize + 1))}><Plus className="w-4 h-4" /></Button>
               </div>
-
+            </div>
           )}
           <div className="space-y-1.5">
             <Label>Message to the host (optional)</Label>
