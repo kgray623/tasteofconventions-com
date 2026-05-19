@@ -148,8 +148,8 @@ function RsvpPage() {
         {status === "yes" && restaurants.length > 0 && (
           <Card className="p-7 space-y-5">
             <div>
-              <h2 className="font-display text-2xl">Pre-order from a restaurant</h2>
-              <p className="text-sm text-muted-foreground mt-1">Pick what you'd like ready when you arrive.</p>
+              <h2 className="font-display text-2xl">Pre-order from your cultural choice restaurant</h2>
+              <p className="text-sm text-muted-foreground mt-1">Browse each kitchen's digital menu and choose what you'd like that evening.</p>
             </div>
             <Select value={restaurantId} onValueChange={(v) => { setRestaurantId(v); setCart({}); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
