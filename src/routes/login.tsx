@@ -91,10 +91,7 @@ function HelperLogin() {
             Continue with Google
           </Button>
           <p className="text-xs text-center text-muted-foreground pt-2">
-            Need an account?{" "}
-            <Link to="/auth" className="underline text-ink">
-              Create one
-            </Link>
+            Accounts are created automatically when you RSVP.
           </p>
         </div>
       </div>
