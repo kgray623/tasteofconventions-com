@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,11 +44,6 @@ function AuthPage() {
     toast.success("Check your inbox to confirm your email.");
   };
 
-  const google = async () => {
-    const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/dashboard" });
-    if (r.error) toast.error(r.error.message);
-  };
-
   return (
     <div className="min-h-screen bg-gradient-warm flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-md">
@@ -84,12 +78,6 @@ function AuthPage() {
               </Button>
             </TabsContent>
           </Tabs>
-          <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-widest text-muted-foreground">
-            <div className="h-px bg-border flex-1" /> or <div className="h-px bg-border flex-1" />
-          </div>
-          <Button variant="outline" onClick={google} className="w-full">
-            Continue with Google
-          </Button>
         </div>
       </div>
     </div>
