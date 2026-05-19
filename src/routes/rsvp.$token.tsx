@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Calendar, MapPin, Check, X, HelpCircle, Minus, Plus } from "lucide-react";
+import { Calendar, MapPin, Check, X, HelpCircle, Minus, Plus, ArrowLeft } from "lucide-react";
 import { GuestThread } from "@/components/guest-thread";
 
 export const Route = createFileRoute("/rsvp/$token")({
