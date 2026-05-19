@@ -22,6 +22,13 @@ const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boole
 function AdminLayout() {
   const { isAdmin, isTeam, loading, refresh } = useRoles();
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    toast.success("Signed out.");
+    navigate({ to: "/" });
+  };
 
   const claim = async () => {
     const { data, error } = await supabase.rpc("claim_admin");
