@@ -83,12 +83,13 @@ export function InvitationPage() {
               Conventions
             </h1>
             <p className="mt-6 font-display italic text-3xl sm:text-4xl text-ink/80">
-              An evening to remember.
+              An event and an evening to remember.
             </p>
             <p className="mt-6 text-lg text-muted-foreground leading-relaxed max-w-md">
-              Please join us for an evening of association, gift exchanges,
-              cultural enrichment, meeting new friends, and making wonderful
-              memories — this side of paradise.
+              Please join us for a very special evening of association, gift
+              exchanges, cultural enrichment, meeting new friends, and making
+              wonderful memories — all on this side of paradise. See the video
+              for more details.
             </p>
 
 
