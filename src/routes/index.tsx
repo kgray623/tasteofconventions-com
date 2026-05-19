@@ -179,121 +179,100 @@ function Invitation() {
 
 
 
-      {/* Tab nav */}
-      <section id="details" className="sticky top-16 z-30 bg-background/85 backdrop-blur-md border-y border-border mt-20">
-        <div className="mx-auto max-w-6xl px-4 py-3 flex gap-2 overflow-x-auto">
-          {tabs.map((t) => (
-            <a
-              key={t.id}
-              href={`#${t.id}`}
-              className="shrink-0 px-4 py-1.5 rounded-full text-xs uppercase tracking-widest border border-border bg-card hover:bg-gradient-sunset hover:text-white hover:border-transparent transition-colors"
-            >
-              {t.label}
-            </a>
-          ))}
-        </div>
-      </section>
-
       {/* Accordion details */}
-      <section className="mx-auto max-w-3xl px-6 py-16">
+      <section id="details" className="mx-auto max-w-3xl px-6 py-16 mt-8">
         <div className="text-center mb-10">
           <p className="text-xs uppercase tracking-[0.35em] text-magenta mb-3">Everything you'll want to know</p>
           <h2 className="font-display text-5xl sm:text-6xl text-ink">Tap to open</h2>
           <p className="mt-4 text-muted-foreground">
-            Date and time, location, attire, gift exchanges, food choices, and entertainment.
+            Conventions and countries, date and time, location, attire, gift exchanges, and entertainment.
           </p>
         </div>
 
         <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="w-full space-y-3">
-          {/* RSVP */}
-          <AccordionItem value="rsvp" id="rsvp" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
+          {/* Itinerary — Conventions & Countries */}
+          <AccordionItem value="itinerary" id="itinerary" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
             <AccordionTrigger className="hover:no-underline">
-              <span className="flex items-center gap-3 font-display text-2xl">
-                <CheckCircle2 className="w-5 h-5 text-sunset" /> RSVP
+              <span className="flex items-center gap-3 font-display text-2xl text-left">
+                <Globe2 className="w-5 h-5 text-sunset shrink-0" /> Conventions & Countries
               </span>
             </AccordionTrigger>
-            <AccordionContent className="pb-6 space-y-4">
-              <p className="text-muted-foreground">
-                Let us know if you can join us. Click below to send your RSVP — Yes
-                or No — and tell us your party size. Space is limited, first come,
-                first served.
+            <AccordionContent className="pb-6">
+              <p className="text-muted-foreground mb-5">
+                Doors at 4:00 PM for association. We'll journey together through four conventions — pre-order your cuisine from each country's featured restaurant below.
               </p>
+              <ol className="relative border-l-2 border-dashed border-border ml-3 space-y-6">
+                {itinerary.map((stop, i) => (
+                  <li key={stop.country} className="relative pl-6">
+                    <span
+                      className="absolute -left-[11px] top-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-glow"
+                      style={{ background: gradients[i % gradients.length] }}
+                    >
+                      {i + 1}
+                    </span>
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">{stop.when}</p>
+                    <h4 className="font-display text-2xl text-ink">{stop.country}</h4>
+                    <p className="text-sm text-muted-foreground mt-1">{stop.note}</p>
+                    {stop.restaurant ? (
+                      <Link to="/rsvp/preview" className="inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full bg-gradient-sunset text-white text-[10px] uppercase tracking-widest shadow-glow hover:opacity-90 transition">
+                        <UtensilsCrossed className="w-3 h-3" />
+                        Pre-order the cuisine
+                      </Link>
+                    ) : (
+                      <span className="inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full border border-border text-muted-foreground text-[10px] uppercase tracking-widest">
+                        Savor the moment
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ol>
 
-              <Link to="/rsvp/preview">
-                <Button className="bg-gradient-sunset text-white border-0 shadow-glow">
-                  Open RSVP form
-                  <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
-              </Link>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Food */}
-          <AccordionItem value="food" id="food" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
-            <AccordionTrigger className="hover:no-underline">
-              <span className="flex items-center gap-3 font-display text-2xl">
-                <Utensils className="w-5 h-5 text-sunset" /> Food & Pre-order
-              </span>
-            </AccordionTrigger>
-            <AccordionContent className="pb-6 space-y-5">
-              <p className="text-muted-foreground">
-                Choose your cuisine from our convention countries. Browse each
-                restaurant's menu below and pre-order what you'd like to eat
-                that evening. We'll collect everyone's choices and submit the
-                orders together a few days before the event.
-              </p>
-              {restaurants.length === 0 && (
-                <p className="text-sm italic text-muted-foreground">
-                  Restaurant menus are being added — check back soon.
-                </p>
-              )}
-              <div className="space-y-4">
-                {restaurants.map((r) => {
-                  const menu = items.filter((m) => m.restaurant_id === r.id);
-                  return (
-                    <div key={r.id} className="rounded-xl border border-border p-5 bg-background">
-                      <div className="flex items-baseline justify-between gap-3 mb-3">
-                        <div>
-                          <h3 className="font-display text-2xl">{r.name}</h3>
-                          {r.cuisine && <p className="text-xs uppercase tracking-widest text-muted-foreground mt-1">{r.cuisine}</p>}
+              {restaurants.length > 0 && (
+                <div className="mt-8 space-y-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-magenta">Featured restaurants & menus</p>
+                  {restaurants.map((r) => {
+                    const menu = items.filter((m) => m.restaurant_id === r.id);
+                    return (
+                      <div key={r.id} className="rounded-xl border border-border p-5 bg-background">
+                        <div className="flex items-baseline justify-between gap-3 mb-3">
+                          <div>
+                            <h3 className="font-display text-2xl">{r.name}</h3>
+                            {r.cuisine && <p className="text-xs uppercase tracking-widest text-muted-foreground mt-1">{r.cuisine}</p>}
+                          </div>
+                          <Link to="/rsvp/preview">
+                            <Button size="sm" variant="outline">
+                              Pre-order <ExternalLink className="ml-1.5 w-3 h-3" />
+                            </Button>
+                          </Link>
                         </div>
-                        <Link to="/rsvp/preview">
-                          <Button size="sm" variant="outline">
-                            Pre-order <ExternalLink className="ml-1.5 w-3 h-3" />
-                          </Button>
-                        </Link>
-                      </div>
-                      {r.description && <p className="text-sm text-muted-foreground mb-3">{r.description}</p>}
-                      {menu.length > 0 ? (
-                        <div className="grid sm:grid-cols-2 gap-2">
-                          {menu.slice(0, 6).map((m) => (
-                            <div key={m.id} className="flex justify-between gap-3 text-sm py-1.5 border-t border-border first:border-t-0">
-                              <div>
-                                <p className="font-medium">{m.name}</p>
-                                {m.dietary_flags && m.dietary_flags.length > 0 && (
-                                  <div className="flex gap-1 mt-0.5">
-                                    {m.dietary_flags.map((f) => (
-                                      <Badge key={f} variant="outline" className="text-[9px]">{f}</Badge>
-                                    ))}
-                                  </div>
-                                )}
+                        {r.description && <p className="text-sm text-muted-foreground mb-3">{r.description}</p>}
+                        {menu.length > 0 && (
+                          <div className="grid sm:grid-cols-2 gap-2">
+                            {menu.slice(0, 6).map((m) => (
+                              <div key={m.id} className="flex justify-between gap-3 text-sm py-1.5 border-t border-border first:border-t-0">
+                                <div>
+                                  <p className="font-medium">{m.name}</p>
+                                  {m.dietary_flags && m.dietary_flags.length > 0 && (
+                                    <div className="flex gap-1 mt-0.5">
+                                      {m.dietary_flags.map((f) => (
+                                        <Badge key={f} variant="outline" className="text-[9px]">{f}</Badge>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                                <span className="font-display shrink-0">${Number(m.price).toFixed(2)}</span>
                               </div>
-                              <span className="font-display shrink-0">${Number(m.price).toFixed(2)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-xs italic text-muted-foreground">Menu coming soon.</p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-              <p className="text-xs text-muted-foreground italic">
-                Note: pre-orders are collected here and submitted to each
-                restaurant a few days before the event with the event date as
-                the coupon / pickup reference.
-              </p>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  <p className="text-xs text-muted-foreground italic">
+                    Pre-orders are collected here and submitted to each restaurant a few days before the event.
+                  </p>
+                </div>
+              )}
             </AccordionContent>
           </AccordionItem>
 
@@ -333,8 +312,13 @@ function Invitation() {
                 <Shirt className="w-5 h-5 text-sunset" /> Dress Code
               </span>
             </AccordionTrigger>
-            <AccordionContent className="pb-6 text-muted-foreground">
-              <p>Details on the dress code will be shared here — watch the video for inspiration.</p>
+            <AccordionContent className="pb-6 text-muted-foreground space-y-4">
+              <p>
+                This is an international event — international attire is encouraged.
+                If there's a culture you'd love to dress in, please do. It'll make
+                the evening more fun and beautiful for everyone.
+              </p>
+              <VideoPlaceholder label="Dress code · video coming soon" />
             </AccordionContent>
           </AccordionItem>
 
@@ -345,8 +329,13 @@ function Invitation() {
                 <Gift className="w-5 h-5 text-sunset" /> Gift Exchanges
               </span>
             </AccordionTrigger>
-            <AccordionContent className="pb-6 text-muted-foreground">
-              <p>A warm tradition of giving. Guidelines and exchange format will appear here soon.</p>
+            <AccordionContent className="pb-6 text-muted-foreground space-y-4">
+              <p>
+                In the spirit of the special and international conventions, friends
+                bring gifts to exchange. See the video below — we'll walk you
+                through exactly how it works.
+              </p>
+              <VideoPlaceholder label="Gift exchanges · video coming soon" />
             </AccordionContent>
           </AccordionItem>
 
@@ -357,51 +346,18 @@ function Invitation() {
                 <Music className="w-5 h-5 text-sunset" /> Entertainment
               </span>
             </AccordionTrigger>
-            <AccordionContent className="pb-6 text-muted-foreground">
-              <p>Live music, surprises, and moments worth remembering across each of the convention countries.</p>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Itinerary */}
-          <AccordionItem value="itinerary" id="itinerary" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
-            <AccordionTrigger className="hover:no-underline">
-              <span className="flex items-center gap-3 font-display text-2xl">
-                <Globe2 className="w-5 h-5 text-sunset" /> Itinerary — Conventions & Countries
-              </span>
-            </AccordionTrigger>
-            <AccordionContent className="pb-6">
-              <p className="text-muted-foreground mb-5">
-                Doors at 4:00 PM for association. We'll journey together through four conventions.
+            <AccordionContent className="pb-6 text-muted-foreground space-y-4">
+              <p>
+                Do you have a talent you'd like to share at the event? We're
+                looking for guests who'd like to submit a video to perform.
+                Please reach out — we'd love to feature you.
               </p>
-              <ol className="relative border-l-2 border-dashed border-border ml-3 space-y-6">
-                {itinerary.map((stop, i) => (
-                  <li key={stop.country} className="relative pl-6">
-                    <span
-                      className="absolute -left-[11px] top-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-glow"
-                      style={{ background: gradients[i % gradients.length] }}
-                    >
-                      {i + 1}
-                    </span>
-                    <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">{stop.when}</p>
-                    <h4 className="font-display text-2xl text-ink">{stop.country}</h4>
-                    <p className="text-sm text-muted-foreground mt-1">{stop.note}</p>
-                    {stop.restaurant ? (
-                      <span className="inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full bg-gradient-sunset text-white text-[10px] uppercase tracking-widest shadow-glow">
-                        <UtensilsCrossed className="w-3 h-3" />
-                        Restaurant to order from
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full border border-border text-muted-foreground text-[10px] uppercase tracking-widest">
-                        Savor the moment
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ol>
+              <VideoPlaceholder label="Entertainment · video coming soon" />
             </AccordionContent>
           </AccordionItem>
         </Accordion>
       </section>
+
 
       <footer className="border-t border-border py-10 text-center text-sm text-muted-foreground">
         <p className="font-display text-2xl text-ink">A Taste of Special Conventions</p>
