@@ -85,7 +85,7 @@ export function InvitationPage() {
             <p className="mt-6 font-display italic text-3xl sm:text-4xl text-ink/80">
               An event and an evening to remember.
             </p>
-            <p className="mt-6 text-lg text-muted-foreground leading-relaxed max-w-md">
+            <p className="mt-6 text-xl sm:text-2xl text-muted-foreground leading-relaxed max-w-xl">
               Please join us for a very special evening of association, gift
               exchanges, cultural enrichment, meeting new friends, and making
               wonderful memories — all on this side of paradise. See the video
