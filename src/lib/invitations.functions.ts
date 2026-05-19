@@ -112,7 +112,12 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
         throw new Error(createUserErr.message);
       }
 
-      const userId = createdUser.user?.id ?? await getUserIdByEmail(email);
+      let userId = createdUser.user?.id ?? null;
+      if (!userId) {
+        const { data: users, error: usersErr } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        if (usersErr) throw new Error(usersErr.message);
+        userId = users.users.find((user) => user.email?.toLowerCase() === email.toLowerCase())?.id ?? null;
+      }
       if (userId) {
         if (!createdUser.user) {
           const { error: updateUserErr } = await supabaseAdmin.auth.admin.updateUserById(userId, {
