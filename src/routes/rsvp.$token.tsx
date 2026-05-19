@@ -29,7 +29,7 @@ function RsvpPage() {
 
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState<"yes" | "no" | "maybe">("yes");
+  const [status, setStatus] = useState<"yes" | "no">("yes");
   const [partySize, setPartySize] = useState(1);
   const [diet, setDiet] = useState("");
   const [message, setMessage] = useState("");
