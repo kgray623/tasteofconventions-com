@@ -283,7 +283,7 @@ export function InvitationPage() {
               <div className="relative aspect-[16/8] rounded-xl overflow-hidden border border-border bg-gradient-to-br from-amber-glow/20 via-magenta/15 to-iris/20 flex items-center justify-center">
                 <MapPin className="w-8 h-8 text-sunset" />
               </div>
-              <p className="text-sm">Full address and map will appear here once confirmed.</p>
+              <p className="text-sm">GPS coordinates and map will appear here once confirmed.</p>
             </AccordionContent>
           </AccordionItem>
 
@@ -296,9 +296,9 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-4">
               <p>
-                This is an international event — international attire is encouraged.
-                If there's a culture you'd love to dress in, please do. It'll make
-                the evening more fun and beautiful for everyone.
+                This is an international event, so international attire is
+                encouraged. Is there a culture you love to dress in? Please do —
+                it'll make the evening more fun and beautiful for everyone.
               </p>
               <VideoPlaceholder label="Dress code · video coming soon" />
             </AccordionContent>
@@ -313,9 +313,9 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-4">
               <p>
-                In the spirit of the special and international conventions, friends
-                bring gifts to exchange. See the video below — we'll walk you
-                through exactly how it works.
+                In the spirit of the special and international conventions,
+                friends bring gifts to exchange. See the video below — it'll
+                walk you through exactly how it works.
               </p>
               <VideoPlaceholder label="Gift exchanges · video coming soon" />
             </AccordionContent>
@@ -330,9 +330,9 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-4">
               <p>
-                Do you have a talent you'd like to share at the event? We're
-                looking for guests who'd like to submit a video to perform.
-                Please reach out — we'd love to feature you.
+                Do you have a talent you'd like to share at the event? We are
+                looking for entertainment — please submit a video on this
+                platform, and we'll reach out if we have time.
               </p>
               <VideoPlaceholder label="Entertainment · video coming soon" />
             </AccordionContent>
