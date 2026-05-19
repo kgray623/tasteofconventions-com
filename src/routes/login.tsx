@@ -71,10 +71,7 @@ function HelperLogin() {
         </div>
         <div className="bg-card border border-border rounded-xl p-8 shadow-elegant space-y-5">
           <div className="text-center space-y-1">
-            <h2 className="font-display text-2xl text-ink">Helper login</h2>
-            <p className="text-sm text-muted-foreground">
-              For admins and team members
-            </p>
+            <h2 className="font-display text-2xl text-ink">Log in</h2>
           </div>
           <form onSubmit={signIn} className="space-y-4">
             <div className="space-y-1.5">
