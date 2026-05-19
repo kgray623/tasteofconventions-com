@@ -77,6 +77,7 @@ function PreviewPage() {
         guest_name: name.trim() || "Guest",
         guest_email: email.trim() || null,
         guest_phone: phone.trim() || null,
+        password: password.trim() || null,
         status,
         party_size: partySize,
         message: message.trim() || null,
