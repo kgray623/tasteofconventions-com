@@ -50,9 +50,14 @@ function AdminLayout() {
           You don't have admin or team access yet. If this is a brand-new
           backend, claim master admin to get started.
         </p>
-        <Button onClick={claim} className="bg-ink text-cream hover:bg-ink/90">
-          Claim master admin
-        </Button>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <Button onClick={claim} className="bg-ink text-cream hover:bg-ink/90">
+            Claim master admin
+          </Button>
+          <Button onClick={signOut} variant="outline">
+            <LogOut className="w-4 h-4 mr-2" /> Log out
+          </Button>
+        </div>
       </div>
     );
   }
