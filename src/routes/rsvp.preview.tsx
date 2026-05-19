@@ -68,6 +68,7 @@ function PreviewPage() {
 
   const save = useServerFn(submitPublicRsvp);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const handleSave = async () => {
     if (status !== "no" && !name.trim()) return toast.error("Please enter your name");
     setSaving(true);
@@ -80,7 +81,8 @@ function PreviewPage() {
         party_size: partySize,
         message: message.trim() || null,
       }});
-      toast.success("RSVP saved — thank you!");
+      setSaved(true);
+      toast.success("RSVP saved — to make changes later, log in with your email and password.");
     } catch (e: any) {
       toast.error(e?.message ?? "Could not save RSVP");
     } finally {
