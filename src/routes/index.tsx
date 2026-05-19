@@ -220,9 +220,11 @@ function Invitation() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 space-y-4">
               <p className="text-muted-foreground">
-                Let us know if you can join us. Click below to send your RSVP — Yes,
-                No, or Maybe — and tell us your party size.
+                Let us know if you can join us. Click below to send your RSVP — Yes
+                or No — and tell us your party size. Space is limited, first come,
+                first served.
               </p>
+
               <Link to="/rsvp/preview">
                 <Button className="bg-gradient-sunset text-white border-0 shadow-glow">
                   Open RSVP form
