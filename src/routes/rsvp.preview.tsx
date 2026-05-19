@@ -75,7 +75,6 @@ function PreviewPage() {
         <div className="text-center">
           <p className="text-xs uppercase tracking-[0.3em] text-terracotta">You're invited</p>
           <h1 className="font-display text-5xl mt-3 text-ink">{ev.title}</h1>
-          <p className="mt-3 text-lg text-muted-foreground">Hello, {guestName}</p>
         </div>
 
         <Card className="p-7 space-y-3">
