@@ -120,18 +120,13 @@ function Invitation() {
           <div className="relative w-full max-w-xl">
             <p className="text-[10px] uppercase tracking-[0.4em] text-cream/90 mb-3 text-center">For Details · Watch the Invitation</p>
             <div className="relative aspect-video rounded-2xl overflow-hidden border border-cream/20 bg-ink/40 backdrop-blur-md shadow-elegant">
-              <div className="relative h-full flex flex-col items-center justify-center text-cream gap-4 px-6 text-center">
-                <div className="w-16 h-16 rounded-full bg-cream/15 backdrop-blur-md border border-cream/30 flex items-center justify-center">
-                  <Play className="w-7 h-7 ml-1 fill-cream" />
-                </div>
-                <div className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.35em] text-cream/80">
-                  <Film className="w-3.5 h-3.5" />
-                  Video intro · placeholder
-                </div>
-                <p className="font-display text-xl sm:text-2xl max-w-sm leading-tight">
-                  Your cinematic invitation, coming soon.
-                </p>
-              </div>
+              <iframe
+                src="https://drive.google.com/file/d/1OkaByzAsVsAmvQIvp26vnKBLH_0Y8W-e/preview"
+                title="A Taste of Special Conventions · Invitation video"
+                allow="autoplay; encrypted-media"
+                allowFullScreen
+                className="absolute inset-0 w-full h-full"
+              />
             </div>
             <div className="mt-5 flex items-center justify-center gap-4 text-cream/90 text-sm">
               <div className="flex items-center gap-2">
