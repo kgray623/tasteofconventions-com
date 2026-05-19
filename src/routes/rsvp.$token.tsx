@@ -46,7 +46,7 @@ function RsvpPage() {
         if (r.rsvp) {
           setStatus(r.rsvp.status === "yes" ? "yes" : "no");
           setPartySize(r.rsvp.party_size);
-          setDiet(r.rsvp.dietary_notes ?? "");
+          setMessage(r.rsvp.message ?? "");
           setMessage(r.rsvp.message ?? "");
         }
       } finally { setLoading(false); }
