@@ -1,4 +1,4 @@
-import { createFileRoute, useParams } from "@tanstack/react-router";
+import { createFileRoute, useParams, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getInvitationByToken, submitRsvp, submitOrder } from "@/lib/invitations.functions";
