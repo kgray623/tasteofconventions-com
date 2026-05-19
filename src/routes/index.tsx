@@ -367,6 +367,20 @@ function Invitation() {
   );
 }
 
+function VideoPlaceholder({ label }: { label: string }) {
+  return (
+    <div className="relative aspect-video rounded-xl overflow-hidden border border-border bg-gradient-to-br from-ink/90 via-ink to-ink/80 flex flex-col items-center justify-center gap-3 text-cream">
+      <div className="w-12 h-12 rounded-full bg-cream/15 backdrop-blur border border-cream/30 flex items-center justify-center">
+        <Play className="w-5 h-5 ml-0.5 fill-cream" />
+      </div>
+      <div className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.35em] text-cream/80">
+        <Film className="w-3 h-3" />
+        {label}
+      </div>
+    </div>
+  );
+}
+
 const gradients = [
   "linear-gradient(135deg, #ff6b35, #f7931e)",
   "linear-gradient(135deg, #f7931e, #e84393)",
