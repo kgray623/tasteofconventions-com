@@ -122,6 +122,10 @@ function PreviewPage() {
                   <Label htmlFor="phone">Phone</Label>
                   <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" />
                 </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="password">Set a password</Label>
+                  <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Create a password" />
+                </div>
               </div>
             </>
           )}
