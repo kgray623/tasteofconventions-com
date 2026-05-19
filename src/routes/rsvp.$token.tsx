@@ -1,4 +1,4 @@
-import { createFileRoute, useParams } from "@tanstack/react-router";
+import { createFileRoute, useParams, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getInvitationByToken, submitRsvp, submitOrder } from "@/lib/invitations.functions";
@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Calendar, MapPin, Check, X, HelpCircle, Minus, Plus } from "lucide-react";
+import { Calendar, MapPin, Check, X, HelpCircle, Minus, Plus, ArrowLeft } from "lucide-react";
 import { GuestThread } from "@/components/guest-thread";
 
 export const Route = createFileRoute("/rsvp/$token")({
@@ -94,6 +94,9 @@ function RsvpPage() {
   return (
     <div className="min-h-screen bg-gradient-warm">
       <div className="mx-auto max-w-3xl px-6 py-12 space-y-6">
+        <Link to="/" className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-ink">
+          <ArrowLeft className="w-3.5 h-3.5" /> Back to invitation
+        </Link>
         <div className="text-center">
           <p className="text-xs uppercase tracking-[0.3em] text-terracotta">You're invited</p>
           <h1 className="font-display text-5xl mt-3 text-ink">{ev.title}</h1>

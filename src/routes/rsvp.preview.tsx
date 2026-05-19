@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, MapPin, Check, X, HelpCircle, Minus, Plus, Eye } from "lucide-react";
+import { Calendar, MapPin, Check, X, HelpCircle, Minus, Plus, Eye, ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/rsvp/preview")({
   head: () => ({ meta: [{ title: "Guest RSVP — Preview" }] }),
@@ -66,6 +66,9 @@ function PreviewPage() {
         <span className="tracking-wide">Guest preview — this is what invitees will see when they open their RSVP link.</span>
       </div>
       <div className="mx-auto max-w-3xl px-6 py-12 space-y-6">
+        <Link to="/" className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-ink">
+          <ArrowLeft className="w-3.5 h-3.5" /> Back to invitation
+        </Link>
         <div className="text-center">
           <p className="text-xs uppercase tracking-[0.3em] text-terracotta">You're invited</p>
           <h1 className="font-display text-5xl mt-3 text-ink">{ev.title}</h1>
