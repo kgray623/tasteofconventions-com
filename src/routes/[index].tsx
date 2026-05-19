@@ -1,7 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { InvitationPage } from "@/components/invitation-page";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/index")({
+  beforeLoad: () => {
+    throw redirect({ to: "/", replace: true });
+  },
   head: () => ({
     meta: [
       { title: "An Evening to Remember · A Taste of Special Conventions" },
@@ -12,5 +14,5 @@ export const Route = createFileRoute("/index")({
       },
     ],
   }),
-  component: InvitationPage,
+  component: () => null,
 });
