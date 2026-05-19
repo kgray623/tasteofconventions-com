@@ -53,10 +53,15 @@ function AuthPage() {
   return (
     <div className="min-h-screen bg-gradient-warm flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-md">
-        <Link to="/" className="block text-center mb-8">
+        <Link to="/" className="block text-center mb-3">
           <p className="text-xs uppercase tracking-[0.3em] text-terracotta">A Taste of</p>
           <h1 className="font-display text-3xl text-ink">Special Conventions</h1>
         </Link>
+        <div className="text-center mb-6">
+          <Link to="/" className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-ink underline">
+            ← Back to invitation
+          </Link>
+        </div>
         <div className="bg-card border border-border rounded-xl p-8 shadow-elegant">
           <Tabs defaultValue="signin">
             <TabsList className="grid grid-cols-2 w-full mb-6">
