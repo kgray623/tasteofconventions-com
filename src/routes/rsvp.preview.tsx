@@ -141,7 +141,7 @@ function PreviewPage() {
           <Card className="p-7 space-y-5">
             <div>
               <h2 className="font-display text-2xl">Pre-order from your cultural choice restaurant</h2>
-              <p className="text-sm text-muted-foreground mt-1">Pick what you'd like ready when you arrive.</p>
+              <p className="text-sm text-muted-foreground mt-1">Choose from the following.</p>
             </div>
             <Select value={restaurantId} onValueChange={(v) => { setRestaurantId(v); setCart({}); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
