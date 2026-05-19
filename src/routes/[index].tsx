@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { InvitationPage } from "@/components/invitation-page";
 
 export const Route = createFileRoute("/index")({
@@ -12,5 +13,15 @@ export const Route = createFileRoute("/index")({
       },
     ],
   }),
-  component: InvitationPage,
+  component: IndexAliasPage,
 });
+
+function IndexAliasPage() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    navigate({ to: "/", replace: true });
+  }, [navigate]);
+
+  return <InvitationPage />;
+}
