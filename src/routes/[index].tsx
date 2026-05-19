@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Invitation } from "./index";
+import { InvitationPage } from "@/components/invitation-page";
 
 export const Route = createFileRoute("/index")({
   head: () => ({
@@ -12,5 +12,5 @@ export const Route = createFileRoute("/index")({
       },
     ],
   }),
-  component: Invitation,
+  component: InvitationPage,
 });
