@@ -20,7 +20,7 @@ const ev = {
   location: "The Conservatory · 412 Vine Street",
 };
 
-const guestName = "Avery Whitfield";
+
 
 const restaurants = [
   { id: "r1", name: "Maison Laurent", cuisine: "French" },
