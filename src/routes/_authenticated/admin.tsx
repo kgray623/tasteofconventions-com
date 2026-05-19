@@ -68,6 +68,9 @@ function AdminLayout() {
           <p className="text-xs uppercase tracking-[0.3em] text-terracotta">Event admin</p>
           <h1 className="font-display text-3xl mt-1">Master control</h1>
         </div>
+        <Button onClick={signOut} variant="outline" size="sm">
+          <LogOut className="w-4 h-4 mr-2" /> Log out
+        </Button>
       </div>
       <nav className="flex flex-wrap gap-1 border-b border-border mb-8">
         {visibleTabs.map((t) => {
