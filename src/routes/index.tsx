@@ -109,22 +109,14 @@ function Invitation() {
               cultural enrichment, meeting new friends, and making wonderful
               memories — this side of paradise.
             </p>
-            <div className="mt-10 flex flex-wrap items-center gap-3">
-              <a href="#rsvp">
-                <Button
-                  size="lg"
-                  className="bg-gradient-sunset text-white hover:opacity-90 px-8 shadow-glow border-0"
-                >
-                  RSVP — Click here
-                  <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
-              </a>
+            <div className="mt-10">
               <a href="#details">
                 <Button size="lg" variant="outline" className="px-8">
                   See all details
                 </Button>
               </a>
             </div>
+
           </div>
         </div>
 
