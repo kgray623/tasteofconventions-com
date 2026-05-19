@@ -110,11 +110,7 @@ function PreviewPage() {
                   <Button size="icon" variant="outline" onClick={() => setPartySize(Math.min(20, partySize + 1))}><Plus className="w-4 h-4" /></Button>
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>Dietary notes (optional)</Label>
-                <Input value={diet} onChange={(e) => setDiet(e.target.value)} placeholder="Allergies, preferences…" />
-              </div>
-            </>
+
           )}
           <div className="space-y-1.5">
             <Label>Message to the host (optional)</Label>
