@@ -66,6 +66,28 @@ function PreviewPage() {
   const restaurantMenu = menu[restaurantId] ?? [];
   const orderTotal = restaurantMenu.reduce((s, m) => s + (cart[m.id] ?? 0) * m.price, 0);
 
+  const save = useServerFn(submitPublicRsvp);
+  const [saving, setSaving] = useState(false);
+  const handleSave = async () => {
+    if (status !== "no" && !name.trim()) return toast.error("Please enter your name");
+    setSaving(true);
+    try {
+      await save({ data: {
+        guest_name: name.trim() || "Guest",
+        guest_email: email.trim() || null,
+        guest_phone: phone.trim() || null,
+        status,
+        party_size: partySize,
+        message: message.trim() || null,
+      }});
+      toast.success("RSVP saved — thank you!");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not save RSVP");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-warm">
       <div className="bg-ink/95 text-cream text-xs px-4 py-2 flex items-center justify-center gap-2">
