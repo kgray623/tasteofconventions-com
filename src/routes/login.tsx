@@ -29,7 +29,8 @@ async function routeForUser(userId: string, email?: string | null): Promise<Rout
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (invitation?.rsvp_token) return { to: "/rsvp/$token", params: { token: invitation.rsvp_token } };
+    if (invitation?.rsvp_token)
+      return { to: "/rsvp/$token", params: { token: invitation.rsvp_token } };
   }
   return { to: "/rsvp/preview" };
 }
@@ -40,6 +41,7 @@ function HelperLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [forgotBusy, setForgotBusy] = useState(false);
 
   useEffect(() => {
     if (loading || !user) return;
@@ -49,17 +51,24 @@ function HelperLogin() {
   const signIn = async (event?: FormEvent) => {
     event?.preventDefault();
     setBusy(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
     setBusy(false);
     if (error) return toast.error(error.message);
     if (data.user) navigate(await routeForUser(data.user.id, data.user.email));
   };
 
   const forgot = async () => {
-    if (!email) return toast.error("Enter your email first");
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    if (forgotBusy) return;
+    const normalizedEmail = email.trim();
+    if (!normalizedEmail) return toast.error("Enter your email first");
+    setForgotBusy(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
       redirectTo: window.location.origin + "/reset-password",
     });
+    setForgotBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Password reset email sent.");
   };
@@ -72,7 +81,10 @@ function HelperLogin() {
           <h1 className="font-display text-3xl text-ink">Special Conventions</h1>
         </Link>
         <div className="text-center mb-6">
-          <Link to="/" className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-ink underline">
+          <Link
+            to="/"
+            className="text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-ink underline"
+          >
             ← Back to invitation
           </Link>
         </div>
@@ -83,18 +95,38 @@ function HelperLogin() {
           <form onSubmit={signIn} className="space-y-4">
             <div className="space-y-1.5">
               <Label>Email</Label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Password</Label>
-              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+              />
             </div>
-            <Button type="submit" disabled={busy} className="w-full bg-ink text-cream hover:bg-ink/90">
+            <Button
+              type="submit"
+              disabled={busy}
+              className="w-full bg-ink text-cream hover:bg-ink/90"
+            >
               {busy ? "Signing in…" : "Sign in"}
             </Button>
           </form>
-          <button onClick={forgot} className="text-xs text-muted-foreground hover:text-ink underline w-full text-center">
-            Forgot password?
+          <button
+            onClick={forgot}
+            disabled={forgotBusy}
+            className="text-xs text-muted-foreground hover:text-ink underline w-full text-center disabled:opacity-60"
+          >
+            {forgotBusy ? "Sending reset email…" : "Forgot password?"}
           </button>
           <p className="text-xs text-center text-muted-foreground pt-2">
             Accounts are created automatically when you RSVP.

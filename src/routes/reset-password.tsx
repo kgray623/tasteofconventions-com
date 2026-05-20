@@ -21,6 +21,8 @@ function ResetPasswordPage() {
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [email, setEmail] = useState("");
+  const [token, setToken] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -30,9 +32,14 @@ function ResetPasswordPage() {
       const code = getAuthParam("code");
       const accessToken = getAuthParam("access_token");
       const refreshToken = getAuthParam("refresh_token");
+      const recoveryEmail = getAuthParam("email");
+      const recoveryToken = getAuthParam("token");
 
       if (code) await supabase.auth.exchangeCodeForSession(code);
-      if (accessToken && refreshToken) await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+      if (accessToken && refreshToken)
+        await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+      if (recoveryEmail) setEmail(recoveryEmail);
+      if (recoveryToken) setToken(recoveryToken);
 
       if (active) setReady(true);
     };
@@ -40,7 +47,9 @@ function ResetPasswordPage() {
       toast.error(error?.message ?? "This reset link could not be opened.");
       setReady(true);
     });
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, []);
 
   const updatePassword = async (event: FormEvent) => {
@@ -49,6 +58,20 @@ function ResetPasswordPage() {
     if (password !== confirmPassword) return toast.error("Passwords do not match");
 
     setBusy(true);
+    if (token && email) {
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: "recovery",
+      });
+      if (verifyError) {
+        setBusy(false);
+        return toast.error(
+          "This reset link is invalid or expired. Please request a new password reset email.",
+        );
+      }
+    }
+
     const { error } = await supabase.auth.updateUser({ password });
     setBusy(false);
     if (error) return toast.error(error.message);
@@ -67,22 +90,45 @@ function ResetPasswordPage() {
         <div className="bg-card border border-border rounded-xl p-8 shadow-elegant space-y-5">
           <div className="text-center space-y-1">
             <h2 className="font-display text-2xl text-ink">Reset password</h2>
-            <p className="text-sm text-muted-foreground">Create a new password for your RSVP account.</p>
+            <p className="text-sm text-muted-foreground">
+              Create a new password for your RSVP account.
+            </p>
           </div>
           <form onSubmit={updatePassword} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="password">New password</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" />
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="new-password"
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="confirm-password">Confirm password</Label>
-              <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required autoComplete="new-password" />
+              <Input
+                id="confirm-password"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                autoComplete="new-password"
+              />
             </div>
-            <Button type="submit" disabled={!ready || busy} className="w-full bg-ink text-cream hover:bg-ink/90">
+            <Button
+              type="submit"
+              disabled={!ready || busy}
+              className="w-full bg-ink text-cream hover:bg-ink/90"
+            >
               {busy ? "Updating…" : "Update password"}
             </Button>
           </form>
-          <Link to="/login" className="block text-xs text-center text-muted-foreground hover:text-ink underline">
+          <Link
+            to="/login"
+            className="block text-xs text-center text-muted-foreground hover:text-ink underline"
+          >
             Back to log in
           </Link>
         </div>
