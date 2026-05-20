@@ -71,6 +71,7 @@ export const submitRsvp = createServerFn({ method: "POST" })
       responded_at: new Date().toISOString(),
     }, { onConflict: "invitation_id" });
     if (error) throw new Error(error.message);
+    await sendRsvpConfirmation(inv.id, data.status, data.party_size, data.message ?? null);
     return { ok: true };
   });
 
