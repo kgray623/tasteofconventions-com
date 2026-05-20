@@ -86,10 +86,10 @@ export function InvitationPage() {
               An event and an evening to remember.
             </p>
             <p className="mt-6 text-xl sm:text-2xl text-muted-foreground leading-relaxed max-w-xl">
-              Please join us for a very special evening of association, gift
-              exchanges, cultural enrichment, meeting new friends, and making
-              wonderful memories — all on this side of paradise. See the video
-              for more details.
+              You are cordially invited to join us for a very special evening
+              of association, cultural enrichment, gift exchanges, meeting new
+              friends, and making wonderful memories — all on this side of
+              paradise. See the video below for more details.
             </p>
 
 
