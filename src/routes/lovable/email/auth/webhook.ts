@@ -160,15 +160,15 @@ export const Route = createFileRoute("/lovable/email/auth/webhook")({
         const templateProps = {
           siteName: SITE_NAME,
           siteUrl: `https://${ROOT_DOMAIN}`,
-          recipient: payload.data.email,
+          recipient: recipientEmail,
           confirmationUrl:
             emailType === "recovery"
-              ? buildRecoveryUrl(payload.data.url, payload.data.email, payload.data.token)
-              : payload.data.url,
-          token: payload.data.token,
-          email: payload.data.email,
-          oldEmail: payload.data.old_email,
-          newEmail: payload.data.new_email,
+              ? buildRecoveryUrl(confirmationUrl, recipientEmail, token)
+              : confirmationUrl,
+          token,
+          email: recipientEmail,
+          oldEmail,
+          newEmail,
         };
 
         // Render React Email to HTML and plain text
@@ -192,7 +192,7 @@ export const Route = createFileRoute("/lovable/email/auth/webhook")({
         await supabase.from("email_send_log").insert({
           message_id: messageId,
           template_name: emailType,
-          recipient_email: payload.data.email,
+          recipient_email: recipientEmail,
           status: "pending",
         });
 
@@ -201,7 +201,7 @@ export const Route = createFileRoute("/lovable/email/auth/webhook")({
           payload: {
             run_id,
             message_id: messageId,
-            to: payload.data.email,
+            to: recipientEmail,
             from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
             sender_domain: SENDER_DOMAIN,
             subject: EMAIL_SUBJECTS[emailType] || "Notification",
@@ -218,7 +218,7 @@ export const Route = createFileRoute("/lovable/email/auth/webhook")({
           await supabase.from("email_send_log").insert({
             message_id: messageId,
             template_name: emailType,
-            recipient_email: payload.data.email,
+            recipient_email: recipientEmail,
             status: "failed",
             error_message: "Failed to enqueue email",
           });
@@ -227,7 +227,7 @@ export const Route = createFileRoute("/lovable/email/auth/webhook")({
 
         console.log("Auth email enqueued", {
           emailType,
-          email_redacted: redactEmail(payload.data.email),
+          email_redacted: redactEmail(recipientEmail),
           run_id,
         });
 
