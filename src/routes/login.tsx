@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { FormEvent, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -35,8 +35,18 @@ async function routeForUser(userId: string, email?: string | null): Promise<Rout
   return { to: "/rsvp/preview" };
 }
 
+function destinationPath(destination: RouteDestination) {
+  if (destination.to === "/rsvp/$token") return `/rsvp/${encodeURIComponent(destination.params.token)}`;
+  return destination.to;
+}
+
+function openDestination(destination: RouteDestination, replace = false) {
+  const path = destinationPath(destination);
+  if (replace) window.location.replace(path);
+  else window.location.assign(path);
+}
+
 function HelperLogin() {
-  const navigate = useNavigate();
   const { user, loading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -45,8 +55,8 @@ function HelperLogin() {
 
   useEffect(() => {
     if (loading || !user) return;
-    routeForUser(user.id, user.email).then((destination) => navigate(destination));
-  }, [user, loading, navigate]);
+    routeForUser(user.id, user.email).then((destination) => openDestination(destination, true));
+  }, [user, loading]);
 
   const signIn = async (event?: FormEvent) => {
     event?.preventDefault();
@@ -55,9 +65,17 @@ function HelperLogin() {
       email: email.trim(),
       password,
     });
+    if (error) {
+      setBusy(false);
+      return toast.error(error.message);
+    }
+    if (data.user) {
+      toast.success("Signed in. Opening your admin area…");
+      openDestination(await routeForUser(data.user.id, data.user.email));
+      return;
+    }
     setBusy(false);
-    if (error) return toast.error(error.message);
-    if (data.user) navigate(await routeForUser(data.user.id, data.user.email));
+    toast.error("Signed in, but we could not open your account. Please try again.");
   };
 
   const forgot = async () => {
