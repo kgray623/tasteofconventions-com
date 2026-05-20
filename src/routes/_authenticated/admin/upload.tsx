@@ -226,15 +226,12 @@ function UploadPage() {
         <textarea
           value={pasted}
           onChange={(e) => setPasted(e.target.value)}
+          onBlur={() => { if (pasted.trim() && eventId) onPaste(); }}
           placeholder={"Jane Smith, jane@email.com\nMike Jones, 555-123-4567\n\nAlex Lee\nalex@email.com\n555-987-6543"}
           rows={6}
           className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
         />
-        <div className="flex justify-end">
-          <Button onClick={onPaste} disabled={!pasted.trim() || !eventId} className="bg-ink text-cream hover:bg-ink/90">
-            Check list
-          </Button>
-        </div>
+        <p className="text-xs text-muted-foreground">Tap outside the box to add these guests to the list.</p>
       </Card>
 
       <Card className="p-6 space-y-3">
