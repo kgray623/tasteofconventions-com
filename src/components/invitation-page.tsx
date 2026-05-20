@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { SiteHeader } from "@/components/site-header";
+import { EntertainmentSubmissionForm } from "@/components/entertainment-submission-form";
 import { Button } from "@/components/ui/button";
 import {
   Accordion,
@@ -86,10 +87,10 @@ export function InvitationPage() {
               An event and an evening to remember.
             </p>
             <p className="mt-6 text-xl sm:text-2xl text-muted-foreground leading-relaxed max-w-xl">
-              Please join us for a very special evening of association, gift
-              exchanges, cultural enrichment, meeting new friends, and making
-              wonderful memories — all on this side of paradise. See the video
-              for more details.
+              You are cordially invited to join us for a very special evening
+              of association, cultural enrichment, gift exchanges, meeting new
+              friends, and making wonderful memories — all on this side of
+              paradise. See the video below for more details.
             </p>
 
 
@@ -155,10 +156,10 @@ export function InvitationPage() {
           </p>
           <h2 className="font-display text-5xl sm:text-6xl text-ink">A Journey Together</h2>
           <p className="mt-4 text-muted-foreground">
-            Join us and journey through the following special conventions. In
-            order to taste the conventions, included is cuisine from the
-            culture. Be sure to pre-order your cuisine of choice from the
-            convention country in the restaurants below.
+            Join us as we journey through the following special conventions.
+            And while we're there, taste the culture from the cuisine of
+            restaurants in the area. Be sure to pre-order the cuisine of your
+            choice from the convention country below.
           </p>
         </div>
 
@@ -321,11 +322,12 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-4">
               <p>
-                Do you have a talent you'd like to share at the event? We are
-                looking for entertainment — please submit a video on this
-                platform, and we'll reach out if we have time.
+                Do you have a talent you'd like to share at the event? We're
+                looking for friends to provide encouraging entertainment.
+                Please submit a video below and we'll reach out on this
+                platform to discuss.
               </p>
-              <VideoPlaceholder label="Entertainment · video coming soon" />
+              <EntertainmentSubmissionForm />
             </AccordionContent>
           </AccordionItem>
         </Accordion>

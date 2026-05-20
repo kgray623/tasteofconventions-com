@@ -206,6 +206,39 @@ export type Database = {
         }
         Relationships: []
       }
+      entertainment_submissions: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          talent: string | null
+          video_path: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          talent?: string | null
+          video_path: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          talent?: string | null
+          video_path?: string
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           cover_image_url: string | null
