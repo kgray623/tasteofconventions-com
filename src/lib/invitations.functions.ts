@@ -206,5 +206,6 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
     }, { onConflict: "invitation_id" });
     if (rsvpErr) throw new Error(rsvpErr.message);
 
+    await sendRsvpConfirmation(invitationId, data.status, data.party_size, data.message ?? null);
     return { ok: true, invitation_id: invitationId };
   });
