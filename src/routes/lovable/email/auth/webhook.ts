@@ -96,7 +96,7 @@ export const Route = createFileRoute("/lovable/email/auth/webhook")({
             parser: parseEmailWebhookPayload,
           });
           payload = verified.payload;
-          run_id = payload.run_id;
+          run_id = payload.run_id ?? "";
         } catch (error) {
           if (error instanceof WebhookError) {
             switch (error.code) {
@@ -130,12 +130,23 @@ export const Route = createFileRoute("/lovable/email/auth/webhook")({
           );
         }
 
+        const payloadData = payload.data;
+        if (!payloadData || typeof payloadData.action_type !== "string" || typeof payloadData.email !== "string") {
+          console.error("Webhook payload missing auth email data", { run_id });
+          return Response.json({ error: "Invalid webhook payload" }, { status: 400 });
+        }
+
         // The email action type is in payload.data.action_type (e.g., "signup", "recovery")
         // payload.type is the hook event type ("auth")
-        const emailType = payload.data.action_type;
+        const emailType = payloadData.action_type;
+        const recipientEmail = payloadData.email;
+        const confirmationUrl = typeof payloadData.url === "string" ? payloadData.url : "";
+        const token = typeof payloadData.token === "string" ? payloadData.token : "";
+        const oldEmail = typeof payloadData.old_email === "string" ? payloadData.old_email : "";
+        const newEmail = typeof payloadData.new_email === "string" ? payloadData.new_email : "";
         console.log("Received auth event", {
           emailType,
-          email_redacted: redactEmail(payload.data.email),
+          email_redacted: redactEmail(recipientEmail),
           run_id,
         });
 
