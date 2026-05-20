@@ -57,7 +57,6 @@ function PreviewPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [restaurantId, setRestaurantId] = useState("r1");
   const [cart, setCart] = useState<Record<string, number>>({});
@@ -72,20 +71,21 @@ function PreviewPage() {
   const handleSave = async () => {
     if (status !== "no" && !name.trim()) return toast.error("Please enter your name");
     if (!email.trim()) return toast.error("Please enter your email");
-    if (password.trim().length < 6) return toast.error("Please create a password with at least 6 characters");
+    const phoneDigits = phone.replace(/\D/g, "");
+    if (phoneDigits.length < 7) return toast.error("Please enter your phone number — it will be your password");
     setSaving(true);
     try {
       await save({ data: {
         guest_name: name.trim() || "Guest",
         guest_email: email.trim() || null,
         guest_phone: phone.trim() || null,
-        password: password.trim() || null,
+        password: phoneDigits,
         status,
         party_size: partySize,
         message: message.trim() || null,
       }});
       setSaved(true);
-      toast.success("RSVP saved — to make changes later, log in with your email and password.");
+      toast.success("RSVP saved — your password is your phone number (digits only).");
     } catch (e: any) {
       toast.error(e?.message ?? "Could not save RSVP");
     } finally {
