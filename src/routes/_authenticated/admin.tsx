@@ -62,9 +62,7 @@ function AdminLayout() {
     );
   }
 
-  const visibleTabs = tabs.filter(
-    (t) => isAdmin || t.to === "/admin/chat" || t.to === "/admin/messages" || t.to === "/admin",
-  );
+  const visibleTabs = tabs.filter((t) => isAdmin || t.team);
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
