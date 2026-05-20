@@ -21,6 +21,8 @@ function ResetPasswordPage() {
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [email, setEmail] = useState("");
+  const [token, setToken] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -30,9 +32,13 @@ function ResetPasswordPage() {
       const code = getAuthParam("code");
       const accessToken = getAuthParam("access_token");
       const refreshToken = getAuthParam("refresh_token");
+      const recoveryEmail = getAuthParam("email");
+      const recoveryToken = getAuthParam("token");
 
       if (code) await supabase.auth.exchangeCodeForSession(code);
       if (accessToken && refreshToken) await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+      if (recoveryEmail) setEmail(recoveryEmail);
+      if (recoveryToken) setToken(recoveryToken);
 
       if (active) setReady(true);
     };
@@ -49,6 +55,14 @@ function ResetPasswordPage() {
     if (password !== confirmPassword) return toast.error("Passwords do not match");
 
     setBusy(true);
+    if (token && email) {
+      const { error: verifyError } = await supabase.auth.verifyOtp({ email, token, type: "recovery" });
+      if (verifyError) {
+        setBusy(false);
+        return toast.error("This reset link is invalid or expired. Please request a new password reset email.");
+      }
+    }
+
     const { error } = await supabase.auth.updateUser({ password });
     setBusy(false);
     if (error) return toast.error(error.message);
