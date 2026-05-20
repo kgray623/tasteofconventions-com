@@ -75,7 +75,7 @@ export function InvitationPage() {
         <div className="relative flex items-center px-6 sm:px-12 lg:px-16 py-16 lg:py-24">
           <div className="max-w-xl">
             <p className="text-xs uppercase tracking-[0.4em] text-magenta mb-8 font-medium">
-              You're Cordially Invited
+              You're Cordially Invited To
             </p>
             <h1 className="font-display text-6xl sm:text-7xl lg:text-8xl text-ink leading-[0.95]">
               A Taste of <em className="text-gradient-sunset">Special</em>
