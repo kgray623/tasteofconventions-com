@@ -32,13 +32,14 @@ function pick(obj: Record<string, unknown>, keys: string[]): string {
 
 function UploadPage() {
   const { user } = useAuth();
-  const { isAdmin } = useRoles();
+  const { isTeam } = useRoles();
   const fileRef = useRef<HTMLInputElement>(null);
   const [events, setEvents] = useState<{ id: string; title: string }[]>([]);
   const [eventId, setEventId] = useState("");
   const [rows, setRows] = useState<Parsed[]>([]);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<{ inserted: number; flagged: number; skipped: number } | null>(null);
+  const [pasted, setPasted] = useState("");
 
   useEffect(() => {
     supabase.from("events").select("id,title").order("starts_at").then(({ data }) => {
@@ -47,9 +48,72 @@ function UploadPage() {
     });
   }, []);
 
-  if (!isAdmin) {
-    return <p className="text-muted-foreground">Only admins can upload guest lists.</p>;
+  if (!isTeam) {
+    return <p className="text-muted-foreground">Only team members can add guests.</p>;
   }
+
+  const parseRows = async (raw: Record<string, unknown>[]) => {
+    const parsed: Parsed[] = raw.map((r, i) => ({
+      _row: i + 2,
+      guest_name: pick(r, ["name", "guest", "guest name", "full name"]),
+      guest_email: pick(r, ["email", "e-mail", "email address"]),
+      guest_phone: pick(r, ["phone", "mobile", "cell", "phone number"]),
+      notes: pick(r, ["notes", "note", "comment", "comments"]),
+    })).filter((r) => r.guest_name);
+    await flagDuplicates(parsed);
+    setRows(parsed);
+  };
+
+  const flagDuplicates = async (parsed: Parsed[]) => {
+    const seenE = new Map<string, number>();
+    const seenP = new Map<string, number>();
+    parsed.forEach((r, idx) => {
+      const e = norm(r.guest_email);
+      const p = phoneNorm(r.guest_phone);
+      if (e) {
+        if (seenE.has(e)) r._dupReason = `email duplicates row ${parsed[seenE.get(e)!]._row}`;
+        else seenE.set(e, idx);
+      }
+      if (p.length >= 7 && !r._dupReason) {
+        if (seenP.has(p)) r._dupReason = `phone duplicates row ${parsed[seenP.get(p)!]._row}`;
+        else seenP.set(p, idx);
+      }
+    });
+    if (eventId) {
+      const { data: existing } = await supabase
+        .from("invitations")
+        .select("guest_name,guest_email_normalized,guest_phone_normalized")
+        .eq("event_id", eventId);
+      const existE = new Set((existing ?? []).map((r) => r.guest_email_normalized).filter(Boolean) as string[]);
+      const existP = new Set((existing ?? []).map((r) => r.guest_phone_normalized).filter(Boolean) as string[]);
+      parsed.forEach((r) => {
+        if (r._dupReason) return;
+        const e = norm(r.guest_email);
+        const p = phoneNorm(r.guest_phone);
+        if (e && existE.has(e)) r._dupReason = "already in guest list (email match)";
+        else if (p.length >= 7 && existP.has(p)) r._dupReason = "already in guest list (phone match)";
+      });
+    }
+  };
+
+  const onPaste = async () => {
+    setDone(null);
+    const lines = pasted.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    const raw: Record<string, unknown>[] = lines.map((line) => {
+      // Split on commas, tabs, or semicolons
+      const parts = line.split(/[,\t;]+/).map((p) => p.trim());
+      const out: Record<string, string> = { name: "", email: "", phone: "", notes: "" };
+      for (const p of parts) {
+        if (!p) continue;
+        if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p)) out.email = p;
+        else if (/^[+()\-\s\d]{7,}$/.test(p) && phoneNorm(p).length >= 7) out.phone = p;
+        else if (!out.name) out.name = p;
+        else out.notes = out.notes ? `${out.notes} ${p}` : p;
+      }
+      return out;
+    });
+    await parseRows(raw);
+  };
 
   const onFile = async (file: File) => {
     setDone(null);
