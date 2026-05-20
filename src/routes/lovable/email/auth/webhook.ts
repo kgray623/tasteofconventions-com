@@ -131,7 +131,11 @@ export const Route = createFileRoute("/lovable/email/auth/webhook")({
         }
 
         const payloadData = payload.data;
-        if (!payloadData || typeof payloadData.action_type !== "string" || typeof payloadData.email !== "string") {
+        if (
+          !payloadData ||
+          typeof payloadData.action_type !== "string" ||
+          typeof payloadData.email !== "string"
+        ) {
           console.error("Webhook payload missing auth email data", { run_id });
           return Response.json({ error: "Invalid webhook payload" }, { status: 400 });
         }
