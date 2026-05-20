@@ -113,18 +113,38 @@ function UploadPage() {
 
   const onPaste = async () => {
     setDone(null);
-    const lines = pasted.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-    const raw: Record<string, unknown>[] = lines.map((line) => {
-      const parts = line.split(/[,\t;]+/).map((p) => p.trim()).filter(Boolean);
-      const out: Record<string, string> = { name: "", email: "", phone: "", notes: "" };
-      for (const p of parts) {
-        if (!out.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p)) out.email = p;
-        else if (!out.phone && phoneNorm(p).length >= 7 && /^[+()\-\s\d]+$/.test(p)) out.phone = p;
-        else if (!out.name) out.name = p;
-        else out.notes = out.notes ? `${out.notes} ${p}` : p;
+    const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+    const isPhone = (s: string) => phoneNorm(s).length >= 7 && /^[+()\-\s\d.x]+$/i.test(s);
+    const isName = (s: string) => !isEmail(s) && !isPhone(s) && /[a-zA-Z]/.test(s);
+
+    // Tokenize across newlines, commas, tabs, semicolons, and pipes.
+    const tokens = pasted
+      .split(/[\r\n,;\t|]+/)
+      .map((t) => t.trim())
+      .filter(Boolean);
+
+    const raw: Record<string, string>[] = [];
+    let cur: Record<string, string> = { name: "", email: "", phone: "", notes: "" };
+    const flush = () => {
+      if (cur.name || cur.email || cur.phone) raw.push(cur);
+      cur = { name: "", email: "", phone: "", notes: "" };
+    };
+    for (const tok of tokens) {
+      if (isEmail(tok)) {
+        if (cur.email) flush();
+        cur.email = tok;
+      } else if (isPhone(tok)) {
+        if (cur.phone) flush();
+        cur.phone = tok;
+      } else if (isName(tok)) {
+        // Starting a new name means a new guest, unless current guest has no name yet.
+        if (cur.name) flush();
+        cur.name = tok;
+      } else {
+        cur.notes = cur.notes ? `${cur.notes} ${tok}` : tok;
       }
-      return out;
-    });
+    }
+    flush();
     await parseRows(raw);
   };
 
@@ -171,13 +191,14 @@ function UploadPage() {
           <p className="font-medium">Paste from your phone</p>
         </div>
         <p className="text-xs text-muted-foreground">
-          One guest per line. Add a name, plus email and/or phone, separated by commas.
-          Example: <code>Jane Smith, jane@email.com, 555-123-4567</code>
+          Paste contacts from your phone or type them in. Each guest can be one line
+          (<code>Jane Smith, jane@email.com, 555-123-4567</code>) or a block where the
+          name, phone, and email are on separate lines — both work.
         </p>
         <textarea
           value={pasted}
           onChange={(e) => setPasted(e.target.value)}
-          placeholder={"Jane Smith, jane@email.com\nMike Jones, 555-123-4567\nAlex Lee, alex@email.com, 555-987-6543"}
+          placeholder={"Jane Smith, jane@email.com\nMike Jones, 555-123-4567\n\nAlex Lee\nalex@email.com\n555-987-6543"}
           rows={6}
           className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
         />
