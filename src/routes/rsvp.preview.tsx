@@ -150,12 +150,9 @@ function PreviewPage() {
                   <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="phone">Phone</Label>
+                  <Label htmlFor="phone">Phone <span className="text-muted-foreground font-normal">(this will be your password)</span></Label>
                   <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="password">Set a password</Label>
-                  <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Create a password" />
+                  <p className="text-xs text-muted-foreground">Your password is the digits of your phone number — e.g. 8082787562. You can change it later after logging in.</p>
                 </div>
               </div>
             </>
