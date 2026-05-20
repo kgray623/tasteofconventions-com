@@ -57,7 +57,6 @@ function PreviewPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [restaurantId, setRestaurantId] = useState("r1");
   const [cart, setCart] = useState<Record<string, number>>({});
@@ -72,20 +71,21 @@ function PreviewPage() {
   const handleSave = async () => {
     if (status !== "no" && !name.trim()) return toast.error("Please enter your name");
     if (!email.trim()) return toast.error("Please enter your email");
-    if (password.trim().length < 6) return toast.error("Please create a password with at least 6 characters");
+    const phoneDigits = phone.replace(/\D/g, "");
+    if (phoneDigits.length < 7) return toast.error("Please enter your phone number — it will be your password");
     setSaving(true);
     try {
       await save({ data: {
         guest_name: name.trim() || "Guest",
         guest_email: email.trim() || null,
         guest_phone: phone.trim() || null,
-        password: password.trim() || null,
+        password: phoneDigits,
         status,
         party_size: partySize,
         message: message.trim() || null,
       }});
       setSaved(true);
-      toast.success("RSVP saved — to make changes later, log in with your email and password.");
+      toast.success("RSVP saved — your password is your phone number (digits only).");
     } catch (e: any) {
       toast.error(e?.message ?? "Could not save RSVP");
     } finally {
@@ -150,12 +150,9 @@ function PreviewPage() {
                   <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="phone">Phone</Label>
+                  <Label htmlFor="phone">Phone <span className="text-muted-foreground font-normal">(this will be your password)</span></Label>
                   <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="password">Set a password</Label>
-                  <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Create a password" />
+                  <p className="text-xs text-muted-foreground">Your password is the digits of your phone number — e.g. 8082787562. You can change it later after logging in.</p>
                 </div>
               </div>
             </>
@@ -169,7 +166,7 @@ function PreviewPage() {
             <div className="rounded-md border border-border bg-cream/40 p-4 text-sm text-ink space-y-2">
               <p className="font-medium">Your RSVP is saved.</p>
               <p className="text-muted-foreground">
-                To make any changes to your RSVP, simply log in to your account with your email and password.
+                To make any changes later, log in with your <strong>email</strong> and your <strong>phone number (digits only)</strong> as the password — the same phone you entered above.
               </p>
               <Link to="/login" className="inline-flex items-center gap-1 text-terracotta font-medium hover:underline">
                 Log in to your account →
