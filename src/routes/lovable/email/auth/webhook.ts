@@ -27,6 +27,7 @@ type EmailTemplateProps = {
   recipient: string;
   confirmationUrl: string;
   token: string;
+  tokenHash: string;
   email: string;
   oldEmail: string;
   newEmail: string;
@@ -59,8 +60,9 @@ function buildRecoveryUrl(
   originalUrl: string | undefined,
   email: string | undefined,
   token: string | undefined,
+  tokenHash: string | undefined,
 ): string | undefined {
-  if (!originalUrl || !email || !token) return originalUrl;
+  if (!originalUrl) return originalUrl;
 
   try {
     const verifyUrl = new URL(originalUrl);
@@ -68,7 +70,11 @@ function buildRecoveryUrl(
     if (!redirectTo) return originalUrl;
 
     const resetUrl = new URL(redirectTo);
-    resetUrl.hash = new URLSearchParams({ type: "recovery", email, token }).toString();
+    const hashParams = new URLSearchParams({ type: "recovery" });
+    if (email) hashParams.set("email", email);
+    if (tokenHash) hashParams.set("token_hash", tokenHash);
+    else if (token) hashParams.set("token", token);
+    resetUrl.hash = hashParams.toString();
     return resetUrl.toString();
   } catch {
     return originalUrl;
@@ -146,6 +152,7 @@ export const Route = createFileRoute("/lovable/email/auth/webhook")({
         const recipientEmail = payloadData.email;
         const confirmationUrl = typeof payloadData.url === "string" ? payloadData.url : "";
         const token = typeof payloadData.token === "string" ? payloadData.token : "";
+        const tokenHash = typeof payloadData.token_hash === "string" ? payloadData.token_hash : "";
         const oldEmail = typeof payloadData.old_email === "string" ? payloadData.old_email : "";
         const newEmail = typeof payloadData.new_email === "string" ? payloadData.new_email : "";
         console.log("Received auth event", {
@@ -167,9 +174,10 @@ export const Route = createFileRoute("/lovable/email/auth/webhook")({
           recipient: recipientEmail,
           confirmationUrl:
             emailType === "recovery"
-              ? (buildRecoveryUrl(confirmationUrl, recipientEmail, token) ?? confirmationUrl)
+              ? (buildRecoveryUrl(confirmationUrl, recipientEmail, token, tokenHash) ?? confirmationUrl)
               : confirmationUrl,
           token,
+          tokenHash,
           email: recipientEmail,
           oldEmail,
           newEmail,
