@@ -155,10 +155,10 @@ export function InvitationPage() {
           </p>
           <h2 className="font-display text-5xl sm:text-6xl text-ink">A Journey Together</h2>
           <p className="mt-4 text-muted-foreground">
-            Join us and journey through the following special conventions. In
-            order to taste the conventions, included is cuisine from the
-            culture. Be sure to pre-order your cuisine of choice from the
-            convention country in the restaurants below.
+            Join us as we journey through the following special conventions.
+            And while we're there, taste the culture from the cuisine of
+            restaurants in the area. Be sure to pre-order the cuisine of your
+            choice from the convention country below.
           </p>
         </div>
 
