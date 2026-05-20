@@ -10,13 +10,13 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminLayout,
 });
 
-const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boolean }[] = [
-  { to: "/admin", label: "Overview", icon: ShieldCheck, exact: true },
-  { to: "/admin/upload", label: "Upload list", icon: Upload },
+const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boolean; team?: boolean }[] = [
+  { to: "/admin", label: "Overview", icon: ShieldCheck, exact: true, team: true },
+  { to: "/admin/upload", label: "Add guests", icon: Upload, team: true },
   { to: "/admin/categories", label: "Assignments", icon: ListChecks },
   { to: "/admin/team", label: "Team access", icon: Users },
-  { to: "/admin/chat", label: "Team chat", icon: MessagesSquare },
-  { to: "/admin/messages", label: "Guest messages", icon: Mail },
+  { to: "/admin/chat", label: "Team chat", icon: MessagesSquare, team: true },
+  { to: "/admin/messages", label: "Guest messages", icon: Mail, team: true },
 ];
 
 function AdminLayout() {
@@ -62,9 +62,7 @@ function AdminLayout() {
     );
   }
 
-  const visibleTabs = tabs.filter(
-    (t) => isAdmin || t.to === "/admin/chat" || t.to === "/admin/messages" || t.to === "/admin",
-  );
+  const visibleTabs = tabs.filter((t) => isAdmin || t.team);
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
