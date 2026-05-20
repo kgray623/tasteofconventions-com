@@ -163,7 +163,7 @@ export const Route = createFileRoute("/lovable/email/auth/webhook")({
           recipient: recipientEmail,
           confirmationUrl:
             emailType === "recovery"
-              ? buildRecoveryUrl(confirmationUrl, recipientEmail, token)
+              ? (buildRecoveryUrl(confirmationUrl, recipientEmail, token) ?? confirmationUrl)
               : confirmationUrl,
           token,
           email: recipientEmail,
