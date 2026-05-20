@@ -23,6 +23,7 @@ function ResetPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [email, setEmail] = useState("");
   const [token, setToken] = useState<string | null>(null);
+  const [tokenHash, setTokenHash] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -34,12 +35,14 @@ function ResetPasswordPage() {
       const refreshToken = getAuthParam("refresh_token");
       const recoveryEmail = getAuthParam("email");
       const recoveryToken = getAuthParam("token");
+      const recoveryTokenHash = getAuthParam("token_hash");
 
       if (code) await supabase.auth.exchangeCodeForSession(code);
       if (accessToken && refreshToken)
         await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
       if (recoveryEmail) setEmail(recoveryEmail);
       if (recoveryToken) setToken(recoveryToken);
+      if (recoveryTokenHash) setTokenHash(recoveryTokenHash);
 
       if (active) setReady(true);
     };
@@ -58,12 +61,16 @@ function ResetPasswordPage() {
     if (password !== confirmPassword) return toast.error("Passwords do not match");
 
     setBusy(true);
-    if (token && email) {
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        email,
-        token,
-        type: "recovery",
-      });
+    if (tokenHash || (token && email)) {
+      const { error: verifyError } = await supabase.auth.verifyOtp(
+        tokenHash
+          ? { token_hash: tokenHash, type: "recovery" }
+          : {
+              email,
+              token: token!,
+              type: "recovery",
+            },
+      );
       if (verifyError) {
         setBusy(false);
         return toast.error(
