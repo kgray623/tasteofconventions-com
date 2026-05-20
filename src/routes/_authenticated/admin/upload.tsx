@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, ClipboardPaste } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/upload")({
   component: UploadPage,
@@ -52,18 +52,6 @@ function UploadPage() {
     return <p className="text-muted-foreground">Only team members can add guests.</p>;
   }
 
-  const parseRows = async (raw: Record<string, unknown>[]) => {
-    const parsed: Parsed[] = raw.map((r, i) => ({
-      _row: i + 2,
-      guest_name: pick(r, ["name", "guest", "guest name", "full name"]),
-      guest_email: pick(r, ["email", "e-mail", "email address"]),
-      guest_phone: pick(r, ["phone", "mobile", "cell", "phone number"]),
-      notes: pick(r, ["notes", "note", "comment", "comments"]),
-    })).filter((r) => r.guest_name);
-    await flagDuplicates(parsed);
-    setRows(parsed);
-  };
-
   const flagDuplicates = async (parsed: Parsed[]) => {
     const seenE = new Map<string, number>();
     const seenP = new Map<string, number>();
@@ -90,29 +78,22 @@ function UploadPage() {
         if (r._dupReason) return;
         const e = norm(r.guest_email);
         const p = phoneNorm(r.guest_phone);
-        if (e && existE.has(e)) r._dupReason = "already in guest list (email match)";
-        else if (p.length >= 7 && existP.has(p)) r._dupReason = "already in guest list (phone match)";
+        if (e && existE.has(e)) r._dupReason = "already on the guest list (email match)";
+        else if (p.length >= 7 && existP.has(p)) r._dupReason = "already on the guest list (phone match)";
       });
     }
   };
 
-  const onPaste = async () => {
-    setDone(null);
-    const lines = pasted.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-    const raw: Record<string, unknown>[] = lines.map((line) => {
-      // Split on commas, tabs, or semicolons
-      const parts = line.split(/[,\t;]+/).map((p) => p.trim());
-      const out: Record<string, string> = { name: "", email: "", phone: "", notes: "" };
-      for (const p of parts) {
-        if (!p) continue;
-        if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p)) out.email = p;
-        else if (/^[+()\-\s\d]{7,}$/.test(p) && phoneNorm(p).length >= 7) out.phone = p;
-        else if (!out.name) out.name = p;
-        else out.notes = out.notes ? `${out.notes} ${p}` : p;
-      }
-      return out;
-    });
-    await parseRows(raw);
+  const parseRows = async (raw: Record<string, unknown>[]) => {
+    const parsed: Parsed[] = raw.map((r, i) => ({
+      _row: i + 1,
+      guest_name: pick(r, ["name", "guest", "guest name", "full name"]),
+      guest_email: pick(r, ["email", "e-mail", "email address"]),
+      guest_phone: pick(r, ["phone", "mobile", "cell", "phone number"]),
+      notes: pick(r, ["notes", "note", "comment", "comments"]),
+    })).filter((r) => r.guest_name);
+    await flagDuplicates(parsed);
+    setRows(parsed);
   };
 
   const onFile = async (file: File) => {
@@ -127,47 +108,24 @@ function UploadPage() {
       const sheet = wb.Sheets[wb.SheetNames[0]];
       raw = XLSX.utils.sheet_to_json(sheet, { defval: "" }) as Record<string, unknown>[];
     }
-    const parsed: Parsed[] = raw.map((r, i) => ({
-      _row: i + 2,
-      guest_name: pick(r, ["name", "guest", "guest name", "full name"]),
-      guest_email: pick(r, ["email", "e-mail", "email address"]),
-      guest_phone: pick(r, ["phone", "mobile", "cell", "phone number"]),
-      notes: pick(r, ["notes", "note", "comment", "comments"]),
-    })).filter((r) => r.guest_name);
+    await parseRows(raw);
+  };
 
-    // in-file duplicate detection
-    const seenE = new Map<string, number>();
-    const seenP = new Map<string, number>();
-    parsed.forEach((r, idx) => {
-      const e = norm(r.guest_email);
-      const p = phoneNorm(r.guest_phone);
-      if (e) {
-        if (seenE.has(e)) r._dupReason = `email duplicates row ${parsed[seenE.get(e)!]._row}`;
-        else seenE.set(e, idx);
+  const onPaste = async () => {
+    setDone(null);
+    const lines = pasted.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    const raw: Record<string, unknown>[] = lines.map((line) => {
+      const parts = line.split(/[,\t;]+/).map((p) => p.trim()).filter(Boolean);
+      const out: Record<string, string> = { name: "", email: "", phone: "", notes: "" };
+      for (const p of parts) {
+        if (!out.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p)) out.email = p;
+        else if (!out.phone && phoneNorm(p).length >= 7 && /^[+()\-\s\d]+$/.test(p)) out.phone = p;
+        else if (!out.name) out.name = p;
+        else out.notes = out.notes ? `${out.notes} ${p}` : p;
       }
-      if (p.length >= 7 && !r._dupReason) {
-        if (seenP.has(p)) r._dupReason = `phone duplicates row ${parsed[seenP.get(p)!]._row}`;
-        else seenP.set(p, idx);
-      }
+      return out;
     });
-
-    // cross-check against existing invitations for this event
-    if (eventId) {
-      const { data: existing } = await supabase
-        .from("invitations")
-        .select("guest_name,guest_email_normalized,guest_phone_normalized")
-        .eq("event_id", eventId);
-      const existE = new Set((existing ?? []).map((r) => r.guest_email_normalized).filter(Boolean) as string[]);
-      const existP = new Set((existing ?? []).map((r) => r.guest_phone_normalized).filter(Boolean) as string[]);
-      parsed.forEach((r) => {
-        if (r._dupReason) return;
-        const e = norm(r.guest_email);
-        const p = phoneNorm(r.guest_phone);
-        if (e && existE.has(e)) r._dupReason = "already in guest list (email match)";
-        else if (p.length >= 7 && existP.has(p)) r._dupReason = "already in guest list (phone match)";
-      });
-    }
-    setRows(parsed);
+    await parseRows(raw);
   };
 
   const importAll = async (skipDupes: boolean) => {
@@ -188,36 +146,60 @@ function UploadPage() {
     setBusy(false);
     setDone({ inserted, flagged, skipped });
     setRows([]);
+    setPasted("");
     if (fileRef.current) fileRef.current.value = "";
-    toast.success(`Imported ${inserted} guests`);
+    toast.success(`Added ${inserted} guest${inserted === 1 ? "" : "s"}`);
   };
 
   const dupCount = rows.filter((r) => r._dupReason).length;
 
   return (
     <div className="space-y-6">
-      <Card className="p-6 space-y-4">
-        <div className="flex flex-wrap items-end gap-4">
-          <div className="space-y-1.5">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Event</p>
-            <Select value={eventId} onValueChange={setEventId}>
-              <SelectTrigger className="w-[280px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {events.map((e) => <SelectItem key={e.id} value={e.id}>{e.title}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5 flex-1 min-w-[260px]">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">CSV or Excel file</p>
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".csv,.xlsx,.xls"
-              onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
-              className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-ink file:text-cream hover:file:bg-ink/90 file:cursor-pointer"
-            />
-          </div>
+      <Card className="p-6 space-y-2">
+        <p className="text-xs uppercase tracking-wider text-muted-foreground">Event</p>
+        <Select value={eventId} onValueChange={setEventId}>
+          <SelectTrigger className="w-full sm:w-[320px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {events.map((e) => <SelectItem key={e.id} value={e.id}>{e.title}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </Card>
+
+      <Card className="p-6 space-y-3">
+        <div className="flex items-center gap-2">
+          <ClipboardPaste className="w-4 h-4 text-terracotta" />
+          <p className="font-medium">Paste from your phone</p>
         </div>
+        <p className="text-xs text-muted-foreground">
+          One guest per line. Add a name, plus email and/or phone, separated by commas.
+          Example: <code>Jane Smith, jane@email.com, 555-123-4567</code>
+        </p>
+        <textarea
+          value={pasted}
+          onChange={(e) => setPasted(e.target.value)}
+          placeholder={"Jane Smith, jane@email.com\nMike Jones, 555-123-4567\nAlex Lee, alex@email.com, 555-987-6543"}
+          rows={6}
+          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
+        />
+        <div className="flex justify-end">
+          <Button onClick={onPaste} disabled={!pasted.trim() || !eventId} className="bg-ink text-cream hover:bg-ink/90">
+            Check list
+          </Button>
+        </div>
+      </Card>
+
+      <Card className="p-6 space-y-3">
+        <div className="flex items-center gap-2">
+          <FileSpreadsheet className="w-4 h-4 text-terracotta" />
+          <p className="font-medium">Or upload a CSV / Excel file</p>
+        </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".csv,.xlsx,.xls"
+          onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
+          className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-ink file:text-cream hover:file:bg-ink/90 file:cursor-pointer"
+        />
         <p className="text-xs text-muted-foreground">
           Expected columns: <code>name</code>, <code>email</code>, <code>phone</code>, <code>notes</code> (case-insensitive).
         </p>
@@ -240,29 +222,29 @@ function UploadPage() {
           <div className="p-4 border-b border-border flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <FileSpreadsheet className="w-5 h-5 text-terracotta" />
-              <p className="font-medium">{rows.length} rows ready</p>
+              <p className="font-medium">{rows.length} {rows.length === 1 ? "guest" : "guests"} ready</p>
               {dupCount > 0 && (
                 <Badge variant="outline" className="border-terracotta text-terracotta">
-                  <AlertCircle className="w-3 h-3 mr-1" /> {dupCount} possible duplicates
+                  <AlertCircle className="w-3 h-3 mr-1" /> {dupCount} possible duplicate{dupCount === 1 ? "" : "s"}
                 </Badge>
               )}
             </div>
             <div className="flex gap-2">
               <Button variant="outline" disabled={busy || dupCount === 0} onClick={() => importAll(true)}>
-                Import &amp; skip duplicates
+                Skip duplicates
               </Button>
               <Button disabled={busy} onClick={() => importAll(false)} className="bg-ink text-cream hover:bg-ink/90">
-                <Upload className="w-4 h-4 mr-2" /> Import all
+                <Upload className="w-4 h-4 mr-2" /> Add all
               </Button>
             </div>
           </div>
           <div className="divide-y divide-border max-h-[480px] overflow-auto">
             {rows.map((r, idx) => (
               <div key={idx} className="px-4 py-2.5 flex flex-wrap items-center gap-3 text-sm">
-                <span className="text-xs text-muted-foreground w-10">#{r._row}</span>
+                <span className="text-xs text-muted-foreground w-8">#{r._row}</span>
                 <span className="font-medium flex-1 min-w-[140px]">{r.guest_name}</span>
-                <span className="text-muted-foreground min-w-[180px]">{r.guest_email}</span>
-                <span className="text-muted-foreground min-w-[120px]">{r.guest_phone}</span>
+                <span className="text-muted-foreground min-w-[160px] break-all">{r.guest_email}</span>
+                <span className="text-muted-foreground min-w-[110px]">{r.guest_phone}</span>
                 {r._dupReason && (
                   <Badge variant="outline" className="border-terracotta text-terracotta text-[10px]">
                     {r._dupReason}
