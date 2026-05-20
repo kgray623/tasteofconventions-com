@@ -113,13 +113,13 @@ function UploadPage() {
 
   const onPaste = async () => {
     setDone(null);
-    const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
-    const isPhone = (s: string) => phoneNorm(s).length >= 7 && /^[+()\-\s\d.x]+$/i.test(s);
-    const isName = (s: string) => !isEmail(s) && !isPhone(s) && /[a-zA-Z]/.test(s);
+    const emailRegex = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
+    const phoneRegex = /(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)\d{3}[\s.-]?\d{4}(?:\s*(?:x|ext\.?)\s*\d{1,6})?|\b\d{7,15}\b/i;
+    const labelRegex = /^\s*(?:\[(name|full name|guest|mobile|phone|cell|email|e-mail)\]|(name|full name|guest|mobile|phone|cell|email|e-mail))\s*[:\-–—]?\s*(.*)$/i;
 
-    // Tokenize across newlines, commas, tabs, semicolons, and pipes.
     const tokens = pasted
-      .split(/[\r\n,;\t|]+/)
+      .split(/\r?\n/)
+      .flatMap((line) => line.split(/[,;\t|]+/))
       .map((t) => t.trim())
       .filter(Boolean);
 
@@ -129,23 +129,51 @@ function UploadPage() {
       if (cur.name || cur.email || cur.phone) raw.push(cur);
       cur = { name: "", email: "", phone: "", notes: "" };
     };
+
+    const addName = (value: string) => {
+      const cleaned = value.replace(emailRegex, " ").replace(phoneRegex, " ").replace(/\s+/g, " ").trim();
+      if (!cleaned || !/[a-zA-Z]/.test(cleaned)) return;
+      if (cur.name) flush();
+      cur.name = cleaned;
+    };
+    const addEmail = (value: string) => {
+      const email = value.match(emailRegex)?.[0]?.trim() ?? "";
+      if (!email) return;
+      if (cur.email) flush();
+      cur.email = email;
+    };
+    const addPhone = (value: string) => {
+      const phone = value.match(phoneRegex)?.[0]?.trim() ?? value.trim();
+      if (phoneNorm(phone).length < 7) return;
+      if (cur.phone) flush();
+      cur.phone = phone;
+    };
+
     for (const tok of tokens) {
-      if (isEmail(tok)) {
-        if (cur.email) flush();
-        cur.email = tok;
-      } else if (isPhone(tok)) {
-        if (cur.phone) flush();
-        cur.phone = tok;
-      } else if (isName(tok)) {
-        // Starting a new name means a new guest, unless current guest has no name yet.
-        if (cur.name) flush();
-        cur.name = tok;
+      const label = tok.match(labelRegex);
+      const labelKind = (label?.[1] ?? label?.[2] ?? "").toLowerCase();
+      const value = label ? label[3].trim() : tok;
+
+      if (["name", "full name", "guest"].includes(labelKind)) {
+        addName(value);
+      } else if (["mobile", "phone", "cell"].includes(labelKind)) {
+        addPhone(value);
+      } else if (["email", "e-mail"].includes(labelKind)) {
+        addEmail(value);
       } else {
-        cur.notes = cur.notes ? `${cur.notes} ${tok}` : tok;
+        const email = value.match(emailRegex)?.[0] ?? "";
+        const phone = value.match(phoneRegex)?.[0] ?? "";
+        addName(value);
+        if (email) addEmail(email);
+        if (phone) addPhone(phone);
+        if (!email && !phone && !/[a-zA-Z]/.test(value)) {
+          cur.notes = cur.notes ? `${cur.notes} ${value}` : value;
+        }
       }
     }
     flush();
     await parseRows(raw);
+    if (!raw.some((r) => r.name)) toast.error("I couldn't find any guest names in that paste.");
   };
 
   const importAll = async (skipDupes: boolean) => {
