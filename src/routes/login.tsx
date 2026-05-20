@@ -58,9 +58,10 @@ function HelperLogin() {
 
   const forgot = async () => {
     if (forgotBusy) return;
-    if (!email) return toast.error("Enter your email first");
+    const normalizedEmail = email.trim();
+    if (!normalizedEmail) return toast.error("Enter your email first");
     setForgotBusy(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
       redirectTo: window.location.origin + "/reset-password",
     });
     setForgotBusy(false);
