@@ -1,6 +1,36 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { sendTransactionalEmailServer } from "@/lib/email/send-server";
+
+async function sendRsvpConfirmation(invitationId: string, status: "yes" | "no" | "maybe", partySize: number, message: string | null) {
+  try {
+    const { data: inv } = await supabaseAdmin
+      .from("invitations")
+      .select("id,guest_name,guest_email,events(title,starts_at,location)")
+      .eq("id", invitationId)
+      .maybeSingle();
+    const email = inv?.guest_email;
+    if (!email) return;
+    const ev = (inv as any)?.events;
+    await sendTransactionalEmailServer({
+      templateName: "rsvp-confirmation",
+      recipientEmail: email,
+      idempotencyKey: `rsvp-confirm-${invitationId}-${status}`,
+      templateData: {
+        guestName: inv?.guest_name,
+        eventTitle: ev?.title,
+        eventStartsAt: ev?.starts_at,
+        location: ev?.location,
+        status,
+        partySize,
+        message,
+      },
+    });
+  } catch (err) {
+    console.error("[rsvp] failed to send confirmation email", err);
+  }
+}
 
 // Public lookup of an invitation by RSVP token (used on the guest magic-link page)
 export const getInvitationByToken = createServerFn({ method: "GET" })
@@ -41,6 +71,7 @@ export const submitRsvp = createServerFn({ method: "POST" })
       responded_at: new Date().toISOString(),
     }, { onConflict: "invitation_id" });
     if (error) throw new Error(error.message);
+    await sendRsvpConfirmation(inv.id, data.status, data.party_size, data.message ?? null);
     return { ok: true };
   });
 
@@ -175,5 +206,6 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
     }, { onConflict: "invitation_id" });
     if (rsvpErr) throw new Error(rsvpErr.message);
 
+    await sendRsvpConfirmation(invitationId, data.status, data.party_size, data.message ?? null);
     return { ok: true, invitation_id: invitationId };
   });
