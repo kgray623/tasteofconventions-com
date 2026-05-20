@@ -36,7 +36,9 @@ async function routeForUser(userId: string, email?: string | null): Promise<Rout
 }
 
 function destinationPath(destination: RouteDestination) {
-  if (destination.to === "/rsvp/$token") return `/rsvp/${encodeURIComponent(destination.params.token)}`;
+  if (destination.to === "/rsvp/$token") {
+    return `/rsvp/${encodeURIComponent(destination.params.token)}`;
+  }
   return destination.to;
 }
 
