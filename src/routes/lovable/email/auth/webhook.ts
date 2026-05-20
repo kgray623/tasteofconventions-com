@@ -52,9 +52,7 @@ function buildRecoveryUrl(originalUrl: string | undefined, email: string | undef
     if (!redirectTo) return originalUrl
 
     const resetUrl = new URL(redirectTo)
-    resetUrl.searchParams.set('type', 'recovery')
-    resetUrl.searchParams.set('email', email)
-    resetUrl.searchParams.set('token', token)
+    resetUrl.hash = new URLSearchParams({ type: 'recovery', email, token }).toString()
     return resetUrl.toString()
   } catch {
     return originalUrl
