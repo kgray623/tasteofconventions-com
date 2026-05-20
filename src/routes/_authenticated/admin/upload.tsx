@@ -191,13 +191,14 @@ function UploadPage() {
           <p className="font-medium">Paste from your phone</p>
         </div>
         <p className="text-xs text-muted-foreground">
-          One guest per line. Add a name, plus email and/or phone, separated by commas.
-          Example: <code>Jane Smith, jane@email.com, 555-123-4567</code>
+          Paste contacts from your phone or type them in. Each guest can be one line
+          (<code>Jane Smith, jane@email.com, 555-123-4567</code>) or a block where the
+          name, phone, and email are on separate lines — both work.
         </p>
         <textarea
           value={pasted}
           onChange={(e) => setPasted(e.target.value)}
-          placeholder={"Jane Smith, jane@email.com\nMike Jones, 555-123-4567\nAlex Lee, alex@email.com, 555-987-6543"}
+          placeholder={"Jane Smith, jane@email.com\nMike Jones, 555-123-4567\n\nAlex Lee\nalex@email.com\n555-987-6543"}
           rows={6}
           className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
         />
