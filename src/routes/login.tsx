@@ -40,6 +40,7 @@ function HelperLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [forgotBusy, setForgotBusy] = useState(false);
 
   useEffect(() => {
     if (loading || !user) return;
@@ -49,17 +50,20 @@ function HelperLogin() {
   const signIn = async (event?: FormEvent) => {
     event?.preventDefault();
     setBusy(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setBusy(false);
     if (error) return toast.error(error.message);
     if (data.user) navigate(await routeForUser(data.user.id, data.user.email));
   };
 
   const forgot = async () => {
+    if (forgotBusy) return;
     if (!email) return toast.error("Enter your email first");
+    setForgotBusy(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: window.location.origin + "/reset-password",
     });
+    setForgotBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Password reset email sent.");
   };
@@ -93,8 +97,8 @@ function HelperLogin() {
               {busy ? "Signing in…" : "Sign in"}
             </Button>
           </form>
-          <button onClick={forgot} className="text-xs text-muted-foreground hover:text-ink underline w-full text-center">
-            Forgot password?
+          <button onClick={forgot} disabled={forgotBusy} className="text-xs text-muted-foreground hover:text-ink underline w-full text-center disabled:opacity-60">
+            {forgotBusy ? "Sending reset email…" : "Forgot password?"}
           </button>
           <p className="text-xs text-center text-muted-foreground pt-2">
             Accounts are created automatically when you RSVP.
