@@ -43,6 +43,24 @@ function redactEmail(email: string | null | undefined): string {
   return `${localPart[0]}***@${domain}`
 }
 
+function buildRecoveryUrl(originalUrl: string | undefined, email: string | undefined, token: string | undefined): string | undefined {
+  if (!originalUrl || !email || !token) return originalUrl
+
+  try {
+    const verifyUrl = new URL(originalUrl)
+    const redirectTo = verifyUrl.searchParams.get('redirect_to')
+    if (!redirectTo) return originalUrl
+
+    const resetUrl = new URL(redirectTo)
+    resetUrl.searchParams.set('type', 'recovery')
+    resetUrl.searchParams.set('email', email)
+    resetUrl.searchParams.set('token', token)
+    return resetUrl.toString()
+  } catch {
+    return originalUrl
+  }
+}
+
 export const Route = createFileRoute("/lovable/email/auth/webhook")({
   server: {
     handlers: {
@@ -136,7 +154,9 @@ export const Route = createFileRoute("/lovable/email/auth/webhook")({
           siteName: SITE_NAME,
           siteUrl: `https://${ROOT_DOMAIN}`,
           recipient: payload.data.email,
-          confirmationUrl: payload.data.url,
+          confirmationUrl: emailType === 'recovery'
+            ? buildRecoveryUrl(payload.data.url, payload.data.email, payload.data.token)
+            : payload.data.url,
           token: payload.data.token,
           email: payload.data.email,
           oldEmail: payload.data.old_email,
