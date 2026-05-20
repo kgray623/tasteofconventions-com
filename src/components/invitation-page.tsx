@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { SiteHeader } from "@/components/site-header";
+import { EntertainmentSubmissionForm } from "@/components/entertainment-submission-form";
 import { Button } from "@/components/ui/button";
 import {
   Accordion,
