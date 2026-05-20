@@ -166,7 +166,7 @@ function PreviewPage() {
             <div className="rounded-md border border-border bg-cream/40 p-4 text-sm text-ink space-y-2">
               <p className="font-medium">Your RSVP is saved.</p>
               <p className="text-muted-foreground">
-                To make any changes to your RSVP, simply log in to your account with your email and password.
+                To make any changes later, log in with your <strong>email</strong> and your <strong>phone number (digits only)</strong> as the password — the same phone you entered above.
               </p>
               <Link to="/login" className="inline-flex items-center gap-1 text-terracotta font-medium hover:underline">
                 Log in to your account →
