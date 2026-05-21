@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { Eye, EyeOff } from "lucide-react";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({ meta: [{ title: "Reset password — A Taste of Special Conventions" }] }),
@@ -21,6 +22,8 @@ function ResetPasswordPage() {
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [token, setToken] = useState<string | null>(null);
   const [tokenHash, setTokenHash] = useState<string | null>(null);
@@ -104,25 +107,49 @@ function ResetPasswordPage() {
           <form onSubmit={updatePassword} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="password">New password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="new-password"
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((s) => !s)}
+                  className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-ink"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="confirm-password">Confirm password</Label>
-              <Input
-                id="confirm-password"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                autoComplete="new-password"
-              />
+              <div className="relative">
+                <Input
+                  id="confirm-password"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((s) => !s)}
+                  className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-ink"
+                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                  tabIndex={-1}
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
             <Button
               type="submit"

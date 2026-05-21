@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
+import { Eye, EyeOff } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Sign in — A Taste of Special Conventions" }] }),
@@ -85,10 +86,31 @@ function AuthPage() {
 }
 
 function Field({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
+  const [showPassword, setShowPassword] = useState(false);
+  const isPassword = type === "password";
+
   return (
     <div className="space-y-1.5">
       <Label>{label}</Label>
-      <Input type={type} value={value} onChange={(e) => onChange(e.target.value)} />
+      <div className="relative">
+        <Input
+          type={isPassword && showPassword ? "text" : type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={isPassword ? "pr-10" : undefined}
+        />
+        {isPassword ? (
+          <button
+            type="button"
+            onClick={() => setShowPassword((s) => !s)}
+            className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-ink"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            tabIndex={-1}
+          >
+            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }
