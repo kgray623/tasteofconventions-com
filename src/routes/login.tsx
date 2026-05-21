@@ -15,38 +15,18 @@ export const Route = createFileRoute("/login")({
 
 type RouteDestination =
   | { to: "/admin" }
-  | { to: "/rsvp/preview" }
-  | { to: "/rsvp/$token"; params: { token: string } };
+  | { to: "/my-rsvp" };
 
-async function routeForUser(userId: string, email?: string | null): Promise<RouteDestination> {
+async function routeForUser(userId: string): Promise<RouteDestination> {
   const { data } = await supabase.from("user_roles").select("role").eq("user_id", userId);
   const roles = (data ?? []).map((r) => r.role as string);
   if (roles.includes("admin") || roles.includes("team")) return { to: "/admin" };
-  if (email) {
-    const { data: invitation } = await supabase
-      .from("invitations")
-      .select("rsvp_token")
-      .eq("guest_email_normalized", email.trim().toLowerCase())
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (invitation?.rsvp_token)
-      return { to: "/rsvp/$token", params: { token: invitation.rsvp_token } };
-  }
-  return { to: "/rsvp/preview" };
-}
-
-function destinationPath(destination: RouteDestination) {
-  if (destination.to === "/rsvp/$token") {
-    return `/rsvp/${encodeURIComponent(destination.params.token)}`;
-  }
-  return destination.to;
+  return { to: "/my-rsvp" };
 }
 
 function openDestination(destination: RouteDestination, replace = false) {
-  const path = destinationPath(destination);
-  if (replace) window.location.replace(path);
-  else window.location.assign(path);
+  if (replace) window.location.replace(destination.to);
+  else window.location.assign(destination.to);
 }
 
 function HelperLogin() {

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as Char91indexChar93RouteImport } from './routes/[index]'
 import { Route as RestaurantsRouteImport } from './routes/restaurants'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as MyRsvpRouteImport } from './routes/my-rsvp'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
@@ -49,6 +50,11 @@ const RestaurantsRoute = RestaurantsRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MyRsvpRoute = MyRsvpRouteImport.update({
+  id: '/my-rsvp',
+  path: '/my-rsvp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -179,6 +185,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/index': typeof Char91indexChar93Route
   '/login': typeof LoginRoute
+  '/my-rsvp': typeof MyRsvpRoute
   '/reset-password': typeof ResetPasswordRoute
   '/restaurants': typeof RestaurantsRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
@@ -206,6 +213,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/index': typeof Char91indexChar93Route
   '/login': typeof LoginRoute
+  '/my-rsvp': typeof MyRsvpRoute
   '/reset-password': typeof ResetPasswordRoute
   '/restaurants': typeof RestaurantsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -234,6 +242,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/index': typeof Char91indexChar93Route
   '/login': typeof LoginRoute
+  '/my-rsvp': typeof MyRsvpRoute
   '/reset-password': typeof ResetPasswordRoute
   '/restaurants': typeof RestaurantsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
@@ -263,6 +272,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/index'
     | '/login'
+    | '/my-rsvp'
     | '/reset-password'
     | '/restaurants'
     | '/admin'
@@ -290,6 +300,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/index'
     | '/login'
+    | '/my-rsvp'
     | '/reset-password'
     | '/restaurants'
     | '/dashboard'
@@ -317,6 +328,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/index'
     | '/login'
+    | '/my-rsvp'
     | '/reset-password'
     | '/restaurants'
     | '/_authenticated/admin'
@@ -346,6 +358,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   Char91indexChar93Route: typeof Char91indexChar93Route
   LoginRoute: typeof LoginRoute
+  MyRsvpRoute: typeof MyRsvpRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   RestaurantsRoute: typeof RestaurantsRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
@@ -380,6 +393,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/my-rsvp': {
+      id: '/my-rsvp'
+      path: '/my-rsvp'
+      fullPath: '/my-rsvp'
+      preLoaderRoute: typeof MyRsvpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -591,6 +611,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   Char91indexChar93Route: Char91indexChar93Route,
   LoginRoute: LoginRoute,
+  MyRsvpRoute: MyRsvpRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   RestaurantsRoute: RestaurantsRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
