@@ -189,9 +189,7 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
           host_id: host.id,
           guest_name: data.guest_name,
           guest_email: email,
-          guest_email_normalized: email ? email.toLowerCase() : null,
           guest_phone: phone,
-          guest_phone_normalized: phone ? phone.replace(/\D/g, "") : null,
         }).select("id").single();
       if (invErr) throw new Error(invErr.message);
       invitationId = inv.id;
