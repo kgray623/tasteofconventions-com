@@ -134,7 +134,7 @@ export function InvitationPage() {
             </p>
 
             <LoggedInRsvpCta />
-            <Link to="/rsvp/preview">
+            <Link to="/rsvp">
               <Button
                 size="lg"
                 className="bg-gradient-sunset text-white hover:opacity-90 px-8 shadow-glow border-0"
@@ -179,7 +179,7 @@ export function InvitationPage() {
                 <h4 className="font-display text-2xl text-ink">{stop.country}</h4>
                 <p className="text-sm text-muted-foreground mt-1">{stop.note}</p>
                 {stop.restaurant ? (
-                  <Link to="/rsvp/preview" className="inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full bg-gradient-sunset text-white text-[10px] uppercase tracking-widest shadow-glow hover:opacity-90 transition">
+                  <Link to="/rsvp" className="inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full bg-gradient-sunset text-white text-[10px] uppercase tracking-widest shadow-glow hover:opacity-90 transition">
                     <UtensilsCrossed className="w-3 h-3" />
                     Pre-order the cuisine
                   </Link>
@@ -204,7 +204,7 @@ export function InvitationPage() {
                         <h3 className="font-display text-2xl">{r.name}</h3>
                         {r.cuisine && <p className="text-xs uppercase tracking-widest text-muted-foreground mt-1">{r.cuisine}</p>}
                       </div>
-                      <Link to="/rsvp/preview">
+                      <Link to="/rsvp">
                         <Button size="sm" variant="outline">
                           Pre-order <ExternalLink className="ml-1.5 w-3 h-3" />
                         </Button>
