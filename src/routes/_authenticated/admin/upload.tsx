@@ -148,11 +148,24 @@ function UploadPage() {
     await parseRows(raw);
   };
 
+  const isInIframe = () => {
+    try { return window.self !== window.top; } catch { return true; }
+  };
+
   const onPickContacts = async () => {
     const api = getContactsApi();
     if (!api) {
       toast.message("Your browser doesn't support contact picking", {
         description: "On iPhone or desktop, export contacts as a .vcf file and use the picker below.",
+      });
+      return;
+    }
+    if (isInIframe()) {
+      const url = window.location.href;
+      toast.message("Open this page in your browser first", {
+        description: "Android Chrome only allows the contact picker on the top page. Tap to open it in a new tab.",
+        action: { label: "Open", onClick: () => window.open(url, "_blank", "noopener") },
+        duration: 10000,
       });
       return;
     }
@@ -175,6 +188,7 @@ function UploadPage() {
       toast.error("Couldn't read contacts", { description: (err as Error).message });
     }
   };
+
 
   const onVCard = async (file: File) => {
     setDone(null);
