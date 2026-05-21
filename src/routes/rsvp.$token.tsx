@@ -116,6 +116,11 @@ function RsvpPage() {
             <span className="inline-flex items-center gap-2"><Calendar className="w-4 h-4 text-gold" />{new Date(ev.starts_at).toLocaleString()}</span>
             {ev.location && <span className="inline-flex items-center gap-2"><MapPin className="w-4 h-4 text-gold" />{ev.location}</span>}
           </div>
+          <div className="rounded-md border border-border bg-cream/40 p-4 text-sm space-y-1">
+            <p><strong>Name:</strong> {data.invitation.guest_name}</p>
+            {data.invitation.guest_email && <p><strong>Email:</strong> {data.invitation.guest_email}</p>}
+            {data.invitation.guest_phone && <p><strong>Phone:</strong> {data.invitation.guest_phone}</p>}
+          </div>
         </Card>
 
         {data.rsvp && (

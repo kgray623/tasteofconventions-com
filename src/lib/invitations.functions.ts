@@ -8,15 +8,27 @@ import { sendTransactionalEmailServer } from "@/lib/email/send-server";
 export const getMyInvitation = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const email = ((context as any).claims?.email as string | undefined) ?? undefined;
+    const userId = (context as any).userId as string | undefined;
+    const claimEmail = ((context as any).claims?.email as string | undefined) ?? undefined;
+    let email = claimEmail?.trim().toLowerCase() || null;
+
+    if (userId) {
+      const [{ data: profile }, { data: authUser }] = await Promise.all([
+        supabaseAdmin.from("profiles").select("email").eq("id", userId).maybeSingle(),
+        supabaseAdmin.auth.admin.getUserById(userId),
+      ]);
+      email = profile?.email?.trim().toLowerCase() || authUser.user?.email?.trim().toLowerCase() || email;
+    }
+
     if (!email) return { invitation: null, rsvp: null, order: null };
-    const { data: inv } = await supabaseAdmin
+    const { data: inv, error } = await supabaseAdmin
       .from("invitations")
-      .select("id,event_id,guest_name,guest_email,guest_phone,notes,rsvp_token,events(title,description,starts_at,ends_at,location,virtual_link)")
-      .eq("guest_email_normalized", email.toLowerCase())
+      .select("id,event_id,guest_name,guest_email,guest_phone,notes,rsvp_token,created_at,events(title,description,starts_at,ends_at,location,virtual_link)")
+      .eq("guest_email_normalized", email)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+    if (error) throw new Error(error.message);
     if (!inv) return { invitation: null, rsvp: null, order: null };
     const { data: rsvp } = await supabaseAdmin.from("rsvps").select("*").eq("invitation_id", inv.id).maybeSingle();
     const { data: order } = await supabaseAdmin.from("orders").select("*").eq("invitation_id", inv.id).maybeSingle();
@@ -58,7 +70,7 @@ export const getInvitationByToken = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const { data: inv, error } = await supabaseAdmin
       .from("invitations")
-      .select("id,event_id,guest_name,guest_email,notes,events(title,description,starts_at,ends_at,location,virtual_link)")
+      .select("id,event_id,guest_name,guest_email,guest_phone,notes,events(title,description,starts_at,ends_at,location,virtual_link)")
       .eq("rsvp_token", data.token)
       .maybeSingle();
     if (error) throw new Error(error.message);
