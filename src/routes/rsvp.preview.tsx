@@ -92,7 +92,7 @@ function PreviewPage() {
         status,
         party_size: partySize,
         message: message.trim() || null,
-        invited_by: invitedBy.trim() || null,
+        invited_by: (invitedBy === "__other__" ? invitedByOther.trim() : invitedBy) || null,
       }});
       setSaved(true);
       toast.success("RSVP saved — your password is your phone number (digits only).");
