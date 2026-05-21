@@ -5,7 +5,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Plus, Calendar as CalendarIcon, Mail, Phone } from "lucide-react";
+import { AlertCircle, Plus, Calendar as CalendarIcon, Mail, Phone, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — A Taste of Special Conventions" }] }),
@@ -150,6 +155,44 @@ function Dashboard() {
                   <Link to="/rsvp/$token" params={{ token: i.rsvp_token }} className="text-xs text-terracotta hover:underline">
                     Open RSVP link →
                   </Link>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        aria-label={`Delete invitation for ${i.guest_name}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete this invitation?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently delete the invitation for <strong>{i.guest_name}</strong>
+                          {i.guest_email ? ` (${i.guest_email})` : ""} along with their RSVP. This cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          onClick={async () => {
+                            const { error } = await supabase.from("invitations").delete().eq("id", i.id);
+                            if (error) {
+                              toast.error(`Couldn't delete: ${error.message}`);
+                              return;
+                            }
+                            toast.success(`Deleted ${i.guest_name}`);
+                            await load();
+                          }}
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               );
             })}
