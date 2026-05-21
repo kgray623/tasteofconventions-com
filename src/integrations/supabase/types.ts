@@ -361,6 +361,30 @@ export type Database = {
           },
         ]
       }
+      inviters: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          name: string
+          quota: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name: string
+          quota?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name?: string
+          quota?: number
+        }
+        Relationships: []
+      }
       menu_items: {
         Row: {
           available: boolean
