@@ -39,6 +39,24 @@ function AdminLayout() {
     else toast.info("An admin already exists.");
   };
 
+  // Check if any admin already exists in the system; if so, redirect non-team
+  // users to their RSVP page instead of showing the master-admin claim flow.
+  useEffect(() => {
+    if (loading || isTeam) return;
+    let cancelled = false;
+    (async () => {
+      const { count } = await supabase
+        .from("user_roles")
+        .select("id", { count: "exact", head: true })
+        .eq("role", "admin");
+      if (cancelled) return;
+      if ((count ?? 0) > 0) {
+        navigate({ to: "/my-rsvp" });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [loading, isTeam, navigate]);
+
   if (loading) {
     return <div className="mx-auto max-w-6xl px-6 py-10 text-muted-foreground">Loading…</div>;
   }
@@ -47,14 +65,13 @@ function AdminLayout() {
     return (
       <div className="mx-auto max-w-2xl px-6 py-16 text-center space-y-6">
         <ShieldCheck className="w-12 h-12 mx-auto text-terracotta" />
-        <h1 className="font-display text-3xl">Admin area</h1>
+        <h1 className="font-display text-3xl">Welcome</h1>
         <p className="text-muted-foreground">
-          You don't have admin or team access yet. If this is a brand-new
-          backend, claim master admin to get started.
+          Taking you to your RSVP…
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3">
-          <Button onClick={claim} className="bg-ink text-cream hover:bg-ink/90">
-            Claim master admin
+          <Button onClick={() => navigate({ to: "/my-rsvp" })} className="bg-ink text-cream hover:bg-ink/90">
+            Go to my RSVP
           </Button>
           <Button onClick={signOut} variant="outline">
             <LogOut className="w-4 h-4 mr-2" /> Log out
