@@ -118,6 +118,18 @@ function RsvpPage() {
           </div>
         </Card>
 
+        {data.rsvp && (
+          <Card className="p-5 border-2 border-ink/20 bg-cream/50">
+            <p className="text-xs uppercase tracking-[0.25em] text-terracotta mb-1">Your current RSVP</p>
+            <p className="font-display text-2xl text-ink">
+              {data.rsvp.status === "yes" ? "✓ Attending" : "✗ Declined"}
+              {data.rsvp.status === "yes" && <span className="text-base font-sans text-muted-foreground"> · party of {data.rsvp.party_size}</span>}
+            </p>
+            {data.rsvp.invited_by && <p className="text-sm text-muted-foreground mt-1">Invited by {data.rsvp.invited_by}</p>}
+            <p className="text-xs text-muted-foreground mt-2">You can update your response below at any time.</p>
+          </Card>
+        )}
+
         <Card className="p-7 space-y-5">
           <h2 className="font-display text-2xl">Will you join us?</h2>
           <div className="grid grid-cols-2 gap-2">

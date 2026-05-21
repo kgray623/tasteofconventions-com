@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import {
   Calendar,
   MapPin,
@@ -132,6 +133,7 @@ export function InvitationPage() {
               Space is limited
             </p>
 
+            <LoggedInRsvpCta />
             <Link to="/rsvp/preview">
               <Button
                 size="lg"
@@ -369,3 +371,23 @@ const itinerary = [
   { country: "Jakarta, Indonesia", when: "Convention · December 2025", note: "Our most recent gathering — the warmth of Jakarta, fresh in heart.", restaurant: true },
   { country: "New Zealand", when: "Convention · January 2026", note: "We close in New Zealand — no menu to order from, just memories to make.", restaurant: false },
 ];
+
+function LoggedInRsvpCta() {
+  const { user, loading } = useAuth();
+  if (loading || !user) return null;
+  return (
+    <div className="mb-4">
+      <Link to="/my-rsvp">
+        <Button
+          size="lg"
+          variant="outline"
+          className="border-ink text-ink hover:bg-ink hover:text-cream px-8"
+        >
+          View / update my RSVP
+          <ArrowRight className="ml-2 w-4 h-4" />
+        </Button>
+      </Link>
+      <p className="text-xs text-muted-foreground mt-2">Signed in as {user.email}</p>
+    </div>
+  );
+}

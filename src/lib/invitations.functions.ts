@@ -1,7 +1,27 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { sendTransactionalEmailServer } from "@/lib/email/send-server";
+
+// Lookup the currently signed-in guest's most recent invitation (by email).
+export const getMyInvitation = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const email = ((context as any).claims?.email as string | undefined) ?? undefined;
+    if (!email) return { invitation: null, rsvp: null, order: null };
+    const { data: inv } = await supabaseAdmin
+      .from("invitations")
+      .select("id,event_id,guest_name,guest_email,guest_phone,notes,rsvp_token,events(title,description,starts_at,ends_at,location,virtual_link)")
+      .eq("guest_email_normalized", email.toLowerCase())
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!inv) return { invitation: null, rsvp: null, order: null };
+    const { data: rsvp } = await supabaseAdmin.from("rsvps").select("*").eq("invitation_id", inv.id).maybeSingle();
+    const { data: order } = await supabaseAdmin.from("orders").select("*").eq("invitation_id", inv.id).maybeSingle();
+    return { invitation: inv, rsvp, order };
+  });
 
 async function sendRsvpConfirmation(invitationId: string, status: "yes" | "no" | "maybe", partySize: number, message: string | null) {
   try {
