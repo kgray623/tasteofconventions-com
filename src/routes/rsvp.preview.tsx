@@ -53,6 +53,7 @@ const menu: Record<string, { id: string; name: string; description: string; pric
 };
 
 function PreviewPage() {
+  const { isTeam } = useRoles();
   const [status, setStatus] = useState<"yes" | "no">("yes");
   const [partySize, setPartySize] = useState(2);
   const [name, setName] = useState("");
