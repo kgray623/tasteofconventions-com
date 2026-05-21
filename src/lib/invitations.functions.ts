@@ -203,6 +203,7 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
       status: data.status,
       party_size: data.party_size,
       message: data.message ?? null,
+      invited_by: data.invited_by?.trim() || null,
       responded_at: new Date().toISOString(),
     }, { onConflict: "invitation_id" });
     if (rsvpErr) throw new Error(rsvpErr.message);
