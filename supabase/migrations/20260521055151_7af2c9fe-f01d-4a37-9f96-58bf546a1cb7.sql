@@ -1,0 +1,1 @@
+ALTER TABLE public.rsvps ADD COLUMN IF NOT EXISTS invited_by TEXT;

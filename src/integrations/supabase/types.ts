@@ -510,6 +510,7 @@ export type Database = {
           dietary_notes: string | null
           id: string
           invitation_id: string
+          invited_by: string | null
           message: string | null
           party_size: number
           responded_at: string | null
@@ -520,6 +521,7 @@ export type Database = {
           dietary_notes?: string | null
           id?: string
           invitation_id: string
+          invited_by?: string | null
           message?: string | null
           party_size?: number
           responded_at?: string | null
@@ -530,6 +532,7 @@ export type Database = {
           dietary_notes?: string | null
           id?: string
           invitation_id?: string
+          invited_by?: string | null
           message?: string | null
           party_size?: number
           responded_at?: string | null

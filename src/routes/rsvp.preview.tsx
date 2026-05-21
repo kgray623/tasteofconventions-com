@@ -58,6 +58,7 @@ function PreviewPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
+  const [invitedBy, setInvitedBy] = useState("");
   const [restaurantId, setRestaurantId] = useState("r1");
   const [cart, setCart] = useState<Record<string, number>>({});
   const [orderNotes, setOrderNotes] = useState("");
@@ -83,6 +84,7 @@ function PreviewPage() {
         status,
         party_size: partySize,
         message: message.trim() || null,
+        invited_by: invitedBy.trim() || null,
       }});
       setSaved(true);
       toast.success("RSVP saved — your password is your phone number (digits only).");
@@ -157,6 +159,10 @@ function PreviewPage() {
               </div>
             </>
           )}
+          <div className="space-y-1.5">
+            <Label htmlFor="invited-by">Invited by</Label>
+            <Input id="invited-by" value={invitedBy} onChange={(e) => setInvitedBy(e.target.value)} placeholder="Name of the host who invited you" />
+          </div>
           <div className="space-y-1.5">
             <Label>Message to the host (optional)</Label>
             <Textarea value={message} onChange={(e) => setMessage(e.target.value)} />

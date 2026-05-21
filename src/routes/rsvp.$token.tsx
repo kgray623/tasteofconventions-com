@@ -32,6 +32,7 @@ function RsvpPage() {
   const [status, setStatus] = useState<"yes" | "no">("yes");
   const [partySize, setPartySize] = useState(1);
   const [message, setMessage] = useState("");
+  const [invitedBy, setInvitedBy] = useState("");
   const [restaurants, setRestaurants] = useState<R[]>([]);
   const [menu, setMenu] = useState<M[]>([]);
   const [restaurantId, setRestaurantId] = useState("");
@@ -47,6 +48,7 @@ function RsvpPage() {
           setStatus(r.rsvp.status === "yes" ? "yes" : "no");
           setPartySize(r.rsvp.party_size);
           setMessage(r.rsvp.message ?? "");
+          setInvitedBy(r.rsvp.invited_by ?? "");
         }
       } finally { setLoading(false); }
       const [{ data: rs }, { data: ms }] = await Promise.all([
@@ -61,7 +63,7 @@ function RsvpPage() {
 
   const handleSubmit = async () => {
     try {
-      await submit({ data: { token, status, party_size: partySize, dietary_notes: "", message } });
+      await submit({ data: { token, status, party_size: partySize, dietary_notes: "", message, invited_by: invitedBy } });
       toast.success("RSVP saved — thank you!");
     } catch (e: any) { toast.error(e.message); }
   };
@@ -141,6 +143,10 @@ function RsvpPage() {
               </div>
             </div>
           )}
+          <div className="space-y-1.5">
+            <Label htmlFor="invited-by">Invited by</Label>
+            <Input id="invited-by" value={invitedBy} onChange={(e) => setInvitedBy(e.target.value)} placeholder="Name of the host who invited you" />
+          </div>
           <div className="space-y-1.5">
             <Label>Message to the host (optional)</Label>
             <Textarea value={message} onChange={(e) => setMessage(e.target.value)} />

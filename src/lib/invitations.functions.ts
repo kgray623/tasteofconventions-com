@@ -54,6 +54,7 @@ const RsvpInput = z.object({
   party_size: z.number().int().min(1).max(20),
   dietary_notes: z.string().max(500).optional().nullable(),
   message: z.string().max(500).optional().nullable(),
+  invited_by: z.string().max(200).optional().nullable(),
 });
 
 export const submitRsvp = createServerFn({ method: "POST" })
@@ -68,6 +69,7 @@ export const submitRsvp = createServerFn({ method: "POST" })
       party_size: data.party_size,
       dietary_notes: data.dietary_notes ?? null,
       message: data.message ?? null,
+      invited_by: data.invited_by?.trim() || null,
       responded_at: new Date().toISOString(),
     }, { onConflict: "invitation_id" });
     if (error) throw new Error(error.message);
@@ -113,6 +115,7 @@ const PublicRsvpInput = z.object({
   status: z.enum(["yes", "no"]),
   party_size: z.number().int().min(1).max(20),
   message: z.string().max(1000).optional().nullable(),
+  invited_by: z.string().max(200).optional().nullable(),
 });
 
 export const submitPublicRsvp = createServerFn({ method: "POST" })
@@ -189,9 +192,7 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
           host_id: host.id,
           guest_name: data.guest_name,
           guest_email: email,
-          guest_email_normalized: email ? email.toLowerCase() : null,
           guest_phone: phone,
-          guest_phone_normalized: phone ? phone.replace(/\D/g, "") : null,
         }).select("id").single();
       if (invErr) throw new Error(invErr.message);
       invitationId = inv.id;
@@ -202,6 +203,7 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
       status: data.status,
       party_size: data.party_size,
       message: data.message ?? null,
+      invited_by: data.invited_by?.trim() || null,
       responded_at: new Date().toISOString(),
     }, { onConflict: "invitation_id" });
     if (rsvpErr) throw new Error(rsvpErr.message);
