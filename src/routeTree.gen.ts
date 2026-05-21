@@ -17,7 +17,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as RsvpPreviewRouteImport } from './routes/rsvp.preview'
+import { Route as RsvpIndexRouteImport } from './routes/rsvp.index'
 import { Route as RsvpTokenRouteImport } from './routes/rsvp.$token'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -77,9 +77,9 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RsvpPreviewRoute = RsvpPreviewRouteImport.update({
-  id: '/rsvp/preview',
-  path: '/rsvp/preview',
+const RsvpIndexRoute = RsvpIndexRouteImport.update({
+  id: '/rsvp/',
+  path: '/rsvp/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RsvpTokenRoute = RsvpTokenRouteImport.update({
@@ -198,7 +198,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/rsvp/$token': typeof RsvpTokenRoute
-  '/rsvp/preview': typeof RsvpPreviewRoute
+  '/rsvp/': typeof RsvpIndexRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/chat': typeof AuthenticatedAdminChatRoute
   '/admin/event': typeof AuthenticatedAdminEventRoute
@@ -226,7 +226,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/rsvp/$token': typeof RsvpTokenRoute
-  '/rsvp/preview': typeof RsvpPreviewRoute
+  '/rsvp': typeof RsvpIndexRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/chat': typeof AuthenticatedAdminChatRoute
   '/admin/event': typeof AuthenticatedAdminEventRoute
@@ -257,7 +257,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/rsvp/$token': typeof RsvpTokenRoute
-  '/rsvp/preview': typeof RsvpPreviewRoute
+  '/rsvp/': typeof RsvpIndexRoute
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/chat': typeof AuthenticatedAdminChatRoute
   '/_authenticated/admin/event': typeof AuthenticatedAdminEventRoute
@@ -288,7 +288,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/email/unsubscribe'
     | '/rsvp/$token'
-    | '/rsvp/preview'
+    | '/rsvp/'
     | '/admin/categories'
     | '/admin/chat'
     | '/admin/event'
@@ -316,7 +316,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/email/unsubscribe'
     | '/rsvp/$token'
-    | '/rsvp/preview'
+    | '/rsvp'
     | '/admin/categories'
     | '/admin/chat'
     | '/admin/event'
@@ -346,7 +346,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/email/unsubscribe'
     | '/rsvp/$token'
-    | '/rsvp/preview'
+    | '/rsvp/'
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/chat'
     | '/_authenticated/admin/event'
@@ -375,7 +375,7 @@ export interface RootRouteChildren {
   RestaurantsRoute: typeof RestaurantsRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   RsvpTokenRoute: typeof RsvpTokenRoute
-  RsvpPreviewRoute: typeof RsvpPreviewRoute
+  RsvpIndexRoute: typeof RsvpIndexRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
@@ -442,11 +442,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/rsvp/preview': {
-      id: '/rsvp/preview'
-      path: '/rsvp/preview'
-      fullPath: '/rsvp/preview'
-      preLoaderRoute: typeof RsvpPreviewRouteImport
+    '/rsvp/': {
+      id: '/rsvp/'
+      path: '/rsvp'
+      fullPath: '/rsvp/'
+      preLoaderRoute: typeof RsvpIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/rsvp/$token': {
@@ -637,7 +637,7 @@ const rootRouteChildren: RootRouteChildren = {
   RestaurantsRoute: RestaurantsRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   RsvpTokenRoute: RsvpTokenRoute,
-  RsvpPreviewRoute: RsvpPreviewRoute,
+  RsvpIndexRoute: RsvpIndexRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
@@ -648,3 +648,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

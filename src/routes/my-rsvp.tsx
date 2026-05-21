@@ -91,7 +91,7 @@ function MyRsvpPage() {
       <Card className="p-10 text-center max-w-md space-y-4">
         <h1 className="font-display text-3xl">No RSVP on file</h1>
         <p className="text-muted-foreground">We couldn't find an RSVP linked to <strong>{user?.email}</strong>. Make sure you RSVP'd with the same email.</p>
-        <Link to="/rsvp/preview"><Button className="bg-ink text-cream hover:bg-ink/90">RSVP now</Button></Link>
+        <Link to="/rsvp"><Button className="bg-ink text-cream hover:bg-ink/90">RSVP now</Button></Link>
       </Card>
     </div>
   );

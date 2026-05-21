@@ -14,7 +14,7 @@ import { Calendar, MapPin, Check, X, HelpCircle, Minus, Plus, Eye, ArrowLeft } f
 import { useRoles } from "@/hooks/use-roles";
 
 export const Route = createFileRoute("/rsvp/")({
-  head: () => ({ meta: [{ title: "Guest RSVP — Preview" }] }),
+  head: () => ({ meta: [{ title: "RSVP" }] }),
   component: PreviewPage,
 });
 
