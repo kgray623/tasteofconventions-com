@@ -144,6 +144,10 @@ function RsvpPage() {
             </div>
           )}
           <div className="space-y-1.5">
+            <Label htmlFor="invited-by">Invited by</Label>
+            <Input id="invited-by" value={invitedBy} onChange={(e) => setInvitedBy(e.target.value)} placeholder="Name of the host who invited you" />
+          </div>
+          <div className="space-y-1.5">
             <Label>Message to the host (optional)</Label>
             <Textarea value={message} onChange={(e) => setMessage(e.target.value)} />
           </div>
