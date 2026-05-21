@@ -293,6 +293,35 @@ function UploadPage() {
 
       <Card className="p-6 space-y-3">
         <div className="flex items-center gap-2">
+          <Smartphone className="w-4 h-4 text-terracotta" />
+          <p className="font-medium">Pick from your phone's contacts</p>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Tap the button below to open your phone's contact picker and select guests directly — no typing.
+          Works in Chrome on Android. On iPhone or desktop, export your contacts as a <code>.vcf</code> file
+          (Contacts app → Share) and choose it below.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={onPickContacts} disabled={!eventId} className="bg-ink text-cream hover:bg-ink/90">
+            <Smartphone className="w-4 h-4 mr-2" /> Pick contacts
+          </Button>
+          <label className="inline-flex">
+            <input
+              type="file"
+              accept=".vcf,text/vcard,text/x-vcard"
+              className="hidden"
+              onChange={(e) => e.target.files?.[0] && onVCard(e.target.files[0])}
+            />
+            <span className="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md border border-input bg-background text-sm font-medium cursor-pointer hover:bg-accent">
+              <Upload className="w-4 h-4" /> Import .vcf file
+            </span>
+          </label>
+        </div>
+      </Card>
+
+      <Card className="p-6 space-y-3">
+
+        <div className="flex items-center gap-2">
           <ClipboardPaste className="w-4 h-4 text-terracotta" />
           <p className="font-medium">Paste from your phone</p>
         </div>
