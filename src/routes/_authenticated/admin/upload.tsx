@@ -148,7 +148,48 @@ function UploadPage() {
     await parseRows(raw);
   };
 
+  const onPickContacts = async () => {
+    const api = getContactsApi();
+    if (!api) {
+      toast.message("Your browser doesn't support contact picking", {
+        description: "On iPhone or desktop, export contacts as a .vcf file and use the picker below.",
+      });
+      return;
+    }
+    try {
+      setDone(null);
+      const picked = await api.select(["name", "email", "tel"], { multiple: true });
+      const raw = picked.map((c) => ({
+        name: (c.name?.[0] ?? "").trim(),
+        email: (c.email?.[0] ?? "").trim(),
+        phone: (c.tel?.[0] ?? "").trim(),
+        notes: "",
+      })).filter((r) => r.name || r.email || r.phone);
+      if (!raw.length) {
+        toast.message("No contacts selected.");
+        return;
+      }
+      await parseRows(raw);
+      toast.success(`Loaded ${raw.length} contact${raw.length === 1 ? "" : "s"}`);
+    } catch (err) {
+      toast.error("Couldn't read contacts", { description: (err as Error).message });
+    }
+  };
+
+  const onVCard = async (file: File) => {
+    setDone(null);
+    const text = await file.text();
+    const raw = parseVCards(text);
+    if (!raw.length) {
+      toast.error("No contacts found in that file.");
+      return;
+    }
+    await parseRows(raw);
+    toast.success(`Loaded ${raw.length} contact${raw.length === 1 ? "" : "s"} from vCard`);
+  };
+
   const onPaste = async () => {
+
     setDone(null);
     const emailRegex = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
     const phoneRegex = /(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)\d{3}[\s.-]?\d{4}(?:\s*(?:x|ext\.?)\s*\d{1,6})?|\b\d{7,15}\b/i;
