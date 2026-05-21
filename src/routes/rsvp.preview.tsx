@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { submitPublicRsvp } from "@/lib/invitations.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,9 +60,16 @@ function PreviewPage() {
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
   const [invitedBy, setInvitedBy] = useState("");
+  const [invitedByOther, setInvitedByOther] = useState("");
+  const [inviters, setInviters] = useState<{ id: string; name: string }[]>([]);
   const [restaurantId, setRestaurantId] = useState("r1");
   const [cart, setCart] = useState<Record<string, number>>({});
   const [orderNotes, setOrderNotes] = useState("");
+
+  useEffect(() => {
+    supabase.from("inviters").select("id,name").eq("active", true).order("name")
+      .then(({ data }) => setInviters(data ?? []));
+  }, []);
 
   const restaurantMenu = menu[restaurantId] ?? [];
   const orderTotal = restaurantMenu.reduce((s, m) => s + (cart[m.id] ?? 0) * m.price, 0);
@@ -84,7 +92,7 @@ function PreviewPage() {
         status,
         party_size: partySize,
         message: message.trim() || null,
-        invited_by: invitedBy.trim() || null,
+        invited_by: (invitedBy === "__other__" ? invitedByOther.trim() : invitedBy) || null,
       }});
       setSaved(true);
       toast.success("RSVP saved — your password is your phone number (digits only).");
@@ -161,7 +169,21 @@ function PreviewPage() {
           )}
           <div className="space-y-1.5">
             <Label htmlFor="invited-by">Invited by</Label>
-            <Input id="invited-by" value={invitedBy} onChange={(e) => setInvitedBy(e.target.value)} placeholder="Name of the host who invited you" />
+            <Select value={invitedBy || undefined} onValueChange={setInvitedBy}>
+              <SelectTrigger id="invited-by"><SelectValue placeholder="Select who invited you" /></SelectTrigger>
+              <SelectContent>
+                {inviters.map((i) => <SelectItem key={i.id} value={i.name}>{i.name}</SelectItem>)}
+                <SelectItem value="__other__">Other…</SelectItem>
+              </SelectContent>
+            </Select>
+            {invitedBy === "__other__" && (
+              <Input
+                className="mt-2"
+                value={invitedByOther}
+                onChange={(e) => setInvitedByOther(e.target.value)}
+                placeholder="Type the name of the person who invited you"
+              />
+            )}
           </div>
           <div className="space-y-1.5">
             <Label>Message to the host (optional)</Label>

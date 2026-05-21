@@ -27,6 +27,7 @@ import { Route as AuthenticatedInvitationsNewRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminUploadRouteImport } from './routes/_authenticated/admin/upload'
 import { Route as AuthenticatedAdminTeamRouteImport } from './routes/_authenticated/admin/team'
 import { Route as AuthenticatedAdminMessagesRouteImport } from './routes/_authenticated/admin/messages'
+import { Route as AuthenticatedAdminInvitersRouteImport } from './routes/_authenticated/admin/inviters'
 import { Route as AuthenticatedAdminChatRouteImport } from './routes/_authenticated/admin/chat'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin/categories'
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
@@ -127,6 +128,12 @@ const AuthenticatedAdminMessagesRoute =
     path: '/messages',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminInvitersRoute =
+  AuthenticatedAdminInvitersRouteImport.update({
+    id: '/inviters',
+    path: '/inviters',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminChatRoute = AuthenticatedAdminChatRouteImport.update({
   id: '/chat',
   path: '/chat',
@@ -181,6 +188,7 @@ export interface FileRoutesByFullPath {
   '/rsvp/preview': typeof RsvpPreviewRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/chat': typeof AuthenticatedAdminChatRoute
+  '/admin/inviters': typeof AuthenticatedAdminInvitersRoute
   '/admin/messages': typeof AuthenticatedAdminMessagesRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
   '/admin/upload': typeof AuthenticatedAdminUploadRoute
@@ -206,6 +214,7 @@ export interface FileRoutesByTo {
   '/rsvp/preview': typeof RsvpPreviewRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/chat': typeof AuthenticatedAdminChatRoute
+  '/admin/inviters': typeof AuthenticatedAdminInvitersRoute
   '/admin/messages': typeof AuthenticatedAdminMessagesRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
   '/admin/upload': typeof AuthenticatedAdminUploadRoute
@@ -234,6 +243,7 @@ export interface FileRoutesById {
   '/rsvp/preview': typeof RsvpPreviewRoute
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/chat': typeof AuthenticatedAdminChatRoute
+  '/_authenticated/admin/inviters': typeof AuthenticatedAdminInvitersRoute
   '/_authenticated/admin/messages': typeof AuthenticatedAdminMessagesRoute
   '/_authenticated/admin/team': typeof AuthenticatedAdminTeamRoute
   '/_authenticated/admin/upload': typeof AuthenticatedAdminUploadRoute
@@ -262,6 +272,7 @@ export interface FileRouteTypes {
     | '/rsvp/preview'
     | '/admin/categories'
     | '/admin/chat'
+    | '/admin/inviters'
     | '/admin/messages'
     | '/admin/team'
     | '/admin/upload'
@@ -287,6 +298,7 @@ export interface FileRouteTypes {
     | '/rsvp/preview'
     | '/admin/categories'
     | '/admin/chat'
+    | '/admin/inviters'
     | '/admin/messages'
     | '/admin/team'
     | '/admin/upload'
@@ -314,6 +326,7 @@ export interface FileRouteTypes {
     | '/rsvp/preview'
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/chat'
+    | '/_authenticated/admin/inviters'
     | '/_authenticated/admin/messages'
     | '/_authenticated/admin/team'
     | '/_authenticated/admin/upload'
@@ -474,6 +487,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminMessagesRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/inviters': {
+      id: '/_authenticated/admin/inviters'
+      path: '/inviters'
+      fullPath: '/admin/inviters'
+      preLoaderRoute: typeof AuthenticatedAdminInvitersRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/chat': {
       id: '/_authenticated/admin/chat'
       path: '/chat'
@@ -529,6 +549,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedAdminChatRoute: typeof AuthenticatedAdminChatRoute
+  AuthenticatedAdminInvitersRoute: typeof AuthenticatedAdminInvitersRoute
   AuthenticatedAdminMessagesRoute: typeof AuthenticatedAdminMessagesRoute
   AuthenticatedAdminTeamRoute: typeof AuthenticatedAdminTeamRoute
   AuthenticatedAdminUploadRoute: typeof AuthenticatedAdminUploadRoute
@@ -538,6 +559,7 @@ interface AuthenticatedAdminRouteChildren {
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
   AuthenticatedAdminChatRoute: AuthenticatedAdminChatRoute,
+  AuthenticatedAdminInvitersRoute: AuthenticatedAdminInvitersRoute,
   AuthenticatedAdminMessagesRoute: AuthenticatedAdminMessagesRoute,
   AuthenticatedAdminTeamRoute: AuthenticatedAdminTeamRoute,
   AuthenticatedAdminUploadRoute: AuthenticatedAdminUploadRoute,

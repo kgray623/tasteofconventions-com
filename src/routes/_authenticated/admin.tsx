@@ -3,7 +3,7 @@ import { useRoles } from "@/hooks/use-roles";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, Mail, LogOut } from "lucide-react";
+import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, Mail, LogOut, UserPlus } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — A Taste of Special Conventions" }] }),
@@ -13,6 +13,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boolean; team?: boolean }[] = [
   { to: "/admin", label: "Overview", icon: ShieldCheck, exact: true, team: true },
   { to: "/admin/upload", label: "Add guests", icon: Upload, team: true },
+  { to: "/admin/inviters", label: "Inviters", icon: UserPlus, team: true },
   { to: "/admin/categories", label: "Assignments", icon: ListChecks },
   { to: "/admin/team", label: "Team access", icon: Users },
   { to: "/admin/chat", label: "Team chat", icon: MessagesSquare, team: true },

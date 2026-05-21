@@ -33,6 +33,8 @@ function RsvpPage() {
   const [partySize, setPartySize] = useState(1);
   const [message, setMessage] = useState("");
   const [invitedBy, setInvitedBy] = useState("");
+  const [invitedByOther, setInvitedByOther] = useState("");
+  const [inviters, setInviters] = useState<{ id: string; name: string }[]>([]);
   const [restaurants, setRestaurants] = useState<R[]>([]);
   const [menu, setMenu] = useState<M[]>([]);
   const [restaurantId, setRestaurantId] = useState("");
@@ -51,19 +53,22 @@ function RsvpPage() {
           setInvitedBy(r.rsvp.invited_by ?? "");
         }
       } finally { setLoading(false); }
-      const [{ data: rs }, { data: ms }] = await Promise.all([
+      const [{ data: rs }, { data: ms }, { data: iv }] = await Promise.all([
         supabase.from("restaurants").select("id,name,cuisine").eq("active", true),
         supabase.from("menu_items").select("id,restaurant_id,name,description,price").eq("available", true),
+        supabase.from("inviters").select("id,name").eq("active", true).order("name"),
       ]);
       setRestaurants(rs ?? []);
       setMenu((ms as M[]) ?? []);
+      setInviters(iv ?? []);
       if (rs?.[0]) setRestaurantId(rs[0].id);
     })();
   }, [token, fetchInv]);
 
   const handleSubmit = async () => {
     try {
-      await submit({ data: { token, status, party_size: partySize, dietary_notes: "", message, invited_by: invitedBy } });
+      const finalInvitedBy = invitedBy === "__other__" ? invitedByOther.trim() : invitedBy;
+      await submit({ data: { token, status, party_size: partySize, dietary_notes: "", message, invited_by: finalInvitedBy } });
       toast.success("RSVP saved — thank you!");
     } catch (e: any) { toast.error(e.message); }
   };
@@ -145,7 +150,21 @@ function RsvpPage() {
           )}
           <div className="space-y-1.5">
             <Label htmlFor="invited-by">Invited by</Label>
-            <Input id="invited-by" value={invitedBy} onChange={(e) => setInvitedBy(e.target.value)} placeholder="Name of the host who invited you" />
+            <Select value={invitedBy || undefined} onValueChange={setInvitedBy}>
+              <SelectTrigger id="invited-by"><SelectValue placeholder="Select who invited you" /></SelectTrigger>
+              <SelectContent>
+                {inviters.map((i) => <SelectItem key={i.id} value={i.name}>{i.name}</SelectItem>)}
+                <SelectItem value="__other__">Other…</SelectItem>
+              </SelectContent>
+            </Select>
+            {invitedBy === "__other__" && (
+              <Input
+                className="mt-2"
+                value={invitedByOther}
+                onChange={(e) => setInvitedByOther(e.target.value)}
+                placeholder="Type the name of the person who invited you"
+              />
+            )}
           </div>
           <div className="space-y-1.5">
             <Label>Message to the host (optional)</Label>
