@@ -169,7 +169,21 @@ function PreviewPage() {
           )}
           <div className="space-y-1.5">
             <Label htmlFor="invited-by">Invited by</Label>
-            <Input id="invited-by" value={invitedBy} onChange={(e) => setInvitedBy(e.target.value)} placeholder="Name of the host who invited you" />
+            <Select value={invitedBy || undefined} onValueChange={setInvitedBy}>
+              <SelectTrigger id="invited-by"><SelectValue placeholder="Select who invited you" /></SelectTrigger>
+              <SelectContent>
+                {inviters.map((i) => <SelectItem key={i.id} value={i.name}>{i.name}</SelectItem>)}
+                <SelectItem value="__other__">Other…</SelectItem>
+              </SelectContent>
+            </Select>
+            {invitedBy === "__other__" && (
+              <Input
+                className="mt-2"
+                value={invitedByOther}
+                onChange={(e) => setInvitedByOther(e.target.value)}
+                placeholder="Type the name of the person who invited you"
+              />
+            )}
           </div>
           <div className="space-y-1.5">
             <Label>Message to the host (optional)</Label>
