@@ -115,6 +115,7 @@ const PublicRsvpInput = z.object({
   status: z.enum(["yes", "no"]),
   party_size: z.number().int().min(1).max(20),
   message: z.string().max(1000).optional().nullable(),
+  invited_by: z.string().max(200).optional().nullable(),
 });
 
 export const submitPublicRsvp = createServerFn({ method: "POST" })
