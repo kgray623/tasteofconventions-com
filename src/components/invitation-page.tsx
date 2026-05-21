@@ -132,6 +132,7 @@ export function InvitationPage() {
               Space is limited
             </p>
 
+            <LoggedInRsvpCta />
             <Link to="/rsvp/preview">
               <Button
                 size="lg"
