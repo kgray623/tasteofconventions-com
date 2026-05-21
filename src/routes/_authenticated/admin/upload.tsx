@@ -10,7 +10,44 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, ClipboardPaste } from "lucide-react";
+import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, ClipboardPaste, Smartphone } from "lucide-react";
+
+// Browsers that support the Contact Picker API (Chrome on Android)
+type ContactInfo = { name?: string[]; email?: string[]; tel?: string[] };
+interface ContactsManager {
+  select: (props: string[], opts?: { multiple?: boolean }) => Promise<ContactInfo[]>;
+  getProperties: () => Promise<string[]>;
+}
+const getContactsApi = (): ContactsManager | null => {
+  if (typeof navigator === "undefined") return null;
+  const c = (navigator as unknown as { contacts?: ContactsManager }).contacts;
+  return c && typeof c.select === "function" ? c : null;
+};
+
+// Minimal vCard (.vcf) parser — handles vCard 3.0/4.0 exports from iPhone & Android
+function parseVCards(text: string): Record<string, string>[] {
+  const cards = text.split(/BEGIN:VCARD/i).slice(1);
+  return cards.map((card) => {
+    const body = card.split(/END:VCARD/i)[0];
+    // unfold folded lines (RFC 6350)
+    const lines = body.replace(/\r?\n[ \t]/g, "").split(/\r?\n/);
+    let name = "", email = "", phone = "";
+    for (const raw of lines) {
+      const idx = raw.indexOf(":");
+      if (idx < 0) continue;
+      const left = raw.slice(0, idx).toUpperCase();
+      const value = raw.slice(idx + 1).trim();
+      if (!value) continue;
+      if (!name && left.startsWith("FN")) name = value;
+      else if (!name && left.startsWith("N")) {
+        const [last, first] = value.split(";");
+        name = [first, last].filter(Boolean).join(" ").trim();
+      } else if (!email && left.startsWith("EMAIL")) email = value;
+      else if (!phone && left.startsWith("TEL")) phone = value;
+    }
+    return { name, email, phone, notes: "" };
+  }).filter((r) => r.name || r.email || r.phone);
+}
 
 export const Route = createFileRoute("/_authenticated/admin/upload")({
   component: UploadPage,
@@ -111,7 +148,48 @@ function UploadPage() {
     await parseRows(raw);
   };
 
+  const onPickContacts = async () => {
+    const api = getContactsApi();
+    if (!api) {
+      toast.message("Your browser doesn't support contact picking", {
+        description: "On iPhone or desktop, export contacts as a .vcf file and use the picker below.",
+      });
+      return;
+    }
+    try {
+      setDone(null);
+      const picked = await api.select(["name", "email", "tel"], { multiple: true });
+      const raw = picked.map((c) => ({
+        name: (c.name?.[0] ?? "").trim(),
+        email: (c.email?.[0] ?? "").trim(),
+        phone: (c.tel?.[0] ?? "").trim(),
+        notes: "",
+      })).filter((r) => r.name || r.email || r.phone);
+      if (!raw.length) {
+        toast.message("No contacts selected.");
+        return;
+      }
+      await parseRows(raw);
+      toast.success(`Loaded ${raw.length} contact${raw.length === 1 ? "" : "s"}`);
+    } catch (err) {
+      toast.error("Couldn't read contacts", { description: (err as Error).message });
+    }
+  };
+
+  const onVCard = async (file: File) => {
+    setDone(null);
+    const text = await file.text();
+    const raw = parseVCards(text);
+    if (!raw.length) {
+      toast.error("No contacts found in that file.");
+      return;
+    }
+    await parseRows(raw);
+    toast.success(`Loaded ${raw.length} contact${raw.length === 1 ? "" : "s"} from vCard`);
+  };
+
   const onPaste = async () => {
+
     setDone(null);
     const emailRegex = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
     const phoneRegex = /(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)\d{3}[\s.-]?\d{4}(?:\s*(?:x|ext\.?)\s*\d{1,6})?|\b\d{7,15}\b/i;
@@ -214,6 +292,35 @@ function UploadPage() {
       </Card>
 
       <Card className="p-6 space-y-3">
+        <div className="flex items-center gap-2">
+          <Smartphone className="w-4 h-4 text-terracotta" />
+          <p className="font-medium">Pick from your phone's contacts</p>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Tap the button below to open your phone's contact picker and select guests directly — no typing.
+          Works in Chrome on Android. On iPhone or desktop, export your contacts as a <code>.vcf</code> file
+          (Contacts app → Share) and choose it below.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={onPickContacts} disabled={!eventId} className="bg-ink text-cream hover:bg-ink/90">
+            <Smartphone className="w-4 h-4 mr-2" /> Pick contacts
+          </Button>
+          <label className="inline-flex">
+            <input
+              type="file"
+              accept=".vcf,text/vcard,text/x-vcard"
+              className="hidden"
+              onChange={(e) => e.target.files?.[0] && onVCard(e.target.files[0])}
+            />
+            <span className="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md border border-input bg-background text-sm font-medium cursor-pointer hover:bg-accent">
+              <Upload className="w-4 h-4" /> Import .vcf file
+            </span>
+          </label>
+        </div>
+      </Card>
+
+      <Card className="p-6 space-y-3">
+
         <div className="flex items-center gap-2">
           <ClipboardPaste className="w-4 h-4 text-terracotta" />
           <p className="font-medium">Paste from your phone</p>
