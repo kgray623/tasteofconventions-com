@@ -32,6 +32,7 @@ function RsvpPage() {
   const [status, setStatus] = useState<"yes" | "no">("yes");
   const [partySize, setPartySize] = useState(1);
   const [message, setMessage] = useState("");
+  const [invitedBy, setInvitedBy] = useState("");
   const [restaurants, setRestaurants] = useState<R[]>([]);
   const [menu, setMenu] = useState<M[]>([]);
   const [restaurantId, setRestaurantId] = useState("");
