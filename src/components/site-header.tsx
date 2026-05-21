@@ -1,10 +1,12 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
+import { useRoles } from "@/hooks/use-roles";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
 export function SiteHeader() {
   const { user } = useAuth();
+  const { isTeam } = useRoles();
   const navigate = useNavigate();
 
   const signOut = async () => {
@@ -18,9 +20,15 @@ export function SiteHeader() {
         <nav className="flex items-center gap-2 text-sm">
           {user ? (
             <>
-              <Link to="/admin" className="px-3 py-2 rounded-md hover:bg-secondary transition">
-                Admin
-              </Link>
+              {isTeam ? (
+                <Link to="/admin" className="px-3 py-2 rounded-md hover:bg-secondary transition">
+                  Admin
+                </Link>
+              ) : (
+                <Link to="/my-rsvp" className="px-3 py-2 rounded-md hover:bg-secondary transition">
+                  My RSVP
+                </Link>
+              )}
               <Button variant="ghost" size="sm" onClick={signOut}>Log out</Button>
             </>
           ) : (
