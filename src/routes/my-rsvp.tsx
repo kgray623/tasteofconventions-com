@@ -75,7 +75,6 @@ function MyRsvpPage() {
               {invitation.guest_email && <p><strong>Email:</strong> {invitation.guest_email}</p>}
               {invitation.guest_phone && <p><strong>Phone:</strong> {invitation.guest_phone}</p>}
               {rsvp?.invited_by && <p><strong>Invited by:</strong> {rsvp.invited_by}</p>}
-              {rsvp?.message && <p><strong>Message:</strong> {rsvp.message}</p>}
             </div>
             <Link to="/rsvp/$token" params={{ token: invitation.rsvp_token }}>
               <Button className="bg-ink text-cream hover:bg-ink/90 w-full">Decline or change my party size</Button>

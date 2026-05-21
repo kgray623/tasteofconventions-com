@@ -90,7 +90,6 @@ function PreviewPage() {
         password: phoneDigits,
         status,
         party_size: partySize,
-        message: null,
         invited_by: (invitedBy === "__other__" ? invitedByOther.trim() : invitedBy) || null,
       }});
       setSaved(true);

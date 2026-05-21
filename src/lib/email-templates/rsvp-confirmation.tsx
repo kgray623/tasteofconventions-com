@@ -21,7 +21,6 @@ interface RsvpConfirmationProps {
   location?: string
   status?: 'yes' | 'no' | 'maybe'
   partySize?: number
-  message?: string | null
 }
 
 const formatStatus = (status?: string) => {
@@ -38,7 +37,6 @@ const RsvpConfirmationEmail = ({
   location,
   status,
   partySize,
-  message,
 }: RsvpConfirmationProps) => (
   <Html lang="en" dir="ltr">
     <Head />
@@ -81,15 +79,6 @@ const RsvpConfirmationEmail = ({
               <strong>Where:</strong> {location}
             </Text>
           )}
-          {message && (
-            <>
-              <Hr style={hr} />
-              <Text style={cardRow}>
-                <strong>Your message:</strong>
-              </Text>
-              <Text style={{ ...cardRow, fontStyle: 'italic' }}>{message}</Text>
-            </>
-          )}
         </Section>
 
         <Text style={text}>
@@ -117,7 +106,6 @@ export const template = {
     location: '123 Wellness Way, Springfield',
     status: 'yes',
     partySize: 2,
-    message: 'Looking forward to it!',
   },
 } satisfies TemplateEntry
 
@@ -150,7 +138,6 @@ const cardRow = {
   lineHeight: '1.6',
   margin: '4px 0',
 }
-const hr = { borderColor: '#e8dccb', margin: '14px 0' }
 const footer = {
   fontSize: '12px',
   color: '#999999',

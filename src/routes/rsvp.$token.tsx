@@ -65,7 +65,7 @@ function RsvpPage() {
   const handleSubmit = async () => {
     try {
       const finalInvitedBy = invitedBy === "__other__" ? invitedByOther.trim() : invitedBy;
-      await submit({ data: { token, status, party_size: partySize, dietary_notes: "", message: null, invited_by: finalInvitedBy } });
+      await submit({ data: { token, status, party_size: partySize, dietary_notes: "", invited_by: finalInvitedBy } });
       toast.success("RSVP saved — thank you!");
     } catch (e: any) { toast.error(e.message); }
   };

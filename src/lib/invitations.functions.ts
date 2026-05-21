@@ -35,7 +35,7 @@ export const getMyInvitation = createServerFn({ method: "GET" })
     return { invitation: inv, rsvp, order };
   });
 
-async function sendRsvpConfirmation(invitationId: string, status: "yes" | "no" | "maybe", partySize: number, message: string | null) {
+async function sendRsvpConfirmation(invitationId: string, status: "yes" | "no" | "maybe", partySize: number) {
   try {
     const { data: inv } = await supabaseAdmin
       .from("invitations")
@@ -56,7 +56,6 @@ async function sendRsvpConfirmation(invitationId: string, status: "yes" | "no" |
         location: ev?.location,
         status,
         partySize,
-        message,
       },
     });
   } catch (err) {
@@ -85,7 +84,6 @@ const RsvpInput = z.object({
   status: z.enum(["yes", "no", "maybe"]),
   party_size: z.number().int().min(1).max(20),
   dietary_notes: z.string().max(500).optional().nullable(),
-  message: z.string().max(500).optional().nullable(),
   invited_by: z.string().max(200).optional().nullable(),
 });
 
@@ -100,12 +98,12 @@ export const submitRsvp = createServerFn({ method: "POST" })
       status: data.status,
       party_size: data.party_size,
       dietary_notes: data.dietary_notes ?? null,
-      message: data.message ?? null,
+      message: null,
       invited_by: data.invited_by?.trim() || null,
       responded_at: new Date().toISOString(),
     }, { onConflict: "invitation_id" });
     if (error) throw new Error(error.message);
-    await sendRsvpConfirmation(inv.id, data.status, data.party_size, data.message ?? null);
+    await sendRsvpConfirmation(inv.id, data.status, data.party_size);
     return { ok: true };
   });
 
@@ -146,7 +144,6 @@ const PublicRsvpInput = z.object({
   password: z.string().min(6).max(72).optional().nullable(),
   status: z.enum(["yes", "no"]),
   party_size: z.number().int().min(1).max(20),
-  message: z.string().max(1000).optional().nullable(),
   invited_by: z.string().max(200).optional().nullable(),
 });
 
@@ -234,12 +231,12 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
       invitation_id: invitationId,
       status: data.status,
       party_size: data.party_size,
-      message: data.message ?? null,
+      message: null,
       invited_by: data.invited_by?.trim() || null,
       responded_at: new Date().toISOString(),
     }, { onConflict: "invitation_id" });
     if (rsvpErr) throw new Error(rsvpErr.message);
 
-    await sendRsvpConfirmation(invitationId, data.status, data.party_size, data.message ?? null);
+    await sendRsvpConfirmation(invitationId, data.status, data.party_size);
     return { ok: true, invitation_id: invitationId };
   });
