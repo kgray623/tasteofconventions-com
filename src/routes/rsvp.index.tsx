@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar, MapPin, Check, X, HelpCircle, Minus, Plus, Eye, ArrowLeft } from "lucide-react";
 import { useRoles } from "@/hooks/use-roles";
 
-export const Route = createFileRoute("/rsvp/preview")({
+export const Route = createFileRoute("/rsvp/")({
   head: () => ({ meta: [{ title: "Guest RSVP — Preview" }] }),
   component: PreviewPage,
 });
