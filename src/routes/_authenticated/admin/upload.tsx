@@ -10,7 +10,44 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, ClipboardPaste } from "lucide-react";
+import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, ClipboardPaste, Smartphone } from "lucide-react";
+
+// Browsers that support the Contact Picker API (Chrome on Android)
+type ContactInfo = { name?: string[]; email?: string[]; tel?: string[] };
+interface ContactsManager {
+  select: (props: string[], opts?: { multiple?: boolean }) => Promise<ContactInfo[]>;
+  getProperties: () => Promise<string[]>;
+}
+const getContactsApi = (): ContactsManager | null => {
+  if (typeof navigator === "undefined") return null;
+  const c = (navigator as unknown as { contacts?: ContactsManager }).contacts;
+  return c && typeof c.select === "function" ? c : null;
+};
+
+// Minimal vCard (.vcf) parser — handles vCard 3.0/4.0 exports from iPhone & Android
+function parseVCards(text: string): Record<string, string>[] {
+  const cards = text.split(/BEGIN:VCARD/i).slice(1);
+  return cards.map((card) => {
+    const body = card.split(/END:VCARD/i)[0];
+    // unfold folded lines (RFC 6350)
+    const lines = body.replace(/\r?\n[ \t]/g, "").split(/\r?\n/);
+    let name = "", email = "", phone = "";
+    for (const raw of lines) {
+      const idx = raw.indexOf(":");
+      if (idx < 0) continue;
+      const left = raw.slice(0, idx).toUpperCase();
+      const value = raw.slice(idx + 1).trim();
+      if (!value) continue;
+      if (!name && left.startsWith("FN")) name = value;
+      else if (!name && left.startsWith("N")) {
+        const [last, first] = value.split(";");
+        name = [first, last].filter(Boolean).join(" ").trim();
+      } else if (!email && left.startsWith("EMAIL")) email = value;
+      else if (!phone && left.startsWith("TEL")) phone = value;
+    }
+    return { name, email, phone, notes: "" };
+  }).filter((r) => r.name || r.email || r.phone);
+}
 
 export const Route = createFileRoute("/_authenticated/admin/upload")({
   component: UploadPage,
