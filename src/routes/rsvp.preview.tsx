@@ -105,10 +105,12 @@ function PreviewPage() {
 
   return (
     <div className="min-h-screen bg-gradient-warm">
-      <div className="bg-ink/95 text-cream text-xs px-4 py-2 flex items-center justify-center gap-2">
-        <Eye className="w-3.5 h-3.5" />
-        <span className="tracking-wide">Guest preview — this is what invitees will see when they open their RSVP link.</span>
-      </div>
+      {isTeam && (
+        <div className="bg-ink/95 text-cream text-xs px-4 py-2 flex items-center justify-center gap-2">
+          <Eye className="w-3.5 h-3.5" />
+          <span className="tracking-wide">Guest preview — this is what invitees will see when they open their RSVP link.</span>
+        </div>
+      )}
       <div className="mx-auto max-w-3xl px-6 py-12 space-y-6">
         <Link to="/" className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-ink">
           <ArrowLeft className="w-3.5 h-3.5" /> Back to invitation
