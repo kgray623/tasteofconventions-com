@@ -60,9 +60,16 @@ function PreviewPage() {
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
   const [invitedBy, setInvitedBy] = useState("");
+  const [invitedByOther, setInvitedByOther] = useState("");
+  const [inviters, setInviters] = useState<{ id: string; name: string }[]>([]);
   const [restaurantId, setRestaurantId] = useState("r1");
   const [cart, setCart] = useState<Record<string, number>>({});
   const [orderNotes, setOrderNotes] = useState("");
+
+  useEffect(() => {
+    supabase.from("inviters").select("id,name").eq("active", true).order("name")
+      .then(({ data }) => setInviters(data ?? []));
+  }, []);
 
   const restaurantMenu = menu[restaurantId] ?? [];
   const orderTotal = restaurantMenu.reduce((s, m) => s + (cart[m.id] ?? 0) * m.price, 0);
