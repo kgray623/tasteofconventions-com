@@ -21,7 +21,7 @@ const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boole
   { to: "/admin/categories", label: "Assignments", icon: ListChecks },
   { to: "/admin/team", label: "Team access", icon: Users },
   { to: "/admin/chat", label: "Team chat", icon: MessagesSquare, team: true },
-  { to: "/admin/messages", label: "Guest messages", icon: Mail, team: true },
+  { to: "/admin/messages", label: "Guest messages", icon: Mail },
 ];
 
 function AdminLayout() {

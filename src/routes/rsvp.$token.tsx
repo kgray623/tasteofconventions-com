@@ -10,8 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Calendar, MapPin, Check, X, HelpCircle, Minus, Plus, ArrowLeft } from "lucide-react";
-import { GuestThread } from "@/components/guest-thread";
+import { Calendar, MapPin, Check, X, Minus, Plus, ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/rsvp/$token")({
   head: () => ({ meta: [{ title: "Your invitation — RSVP" }] }),
@@ -31,7 +30,6 @@ function RsvpPage() {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<"yes" | "no">("yes");
   const [partySize, setPartySize] = useState(1);
-  const [message, setMessage] = useState("");
   const [invitedBy, setInvitedBy] = useState("");
   const [invitedByOther, setInvitedByOther] = useState("");
   const [inviters, setInviters] = useState<{ id: string; name: string }[]>([]);
@@ -49,7 +47,6 @@ function RsvpPage() {
         if (r.rsvp) {
           setStatus(r.rsvp.status === "yes" ? "yes" : "no");
           setPartySize(r.rsvp.party_size);
-          setMessage(r.rsvp.message ?? "");
           setInvitedBy(r.rsvp.invited_by ?? "");
         }
       } finally { setLoading(false); }
@@ -68,7 +65,7 @@ function RsvpPage() {
   const handleSubmit = async () => {
     try {
       const finalInvitedBy = invitedBy === "__other__" ? invitedByOther.trim() : invitedBy;
-      await submit({ data: { token, status, party_size: partySize, dietary_notes: "", message, invited_by: finalInvitedBy } });
+      await submit({ data: { token, status, party_size: partySize, dietary_notes: "", message: null, invited_by: finalInvitedBy } });
       toast.success("RSVP saved — thank you!");
     } catch (e: any) { toast.error(e.message); }
   };
@@ -183,10 +180,6 @@ function RsvpPage() {
               />
             )}
           </div>
-          <div className="space-y-1.5">
-            <Label>Message to the host (optional)</Label>
-            <Textarea value={message} onChange={(e) => setMessage(e.target.value)} />
-          </div>
           <Button onClick={handleSubmit} className="bg-ink text-cream hover:bg-ink/90 w-full">Save RSVP</Button>
         </Card>
 
@@ -229,8 +222,6 @@ function RsvpPage() {
             </div>
           </Card>
         )}
-
-        <GuestThread invitationId={data.invitation.id} title="Message the host" />
       </div>
     </div>
   );

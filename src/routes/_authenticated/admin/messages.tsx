@@ -1,10 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { GuestThread } from "@/components/guest-thread";
+import { useRoles } from "@/hooks/use-roles";
 import { toast } from "sonner";
 import { Megaphone } from "lucide-react";
 
@@ -21,6 +22,8 @@ type Thread = {
 };
 
 function GuestMessagesPage() {
+  const { isAdmin, loading } = useRoles();
+  const navigate = useNavigate();
   const [threads, setThreads] = useState<Thread[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -88,6 +91,11 @@ function GuestMessagesPage() {
   };
 
   useEffect(() => {
+    if (loading) return;
+    if (!isAdmin) {
+      navigate({ to: "/admin" });
+      return;
+    }
     load();
     const ch = supabase
       .channel("admin-guest-messages")
@@ -96,7 +104,9 @@ function GuestMessagesPage() {
     return () => {
       supabase.removeChannel(ch);
     };
-  }, []);
+  }, [isAdmin, loading, navigate]);
+
+  if (loading || !isAdmin) return null;
 
   return (
     <div className="space-y-4">

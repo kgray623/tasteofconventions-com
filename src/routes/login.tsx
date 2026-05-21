@@ -54,7 +54,7 @@ function HelperLogin() {
       return toast.error(error.message);
     }
     if (data.user) {
-      toast.success("Signed in. Opening your admin area…");
+      toast.success("Signed in.");
       openDestination(await routeForUser(data.user.id));
       return;
     }

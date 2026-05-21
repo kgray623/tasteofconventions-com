@@ -10,8 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, MapPin, Check, X, HelpCircle, Minus, Plus, Eye, ArrowLeft } from "lucide-react";
-import { useRoles } from "@/hooks/use-roles";
+import { Check, X, Minus, Plus, ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/rsvp/")({
   head: () => ({ meta: [{ title: "RSVP" }] }),
@@ -54,13 +53,11 @@ const menu: Record<string, { id: string; name: string; description: string; pric
 };
 
 function PreviewPage() {
-  const { isTeam } = useRoles();
   const [status, setStatus] = useState<"yes" | "no">("yes");
   const [partySize, setPartySize] = useState(2);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [message, setMessage] = useState("");
   const [invitedBy, setInvitedBy] = useState("");
   const [invitedByOther, setInvitedByOther] = useState("");
   const [inviters, setInviters] = useState<{ id: string; name: string }[]>([]);
@@ -93,7 +90,7 @@ function PreviewPage() {
         password: phoneDigits,
         status,
         party_size: partySize,
-        message: message.trim() || null,
+        message: null,
         invited_by: (invitedBy === "__other__" ? invitedByOther.trim() : invitedBy) || null,
       }});
       setSaved(true);
@@ -182,10 +179,6 @@ function PreviewPage() {
                 placeholder="Type the name of the person who invited you"
               />
             )}
-          </div>
-          <div className="space-y-1.5">
-            <Label>Message to the host (optional)</Label>
-            <Textarea value={message} onChange={(e) => setMessage(e.target.value)} />
           </div>
           <Button onClick={handleSave} disabled={saving} className="bg-ink text-cream hover:bg-ink/90 w-full">{saving ? "Saving…" : "Save RSVP"}</Button>
           {saved && (
