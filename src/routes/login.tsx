@@ -55,6 +55,7 @@ function HelperLogin() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [forgotBusy, setForgotBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (loading || !user) return;
