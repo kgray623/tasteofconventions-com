@@ -33,6 +33,8 @@ function RsvpPage() {
   const [partySize, setPartySize] = useState(1);
   const [message, setMessage] = useState("");
   const [invitedBy, setInvitedBy] = useState("");
+  const [invitedByOther, setInvitedByOther] = useState("");
+  const [inviters, setInviters] = useState<{ id: string; name: string }[]>([]);
   const [restaurants, setRestaurants] = useState<R[]>([]);
   const [menu, setMenu] = useState<M[]>([]);
   const [restaurantId, setRestaurantId] = useState("");
@@ -51,12 +53,14 @@ function RsvpPage() {
           setInvitedBy(r.rsvp.invited_by ?? "");
         }
       } finally { setLoading(false); }
-      const [{ data: rs }, { data: ms }] = await Promise.all([
+      const [{ data: rs }, { data: ms }, { data: iv }] = await Promise.all([
         supabase.from("restaurants").select("id,name,cuisine").eq("active", true),
         supabase.from("menu_items").select("id,restaurant_id,name,description,price").eq("available", true),
+        supabase.from("inviters").select("id,name").eq("active", true).order("name"),
       ]);
       setRestaurants(rs ?? []);
       setMenu((ms as M[]) ?? []);
+      setInviters(iv ?? []);
       if (rs?.[0]) setRestaurantId(rs[0].id);
     })();
   }, [token, fetchInv]);
