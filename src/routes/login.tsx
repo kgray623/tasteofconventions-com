@@ -39,7 +39,7 @@ function HelperLogin() {
 
   useEffect(() => {
     if (loading || !user) return;
-    routeForUser(user.id, user.email).then((destination) => openDestination(destination, true));
+    routeForUser(user.id).then((destination) => openDestination(destination, true));
   }, [user, loading]);
 
   const signIn = async (event?: FormEvent) => {
