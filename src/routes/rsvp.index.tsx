@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, MapPin, Check, X, HelpCircle, Minus, Plus, Eye, ArrowLeft } from "lucide-react";
+import { Check, X, Minus, Plus, ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/rsvp/")({
   head: () => ({ meta: [{ title: "RSVP" }] }),
