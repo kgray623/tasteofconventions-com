@@ -11,8 +11,11 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminLayout,
 });
 
+import { CalendarCog } from "lucide-react";
+
 const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boolean; team?: boolean }[] = [
   { to: "/admin", label: "Overview", icon: ShieldCheck, exact: true, team: true },
+  { to: "/admin/event", label: "Event details", icon: CalendarCog, team: true },
   { to: "/admin/upload", label: "Add guests", icon: Upload, team: true },
   { to: "/admin/inviters", label: "Inviters", icon: UserPlus, team: true },
   { to: "/admin/categories", label: "Assignments", icon: ListChecks },
