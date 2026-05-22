@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { FormEvent, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -26,14 +26,10 @@ async function routeForUser(userId: string): Promise<RouteDestination> {
   return { to: "/my-rsvp" };
 }
 
-function openDestination(destination: RouteDestination, replace = false) {
-  if (replace) window.location.replace(destination.to);
-  else window.location.assign(destination.to);
-}
-
 function HelperLogin() {
   const { user, loading } = useAuth();
   const search = useSearch({ strict: false }) as { redirect?: string };
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -43,8 +39,11 @@ function HelperLogin() {
   useEffect(() => {
     if (loading || !user) return;
     const redirectToUpload = search.redirect === "/admin/upload";
-    routeForUser(user.id).then((destination) => openDestination(redirectToUpload && destination.to === "/admin" ? { to: "/admin/upload" } : destination, true));
-  }, [user, loading, search.redirect]);
+    routeForUser(user.id).then((destination) => {
+      const next = redirectToUpload && destination.to === "/admin" ? { to: "/admin/upload" as const } : destination;
+      navigate({ to: next.to, replace: true });
+    });
+  }, [user, loading, search.redirect, navigate]);
 
   const signIn = async (event?: FormEvent) => {
     event?.preventDefault();
@@ -61,7 +60,8 @@ function HelperLogin() {
       if (data.user) {
         toast.success("Signed in.");
         const destination = await routeForUser(data.user.id);
-        openDestination(search.redirect === "/admin/upload" && destination.to === "/admin" ? { to: "/admin/upload" } : destination);
+        const next = search.redirect === "/admin/upload" && destination.to === "/admin" ? { to: "/admin/upload" as const } : destination;
+        navigate({ to: next.to });
         return;
       }
       setBusy(false);

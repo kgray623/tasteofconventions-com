@@ -89,11 +89,25 @@ function pick(obj: Record<string, unknown>, keys: string[]): string {
   return "";
 }
 
+function parseContactText(value: string) {
+  const email = value.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0]?.trim() ?? "";
+  const phone = value.match(/(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)\d{3}[\s.-]?\d{4}(?:\s*(?:x|ext\.?)\s*\d{1,6})?|\b\d{7,15}\b/i)?.[0]?.trim() ?? "";
+  let nameSource = value;
+  if (email) nameSource = nameSource.replace(email, " ");
+  if (phone) nameSource = nameSource.replace(phone, " ");
+  const name = nameSource
+    .split(/\r?\n|[,;|\t]/)
+    .map((part) => part.replace(/^\s*(name|full name|guest|mobile|phone|cell|email|e-mail)\s*[:\-–—]?\s*/i, "").trim())
+    .find((part) => /[a-zA-Z]/.test(part)) ?? "";
+  return { name, phone, email };
+}
+
 function UploadPage() {
   const { user } = useAuth();
   const { isTeam } = useRoles();
   const fileRef = useRef<HTMLInputElement>(null);
   const vcardRef = useRef<HTMLInputElement>(null);
+  const quickNameRef = useRef<HTMLInputElement>(null);
   const [events, setEvents] = useState<{ id: string; title: string }[]>([]);
   const [eventId, setEventId] = useState("");
   const [rows, setRows] = useState<Parsed[]>([]);
@@ -103,6 +117,8 @@ function UploadPage() {
   const [quick, setQuick] = useState({ name: "", phone: "", email: "" });
   const [quickBusy, setQuickBusy] = useState(false);
   const [quickAdded, setQuickAdded] = useState(0);
+  const [canPickContacts, setCanPickContacts] = useState(false);
+  const [clipboardBusy, setClipboardBusy] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -114,6 +130,10 @@ function UploadPage() {
       console.error("[upload] events load failed", err);
     });
     return () => { alive = false; };
+  }, []);
+
+  useEffect(() => {
+    setCanPickContacts(Boolean(getContactsApi()) && !isInIframe() && !isIOS());
   }, []);
 
   if (!isTeam) {
@@ -213,23 +233,11 @@ function UploadPage() {
 
   const onPickContacts = async () => {
     const api = getContactsApi();
-    // iPhone/iPad/Safari/desktop: no Contact Picker API. Open the .vcf file picker,
-    // which on iOS lets the user choose a contacts file from the Files app / share sheet.
     if (!api || isInIframe() || isIOS()) {
-      if (isIOS()) {
-        toast.message("iPhone: import contacts as a .vcf", {
-          description: "Open Contacts → select people → Share → Save to Files. Then choose that .vcf here.",
-        });
-      } else if (!api) {
-        toast.message("Your browser can't open contacts directly", {
-          description: "Export your contacts as a .vcf file and choose it here.",
-        });
-      } else {
-        toast.message("Contact picking is blocked in this preview", {
-          description: "Choose a .vcf contacts file instead. You will stay on this page.",
-        });
-      }
-      vcardRef.current?.click();
+      toast.message("Use Quick add on this device", {
+        description: "This keeps you in the app and avoids the phone file picker that can break preview.",
+      });
+      quickNameRef.current?.focus();
       return;
     }
     try {
@@ -250,6 +258,33 @@ function UploadPage() {
     } catch {
       toast.error("Couldn't read contacts", { description: "Choose a .vcf contacts file instead. You will stay on this page." });
       vcardRef.current?.click();
+    }
+  };
+
+  const pasteFromClipboard = async () => {
+    if (!navigator.clipboard?.readText) {
+      toast.message("Paste manually", { description: "Tap the box, then use your phone's Paste option." });
+      return;
+    }
+    setClipboardBusy(true);
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) {
+        toast.message("Clipboard is empty");
+        return;
+      }
+      const parsed = parseContactText(text);
+      setQuick((q) => ({
+        name: parsed.name || q.name,
+        phone: parsed.phone || q.phone,
+        email: parsed.email || q.email,
+      }));
+      setPasted(text);
+      toast.success("Pasted contact details");
+    } catch (e) {
+      toast.message("Paste manually", { description: getErrorMessage(e) });
+    } finally {
+      setClipboardBusy(false);
     }
   };
 
@@ -429,10 +464,11 @@ function UploadPage() {
           )}
         </div>
         <p className="text-xs text-muted-foreground">
-          The easiest way. Type the guest's name and their phone <em>or</em> email, tap <em>Add guest</em>, and they're on the list. Open your phone's Contacts app side-by-side and copy/paste as you go.
+          The safest mobile flow. Open a person in your phone Contacts app, copy their details, come back here, paste, and tap <em>Add guest</em>.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <Input
+            ref={quickNameRef}
             value={quick.name}
             onChange={(e) => setQuick((q) => ({ ...q, name: e.target.value }))}
             placeholder="Full name"
@@ -455,7 +491,10 @@ function UploadPage() {
             autoComplete="email"
           />
         </div>
-        <div className="flex justify-end">
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button onClick={pasteFromClipboard} disabled={clipboardBusy} variant="outline">
+            <ClipboardPaste className="w-4 h-4 mr-2" /> Paste copied contact
+          </Button>
           <Button
             onClick={onQuickAdd}
             disabled={quickBusy || !eventId || !quick.name.trim() || (!quick.phone.trim() && !quick.email.trim())}
@@ -473,16 +512,13 @@ function UploadPage() {
           <p className="font-medium">Pick from your phone's contacts</p>
         </div>
         <p className="text-xs text-muted-foreground">
-          <strong>Android (Chrome):</strong> tap <em>Pick contacts</em> and your phone's contact
-          picker opens — choose guests and you're done.<br />
-          <strong>iPhone / iPad:</strong> open Contacts → select people → <em>Share Contact</em> →
-          <em>Save to Files</em>. Then tap <em>Pick contacts</em> (or <em>Import .vcf file</em>)
-          and choose that file.<br />
-          <strong>Desktop:</strong> export a <code>.vcf</code> from your address book and import it below.
+          {canPickContacts
+            ? "This Android browser supports direct contact picking. Choose people, review them, then add them."
+            : "Direct contact picking is not available in this preview/browser, so this button now keeps you on the page and sends you to Quick add instead of opening a broken file screen."}
         </p>
         <div className="flex flex-wrap gap-2">
           <Button onClick={onPickContacts} disabled={!eventId} className="bg-ink text-cream hover:bg-ink/90">
-            <Smartphone className="w-4 h-4 mr-2" /> Pick contacts
+            <Smartphone className="w-4 h-4 mr-2" /> {canPickContacts ? "Pick contacts" : "Use Quick add"}
           </Button>
           <label className="inline-flex">
             <input
