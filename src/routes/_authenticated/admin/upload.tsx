@@ -171,6 +171,11 @@ function saveUploadDraft(userId: string | undefined, pasted: string, quick: { na
   window.localStorage.setItem(uploadDraftKey(userId), JSON.stringify({ pasted, quick, rows }));
 }
 
+function clearUploadDraft(userId?: string) {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(uploadDraftKey(userId));
+}
+
 function UploadPage() {
   const { user } = useAuth();
   const { isTeam, loading: rolesLoading } = useRoles();
@@ -286,7 +291,7 @@ function UploadPage() {
     }
   };
 
-  const parseRows = async (raw: Record<string, unknown>[]) => {
+  const parseRows = async (raw: Record<string, unknown>[], append = false) => {
     const parsed: Parsed[] = (raw ?? [])
       .map((r, i) => ({
         _row: i + 1,
@@ -296,8 +301,9 @@ function UploadPage() {
         notes: pick(r, ["notes", "note", "comment", "comments"]),
       }))
       .filter((r) => r.guest_name);
-    await flagDuplicates(parsed);
-    setRows(parsed);
+    const next = append ? [...rows, ...parsed.map((r, i) => ({ ...r, _row: rows.length + i + 1 }))] : parsed;
+    await flagDuplicates(next);
+    setRows(next);
   };
 
   const onFile = async (file: File) => {
