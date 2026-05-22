@@ -71,7 +71,7 @@ function parseVCards(text: string): Record<string, string>[] {
 }
 
 export const Route = createFileRoute("/_authenticated/admin/upload")({
-  component: UploadPage,
+  component: () => (<UploadErrorBoundary><UploadPage /></UploadErrorBoundary>),
 });
 
 type Row = { guest_name: string; guest_email: string; guest_phone: string; notes: string };
