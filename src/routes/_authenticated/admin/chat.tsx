@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Send } from "lucide-react";
 import { toast } from "sonner";
+import { useDraftState } from "@/hooks/use-draft-state";
 
 export const Route = createFileRoute("/_authenticated/admin/chat")({
   component: ChatPage,
@@ -19,7 +20,7 @@ function ChatPage() {
   const { user } = useAuth();
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
-  const [body, setBody] = useState("");
+  const [body, setBody] = useDraftState(`team-chat:${user?.id ?? "guest"}`, "body", "");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const load = async () => {

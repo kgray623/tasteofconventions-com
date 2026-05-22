@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Upload, CheckCircle2, Loader2 } from "lucide-react";
+import { clearDraftScope, useDraftState } from "@/hooks/use-draft-state";
 
 const schema = z.object({
   name: z.string().trim().min(1, "Name is required").max(120),
@@ -19,6 +20,12 @@ const schema = z.object({
 const MAX_BYTES = 200 * 1024 * 1024; // 200MB
 
 export function EntertainmentSubmissionForm() {
+  const draftScope = "entertainment-submission";
+  const [name, setName] = useDraftState(draftScope, "name", "");
+  const [email, setEmail] = useDraftState(draftScope, "email", "");
+  const [phone, setPhone] = useDraftState(draftScope, "phone", "");
+  const [talent, setTalent] = useDraftState(draftScope, "talent", "");
+  const [notes, setNotes] = useDraftState(draftScope, "notes", "");
   const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
@@ -71,6 +78,7 @@ export function EntertainmentSubmissionForm() {
         });
       if (insErr) throw insErr;
 
+      clearDraftScope(draftScope);
       setDone(true);
       toast.success("Thank you! We'll reach out on this platform.");
     } catch (err) {
@@ -98,25 +106,25 @@ export function EntertainmentSubmissionForm() {
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label htmlFor="ent-name">Your name *</Label>
-          <Input id="ent-name" name="name" required maxLength={120} />
+          <Input id="ent-name" name="name" value={name} onChange={(e) => setName(e.target.value)} required maxLength={120} />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="ent-talent">Your talent</Label>
-          <Input id="ent-talent" name="talent" maxLength={200} placeholder="e.g. Violin, Spoken word" />
+          <Input id="ent-talent" name="talent" value={talent} onChange={(e) => setTalent(e.target.value)} maxLength={200} placeholder="e.g. Violin, Spoken word" />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="ent-email">Email</Label>
-          <Input id="ent-email" name="email" type="email" maxLength={255} />
+          <Input id="ent-email" name="email" value={email} onChange={(e) => setEmail(e.target.value)} type="email" maxLength={255} />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="ent-phone">Phone</Label>
-          <Input id="ent-phone" name="phone" type="tel" maxLength={40} />
+          <Input id="ent-phone" name="phone" value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" maxLength={40} />
         </div>
       </div>
 
       <div className="space-y-1.5">
         <Label htmlFor="ent-notes">Anything we should know?</Label>
-        <Textarea id="ent-notes" name="notes" rows={3} maxLength={1000} />
+        <Textarea id="ent-notes" name="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} maxLength={1000} />
       </div>
 
       <div className="space-y-1.5">

@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { ArrowLeft, AlertCircle } from "lucide-react";
+import { clearDraftScope, useDraftState } from "@/hooks/use-draft-state";
 
 export const Route = createFileRoute("/_authenticated/invitations/new")({
   head: () => ({ meta: [{ title: "New invitation" }] }),
@@ -28,12 +29,13 @@ const schema = z.object({
 function NewInvite() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const draftScope = `new-invitation:${user?.id ?? "guest"}`;
   const [events, setEvents] = useState<{ id: string; title: string }[]>([]);
-  const [eventId, setEventId] = useState("");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [notes, setNotes] = useState("");
+  const [eventId, setEventId] = useDraftState(draftScope, "eventId", "");
+  const [name, setName] = useDraftState(draftScope, "name", "");
+  const [email, setEmail] = useDraftState(draftScope, "email", "");
+  const [phone, setPhone] = useDraftState(draftScope, "phone", "");
+  const [notes, setNotes] = useDraftState(draftScope, "notes", "");
   const [warning, setWarning] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -85,6 +87,7 @@ function NewInvite() {
     });
     setBusy(false);
     if (error) return toast.error(error.message);
+    clearDraftScope(draftScope);
     toast.success("Invitation created");
     navigate({ to: "/dashboard" });
   };
