@@ -1006,10 +1006,12 @@ function UploadPage() {
           </div>
         ) : (
           <div className="divide-y divide-border max-h-[480px] overflow-auto">
-            {savedGuests.map((g) => (
+            {savedGuests.map((g) => {
+              const isDup = duplicateGroups.dupIds.has(g.id);
+              return (
               <div
                 key={g.id}
-                className="px-4 py-2.5 flex flex-wrap items-center gap-3 text-sm"
+                className={`px-4 py-2.5 flex flex-wrap items-center gap-3 text-sm ${isDup ? "bg-destructive/5" : ""}`}
               >
                 {editingSavedId === g.id ? (
                   <input
@@ -1036,6 +1038,12 @@ function UploadPage() {
                     {g.guest_name}
                     <Pencil className="w-3 h-3 opacity-40" />
                   </button>
+                )}
+                {isDup && (
+                  <Badge variant="destructive" className="gap-1 h-5">
+                    <AlertTriangle className="w-3 h-3" />
+                    Duplicate
+                  </Badge>
                 )}
                 <span className="text-muted-foreground min-w-[160px] break-all">
                   {g.guest_email ?? ""}
