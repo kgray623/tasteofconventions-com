@@ -14,13 +14,13 @@ export const Route = createFileRoute("/login")({
   component: HelperLogin,
 });
 
-type RouteDestination =
-  | { to: "/admin" }
-  | { to: "/admin/upload" }
-  | { to: "/my-rsvp" };
+type RouteDestination = { to: "/admin" } | { to: "/admin/upload" } | { to: "/my-rsvp" };
 
 async function routeForUser(userId: string): Promise<RouteDestination> {
-  const { data } = await withTimeout(supabase.from("user_roles").select("role").eq("user_id", userId), 5000);
+  const { data } = await withTimeout(
+    supabase.from("user_roles").select("role").eq("user_id", userId),
+    5000,
+  );
   const roles = (data ?? []).map((r) => r.role as string);
   if (roles.includes("admin") || roles.includes("team")) return { to: "/admin" };
   return { to: "/my-rsvp" };
@@ -40,7 +40,10 @@ function HelperLogin() {
     if (loading || !user) return;
     const redirectToUpload = search.redirect === "/admin/upload";
     routeForUser(user.id).then((destination) => {
-      const next = redirectToUpload && destination.to === "/admin" ? { to: "/admin/upload" as const } : destination;
+      const next =
+        redirectToUpload && destination.to === "/admin"
+          ? { to: "/admin/upload" as const }
+          : destination;
       navigate({ to: next.to, replace: true });
     });
   }, [user, loading, search.redirect, navigate]);
@@ -49,10 +52,13 @@ function HelperLogin() {
     event?.preventDefault();
     setBusy(true);
     try {
-      const { data, error } = await withTimeout(supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      }), 10000);
+      const { data, error } = await withTimeout(
+        supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        }),
+        10000,
+      );
       if (error) {
         setBusy(false);
         return toast.error(error.message);
@@ -60,7 +66,10 @@ function HelperLogin() {
       if (data.user) {
         toast.success("Signed in.");
         const destination = await routeForUser(data.user.id);
-        const next = search.redirect === "/admin/upload" && destination.to === "/admin" ? { to: "/admin/upload" as const } : destination;
+        const next =
+          search.redirect === "/admin/upload" && destination.to === "/admin"
+            ? { to: "/admin/upload" as const }
+            : destination;
         navigate({ to: next.to });
         return;
       }
@@ -78,9 +87,12 @@ function HelperLogin() {
     if (!normalizedEmail) return toast.error("Enter your email first");
     setForgotBusy(true);
     try {
-      const { error } = await withTimeout(supabase.auth.resetPasswordForEmail(normalizedEmail, {
-        redirectTo: window.location.origin + "/reset-password",
-      }), 10000);
+      const { error } = await withTimeout(
+        supabase.auth.resetPasswordForEmail(normalizedEmail, {
+          redirectTo: window.location.origin + "/reset-password",
+        }),
+        10000,
+      );
       if (error) return toast.error(error.message);
       toast.success("Password reset email sent.");
     } catch (error) {
