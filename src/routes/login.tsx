@@ -15,6 +15,11 @@ export const Route = createFileRoute("/login")({
 });
 
 type RouteDestination = { to: "/admin" } | { to: "/admin/upload" } | { to: "/my-rsvp" };
+const allowedRedirects = new Set(["/admin", "/admin/upload", "/my-rsvp", "/dashboard"]);
+
+function safeRedirect(value: string | undefined) {
+  return value && allowedRedirects.has(value) ? value : undefined;
+}
 
 async function routeForUser(userId: string): Promise<RouteDestination> {
   const { data } = await withTimeout(
@@ -38,15 +43,20 @@ function HelperLogin() {
 
   useEffect(() => {
     if (loading || !user) return;
-    const redirectToUpload = search.redirect === "/admin/upload";
+    let cancelled = false;
+    const redirect = safeRedirect(search.redirect);
     routeForUser(user.id).then((destination) => {
-      const next =
-        redirectToUpload && destination.to === "/admin"
-          ? { to: "/admin/upload" as const }
-          : destination;
-      navigate({ to: next.to, replace: true });
+      if (cancelled) return;
+      const nextTo =
+        redirect === "/admin/upload" && destination.to === "/admin"
+          ? "/admin/upload"
+          : destination.to;
+      window.location.replace(nextTo);
     });
-  }, [user, loading, search.redirect, navigate]);
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, loading, search.redirect]);
 
   const signIn = async (event?: FormEvent) => {
     event?.preventDefault();

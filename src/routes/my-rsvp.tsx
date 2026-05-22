@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getMyInvitation } from "@/lib/invitations.functions";
@@ -15,17 +15,13 @@ export const Route = createFileRoute("/my-rsvp")({
 
 function MyRsvpPage() {
   const { user, loading } = useAuth();
-  const navigate = useNavigate();
   const fetchMine = useServerFn(getMyInvitation);
   const [state, setState] = useState<"loading" | "none" | "ready">("loading");
   const [data, setData] = useState<any>(null);
 
   useEffect(() => {
     if (loading) return;
-    if (!user) {
-      navigate({ to: "/login" });
-      return;
-    }
+    if (!user) return;
     let cancelled = false;
     const fallback = window.setTimeout(() => {
       if (!cancelled) setState("none");
@@ -47,7 +43,11 @@ function MyRsvpPage() {
       }
     })();
     return () => { cancelled = true; window.clearTimeout(fallback); };
-  }, [user, loading, fetchMine, navigate]);
+  }, [user, loading, fetchMine]);
+
+  if (!loading && !user) {
+    return <Navigate to="/login" replace />;
+  }
 
   if (state === "loading") {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading your RSVP…</div>;
