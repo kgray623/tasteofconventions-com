@@ -802,6 +802,22 @@ function UploadPage() {
                     {r._dupReason}
                   </Badge>
                 )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  aria-label={`Remove ${r.guest_name}`}
+                  onClick={() => {
+                    setRows((prev) =>
+                      prev
+                        .filter((_, i) => i !== idx)
+                        .map((row, i) => ({ ...row, _row: i + 1, _dupReason: undefined })),
+                    );
+                  }}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <X className="w-4 h-4 mr-1" /> Remove
+                </Button>
               </div>
             ))}
           </div>
