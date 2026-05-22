@@ -726,22 +726,7 @@ function UploadPage() {
         </p>
       </Card>
 
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">Event</p>
-        <Select value={eventId} onValueChange={setEventId}>
-          <SelectTrigger className="w-full sm:w-[320px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {events.map((e) => (
-              <SelectItem key={e.id} value={e.id}>
-                {e.title}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </Card>
-
-      {/* PRIMARY: paste anything */}
+      {/* PRIMARY (legacy fallback): paste anything */}
       <Card className="p-6 space-y-3 border-terracotta/60 border-2 bg-terracotta/5">
         <div className="flex items-center gap-2">
           <ClipboardPaste className="w-5 h-5 text-terracotta" />
