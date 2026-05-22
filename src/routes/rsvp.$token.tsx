@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Calendar, MapPin, Check, X, Minus, Plus, ArrowLeft } from "lucide-react";
 import { InvitationPage } from "@/components/invitation-page";
+import { withTimeout } from "@/lib/async-safety";
 
 export const Route = createFileRoute("/rsvp/$token")({
   head: () => ({ meta: [{ title: "Your invitation — RSVP" }] }),
@@ -41,26 +42,36 @@ function RsvpPage() {
   const [orderNotes, setOrderNotes] = useState("");
 
   useEffect(() => {
+    let alive = true;
+    const fallback = window.setTimeout(() => {
+      if (alive) setLoading(false);
+    }, 10000);
     (async () => {
       try {
-        const r = await fetchInv({ data: { token } });
+        const r = await withTimeout(fetchInv({ data: { token } }), 10000);
+        if (!alive) return;
         setData(r);
         if (r.rsvp) {
           setStatus(r.rsvp.status === "yes" ? "yes" : "no");
           setPartySize(r.rsvp.party_size);
           setInvitedBy(r.rsvp.invited_by ?? "");
         }
-      } finally { setLoading(false); }
-      const [{ data: rs }, { data: ms }, { data: iv }] = await Promise.all([
+      } finally { if (alive) setLoading(false); }
+      const [{ data: rs }, { data: ms }, { data: iv }] = await withTimeout(Promise.all([
         supabase.from("restaurants").select("id,name,cuisine").eq("active", true),
         supabase.from("menu_items").select("id,restaurant_id,name,description,price").eq("available", true),
         supabase.from("inviters").select("id,name").eq("active", true).order("name"),
-      ]);
+      ]), 10000);
+      if (!alive) return;
       setRestaurants(rs ?? []);
       setMenu((ms as M[]) ?? []);
       setInviters(iv ?? []);
       if (rs?.[0]) setRestaurantId(rs[0].id);
     })();
+    return () => {
+      alive = false;
+      window.clearTimeout(fallback);
+    };
   }, [token, fetchInv]);
 
   const handleSubmit = async () => {
