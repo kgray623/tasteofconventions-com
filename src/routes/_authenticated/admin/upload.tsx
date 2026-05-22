@@ -232,23 +232,11 @@ function UploadPage() {
 
   const onPickContacts = async () => {
     const api = getContactsApi();
-    // iPhone/iPad/Safari/desktop: no Contact Picker API. Open the .vcf file picker,
-    // which on iOS lets the user choose a contacts file from the Files app / share sheet.
     if (!api || isInIframe() || isIOS()) {
-      if (isIOS()) {
-        toast.message("iPhone: import contacts as a .vcf", {
-          description: "Open Contacts → select people → Share → Save to Files. Then choose that .vcf here.",
-        });
-      } else if (!api) {
-        toast.message("Your browser can't open contacts directly", {
-          description: "Export your contacts as a .vcf file and choose it here.",
-        });
-      } else {
-        toast.message("Contact picking is blocked in this preview", {
-          description: "Choose a .vcf contacts file instead. You will stay on this page.",
-        });
-      }
-      vcardRef.current?.click();
+      toast.message("Use Quick add on this device", {
+        description: "This keeps you in the app and avoids the phone file picker that can break preview.",
+      });
+      quickNameRef.current?.focus();
       return;
     }
     try {
@@ -269,6 +257,33 @@ function UploadPage() {
     } catch {
       toast.error("Couldn't read contacts", { description: "Choose a .vcf contacts file instead. You will stay on this page." });
       vcardRef.current?.click();
+    }
+  };
+
+  const pasteFromClipboard = async () => {
+    if (!navigator.clipboard?.readText) {
+      toast.message("Paste manually", { description: "Tap the box, then use your phone's Paste option." });
+      return;
+    }
+    setClipboardBusy(true);
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) {
+        toast.message("Clipboard is empty");
+        return;
+      }
+      const parsed = parseContactText(text);
+      setQuick((q) => ({
+        name: parsed.name || q.name,
+        phone: parsed.phone || q.phone,
+        email: parsed.email || q.email,
+      }));
+      setPasted(text);
+      toast.success("Pasted contact details");
+    } catch (e) {
+      toast.message("Paste manually", { description: getErrorMessage(e) });
+    } finally {
+      setClipboardBusy(false);
     }
   };
 
