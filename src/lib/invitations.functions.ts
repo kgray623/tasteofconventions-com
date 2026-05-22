@@ -63,6 +63,15 @@ async function sendRsvpConfirmation(invitationId: string, status: "yes" | "no" |
   }
 }
 
+function rsvpTokenCandidates(token: string) {
+  const trimmed = token.trim();
+  return Array.from(new Set([
+    trimmed,
+    trimmed.replace(/ /g, "+"),
+    trimmed.replace(/-/g, "+").replace(/_/g, "/"),
+  ].filter(Boolean)));
+}
+
 // Public lookup of an invitation by RSVP token (used on the guest magic-link page)
 export const getInvitationByToken = createServerFn({ method: "GET" })
   .inputValidator((d: { token: string }) => z.object({ token: z.string().min(8).max(120) }).parse(d))
@@ -70,7 +79,7 @@ export const getInvitationByToken = createServerFn({ method: "GET" })
     const { data: inv, error } = await supabaseAdmin
       .from("invitations")
       .select("id,event_id,guest_name,guest_email,guest_phone,notes,events(title,description,starts_at,ends_at,location,virtual_link)")
-      .eq("rsvp_token", data.token)
+      .in("rsvp_token", rsvpTokenCandidates(data.token))
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!inv) return { invitation: null, rsvp: null, order: null };
@@ -91,7 +100,7 @@ export const submitRsvp = createServerFn({ method: "POST" })
   .inputValidator((d) => RsvpInput.parse(d))
   .handler(async ({ data }) => {
     const { data: inv } = await supabaseAdmin
-      .from("invitations").select("id").eq("rsvp_token", data.token).maybeSingle();
+      .from("invitations").select("id").in("rsvp_token", rsvpTokenCandidates(data.token)).maybeSingle();
     if (!inv) throw new Error("Invitation not found");
     const { error } = await supabaseAdmin.from("rsvps").upsert({
       invitation_id: inv.id,
@@ -123,7 +132,7 @@ export const submitOrder = createServerFn({ method: "POST" })
   .inputValidator((d) => OrderInput.parse(d))
   .handler(async ({ data }) => {
     const { data: inv } = await supabaseAdmin
-      .from("invitations").select("id").eq("rsvp_token", data.token).maybeSingle();
+      .from("invitations").select("id").in("rsvp_token", rsvpTokenCandidates(data.token)).maybeSingle();
     if (!inv) throw new Error("Invitation not found");
     const total = data.items.reduce((s, i) => s + i.price * i.quantity, 0);
     const { error } = await supabaseAdmin.from("orders").upsert({
