@@ -632,6 +632,7 @@ function UploadPage() {
       setQuick({ name: "", phone: "", email: "" });
       saveUploadDraft(user.id, pasted, { name: "", phone: "", email: "" }, rows);
       toast.success(`Added ${name}`);
+      void loadSavedGuests(eventId);
     } catch (e) {
       console.error("[upload] quick add failed", e);
       toast.error("Couldn't add that guest", { description: getErrorMessage(e) });
