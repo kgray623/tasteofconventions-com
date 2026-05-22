@@ -47,11 +47,11 @@ function HelperLogin() {
     const redirect = safeRedirect(search.redirect);
     routeForUser(user.id).then((destination) => {
       if (cancelled) return;
-      const next =
+      const nextTo =
         redirect === "/admin/upload" && destination.to === "/admin"
           ? "/admin/upload"
-          : destination;
-      window.location.replace(next.to);
+          : destination.to;
+      window.location.replace(nextTo);
     });
     return () => {
       cancelled = true;
