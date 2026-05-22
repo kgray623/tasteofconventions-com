@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { Component, useEffect, useRef, useState, type ReactNode } from "react";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,27 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, ClipboardPaste, Smartphone } from "lucide-react";
+import { getErrorMessage } from "@/lib/async-safety";
+
+class UploadErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  componentDidCatch(error: Error) { console.error("[upload] render error", error); }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="space-y-4 p-4">
+          <Card className="p-5 border-destructive/40 bg-destructive/5">
+            <p className="font-medium">Something broke on this page.</p>
+            <p className="text-sm text-muted-foreground mt-1">{this.state.error.message}</p>
+            <Button className="mt-3" onClick={() => this.setState({ error: null })}>Try again</Button>
+          </Card>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // Browsers that support the Contact Picker API (Chrome on Android)
 type ContactInfo = { name?: string[]; email?: string[]; tel?: string[] };
@@ -50,7 +71,7 @@ function parseVCards(text: string): Record<string, string>[] {
 }
 
 export const Route = createFileRoute("/_authenticated/admin/upload")({
-  component: UploadPage,
+  component: () => (<UploadErrorBoundary><UploadPage /></UploadErrorBoundary>),
 });
 
 type Row = { guest_name: string; guest_email: string; guest_phone: string; notes: string };
@@ -80,10 +101,15 @@ function UploadPage() {
   const [pasted, setPasted] = useState("");
 
   useEffect(() => {
+    let alive = true;
     supabase.from("events").select("id,title").order("starts_at").then(({ data }) => {
+      if (!alive) return;
       setEvents(data ?? []);
       if (data?.[0]) setEventId(data[0].id);
+    }, (err) => {
+      console.error("[upload] events load failed", err);
     });
+    return () => { alive = false; };
   }, []);
 
   if (!isTeam) {
@@ -106,24 +132,28 @@ function UploadPage() {
       }
     });
     if (eventId) {
-      const { data: existing } = await supabase
-        .from("invitations")
-        .select("guest_name,guest_email_normalized,guest_phone_normalized")
-        .eq("event_id", eventId);
-      const existE = new Set((existing ?? []).map((r) => r.guest_email_normalized).filter(Boolean) as string[]);
-      const existP = new Set((existing ?? []).map((r) => r.guest_phone_normalized).filter(Boolean) as string[]);
-      parsed.forEach((r) => {
-        if (r._dupReason) return;
-        const e = norm(r.guest_email);
-        const p = phoneNorm(r.guest_phone);
-        if (e && existE.has(e)) r._dupReason = "already on the guest list (email match)";
-        else if (p.length >= 7 && existP.has(p)) r._dupReason = "already on the guest list (phone match)";
-      });
+      try {
+        const { data: existing } = await supabase
+          .from("invitations")
+          .select("guest_name,guest_email_normalized,guest_phone_normalized")
+          .eq("event_id", eventId);
+        const existE = new Set((existing ?? []).map((r) => r.guest_email_normalized).filter(Boolean) as string[]);
+        const existP = new Set((existing ?? []).map((r) => r.guest_phone_normalized).filter(Boolean) as string[]);
+        parsed.forEach((r) => {
+          if (r._dupReason) return;
+          const e = norm(r.guest_email);
+          const p = phoneNorm(r.guest_phone);
+          if (e && existE.has(e)) r._dupReason = "already on the guest list (email match)";
+          else if (p.length >= 7 && existP.has(p)) r._dupReason = "already on the guest list (phone match)";
+        });
+      } catch (e) {
+        console.warn("[upload] dup check failed", e);
+      }
     }
   };
 
   const parseRows = async (raw: Record<string, unknown>[]) => {
-    const parsed: Parsed[] = raw.map((r, i) => ({
+    const parsed: Parsed[] = (raw ?? []).map((r, i) => ({
       _row: i + 1,
       guest_name: pick(r, ["name", "guest", "guest name", "full name"]),
       guest_email: pick(r, ["email", "e-mail", "email address"]),
@@ -135,18 +165,36 @@ function UploadPage() {
   };
 
   const onFile = async (file: File) => {
-    setDone(null);
-    let raw: Record<string, unknown>[] = [];
-    if (file.name.toLowerCase().endsWith(".csv")) {
-      const text = await file.text();
-      raw = Papa.parse(text, { header: true, skipEmptyLines: true }).data as Record<string, unknown>[];
-    } else {
-      const buf = await file.arrayBuffer();
-      const wb = XLSX.read(buf);
-      const sheet = wb.Sheets[wb.SheetNames[0]];
-      raw = XLSX.utils.sheet_to_json(sheet, { defval: "" }) as Record<string, unknown>[];
+    try {
+      setDone(null);
+      let raw: Record<string, unknown>[] = [];
+      const name = (file.name || "").toLowerCase();
+      if (name.endsWith(".vcf")) {
+        // User picked a vCard in the spreadsheet slot — handle it gracefully.
+        await onVCard(file);
+        return;
+      }
+      if (name.endsWith(".csv")) {
+        const text = await file.text();
+        raw = Papa.parse(text, { header: true, skipEmptyLines: true }).data as Record<string, unknown>[];
+      } else {
+        const buf = await file.arrayBuffer();
+        const wb = XLSX.read(buf);
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        raw = sheet ? (XLSX.utils.sheet_to_json(sheet, { defval: "" }) as Record<string, unknown>[]) : [];
+      }
+      if (!raw.length) {
+        toast.error("No rows found in that file.");
+        return;
+      }
+      await parseRows(raw);
+      toast.success(`Loaded ${raw.length} row${raw.length === 1 ? "" : "s"}`);
+    } catch (e) {
+      console.error("[upload] onFile failed", e);
+      toast.error("Couldn't read that file", { description: getErrorMessage(e) });
+    } finally {
+      if (fileRef.current) fileRef.current.value = "";
     }
-    await parseRows(raw);
   };
 
   const isInIframe = () => {
@@ -203,15 +251,22 @@ function UploadPage() {
 
 
   const onVCard = async (file: File) => {
-    setDone(null);
-    const text = await file.text();
-    const raw = parseVCards(text);
-    if (!raw.length) {
-      toast.error("No contacts found in that file.");
-      return;
+    try {
+      setDone(null);
+      const text = await file.text();
+      const raw = parseVCards(text);
+      if (!raw.length) {
+        toast.error("No contacts found in that file.");
+        return;
+      }
+      await parseRows(raw);
+      toast.success(`Loaded ${raw.length} contact${raw.length === 1 ? "" : "s"} from vCard`);
+    } catch (e) {
+      console.error("[upload] onVCard failed", e);
+      toast.error("Couldn't read that contacts file", { description: getErrorMessage(e) });
+    } finally {
+      if (vcardRef.current) vcardRef.current.value = "";
     }
-    await parseRows(raw);
-    toast.success(`Loaded ${raw.length} contact${raw.length === 1 ? "" : "s"} from vCard`);
   };
 
   const onPaste = async () => {
@@ -284,23 +339,34 @@ function UploadPage() {
     if (!eventId || !user) return;
     setBusy(true);
     let inserted = 0, flagged = 0, skipped = 0;
-    for (const r of rows) {
-      if (skipDupes && r._dupReason) { skipped++; continue; }
-      const { error } = await supabase.from("invitations").insert({
-        event_id: eventId, host_id: user.id, guest_name: r.guest_name,
-        guest_email: r.guest_email || null, guest_phone: r.guest_phone || null,
-        notes: r.notes || null,
-      });
-      if (error) { skipped++; continue; }
-      inserted++;
-      if (r._dupReason) flagged++;
+    try {
+      for (const r of rows) {
+        if (skipDupes && r._dupReason) { skipped++; continue; }
+        try {
+          const { error } = await supabase.from("invitations").insert({
+            event_id: eventId, host_id: user.id, guest_name: r.guest_name,
+            guest_email: r.guest_email || null, guest_phone: r.guest_phone || null,
+            notes: r.notes || null,
+          });
+          if (error) { skipped++; continue; }
+          inserted++;
+          if (r._dupReason) flagged++;
+        } catch (e) {
+          console.error("[upload] insert failed", e);
+          skipped++;
+        }
+      }
+      setDone({ inserted, flagged, skipped });
+      setRows([]);
+      setPasted("");
+      if (fileRef.current) fileRef.current.value = "";
+      toast.success(`Added ${inserted} guest${inserted === 1 ? "" : "s"}`);
+    } catch (e) {
+      console.error("[upload] importAll failed", e);
+      toast.error("Import failed", { description: getErrorMessage(e) });
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
-    setDone({ inserted, flagged, skipped });
-    setRows([]);
-    setPasted("");
-    if (fileRef.current) fileRef.current.value = "";
-    toast.success(`Added ${inserted} guest${inserted === 1 ? "" : "s"}`);
   };
 
   const dupCount = rows.filter((r) => r._dupReason).length;
