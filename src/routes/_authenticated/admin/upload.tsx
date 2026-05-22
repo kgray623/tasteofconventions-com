@@ -8,16 +8,34 @@ import { useRoles } from "@/hooks/use-roles";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
-import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, ClipboardPaste, Smartphone, UserPlus } from "lucide-react";
+import {
+  Upload,
+  FileSpreadsheet,
+  AlertCircle,
+  CheckCircle2,
+  ClipboardPaste,
+  Smartphone,
+  UserPlus,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { getErrorMessage } from "@/lib/async-safety";
 
 class UploadErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state = { error: null as Error | null };
-  static getDerivedStateFromError(error: Error) { return { error }; }
-  componentDidCatch(error: Error) { console.error("[upload] render error", error); }
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+  componentDidCatch(error: Error) {
+    console.error("[upload] render error", error);
+  }
   render() {
     if (this.state.error) {
       return (
@@ -25,7 +43,9 @@ class UploadErrorBoundary extends Component<{ children: ReactNode }, { error: Er
           <Card className="p-5 border-destructive/40 bg-destructive/5">
             <p className="font-medium">Something broke on this page.</p>
             <p className="text-sm text-muted-foreground mt-1">{this.state.error.message}</p>
-            <Button className="mt-3" onClick={() => this.setState({ error: null })}>Try again</Button>
+            <Button className="mt-3" onClick={() => this.setState({ error: null })}>
+              Try again
+            </Button>
           </Card>
         </div>
       );
@@ -47,7 +67,11 @@ const getContactsApi = (): ContactsManager | null => {
 };
 
 const isInIframe = () => {
-  try { return window.self !== window.top; } catch { return true; }
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
 };
 
 const isIOS = () => {
@@ -59,30 +83,38 @@ const isIOS = () => {
 // Minimal vCard (.vcf) parser — handles vCard 3.0/4.0 exports from iPhone & Android
 function parseVCards(text: string): Record<string, string>[] {
   const cards = text.split(/BEGIN:VCARD/i).slice(1);
-  return cards.map((card) => {
-    const body = card.split(/END:VCARD/i)[0];
-    // unfold folded lines (RFC 6350)
-    const lines = body.replace(/\r?\n[ \t]/g, "").split(/\r?\n/);
-    let name = "", email = "", phone = "";
-    for (const raw of lines) {
-      const idx = raw.indexOf(":");
-      if (idx < 0) continue;
-      const left = raw.slice(0, idx).toUpperCase();
-      const value = raw.slice(idx + 1).trim();
-      if (!value) continue;
-      if (!name && left.startsWith("FN")) name = value;
-      else if (!name && left.startsWith("N")) {
-        const [last, first] = value.split(";");
-        name = [first, last].filter(Boolean).join(" ").trim();
-      } else if (!email && left.startsWith("EMAIL")) email = value;
-      else if (!phone && left.startsWith("TEL")) phone = value;
-    }
-    return { name, email, phone, notes: "" };
-  }).filter((r) => r.name || r.email || r.phone);
+  return cards
+    .map((card) => {
+      const body = card.split(/END:VCARD/i)[0];
+      // unfold folded lines (RFC 6350)
+      const lines = body.replace(/\r?\n[ \t]/g, "").split(/\r?\n/);
+      let name = "",
+        email = "",
+        phone = "";
+      for (const raw of lines) {
+        const idx = raw.indexOf(":");
+        if (idx < 0) continue;
+        const left = raw.slice(0, idx).toUpperCase();
+        const value = raw.slice(idx + 1).trim();
+        if (!value) continue;
+        if (!name && left.startsWith("FN")) name = value;
+        else if (!name && left.startsWith("N")) {
+          const [last, first] = value.split(";");
+          name = [first, last].filter(Boolean).join(" ").trim();
+        } else if (!email && left.startsWith("EMAIL")) email = value;
+        else if (!phone && left.startsWith("TEL")) phone = value;
+      }
+      return { name, email, phone, notes: "" };
+    })
+    .filter((r) => r.name || r.email || r.phone);
 }
 
 export const Route = createFileRoute("/_authenticated/admin/upload")({
-  component: () => (<UploadErrorBoundary><UploadPage /></UploadErrorBoundary>),
+  component: () => (
+    <UploadErrorBoundary>
+      <UploadPage />
+    </UploadErrorBoundary>
+  ),
 });
 
 type Row = { guest_name: string; guest_email: string; guest_phone: string; notes: string };
@@ -101,14 +133,24 @@ function pick(obj: Record<string, unknown>, keys: string[]): string {
 
 function parseContactText(value: string) {
   const email = value.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0]?.trim() ?? "";
-  const phone = value.match(/(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)\d{3}[\s.-]?\d{4}(?:\s*(?:x|ext\.?)\s*\d{1,6})?|\b\d{7,15}\b/i)?.[0]?.trim() ?? "";
+  const phone =
+    value
+      .match(
+        /(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)\d{3}[\s.-]?\d{4}(?:\s*(?:x|ext\.?)\s*\d{1,6})?|\b\d{7,15}\b/i,
+      )?.[0]
+      ?.trim() ?? "";
   let nameSource = value;
   if (email) nameSource = nameSource.replace(email, " ");
   if (phone) nameSource = nameSource.replace(phone, " ");
-  const name = nameSource
-    .split(/\r?\n|[,;|\t]/)
-    .map((part) => part.replace(/^\s*(name|full name|guest|mobile|phone|cell|email|e-mail)\s*[:\-–—]?\s*/i, "").trim())
-    .find((part) => /[a-zA-Z]/.test(part)) ?? "";
+  const name =
+    nameSource
+      .split(/\r?\n|[,;|\t]/)
+      .map((part) =>
+        part
+          .replace(/^\s*(name|full name|guest|mobile|phone|cell|email|e-mail)\s*[:\-–—]?\s*/i, "")
+          .trim(),
+      )
+      .find((part) => /[a-zA-Z]/.test(part)) ?? "";
   return { name, phone, email };
 }
 
@@ -122,7 +164,9 @@ function UploadPage() {
   const [eventId, setEventId] = useState("");
   const [rows, setRows] = useState<Parsed[]>([]);
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState<{ inserted: number; flagged: number; skipped: number } | null>(null);
+  const [done, setDone] = useState<{ inserted: number; flagged: number; skipped: number } | null>(
+    null,
+  );
   const [pasted, setPasted] = useState("");
   const [quick, setQuick] = useState({ name: "", phone: "", email: "" });
   const [quickBusy, setQuickBusy] = useState(false);
@@ -132,14 +176,23 @@ function UploadPage() {
 
   useEffect(() => {
     let alive = true;
-    supabase.from("events").select("id,title").order("starts_at").then(({ data }) => {
-      if (!alive) return;
-      setEvents(data ?? []);
-      if (data?.[0]) setEventId(data[0].id);
-    }, (err) => {
-      console.error("[upload] events load failed", err);
-    });
-    return () => { alive = false; };
+    supabase
+      .from("events")
+      .select("id,title")
+      .order("starts_at")
+      .then(
+        ({ data }) => {
+          if (!alive) return;
+          setEvents(data ?? []);
+          if (data?.[0]) setEventId(data[0].id);
+        },
+        (err) => {
+          console.error("[upload] events load failed", err);
+        },
+      );
+    return () => {
+      alive = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -171,14 +224,19 @@ function UploadPage() {
           .from("invitations")
           .select("guest_name,guest_email_normalized,guest_phone_normalized")
           .eq("event_id", eventId);
-        const existE = new Set((existing ?? []).map((r) => r.guest_email_normalized).filter(Boolean) as string[]);
-        const existP = new Set((existing ?? []).map((r) => r.guest_phone_normalized).filter(Boolean) as string[]);
+        const existE = new Set(
+          (existing ?? []).map((r) => r.guest_email_normalized).filter(Boolean) as string[],
+        );
+        const existP = new Set(
+          (existing ?? []).map((r) => r.guest_phone_normalized).filter(Boolean) as string[],
+        );
         parsed.forEach((r) => {
           if (r._dupReason) return;
           const e = norm(r.guest_email);
           const p = phoneNorm(r.guest_phone);
           if (e && existE.has(e)) r._dupReason = "already on the guest list (email match)";
-          else if (p.length >= 7 && existP.has(p)) r._dupReason = "already on the guest list (phone match)";
+          else if (p.length >= 7 && existP.has(p))
+            r._dupReason = "already on the guest list (phone match)";
         });
       } catch (e) {
         console.warn("[upload] dup check failed", e);
@@ -187,13 +245,15 @@ function UploadPage() {
   };
 
   const parseRows = async (raw: Record<string, unknown>[]) => {
-    const parsed: Parsed[] = (raw ?? []).map((r, i) => ({
-      _row: i + 1,
-      guest_name: pick(r, ["name", "guest", "guest name", "full name"]),
-      guest_email: pick(r, ["email", "e-mail", "email address"]),
-      guest_phone: pick(r, ["phone", "mobile", "cell", "phone number"]),
-      notes: pick(r, ["notes", "note", "comment", "comments"]),
-    })).filter((r) => r.guest_name);
+    const parsed: Parsed[] = (raw ?? [])
+      .map((r, i) => ({
+        _row: i + 1,
+        guest_name: pick(r, ["name", "guest", "guest name", "full name"]),
+        guest_email: pick(r, ["email", "e-mail", "email address"]),
+        guest_phone: pick(r, ["phone", "mobile", "cell", "phone number"]),
+        notes: pick(r, ["notes", "note", "comment", "comments"]),
+      }))
+      .filter((r) => r.guest_name);
     await flagDuplicates(parsed);
     setRows(parsed);
   };
@@ -210,12 +270,17 @@ function UploadPage() {
       }
       if (name.endsWith(".csv")) {
         const text = await file.text();
-        raw = Papa.parse(text, { header: true, skipEmptyLines: true }).data as Record<string, unknown>[];
+        raw = Papa.parse(text, { header: true, skipEmptyLines: true }).data as Record<
+          string,
+          unknown
+        >[];
       } else {
         const buf = await file.arrayBuffer();
         const wb = XLSX.read(buf);
         const sheet = wb.Sheets[wb.SheetNames[0]];
-        raw = sheet ? (XLSX.utils.sheet_to_json(sheet, { defval: "" }) as Record<string, unknown>[]) : [];
+        raw = sheet
+          ? (XLSX.utils.sheet_to_json(sheet, { defval: "" }) as Record<string, unknown>[])
+          : [];
       }
       if (!raw.length) {
         toast.error("No rows found in that file.");
@@ -235,7 +300,8 @@ function UploadPage() {
     const api = getContactsApi();
     if (!api || isInIframe() || isIOS()) {
       toast.message("Use Quick add on this device", {
-        description: "This keeps you in the app and avoids the phone file picker that can break preview.",
+        description:
+          "This keeps you in the app and avoids the phone file picker that can break preview.",
       });
       quickNameRef.current?.focus();
       return;
@@ -243,12 +309,14 @@ function UploadPage() {
     try {
       setDone(null);
       const picked = await api.select(["name", "email", "tel"], { multiple: true });
-      const raw = picked.map((c) => ({
-        name: (c.name?.[0] ?? "").trim(),
-        email: (c.email?.[0] ?? "").trim(),
-        phone: (c.tel?.[0] ?? "").trim(),
-        notes: "",
-      })).filter((r) => r.name || r.email || r.phone);
+      const raw = picked
+        .map((c) => ({
+          name: (c.name?.[0] ?? "").trim(),
+          email: (c.email?.[0] ?? "").trim(),
+          phone: (c.tel?.[0] ?? "").trim(),
+          notes: "",
+        }))
+        .filter((r) => r.name || r.email || r.phone);
       if (!raw.length) {
         toast.message("No contacts selected.");
         return;
@@ -256,14 +324,18 @@ function UploadPage() {
       await parseRows(raw);
       toast.success(`Loaded ${raw.length} contact${raw.length === 1 ? "" : "s"}`);
     } catch {
-      toast.error("Couldn't read contacts", { description: "Choose a .vcf contacts file instead. You will stay on this page." });
+      toast.error("Couldn't read contacts", {
+        description: "Choose a .vcf contacts file instead. You will stay on this page.",
+      });
       vcardRef.current?.click();
     }
   };
 
   const pasteFromClipboard = async () => {
     if (!navigator.clipboard?.readText) {
-      toast.message("Paste manually", { description: "Tap the box, then use your phone's Paste option." });
+      toast.message("Paste manually", {
+        description: "Tap the box, then use your phone's Paste option.",
+      });
       return;
     }
     setClipboardBusy(true);
@@ -288,7 +360,6 @@ function UploadPage() {
     }
   };
 
-
   const onVCard = async (file: File) => {
     try {
       setDone(null);
@@ -309,11 +380,12 @@ function UploadPage() {
   };
 
   const onPaste = async () => {
-
     setDone(null);
     const emailRegex = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
-    const phoneRegex = /(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)\d{3}[\s.-]?\d{4}(?:\s*(?:x|ext\.?)\s*\d{1,6})?|\b\d{7,15}\b/i;
-    const labelRegex = /^\s*(?:\[(name|full name|guest|mobile|phone|cell|email|e-mail)\]|(name|full name|guest|mobile|phone|cell|email|e-mail))\s*[:\-–—]?\s*(.*)$/i;
+    const phoneRegex =
+      /(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)\d{3}[\s.-]?\d{4}(?:\s*(?:x|ext\.?)\s*\d{1,6})?|\b\d{7,15}\b/i;
+    const labelRegex =
+      /^\s*(?:\[(name|full name|guest|mobile|phone|cell|email|e-mail)\]|(name|full name|guest|mobile|phone|cell|email|e-mail))\s*[:\-–—]?\s*(.*)$/i;
 
     const tokens = pasted
       .split(/\r?\n/)
@@ -329,7 +401,11 @@ function UploadPage() {
     };
 
     const addName = (value: string) => {
-      const cleaned = value.replace(emailRegex, " ").replace(phoneRegex, " ").replace(/\s+/g, " ").trim();
+      const cleaned = value
+        .replace(emailRegex, " ")
+        .replace(phoneRegex, " ")
+        .replace(/\s+/g, " ")
+        .trim();
       if (!cleaned || !/[a-zA-Z]/.test(cleaned)) return;
       if (cur.name) flush();
       cur.name = cleaned;
@@ -377,17 +453,28 @@ function UploadPage() {
   const importAll = async (skipDupes: boolean) => {
     if (!eventId || !user) return;
     setBusy(true);
-    let inserted = 0, flagged = 0, skipped = 0;
+    let inserted = 0,
+      flagged = 0,
+      skipped = 0;
     try {
       for (const r of rows) {
-        if (skipDupes && r._dupReason) { skipped++; continue; }
+        if (skipDupes && r._dupReason) {
+          skipped++;
+          continue;
+        }
         try {
           const { error } = await supabase.from("invitations").insert({
-            event_id: eventId, host_id: user.id, guest_name: r.guest_name,
-            guest_email: r.guest_email || null, guest_phone: r.guest_phone || null,
+            event_id: eventId,
+            host_id: user.id,
+            guest_name: r.guest_name,
+            guest_email: r.guest_email || null,
+            guest_phone: r.guest_phone || null,
             notes: r.notes || null,
           });
-          if (error) { skipped++; continue; }
+          if (error) {
+            skipped++;
+            continue;
+          }
           inserted++;
           if (r._dupReason) flagged++;
         } catch (e) {
@@ -413,7 +500,10 @@ function UploadPage() {
   const onQuickAdd = async () => {
     if (!eventId || !user) return;
     const name = quick.name.trim();
-    if (!name) { toast.error("Add a name first."); return; }
+    if (!name) {
+      toast.error("Add a name first.");
+      return;
+    }
     if (!quick.phone.trim() && !quick.email.trim()) {
       toast.error("Add a phone number or email so we can reach them.");
       return;
@@ -442,13 +532,18 @@ function UploadPage() {
 
   return (
     <div className="space-y-6">
-
       <Card className="p-6 space-y-2">
         <p className="text-xs uppercase tracking-wider text-muted-foreground">Event</p>
         <Select value={eventId} onValueChange={setEventId}>
-          <SelectTrigger className="w-full sm:w-[320px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[320px]">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
-            {events.map((e) => <SelectItem key={e.id} value={e.id}>{e.title}</SelectItem>)}
+            {events.map((e) => (
+              <SelectItem key={e.id} value={e.id}>
+                {e.title}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </Card>
@@ -460,14 +555,25 @@ function UploadPage() {
           <p className="font-semibold text-base">Paste contacts — easiest way</p>
         </div>
         <ol className="text-sm text-muted-foreground list-decimal pl-5 space-y-1">
-          <li>Open your phone's <strong>Contacts</strong> or <strong>Messages</strong> app.</li>
-          <li>Tap a person, long-press their name/number, choose <strong>Copy</strong> (or "Share &rarr; Copy").</li>
-          <li>Come back here, tap the box below, and pick <strong>Paste</strong>. Repeat for as many people as you want — one per line is fine, or just paste each person and tap <em>Add these</em>.</li>
+          <li>
+            Open your phone's <strong>Contacts</strong> or <strong>Messages</strong> app.
+          </li>
+          <li>
+            Tap a person, long-press their name/number, choose <strong>Copy</strong> (or "Share
+            &rarr; Copy").
+          </li>
+          <li>
+            Come back here, tap the box below, and pick <strong>Paste</strong>. Repeat for as many
+            people as you want — one per line is fine, or just paste each person and tap{" "}
+            <em>Add these</em>.
+          </li>
         </ol>
         <textarea
           value={pasted}
           onChange={(e) => setPasted(e.target.value)}
-          placeholder={"Jacquelyn (417) 592-3238\nJane Smith, jane@email.com, 555-123-4567\nMike Jones 555-987-6543"}
+          placeholder={
+            "Jacquelyn (417) 592-3238\nJane Smith, jane@email.com, 555-123-4567\nMike Jones 555-987-6543"
+          }
           rows={8}
           className="w-full rounded-md border-2 border-input bg-background px-3 py-2 text-base font-mono"
         />
@@ -524,7 +630,12 @@ function UploadPage() {
         <div className="flex justify-end">
           <Button
             onClick={onQuickAdd}
-            disabled={quickBusy || !eventId || !quick.name.trim() || (!quick.phone.trim() && !quick.email.trim())}
+            disabled={
+              quickBusy ||
+              !eventId ||
+              !quick.name.trim() ||
+              (!quick.phone.trim() && !quick.email.trim())
+            }
             className="bg-ink text-cream hover:bg-ink/90"
           >
             <UserPlus className="w-4 h-4 mr-2" /> Add guest
@@ -533,7 +644,9 @@ function UploadPage() {
       </Card>
 
       <details className="rounded-md">
-        <summary className="cursor-pointer text-sm text-muted-foreground py-2">More import options (contacts file, CSV, Excel)</summary>
+        <summary className="cursor-pointer text-sm text-muted-foreground py-2">
+          More import options (contacts file, CSV, Excel)
+        </summary>
         <div className="space-y-6 pt-3">
           <Card className="p-6 space-y-3">
             <div className="flex items-center gap-2">
@@ -547,7 +660,8 @@ function UploadPage() {
             </p>
             <div className="flex flex-wrap gap-2">
               <Button onClick={onPickContacts} disabled={!eventId} variant="outline">
-                <Smartphone className="w-4 h-4 mr-2" /> {canPickContacts ? "Pick contacts" : "Use Quick add"}
+                <Smartphone className="w-4 h-4 mr-2" />{" "}
+                {canPickContacts ? "Pick contacts" : "Use Quick add"}
               </Button>
               <label className="inline-flex">
                 <input
@@ -577,7 +691,8 @@ function UploadPage() {
               className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-ink file:text-cream hover:file:bg-ink/90 file:cursor-pointer"
             />
             <p className="text-xs text-muted-foreground">
-              Expected columns: <code>name</code>, <code>email</code>, <code>phone</code>, <code>notes</code>.
+              Expected columns: <code>name</code>, <code>email</code>, <code>phone</code>,{" "}
+              <code>notes</code>.
             </p>
           </Card>
         </div>
@@ -600,18 +715,29 @@ function UploadPage() {
           <div className="p-4 border-b border-border flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <FileSpreadsheet className="w-5 h-5 text-terracotta" />
-              <p className="font-medium">{rows.length} {rows.length === 1 ? "guest" : "guests"} ready</p>
+              <p className="font-medium">
+                {rows.length} {rows.length === 1 ? "guest" : "guests"} ready
+              </p>
               {dupCount > 0 && (
                 <Badge variant="outline" className="border-terracotta text-terracotta">
-                  <AlertCircle className="w-3 h-3 mr-1" /> {dupCount} possible duplicate{dupCount === 1 ? "" : "s"}
+                  <AlertCircle className="w-3 h-3 mr-1" /> {dupCount} possible duplicate
+                  {dupCount === 1 ? "" : "s"}
                 </Badge>
               )}
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" disabled={busy || dupCount === 0} onClick={() => importAll(true)}>
+              <Button
+                variant="outline"
+                disabled={busy || dupCount === 0}
+                onClick={() => importAll(true)}
+              >
                 Skip duplicates
               </Button>
-              <Button disabled={busy} onClick={() => importAll(false)} className="bg-ink text-cream hover:bg-ink/90">
+              <Button
+                disabled={busy}
+                onClick={() => importAll(false)}
+                className="bg-ink text-cream hover:bg-ink/90"
+              >
                 <Upload className="w-4 h-4 mr-2" /> Add all
               </Button>
             </div>
@@ -621,10 +747,15 @@ function UploadPage() {
               <div key={idx} className="px-4 py-2.5 flex flex-wrap items-center gap-3 text-sm">
                 <span className="text-xs text-muted-foreground w-8">#{r._row}</span>
                 <span className="font-medium flex-1 min-w-[140px]">{r.guest_name}</span>
-                <span className="text-muted-foreground min-w-[160px] break-all">{r.guest_email}</span>
+                <span className="text-muted-foreground min-w-[160px] break-all">
+                  {r.guest_email}
+                </span>
                 <span className="text-muted-foreground min-w-[110px]">{r.guest_phone}</span>
                 {r._dupReason && (
-                  <Badge variant="outline" className="border-terracotta text-terracotta text-[10px]">
+                  <Badge
+                    variant="outline"
+                    className="border-terracotta text-terracotta text-[10px]"
+                  >
                     {r._dupReason}
                   </Badge>
                 )}
