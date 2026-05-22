@@ -153,12 +153,30 @@ function UploadPage() {
     try { return window.self !== window.top; } catch { return true; }
   };
 
+  const isIOS = () => {
+    if (typeof navigator === "undefined") return false;
+    const ua = navigator.userAgent || "";
+    return /iPad|iPhone|iPod/.test(ua) || (ua.includes("Mac") && "ontouchend" in document);
+  };
+
   const onPickContacts = async () => {
     const api = getContactsApi();
-    if (!api || isInIframe()) {
-      toast.message(api ? "Contact picking is blocked here" : "Open your contacts export", {
-        description: "Choose a .vcf contacts file instead. You will stay on this page.",
-      });
+    // iPhone/iPad/Safari/desktop: no Contact Picker API. Open the .vcf file picker,
+    // which on iOS lets the user choose a contacts file from the Files app / share sheet.
+    if (!api || isInIframe() || isIOS()) {
+      if (isIOS()) {
+        toast.message("iPhone: import contacts as a .vcf", {
+          description: "Open Contacts → select people → Share → Save to Files. Then choose that .vcf here.",
+        });
+      } else if (!api) {
+        toast.message("Your browser can't open contacts directly", {
+          description: "Export your contacts as a .vcf file and choose it here.",
+        });
+      } else {
+        toast.message("Contact picking is blocked in this preview", {
+          description: "Choose a .vcf contacts file instead. You will stay on this page.",
+        });
+      }
       vcardRef.current?.click();
       return;
     }
@@ -177,7 +195,7 @@ function UploadPage() {
       }
       await parseRows(raw);
       toast.success(`Loaded ${raw.length} contact${raw.length === 1 ? "" : "s"}`);
-    } catch (err) {
+    } catch {
       toast.error("Couldn't read contacts", { description: "Choose a .vcf contacts file instead. You will stay on this page." });
       vcardRef.current?.click();
     }
