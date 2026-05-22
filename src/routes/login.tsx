@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Navigate, useNavigate, useSearch } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { FormEvent, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,11 @@ export const Route = createFileRoute("/login")({
 });
 
 type RouteDestination = { to: "/admin" } | { to: "/admin/upload" } | { to: "/my-rsvp" };
+const allowedRedirects = new Set(["/admin", "/admin/upload", "/my-rsvp", "/dashboard"]);
+
+function safeRedirect(value: string | undefined) {
+  return value && allowedRedirects.has(value) ? value : undefined;
+}
 
 async function routeForUser(userId: string): Promise<RouteDestination> {
   const { data } = await withTimeout(
@@ -35,31 +40,23 @@ function HelperLogin() {
   const [busy, setBusy] = useState(false);
   const [forgotBusy, setForgotBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [autoDestination, setAutoDestination] = useState<RouteDestination | null>(null);
 
   useEffect(() => {
-    if (loading || !user) {
-      setAutoDestination(null);
-      return;
-    }
+    if (loading || !user) return;
     let cancelled = false;
-    const redirectToUpload = search.redirect === "/admin/upload";
+    const redirect = safeRedirect(search.redirect);
     routeForUser(user.id).then((destination) => {
       if (cancelled) return;
       const next =
-        redirectToUpload && destination.to === "/admin"
-          ? { to: "/admin/upload" as const }
+        redirect === "/admin/upload" && destination.to === "/admin"
+          ? "/admin/upload"
           : destination;
-      setAutoDestination(next);
+      window.location.replace(next.to);
     });
     return () => {
       cancelled = true;
     };
   }, [user?.id, loading, search.redirect]);
-
-  if (autoDestination) {
-    return <Navigate to={autoDestination.to} replace />;
-  }
 
   const signIn = async (event?: FormEvent) => {
     event?.preventDefault();
