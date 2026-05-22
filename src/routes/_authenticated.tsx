@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useLocation } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { useEffect } from "react";
 import { SiteHeader } from "@/components/site-header";
@@ -10,9 +10,10 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthLayout() {
   const { user, loading } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   useEffect(() => {
-    if (!loading && !user) window.location.assign(`/login?redirect=${encodeURIComponent(location.pathname)}`);
-  }, [user, loading, location.pathname]);
+    if (!loading && !user) navigate({ to: "/login", search: { redirect: location.pathname } });
+  }, [user, loading, location.pathname, navigate]);
 
   if (loading || !user) {
     return (
