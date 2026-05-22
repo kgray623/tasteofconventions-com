@@ -1068,7 +1068,8 @@ function UploadPage() {
                   Remove
                 </Button>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Card>
