@@ -375,8 +375,39 @@ function UploadPage() {
 
   const dupCount = rows.filter((r) => r._dupReason).length;
 
+  const onQuickAdd = async () => {
+    if (!eventId || !user) return;
+    const name = quick.name.trim();
+    if (!name) { toast.error("Add a name first."); return; }
+    if (!quick.phone.trim() && !quick.email.trim()) {
+      toast.error("Add a phone number or email so we can reach them.");
+      return;
+    }
+    setQuickBusy(true);
+    try {
+      const { error } = await supabase.from("invitations").insert({
+        event_id: eventId,
+        host_id: user.id,
+        guest_name: name,
+        guest_email: quick.email.trim() || null,
+        guest_phone: quick.phone.trim() || null,
+        notes: null,
+      });
+      if (error) throw error;
+      setQuickAdded((n) => n + 1);
+      setQuick({ name: "", phone: "", email: "" });
+      toast.success(`Added ${name}`);
+    } catch (e) {
+      console.error("[upload] quick add failed", e);
+      toast.error("Couldn't add that guest", { description: getErrorMessage(e) });
+    } finally {
+      setQuickBusy(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
+
       <Card className="p-6 space-y-2">
         <p className="text-xs uppercase tracking-wider text-muted-foreground">Event</p>
         <Select value={eventId} onValueChange={setEventId}>
