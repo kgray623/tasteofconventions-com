@@ -209,6 +209,10 @@ function UploadPage() {
   const [quickAdded, setQuickAdded] = useState(0);
   const [canPickContacts, setCanPickContacts] = useState(false);
   const [clipboardBusy, setClipboardBusy] = useState(false);
+  const imageRef = useRef<HTMLInputElement>(null);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [ocrBusy, setOcrBusy] = useState(false);
+  const runOcr = useServerFn(extractContactsFromImages);
 
   useEffect(() => {
     let alive = true;
