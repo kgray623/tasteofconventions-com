@@ -1008,8 +1008,7 @@ function UploadPage() {
           <div className="divide-y divide-border max-h-[480px] overflow-auto">
             {savedGuests.map((g) => {
               const isDup = duplicateGroups.dupIds.has(g.id);
-              return (
-              <div
+              return (<div
                 key={g.id}
                 className={`px-4 py-2.5 flex flex-wrap items-center gap-3 text-sm ${isDup ? "bg-destructive/5" : ""}`}
               >
