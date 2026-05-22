@@ -92,9 +92,10 @@ function pick(obj: Record<string, unknown>, keys: string[]): string {
 function parseContactText(value: string) {
   const email = value.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0]?.trim() ?? "";
   const phone = value.match(/(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)\d{3}[\s.-]?\d{4}(?:\s*(?:x|ext\.?)\s*\d{1,6})?|\b\d{7,15}\b/i)?.[0]?.trim() ?? "";
-  const name = value
-    .replace(email, " ")
-    .replace(phone, " ")
+  let nameSource = value;
+  if (email) nameSource = nameSource.replace(email, " ");
+  if (phone) nameSource = nameSource.replace(phone, " ");
+  const name = nameSource
     .split(/\r?\n|[,;|\t]/)
     .map((part) => part.replace(/^\s*(name|full name|guest|mobile|phone|cell|email|e-mail)\s*[:\-–—]?\s*/i, "").trim())
     .find((part) => /[a-zA-Z]/.test(part)) ?? "";
