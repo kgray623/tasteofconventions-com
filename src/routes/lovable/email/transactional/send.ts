@@ -59,6 +59,22 @@ export const Route = createFileRoute("/lovable/email/transactional/send")({
           return Response.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
+        // Authorization: only admin or team members may send transactional emails.
+        // Without this check, any authenticated user (including self-registered
+        // RSVP guests) could send platform-branded emails to arbitrary recipients.
+        const { data: roles, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+        if (rolesError) {
+          console.error('Role lookup failed', { error: rolesError })
+          return Response.json({ error: 'Forbidden' }, { status: 403 })
+        }
+        const allowed = (roles ?? []).some((r: { role: string }) => r.role === 'admin' || r.role === 'team')
+        if (!allowed) {
+          return Response.json({ error: 'Forbidden' }, { status: 403 })
+        }
+
         // Parse request body
         let templateName: string
         let recipientEmail: string
