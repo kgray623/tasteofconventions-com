@@ -28,20 +28,21 @@ function RsvpPage() {
   const fetchInv = useServerFn(getInvitationByToken);
   const submit = useServerFn(submitRsvp);
   const order = useServerFn(submitOrder);
-  const draftScope = `rsvp-token:${token}`;
+  const rsvpDraftScope = `rsvp-token:${token}:response`;
+  const orderDraftScope = `rsvp-token:${token}:order`;
 
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useDraftState<"yes" | "no">(draftScope, "status", "yes");
-  const [partySize, setPartySize] = useDraftState(draftScope, "partySize", 1);
-  const [invitedBy, setInvitedBy] = useDraftState(draftScope, "invitedBy", "");
-  const [invitedByOther, setInvitedByOther] = useDraftState(draftScope, "invitedByOther", "");
+  const [status, setStatus] = useDraftState<"yes" | "no">(rsvpDraftScope, "status", "yes");
+  const [partySize, setPartySize] = useDraftState(rsvpDraftScope, "partySize", 1);
+  const [invitedBy, setInvitedBy] = useDraftState(rsvpDraftScope, "invitedBy", "");
+  const [invitedByOther, setInvitedByOther] = useDraftState(rsvpDraftScope, "invitedByOther", "");
   const [inviters, setInviters] = useState<{ id: string; name: string }[]>([]);
   const [restaurants, setRestaurants] = useState<R[]>([]);
   const [menu, setMenu] = useState<M[]>([]);
-  const [restaurantId, setRestaurantId] = useDraftState(draftScope, "restaurantId", "");
-  const [cart, setCart] = useDraftState<Record<string, number>>(draftScope, "cart", {});
-  const [orderNotes, setOrderNotes] = useDraftState(draftScope, "orderNotes", "");
+  const [restaurantId, setRestaurantId] = useDraftState(orderDraftScope, "restaurantId", "");
+  const [cart, setCart] = useDraftState<Record<string, number>>(orderDraftScope, "cart", {});
+  const [orderNotes, setOrderNotes] = useDraftState(orderDraftScope, "orderNotes", "");
 
   useEffect(() => {
     let alive = true;
@@ -82,7 +83,7 @@ function RsvpPage() {
     try {
       const finalInvitedBy = invitedBy === "__other__" ? invitedByOther.trim() : invitedBy;
       await submit({ data: { token, status, party_size: partySize, dietary_notes: "", invited_by: finalInvitedBy } });
-      clearDraftScope(draftScope);
+      clearDraftScope(rsvpDraftScope);
       toast.success("RSVP saved — thank you!");
     } catch (e: any) { toast.error(e.message); }
   };
@@ -93,6 +94,7 @@ function RsvpPage() {
     if (items.length === 0) return toast.error("Add at least one item");
     try {
       await order({ data: { token, restaurant_id: restaurantId, items, notes: orderNotes } });
+      clearDraftScope(orderDraftScope);
       setCart({});
       setOrderNotes("");
       toast.success("Order placed");
