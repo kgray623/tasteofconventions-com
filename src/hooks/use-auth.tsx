@@ -1,6 +1,7 @@
 import { useEffect, useState, createContext, useContext, ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { withTimeout } from "@/lib/async-safety";
 
 type AuthCtx = { session: Session | null; user: User | null; loading: boolean };
 const Ctx = createContext<AuthCtx>({ session: null, user: null, loading: true });
@@ -21,15 +22,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       finish(s);
     });
 
-    const fallback = window.setTimeout(() => finish(null), 2500);
-    supabase.auth.getSession()
+    withTimeout(supabase.auth.getSession(), 2500)
       .then(({ data }) => finish(data.session))
-      .catch(() => finish(null))
-      .finally(() => window.clearTimeout(fallback));
+      .catch(() => finish(null));
 
     return () => {
       alive = false;
-      window.clearTimeout(fallback);
       subscription.unsubscribe();
     };
   }, []);
