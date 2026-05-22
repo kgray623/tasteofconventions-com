@@ -33,6 +33,37 @@ export function clearDraftScope(scope: string) {
   if (typeof window !== "undefined") window.localStorage.removeItem(draftScopeKey(scope));
 }
 
+export function useDraftedState<T>(
+  scope: string,
+  initialValue: T,
+): [T, Dispatch<SetStateAction<T>>, () => void] {
+  const [value, setValue] = useState<T>(initialValue);
+  const hydrated = useRef(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(draftScopeKey(scope));
+      if (raw) setValue(JSON.parse(raw) as T);
+    } catch {
+      // Ignore bad draft data instead of breaking the page.
+    }
+    hydrated.current = true;
+  }, [scope]);
+
+  useEffect(() => {
+    if (!hydrated.current || typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(draftScopeKey(scope), JSON.stringify(value));
+    } catch {
+      // Drafts are a safety net; storage failures should never block the app.
+    }
+  }, [scope, value]);
+
+  const clear = () => clearDraftScope(scope);
+  return [value, setValue, clear];
+}
+
 export function useDraftState<T>(
   scope: string,
   field: string,
