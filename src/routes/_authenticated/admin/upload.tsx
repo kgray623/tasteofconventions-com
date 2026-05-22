@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Component, useEffect, useRef, useState, type ReactNode } from "react";
+import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +25,7 @@ import {
   Loader2,
   X,
   Pencil,
+  AlertTriangle,
 } from "lucide-react";
 import { getErrorMessage } from "@/lib/async-safety";
 import { useServerFn } from "@tanstack/react-start";
@@ -245,6 +246,47 @@ function UploadPage() {
   useEffect(() => {
     void loadSavedGuests(eventId);
   }, [eventId]);
+
+  const duplicateGroups = useMemo(() => {
+    const groups = new Map<string, string>(); // key -> groupId (first id)
+    const norm = (s: string | null | undefined) =>
+      (s ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+    const normPhone = (s: string | null | undefined) =>
+      (s ?? "").replace(/\D/g, "");
+    const keyToGroup = new Map<string, string>();
+    const idToGroup = new Map<string, string>();
+    for (const g of savedGuests) {
+      const keys: string[] = [];
+      const n = norm(g.guest_name);
+      const e = norm(g.guest_email);
+      const p = normPhone(g.guest_phone);
+      if (n) keys.push("n:" + n);
+      if (e) keys.push("e:" + e);
+      if (p && p.length >= 7) keys.push("p:" + p);
+      let groupId: string | null = null;
+      for (const k of keys) {
+        const existing = keyToGroup.get(k);
+        if (existing) {
+          groupId = existing;
+          break;
+        }
+      }
+      if (!groupId) groupId = g.id;
+      for (const k of keys) keyToGroup.set(k, groupId);
+      idToGroup.set(g.id, groupId);
+    }
+    // count per group
+    const counts = new Map<string, number>();
+    for (const gid of idToGroup.values()) counts.set(gid, (counts.get(gid) ?? 0) + 1);
+    const dupIds = new Set<string>();
+    for (const [id, gid] of idToGroup) {
+      if ((counts.get(gid) ?? 0) > 1) dupIds.add(id);
+    }
+    return { dupIds, groupOf: idToGroup };
+  }, [savedGuests]);
+
+  const duplicateCount = duplicateGroups.dupIds.size;
+
 
   const removeSavedGuest = async (id: string, name: string) => {
     if (typeof window !== "undefined" && !window.confirm(`Remove ${name} from this event's guest list?`)) return;
@@ -940,11 +982,17 @@ function UploadPage() {
 
       <Card className="overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
             <p className="font-medium">
               Current guest list{savedGuests.length > 0 ? ` (${savedGuests.length})` : ""}
             </p>
+            {duplicateCount > 0 && (
+              <Badge variant="destructive" className="gap-1">
+                <AlertTriangle className="w-3 h-3" />
+                {duplicateCount} possible duplicate{duplicateCount === 1 ? "" : "s"}
+              </Badge>
+            )}
           </div>
           {savedLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
         </div>
@@ -958,10 +1006,12 @@ function UploadPage() {
           </div>
         ) : (
           <div className="divide-y divide-border max-h-[480px] overflow-auto">
-            {savedGuests.map((g) => (
+            {savedGuests.map((g) => {
+              const isDup = duplicateGroups.dupIds.has(g.id);
+              return (
               <div
                 key={g.id}
-                className="px-4 py-2.5 flex flex-wrap items-center gap-3 text-sm"
+                className={`px-4 py-2.5 flex flex-wrap items-center gap-3 text-sm ${isDup ? "bg-destructive/5" : ""}`}
               >
                 {editingSavedId === g.id ? (
                   <input
@@ -989,6 +1039,12 @@ function UploadPage() {
                     <Pencil className="w-3 h-3 opacity-40" />
                   </button>
                 )}
+                {isDup && (
+                  <Badge variant="destructive" className="gap-1 h-5">
+                    <AlertTriangle className="w-3 h-3" />
+                    Duplicate
+                  </Badge>
+                )}
                 <span className="text-muted-foreground min-w-[160px] break-all">
                   {g.guest_email ?? ""}
                 </span>
@@ -1012,7 +1068,8 @@ function UploadPage() {
                   Remove
                 </Button>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Card>
