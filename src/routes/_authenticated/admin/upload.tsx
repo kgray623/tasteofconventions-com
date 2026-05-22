@@ -595,6 +595,7 @@ function UploadPage() {
       clearUploadDraft(user.id);
       if (fileRef.current) fileRef.current.value = "";
       toast.success(`Added ${inserted} guest${inserted === 1 ? "" : "s"}`);
+      void loadSavedGuests(eventId);
     } catch (e) {
       console.error("[upload] importAll failed", e);
       toast.error("Import failed", { description: getErrorMessage(e) });
