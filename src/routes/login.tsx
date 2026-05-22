@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { FormEvent, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ export const Route = createFileRoute("/login")({
 
 type RouteDestination =
   | { to: "/admin" }
+  | { to: "/admin/upload" }
   | { to: "/my-rsvp" };
 
 async function routeForUser(userId: string): Promise<RouteDestination> {
@@ -31,6 +32,7 @@ function openDestination(destination: RouteDestination, replace = false) {
 
 function HelperLogin() {
   const { user, loading } = useAuth();
+  const search = useSearch({ strict: false }) as { redirect?: string };
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -39,8 +41,9 @@ function HelperLogin() {
 
   useEffect(() => {
     if (loading || !user) return;
-    routeForUser(user.id).then((destination) => openDestination(destination, true));
-  }, [user, loading]);
+    const redirectToUpload = search.redirect === "/admin/upload";
+    routeForUser(user.id).then((destination) => openDestination(redirectToUpload && destination.to === "/admin" ? { to: "/admin/upload" } : destination, true));
+  }, [user, loading, search.redirect]);
 
   const signIn = async (event?: FormEvent) => {
     event?.preventDefault();
@@ -55,7 +58,8 @@ function HelperLogin() {
     }
     if (data.user) {
       toast.success("Signed in.");
-      openDestination(await routeForUser(data.user.id));
+      const destination = await routeForUser(data.user.id);
+      openDestination(search.redirect === "/admin/upload" && destination.to === "/admin" ? { to: "/admin/upload" } : destination);
       return;
     }
     setBusy(false);
