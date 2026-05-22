@@ -156,18 +156,36 @@ function UploadPage() {
   };
 
   const onFile = async (file: File) => {
-    setDone(null);
-    let raw: Record<string, unknown>[] = [];
-    if (file.name.toLowerCase().endsWith(".csv")) {
-      const text = await file.text();
-      raw = Papa.parse(text, { header: true, skipEmptyLines: true }).data as Record<string, unknown>[];
-    } else {
-      const buf = await file.arrayBuffer();
-      const wb = XLSX.read(buf);
-      const sheet = wb.Sheets[wb.SheetNames[0]];
-      raw = XLSX.utils.sheet_to_json(sheet, { defval: "" }) as Record<string, unknown>[];
+    try {
+      setDone(null);
+      let raw: Record<string, unknown>[] = [];
+      const name = (file.name || "").toLowerCase();
+      if (name.endsWith(".vcf")) {
+        // User picked a vCard in the spreadsheet slot — handle it gracefully.
+        await onVCard(file);
+        return;
+      }
+      if (name.endsWith(".csv")) {
+        const text = await file.text();
+        raw = Papa.parse(text, { header: true, skipEmptyLines: true }).data as Record<string, unknown>[];
+      } else {
+        const buf = await file.arrayBuffer();
+        const wb = XLSX.read(buf);
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        raw = sheet ? (XLSX.utils.sheet_to_json(sheet, { defval: "" }) as Record<string, unknown>[]) : [];
+      }
+      if (!raw.length) {
+        toast.error("No rows found in that file.");
+        return;
+      }
+      await parseRows(raw);
+      toast.success(`Loaded ${raw.length} row${raw.length === 1 ? "" : "s"}`);
+    } catch (e) {
+      console.error("[upload] onFile failed", e);
+      toast.error("Couldn't read that file", { description: getErrorMessage(e) });
+    } finally {
+      if (fileRef.current) fileRef.current.value = "";
     }
-    await parseRows(raw);
   };
 
   const isInIframe = () => {
