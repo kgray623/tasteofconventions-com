@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { Eye, EyeOff } from "lucide-react";
+import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Log in — A Taste of Special Conventions" }] }),
@@ -19,7 +20,7 @@ type RouteDestination =
   | { to: "/my-rsvp" };
 
 async function routeForUser(userId: string): Promise<RouteDestination> {
-  const { data } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+  const { data } = await withTimeout(supabase.from("user_roles").select("role").eq("user_id", userId), 5000);
   const roles = (data ?? []).map((r) => r.role as string);
   if (roles.includes("admin") || roles.includes("team")) return { to: "/admin" };
   return { to: "/my-rsvp" };
@@ -48,22 +49,27 @@ function HelperLogin() {
   const signIn = async (event?: FormEvent) => {
     event?.preventDefault();
     setBusy(true);
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-    if (error) {
+    try {
+      const { data, error } = await withTimeout(supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      }), 10000);
+      if (error) {
+        setBusy(false);
+        return toast.error(error.message);
+      }
+      if (data.user) {
+        toast.success("Signed in.");
+        const destination = await routeForUser(data.user.id);
+        openDestination(search.redirect === "/admin/upload" && destination.to === "/admin" ? { to: "/admin/upload" } : destination);
+        return;
+      }
       setBusy(false);
-      return toast.error(error.message);
+      toast.error("Signed in, but we could not open your account. Please try again.");
+    } catch (error) {
+      setBusy(false);
+      toast.error(getErrorMessage(error));
     }
-    if (data.user) {
-      toast.success("Signed in.");
-      const destination = await routeForUser(data.user.id);
-      openDestination(search.redirect === "/admin/upload" && destination.to === "/admin" ? { to: "/admin/upload" } : destination);
-      return;
-    }
-    setBusy(false);
-    toast.error("Signed in, but we could not open your account. Please try again.");
   };
 
   const forgot = async () => {
@@ -71,12 +77,17 @@ function HelperLogin() {
     const normalizedEmail = email.trim();
     if (!normalizedEmail) return toast.error("Enter your email first");
     setForgotBusy(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-      redirectTo: window.location.origin + "/reset-password",
-    });
-    setForgotBusy(false);
-    if (error) return toast.error(error.message);
-    toast.success("Password reset email sent.");
+    try {
+      const { error } = await withTimeout(supabase.auth.resetPasswordForEmail(normalizedEmail, {
+        redirectTo: window.location.origin + "/reset-password",
+      }), 10000);
+      if (error) return toast.error(error.message);
+      toast.success("Password reset email sent.");
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setForgotBusy(false);
+    }
   };
 
   return (
