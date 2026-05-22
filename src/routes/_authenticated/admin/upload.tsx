@@ -71,6 +71,7 @@ function UploadPage() {
   const { user } = useAuth();
   const { isTeam } = useRoles();
   const fileRef = useRef<HTMLInputElement>(null);
+  const vcardRef = useRef<HTMLInputElement>(null);
   const [events, setEvents] = useState<{ id: string; title: string }[]>([]);
   const [eventId, setEventId] = useState("");
   const [rows, setRows] = useState<Parsed[]>([]);
@@ -154,19 +155,11 @@ function UploadPage() {
 
   const onPickContacts = async () => {
     const api = getContactsApi();
-    if (!api) {
-      toast.message("Your browser doesn't support contact picking", {
-        description: "On iPhone or desktop, export contacts as a .vcf file and use the picker below.",
+    if (!api || isInIframe()) {
+      toast.message(api ? "Contact picking is blocked here" : "Open your contacts export", {
+        description: "Choose a .vcf contacts file instead. You will stay on this page.",
       });
-      return;
-    }
-    if (isInIframe()) {
-      const url = window.location.href;
-      toast.message("Open this page in your browser first", {
-        description: "Android Chrome only allows the contact picker on the top page. Tap to open it in a new tab.",
-        action: { label: "Open", onClick: () => window.open(url, "_blank", "noopener") },
-        duration: 10000,
-      });
+      vcardRef.current?.click();
       return;
     }
     try {
@@ -185,7 +178,8 @@ function UploadPage() {
       await parseRows(raw);
       toast.success(`Loaded ${raw.length} contact${raw.length === 1 ? "" : "s"}`);
     } catch (err) {
-      toast.error("Couldn't read contacts", { description: (err as Error).message });
+      toast.error("Couldn't read contacts", { description: "Choose a .vcf contacts file instead. You will stay on this page." });
+      vcardRef.current?.click();
     }
   };
 
@@ -321,6 +315,7 @@ function UploadPage() {
           </Button>
           <label className="inline-flex">
             <input
+              ref={vcardRef}
               type="file"
               accept=".vcf,text/vcard,text/x-vcard"
               className="hidden"
