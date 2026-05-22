@@ -982,11 +982,17 @@ function UploadPage() {
 
       <Card className="overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
             <p className="font-medium">
               Current guest list{savedGuests.length > 0 ? ` (${savedGuests.length})` : ""}
             </p>
+            {duplicateCount > 0 && (
+              <Badge variant="destructive" className="gap-1">
+                <AlertTriangle className="w-3 h-3" />
+                {duplicateCount} possible duplicate{duplicateCount === 1 ? "" : "s"}
+              </Badge>
+            )}
           </div>
           {savedLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
         </div>
