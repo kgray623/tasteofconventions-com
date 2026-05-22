@@ -418,6 +418,55 @@ function UploadPage() {
         </Select>
       </Card>
 
+      <Card className="p-6 space-y-3 border-terracotta/40">
+        <div className="flex items-center gap-2">
+          <UserPlus className="w-4 h-4 text-terracotta" />
+          <p className="font-medium">Quick add — one guest at a time</p>
+          {quickAdded > 0 && (
+            <Badge variant="outline" className="border-emerald-600 text-emerald-700">
+              {quickAdded} added this session
+            </Badge>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          The easiest way. Type the guest's name and their phone <em>or</em> email, tap <em>Add guest</em>, and they're on the list. Open your phone's Contacts app side-by-side and copy/paste as you go.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <Input
+            value={quick.name}
+            onChange={(e) => setQuick((q) => ({ ...q, name: e.target.value }))}
+            placeholder="Full name"
+            autoComplete="name"
+          />
+          <Input
+            value={quick.phone}
+            onChange={(e) => setQuick((q) => ({ ...q, phone: e.target.value }))}
+            placeholder="Phone (555-123-4567)"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+          />
+          <Input
+            value={quick.email}
+            onChange={(e) => setQuick((q) => ({ ...q, email: e.target.value }))}
+            placeholder="Email (optional)"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+          />
+        </div>
+        <div className="flex justify-end">
+          <Button
+            onClick={onQuickAdd}
+            disabled={quickBusy || !eventId || !quick.name.trim() || (!quick.phone.trim() && !quick.email.trim())}
+            className="bg-ink text-cream hover:bg-ink/90"
+          >
+            <UserPlus className="w-4 h-4 mr-2" /> Add guest
+          </Button>
+        </div>
+      </Card>
+
+
       <Card className="p-6 space-y-3">
         <div className="flex items-center gap-2">
           <Smartphone className="w-4 h-4 text-terracotta" />
