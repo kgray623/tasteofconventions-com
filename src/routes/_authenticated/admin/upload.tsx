@@ -215,6 +215,11 @@ function UploadPage() {
   >([]);
   const [savedLoading, setSavedLoading] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [editingRowIdx, setEditingRowIdx] = useState<number | null>(null);
+  const [editingRowValue, setEditingRowValue] = useState("");
+  const [editingSavedId, setEditingSavedId] = useState<string | null>(null);
+  const [editingSavedValue, setEditingSavedValue] = useState("");
+  const [updatingSavedId, setUpdatingSavedId] = useState<string | null>(null);
 
   const loadSavedGuests = async (evId: string) => {
     if (!evId) {
