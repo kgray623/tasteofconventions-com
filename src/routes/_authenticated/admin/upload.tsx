@@ -879,7 +879,31 @@ function UploadPage() {
             {rows.map((r, idx) => (
               <div key={idx} className="px-4 py-2.5 flex flex-wrap items-center gap-3 text-sm">
                 <span className="text-xs text-muted-foreground w-8">#{r._row}</span>
-                <span className="font-medium flex-1 min-w-[140px]">{r.guest_name}</span>
+                {editingRowIdx === idx ? (
+                  <input
+                    autoFocus
+                    className="flex-1 min-w-[140px] h-7 px-2 rounded-md border border-input bg-background text-sm font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    value={editingRowValue}
+                    onChange={(e) => setEditingRowValue(e.target.value)}
+                    onBlur={commitEditRow}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") commitEditRow();
+                      if (e.key === "Escape") setEditingRowIdx(null);
+                    }}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    className="font-medium flex-1 min-w-[140px] text-left flex items-center gap-1 hover:text-terracotta"
+                    onClick={() => {
+                      setEditingRowIdx(idx);
+                      setEditingRowValue(r.guest_name);
+                    }}
+                  >
+                    {r.guest_name}
+                    <Pencil className="w-3 h-3 opacity-40" />
+                  </button>
+                )}
                 <span className="text-muted-foreground min-w-[160px] break-all">
                   {r.guest_email}
                 </span>
