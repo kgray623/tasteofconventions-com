@@ -94,6 +94,7 @@ function UploadPage() {
   const { isTeam } = useRoles();
   const fileRef = useRef<HTMLInputElement>(null);
   const vcardRef = useRef<HTMLInputElement>(null);
+  const quickNameRef = useRef<HTMLInputElement>(null);
   const [events, setEvents] = useState<{ id: string; title: string }[]>([]);
   const [eventId, setEventId] = useState("");
   const [rows, setRows] = useState<Parsed[]>([]);
@@ -103,6 +104,8 @@ function UploadPage() {
   const [quick, setQuick] = useState({ name: "", phone: "", email: "" });
   const [quickBusy, setQuickBusy] = useState(false);
   const [quickAdded, setQuickAdded] = useState(0);
+  const [canPickContacts, setCanPickContacts] = useState(false);
+  const [clipboardBusy, setClipboardBusy] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -114,6 +117,10 @@ function UploadPage() {
       console.error("[upload] events load failed", err);
     });
     return () => { alive = false; };
+  }, []);
+
+  useEffect(() => {
+    setCanPickContacts(Boolean(getContactsApi()) && !isInIframe() && !isIOS());
   }, []);
 
   if (!isTeam) {
