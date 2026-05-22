@@ -64,8 +64,24 @@ export function useDraftedState<T>(
     }
   }, [scope, value]);
 
+  const setDraftValue: Dispatch<SetStateAction<T>> = (nextValue) => {
+    setValue((previous) => {
+      const next = typeof nextValue === "function"
+        ? (nextValue as (value: T) => T)(previous)
+        : nextValue;
+      if (typeof window !== "undefined") {
+        try {
+          window.localStorage.setItem(draftScopeKey(scope), JSON.stringify(next));
+        } catch {
+          // Draft persistence is best-effort only.
+        }
+      }
+      return next;
+    });
+  };
+
   const clear = () => clearDraftScope(scope);
-  return [value, setValue, clear];
+  return [value, setDraftValue, clear];
 }
 
 export function useDraftState<T>(
@@ -95,5 +111,17 @@ export function useDraftState<T>(
     writeScope(scope, draft);
   }, [scope, field, value]);
 
-  return [value, setValue];
+  const setDraftValue: Dispatch<SetStateAction<T>> = (nextValue) => {
+    setValue((previous) => {
+      const next = typeof nextValue === "function"
+        ? (nextValue as (value: T) => T)(previous)
+        : nextValue;
+      const draft = readScope(scope);
+      draft[field] = next;
+      writeScope(scope, draft);
+      return next;
+    });
+  };
+
+  return [value, setDraftValue];
 }
