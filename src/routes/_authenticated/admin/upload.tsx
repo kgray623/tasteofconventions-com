@@ -334,8 +334,8 @@ function UploadPage() {
         toast.error("No rows found in that file.");
         return;
       }
-      await parseRows(raw);
-      toast.success(`Loaded ${raw.length} row${raw.length === 1 ? "" : "s"}`);
+      await parseRows(raw, true);
+      toast.success(`Added ${raw.length} row${raw.length === 1 ? "" : "s"} to the review list`);
     } catch (e) {
       console.error("[upload] onFile failed", e);
       toast.error("Couldn't read that file", { description: getErrorMessage(e) });
@@ -369,8 +369,8 @@ function UploadPage() {
         toast.message("No contacts selected.");
         return;
       }
-      await parseRows(raw);
-      toast.success(`Loaded ${raw.length} contact${raw.length === 1 ? "" : "s"}`);
+      await parseRows(raw, true);
+      toast.success(`Added ${raw.length} contact${raw.length === 1 ? "" : "s"} to the review list`);
     } catch {
       toast.error("Couldn't read contacts", {
         description: "Choose a .vcf contacts file instead. You will stay on this page.",
@@ -417,8 +417,8 @@ function UploadPage() {
         toast.error("No contacts found in that file.");
         return;
       }
-      await parseRows(raw);
-      toast.success(`Loaded ${raw.length} contact${raw.length === 1 ? "" : "s"} from vCard`);
+      await parseRows(raw, true);
+      toast.success(`Added ${raw.length} contact${raw.length === 1 ? "" : "s"} from vCard`);
     } catch (e) {
       console.error("[upload] onVCard failed", e);
       toast.error("Couldn't read that contacts file", { description: getErrorMessage(e) });
@@ -494,7 +494,7 @@ function UploadPage() {
       }
     }
     flush();
-    await parseRows(raw);
+    await parseRows(raw, true);
     if (!raw.some((r) => r.name)) toast.error("I couldn't find any guest names in that paste.");
   };
 
