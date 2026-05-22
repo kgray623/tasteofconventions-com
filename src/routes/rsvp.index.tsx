@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { clearDraftScope, useDraftState } from "@/hooks/use-draft-state";
 import { Check, X, Minus, Plus, ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/rsvp/")({
@@ -53,17 +54,18 @@ const menu: Record<string, { id: string; name: string; description: string; pric
 };
 
 function PreviewPage() {
-  const [status, setStatus] = useState<"yes" | "no">("yes");
-  const [partySize, setPartySize] = useState(2);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [invitedBy, setInvitedBy] = useState("");
-  const [invitedByOther, setInvitedByOther] = useState("");
+  const draftScope = "rsvp-public";
+  const [status, setStatus] = useDraftState<"yes" | "no">(draftScope, "status", "yes");
+  const [partySize, setPartySize] = useDraftState(draftScope, "partySize", 2);
+  const [name, setName] = useDraftState(draftScope, "name", "");
+  const [email, setEmail] = useDraftState(draftScope, "email", "");
+  const [phone, setPhone] = useDraftState(draftScope, "phone", "");
+  const [invitedBy, setInvitedBy] = useDraftState(draftScope, "invitedBy", "");
+  const [invitedByOther, setInvitedByOther] = useDraftState(draftScope, "invitedByOther", "");
   const [inviters, setInviters] = useState<{ id: string; name: string }[]>([]);
-  const [restaurantId, setRestaurantId] = useState("r1");
-  const [cart, setCart] = useState<Record<string, number>>({});
-  const [orderNotes, setOrderNotes] = useState("");
+  const [restaurantId, setRestaurantId] = useDraftState(draftScope, "restaurantId", "r1");
+  const [cart, setCart] = useDraftState<Record<string, number>>(draftScope, "cart", {});
+  const [orderNotes, setOrderNotes] = useDraftState(draftScope, "orderNotes", "");
 
   useEffect(() => {
     supabase.from("inviters").select("id,name").eq("active", true).order("name")
@@ -93,6 +95,7 @@ function PreviewPage() {
         invited_by: (invitedBy === "__other__" ? invitedByOther.trim() : invitedBy) || null,
       }});
       setSaved(true);
+      clearDraftScope(draftScope);
       toast.success("RSVP saved — your password is your phone number (digits only).");
     } catch (e: any) {
       toast.error(e?.message ?? "Could not save RSVP");
