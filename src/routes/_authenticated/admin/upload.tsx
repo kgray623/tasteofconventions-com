@@ -154,9 +154,26 @@ function parseContactText(value: string) {
   return { name, phone, email };
 }
 
+const uploadDraftKey = (userId?: string) => `admin-upload-draft:${userId ?? "unknown"}`;
+
+function loadUploadDraft(userId?: string) {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(uploadDraftKey(userId));
+    return raw ? JSON.parse(raw) as { pasted?: string; quick?: { name?: string; phone?: string; email?: string } } : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveUploadDraft(userId: string | undefined, pasted: string, quick: { name: string; phone: string; email: string }) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(uploadDraftKey(userId), JSON.stringify({ pasted, quick }));
+}
+
 function UploadPage() {
   const { user } = useAuth();
-  const { isTeam } = useRoles();
+  const { isTeam, loading: rolesLoading } = useRoles();
   const fileRef = useRef<HTMLInputElement>(null);
   const vcardRef = useRef<HTMLInputElement>(null);
   const quickNameRef = useRef<HTMLInputElement>(null);
@@ -198,6 +215,27 @@ function UploadPage() {
   useEffect(() => {
     setCanPickContacts(Boolean(getContactsApi()) && !isInIframe() && !isIOS());
   }, []);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const draft = loadUploadDraft(user.id);
+    if (!draft) return;
+    setPasted((current) => current || draft.pasted || "");
+    setQuick((current) => ({
+      name: current.name || draft.quick?.name || "",
+      phone: current.phone || draft.quick?.phone || "",
+      email: current.email || draft.quick?.email || "",
+    }));
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    saveUploadDraft(user.id, pasted, quick);
+  }, [user?.id, pasted, quick]);
+
+  if (rolesLoading) {
+    return <p className="text-muted-foreground">Loading guest tools…</p>;
+  }
 
   if (!isTeam) {
     return <p className="text-muted-foreground">Only team members can add guests.</p>;
