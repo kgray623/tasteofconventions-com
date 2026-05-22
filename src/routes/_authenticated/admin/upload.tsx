@@ -572,7 +572,7 @@ function UploadPage() {
           value={pasted}
           onChange={(e) => setPasted(e.target.value)}
           placeholder={
-            "Jacquelyn (417) 592-3238\nJane Smith, jane@email.com, 555-123-4567\nMike Jones 555-987-6543"
+            "Jane Smith, jane@email.com, 555-123-4567\nMike Jones 555-987-6543"
           }
           rows={8}
           className="w-full rounded-md border-2 border-input bg-background px-3 py-2 text-base font-mono"
