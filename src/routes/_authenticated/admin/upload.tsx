@@ -153,12 +153,30 @@ function UploadPage() {
     try { return window.self !== window.top; } catch { return true; }
   };
 
+  const isIOS = () => {
+    if (typeof navigator === "undefined") return false;
+    const ua = navigator.userAgent || "";
+    return /iPad|iPhone|iPod/.test(ua) || (ua.includes("Mac") && "ontouchend" in document);
+  };
+
   const onPickContacts = async () => {
     const api = getContactsApi();
-    if (!api || isInIframe()) {
-      toast.message(api ? "Contact picking is blocked here" : "Open your contacts export", {
-        description: "Choose a .vcf contacts file instead. You will stay on this page.",
-      });
+    // iPhone/iPad/Safari/desktop: no Contact Picker API. Open the .vcf file picker,
+    // which on iOS lets the user choose a contacts file from the Files app / share sheet.
+    if (!api || isInIframe() || isIOS()) {
+      if (isIOS()) {
+        toast.message("iPhone: import contacts as a .vcf", {
+          description: "Open Contacts → select people → Share → Save to Files. Then choose that .vcf here.",
+        });
+      } else if (!api) {
+        toast.message("Your browser can't open contacts directly", {
+          description: "Export your contacts as a .vcf file and choose it here.",
+        });
+      } else {
+        toast.message("Contact picking is blocked in this preview", {
+          description: "Choose a .vcf contacts file instead. You will stay on this page.",
+        });
+      }
       vcardRef.current?.click();
       return;
     }
@@ -177,7 +195,7 @@ function UploadPage() {
       }
       await parseRows(raw);
       toast.success(`Loaded ${raw.length} contact${raw.length === 1 ? "" : "s"}`);
-    } catch (err) {
+    } catch {
       toast.error("Couldn't read contacts", { description: "Choose a .vcf contacts file instead. You will stay on this page." });
       vcardRef.current?.click();
     }
@@ -305,9 +323,12 @@ function UploadPage() {
           <p className="font-medium">Pick from your phone's contacts</p>
         </div>
         <p className="text-xs text-muted-foreground">
-          Tap the button below to open your phone's contact picker and select guests directly — no typing.
-          Works in Chrome on Android. On iPhone or desktop, export your contacts as a <code>.vcf</code> file
-          (Contacts app → Share) and choose it below.
+          <strong>Android (Chrome):</strong> tap <em>Pick contacts</em> and your phone's contact
+          picker opens — choose guests and you're done.<br />
+          <strong>iPhone / iPad:</strong> open Contacts → select people → <em>Share Contact</em> →
+          <em>Save to Files</em>. Then tap <em>Pick contacts</em> (or <em>Import .vcf file</em>)
+          and choose that file.<br />
+          <strong>Desktop:</strong> export a <code>.vcf</code> from your address book and import it below.
         </p>
         <div className="flex flex-wrap gap-2">
           <Button onClick={onPickContacts} disabled={!eventId} className="bg-ink text-cream hover:bg-ink/90">
