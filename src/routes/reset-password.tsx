@@ -65,25 +65,27 @@ function ResetPasswordPage() {
     if (password !== confirmPassword) return toast.error("Passwords do not match");
 
     setBusy(true);
-    if (tokenHash || (token && email)) {
-      const { error: verifyError } = await withTimeout(supabase.auth.verifyOtp(
-        tokenHash
-          ? { token_hash: tokenHash, type: "recovery" }
-          : {
-              email,
-              token: token!,
-              type: "recovery",
-            },
-      ), 10000);
-      if (verifyError) {
-        setBusy(false);
-        return toast.error(
-          "This reset link is invalid or expired. Please request a new password reset email.",
-        );
-      }
-    }
-
     try {
+      if (tokenHash || (token && email)) {
+        const { error: verifyError } = await withTimeout(
+          supabase.auth.verifyOtp(
+            tokenHash
+              ? { token_hash: tokenHash, type: "recovery" }
+              : {
+                  email,
+                  token: token!,
+                  type: "recovery",
+                },
+          ),
+          10000,
+        );
+        if (verifyError) {
+          return toast.error(
+            "This reset link is invalid or expired. Please request a new password reset email.",
+          );
+        }
+      }
+
       const { error } = await withTimeout(supabase.auth.updateUser({ password }), 10000);
       if (error) return toast.error(error.message);
       toast.success("Password updated. You can log in now.");
