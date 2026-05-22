@@ -209,6 +209,52 @@ function UploadPage() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [ocrBusy, setOcrBusy] = useState(false);
   const runOcr = useServerFn(extractContactsFromImages);
+  const [savedGuests, setSavedGuests] = useState<
+    { id: string; guest_name: string; guest_email: string | null; guest_phone: string | null }[]
+  >([]);
+  const [savedLoading, setSavedLoading] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+
+  const loadSavedGuests = async (evId: string) => {
+    if (!evId) {
+      setSavedGuests([]);
+      return;
+    }
+    setSavedLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("invitations")
+        .select("id,guest_name,guest_email,guest_phone")
+        .eq("event_id", evId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setSavedGuests(data ?? []);
+    } catch (e) {
+      console.error("[upload] load saved guests failed", e);
+    } finally {
+      setSavedLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadSavedGuests(eventId);
+  }, [eventId]);
+
+  const removeSavedGuest = async (id: string, name: string) => {
+    if (typeof window !== "undefined" && !window.confirm(`Remove ${name} from this event's guest list?`)) return;
+    setRemovingId(id);
+    try {
+      const { error } = await supabase.from("invitations").delete().eq("id", id);
+      if (error) throw error;
+      setSavedGuests((prev) => prev.filter((g) => g.id !== id));
+      toast.success(`Removed ${name}`);
+    } catch (e) {
+      console.error("[upload] remove guest failed", e);
+      toast.error("Couldn't remove guest", { description: getErrorMessage(e) });
+    } finally {
+      setRemovingId(null);
+    }
+  };
 
   useEffect(() => {
     let alive = true;
@@ -549,6 +595,7 @@ function UploadPage() {
       clearUploadDraft(user.id);
       if (fileRef.current) fileRef.current.value = "";
       toast.success(`Added ${inserted} guest${inserted === 1 ? "" : "s"}`);
+      void loadSavedGuests(eventId);
     } catch (e) {
       console.error("[upload] importAll failed", e);
       toast.error("Import failed", { description: getErrorMessage(e) });
@@ -585,6 +632,7 @@ function UploadPage() {
       setQuick({ name: "", phone: "", email: "" });
       saveUploadDraft(user.id, pasted, { name: "", phone: "", email: "" }, rows);
       toast.success(`Added ${name}`);
+      void loadSavedGuests(eventId);
     } catch (e) {
       console.error("[upload] quick add failed", e);
       toast.error("Couldn't add that guest", { description: getErrorMessage(e) });
@@ -823,6 +871,60 @@ function UploadPage() {
           </div>
         </Card>
       )}
+
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b border-border flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+            <p className="font-medium">
+              Current guest list{savedGuests.length > 0 ? ` (${savedGuests.length})` : ""}
+            </p>
+          </div>
+          {savedLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+        </div>
+        {savedGuests.length === 0 ? (
+          <div className="p-4 text-sm text-muted-foreground">
+            {eventId
+              ? savedLoading
+                ? "Loading guests…"
+                : "No guests added yet for this event."
+              : "Pick an event to see its guest list."}
+          </div>
+        ) : (
+          <div className="divide-y divide-border max-h-[480px] overflow-auto">
+            {savedGuests.map((g) => (
+              <div
+                key={g.id}
+                className="px-4 py-2.5 flex flex-wrap items-center gap-3 text-sm"
+              >
+                <span className="font-medium flex-1 min-w-[140px]">{g.guest_name}</span>
+                <span className="text-muted-foreground min-w-[160px] break-all">
+                  {g.guest_email ?? ""}
+                </span>
+                <span className="text-muted-foreground min-w-[110px]">
+                  {g.guest_phone ?? ""}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={removingId === g.id}
+                  aria-label={`Remove ${g.guest_name}`}
+                  onClick={() => removeSavedGuest(g.id, g.guest_name)}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  {removingId === g.id ? (
+                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  ) : (
+                    <X className="w-4 h-4 mr-1" />
+                  )}
+                  Remove
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
     </div>
   );
 }
