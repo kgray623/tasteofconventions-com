@@ -597,9 +597,135 @@ function UploadPage() {
     }
   };
 
+  const fileToDataUrl = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(reader.error ?? new Error("Couldn't read image"));
+      reader.readAsDataURL(file);
+    });
+
+  const onImages = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const list = Array.from(files).slice(0, 8);
+    setDone(null);
+    setOcrBusy(true);
+    try {
+      const dataUrls = await Promise.all(list.map(fileToDataUrl));
+      setImagePreviews(dataUrls);
+      const { contacts } = await runOcr({ data: { images: dataUrls } });
+      if (!contacts.length) {
+        toast.error("I couldn't read any contacts from that image.", {
+          description: "Try a clearer screenshot of the contact card.",
+        });
+        return;
+      }
+      await parseRows(
+        contacts.map((c) => ({
+          name: c.name,
+          email: c.email,
+          phone: c.phone,
+          notes: c.notes,
+        })),
+        true,
+      );
+      toast.success(
+        `Found ${contacts.length} contact${contacts.length === 1 ? "" : "s"} in your screenshot${list.length === 1 ? "" : "s"}`,
+      );
+    } catch (e) {
+      console.error("[upload] image OCR failed", e);
+      toast.error("Couldn't read those screenshots", { description: getErrorMessage(e) });
+    } finally {
+      setOcrBusy(false);
+      if (imageRef.current) imageRef.current.value = "";
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card className="p-6 space-y-2">
+        <p className="text-xs uppercase tracking-wider text-muted-foreground">Event</p>
+        <Select value={eventId} onValueChange={setEventId}>
+          <SelectTrigger className="w-full sm:w-[320px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {events.map((e) => (
+              <SelectItem key={e.id} value={e.id}>
+                {e.title}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Card>
+
+      {/* PRIMARY: upload screenshots of contacts */}
+      <Card className="p-6 space-y-3 border-terracotta/60 border-2 bg-terracotta/5">
+        <div className="flex items-center gap-2">
+          <Camera className="w-5 h-5 text-terracotta" />
+          <p className="font-semibold text-base">Upload contact screenshots — fastest way</p>
+        </div>
+        <ol className="text-sm text-muted-foreground list-decimal pl-5 space-y-1">
+          <li>Open a contact on your phone and take a screenshot (or snap a business card).</li>
+          <li>Tap below to pick the image(s). You can add up to 8 at once.</li>
+          <li>
+            We'll read the name, phone, and email for you and add them to the review list. You
+            review before anything is saved.
+          </li>
+        </ol>
+        <label className="block">
+          <input
+            ref={imageRef}
+            type="file"
+            accept="image/*"
+            multiple
+            disabled={ocrBusy || !eventId}
+            onChange={(e) => onImages(e.target.files)}
+            className="hidden"
+          />
+          <span
+            className={`inline-flex items-center justify-center gap-2 h-11 px-5 rounded-md text-base font-medium cursor-pointer bg-terracotta text-cream hover:bg-terracotta/90 ${ocrBusy || !eventId ? "opacity-50 pointer-events-none" : ""}`}
+          >
+            {ocrBusy ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Reading screenshots…
+              </>
+            ) : (
+              <>
+                <Camera className="w-4 h-4" /> Choose screenshots
+              </>
+            )}
+          </span>
+        </label>
+        {imagePreviews.length > 0 && (
+          <div className="flex flex-wrap gap-2 pt-2">
+            {imagePreviews.map((src, i) => (
+              <div key={i} className="relative">
+                <img
+                  src={src}
+                  alt={`Contact screenshot ${i + 1}`}
+                  className="h-20 w-20 object-cover rounded-md border border-border"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setImagePreviews((prev) => prev.filter((_, idx) => idx !== i))
+                  }
+                  className="absolute -top-2 -right-2 bg-background border border-border rounded-full p-0.5 shadow-sm"
+                  aria-label="Remove preview"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <p className="text-xs text-muted-foreground">
+          Nothing is added to your guest list until you review the results below and tap{" "}
+          <em>Add all</em>.
+        </p>
+      </Card>
+
         <p className="text-xs uppercase tracking-wider text-muted-foreground">Event</p>
         <Select value={eventId} onValueChange={setEventId}>
           <SelectTrigger className="w-full sm:w-[320px]">
