@@ -533,6 +533,7 @@ function UploadPage() {
       setDone({ inserted, flagged, skipped });
       setRows([]);
       setPasted("");
+      clearUploadDraft(user.id);
       if (fileRef.current) fileRef.current.value = "";
       toast.success(`Added ${inserted} guest${inserted === 1 ? "" : "s"}`);
     } catch (e) {
@@ -569,6 +570,7 @@ function UploadPage() {
       if (error) throw error;
       setQuickAdded((n) => n + 1);
       setQuick({ name: "", phone: "", email: "" });
+      saveUploadDraft(user.id, pasted, { name: "", phone: "", email: "" }, rows);
       toast.success(`Added ${name}`);
     } catch (e) {
       console.error("[upload] quick add failed", e);
