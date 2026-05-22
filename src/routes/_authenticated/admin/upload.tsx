@@ -871,6 +871,60 @@ function UploadPage() {
           </div>
         </Card>
       )}
+
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b border-border flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+            <p className="font-medium">
+              Current guest list{savedGuests.length > 0 ? ` (${savedGuests.length})` : ""}
+            </p>
+          </div>
+          {savedLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+        </div>
+        {savedGuests.length === 0 ? (
+          <div className="p-4 text-sm text-muted-foreground">
+            {eventId
+              ? savedLoading
+                ? "Loading guests…"
+                : "No guests added yet for this event."
+              : "Pick an event to see its guest list."}
+          </div>
+        ) : (
+          <div className="divide-y divide-border max-h-[480px] overflow-auto">
+            {savedGuests.map((g) => (
+              <div
+                key={g.id}
+                className="px-4 py-2.5 flex flex-wrap items-center gap-3 text-sm"
+              >
+                <span className="font-medium flex-1 min-w-[140px]">{g.guest_name}</span>
+                <span className="text-muted-foreground min-w-[160px] break-all">
+                  {g.guest_email ?? ""}
+                </span>
+                <span className="text-muted-foreground min-w-[110px]">
+                  {g.guest_phone ?? ""}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={removingId === g.id}
+                  aria-label={`Remove ${g.guest_name}`}
+                  onClick={() => removeSavedGuest(g.id, g.guest_name)}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  {removingId === g.id ? (
+                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  ) : (
+                    <X className="w-4 h-4 mr-1" />
+                  )}
+                  Remove
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
     </div>
   );
 }
