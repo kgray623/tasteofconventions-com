@@ -101,10 +101,15 @@ function UploadPage() {
   const [pasted, setPasted] = useState("");
 
   useEffect(() => {
+    let alive = true;
     supabase.from("events").select("id,title").order("starts_at").then(({ data }) => {
+      if (!alive) return;
       setEvents(data ?? []);
       if (data?.[0]) setEventId(data[0].id);
+    }, (err) => {
+      console.error("[upload] events load failed", err);
     });
+    return () => { alive = false; };
   }, []);
 
   if (!isTeam) {
@@ -127,24 +132,28 @@ function UploadPage() {
       }
     });
     if (eventId) {
-      const { data: existing } = await supabase
-        .from("invitations")
-        .select("guest_name,guest_email_normalized,guest_phone_normalized")
-        .eq("event_id", eventId);
-      const existE = new Set((existing ?? []).map((r) => r.guest_email_normalized).filter(Boolean) as string[]);
-      const existP = new Set((existing ?? []).map((r) => r.guest_phone_normalized).filter(Boolean) as string[]);
-      parsed.forEach((r) => {
-        if (r._dupReason) return;
-        const e = norm(r.guest_email);
-        const p = phoneNorm(r.guest_phone);
-        if (e && existE.has(e)) r._dupReason = "already on the guest list (email match)";
-        else if (p.length >= 7 && existP.has(p)) r._dupReason = "already on the guest list (phone match)";
-      });
+      try {
+        const { data: existing } = await supabase
+          .from("invitations")
+          .select("guest_name,guest_email_normalized,guest_phone_normalized")
+          .eq("event_id", eventId);
+        const existE = new Set((existing ?? []).map((r) => r.guest_email_normalized).filter(Boolean) as string[]);
+        const existP = new Set((existing ?? []).map((r) => r.guest_phone_normalized).filter(Boolean) as string[]);
+        parsed.forEach((r) => {
+          if (r._dupReason) return;
+          const e = norm(r.guest_email);
+          const p = phoneNorm(r.guest_phone);
+          if (e && existE.has(e)) r._dupReason = "already on the guest list (email match)";
+          else if (p.length >= 7 && existP.has(p)) r._dupReason = "already on the guest list (phone match)";
+        });
+      } catch (e) {
+        console.warn("[upload] dup check failed", e);
+      }
     }
   };
 
   const parseRows = async (raw: Record<string, unknown>[]) => {
-    const parsed: Parsed[] = raw.map((r, i) => ({
+    const parsed: Parsed[] = (raw ?? []).map((r, i) => ({
       _row: i + 1,
       guest_name: pick(r, ["name", "guest", "guest name", "full name"]),
       guest_email: pick(r, ["email", "e-mail", "email address"]),
