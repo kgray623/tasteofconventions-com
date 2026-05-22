@@ -154,12 +154,43 @@ function parseContactText(value: string) {
   return { name, phone, email };
 }
 
+const uploadDraftKey = (userId?: string) => `admin-upload-draft:${userId ?? "unknown"}`;
+
+function loadUploadDraft(userId?: string) {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(uploadDraftKey(userId));
+    return raw ? JSON.parse(raw) as { pasted?: string; quick?: { name?: string; phone?: string; email?: string }; rows?: Parsed[] } : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveUploadDraft(userId: string | undefined, pasted: string, quick: { name: string; phone: string; email: string }, rows: Parsed[]) {
+  if (typeof window === "undefined") return;
+  try {
+    if (!pasted.trim() && !quick.name.trim() && !quick.phone.trim() && !quick.email.trim() && rows.length === 0) {
+      window.localStorage.removeItem(uploadDraftKey(userId));
+      return;
+    }
+    window.localStorage.setItem(uploadDraftKey(userId), JSON.stringify({ pasted, quick, rows }));
+  } catch (error) {
+    console.warn("[upload] draft save failed", error);
+  }
+}
+
+function clearUploadDraft(userId?: string) {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(uploadDraftKey(userId));
+}
+
 function UploadPage() {
   const { user } = useAuth();
-  const { isTeam } = useRoles();
+  const { isTeam, loading: rolesLoading } = useRoles();
   const fileRef = useRef<HTMLInputElement>(null);
   const vcardRef = useRef<HTMLInputElement>(null);
   const quickNameRef = useRef<HTMLInputElement>(null);
+  const draftLoadedRef = useRef(false);
   const [events, setEvents] = useState<{ id: string; title: string }[]>([]);
   const [eventId, setEventId] = useState("");
   const [rows, setRows] = useState<Parsed[]>([]);
@@ -198,6 +229,30 @@ function UploadPage() {
   useEffect(() => {
     setCanPickContacts(Boolean(getContactsApi()) && !isInIframe() && !isIOS());
   }, []);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const draft = loadUploadDraft(user.id);
+    if (draft) {
+      setPasted((current) => current || draft.pasted || "");
+      setQuick((current) => ({
+        name: current.name || draft.quick?.name || "",
+        phone: current.phone || draft.quick?.phone || "",
+        email: current.email || draft.quick?.email || "",
+      }));
+      setRows((current) => current.length ? current : draft.rows ?? []);
+    }
+    draftLoadedRef.current = true;
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id || !draftLoadedRef.current) return;
+    saveUploadDraft(user.id, pasted, quick, rows);
+  }, [user?.id, pasted, quick, rows]);
+
+  if (rolesLoading) {
+    return <p className="text-muted-foreground">Loading guest tools…</p>;
+  }
 
   if (!isTeam) {
     return <p className="text-muted-foreground">Only team members can add guests.</p>;
@@ -244,7 +299,7 @@ function UploadPage() {
     }
   };
 
-  const parseRows = async (raw: Record<string, unknown>[]) => {
+  const parseRows = async (raw: Record<string, unknown>[], append = false) => {
     const parsed: Parsed[] = (raw ?? [])
       .map((r, i) => ({
         _row: i + 1,
@@ -254,8 +309,9 @@ function UploadPage() {
         notes: pick(r, ["notes", "note", "comment", "comments"]),
       }))
       .filter((r) => r.guest_name);
-    await flagDuplicates(parsed);
-    setRows(parsed);
+    const next = append ? [...rows, ...parsed.map((r, i) => ({ ...r, _row: rows.length + i + 1 }))] : parsed;
+    await flagDuplicates(next);
+    setRows(next);
   };
 
   const onFile = async (file: File) => {
@@ -286,8 +342,8 @@ function UploadPage() {
         toast.error("No rows found in that file.");
         return;
       }
-      await parseRows(raw);
-      toast.success(`Loaded ${raw.length} row${raw.length === 1 ? "" : "s"}`);
+      await parseRows(raw, true);
+      toast.success(`Added ${raw.length} row${raw.length === 1 ? "" : "s"} to the review list`);
     } catch (e) {
       console.error("[upload] onFile failed", e);
       toast.error("Couldn't read that file", { description: getErrorMessage(e) });
@@ -321,8 +377,8 @@ function UploadPage() {
         toast.message("No contacts selected.");
         return;
       }
-      await parseRows(raw);
-      toast.success(`Loaded ${raw.length} contact${raw.length === 1 ? "" : "s"}`);
+      await parseRows(raw, true);
+      toast.success(`Added ${raw.length} contact${raw.length === 1 ? "" : "s"} to the review list`);
     } catch {
       toast.error("Couldn't read contacts", {
         description: "Choose a .vcf contacts file instead. You will stay on this page.",
@@ -369,8 +425,8 @@ function UploadPage() {
         toast.error("No contacts found in that file.");
         return;
       }
-      await parseRows(raw);
-      toast.success(`Loaded ${raw.length} contact${raw.length === 1 ? "" : "s"} from vCard`);
+      await parseRows(raw, true);
+      toast.success(`Added ${raw.length} contact${raw.length === 1 ? "" : "s"} from vCard`);
     } catch (e) {
       console.error("[upload] onVCard failed", e);
       toast.error("Couldn't read that contacts file", { description: getErrorMessage(e) });
@@ -446,7 +502,7 @@ function UploadPage() {
       }
     }
     flush();
-    await parseRows(raw);
+    await parseRows(raw, true);
     if (!raw.some((r) => r.name)) toast.error("I couldn't find any guest names in that paste.");
   };
 
@@ -485,6 +541,7 @@ function UploadPage() {
       setDone({ inserted, flagged, skipped });
       setRows([]);
       setPasted("");
+      clearUploadDraft(user.id);
       if (fileRef.current) fileRef.current.value = "";
       toast.success(`Added ${inserted} guest${inserted === 1 ? "" : "s"}`);
     } catch (e) {
@@ -521,6 +578,7 @@ function UploadPage() {
       if (error) throw error;
       setQuickAdded((n) => n + 1);
       setQuick({ name: "", phone: "", email: "" });
+      saveUploadDraft(user.id, pasted, { name: "", phone: "", email: "" }, rows);
       toast.success(`Added ${name}`);
     } catch (e) {
       console.error("[upload] quick add failed", e);
