@@ -46,6 +46,16 @@ const getContactsApi = (): ContactsManager | null => {
   return c && typeof c.select === "function" ? c : null;
 };
 
+const isInIframe = () => {
+  try { return window.self !== window.top; } catch { return true; }
+};
+
+const isIOS = () => {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  return /iPad|iPhone|iPod/.test(ua) || (ua.includes("Mac") && "ontouchend" in document);
+};
+
 // Minimal vCard (.vcf) parser — handles vCard 3.0/4.0 exports from iPhone & Android
 function parseVCards(text: string): Record<string, string>[] {
   const cards = text.split(/BEGIN:VCARD/i).slice(1);
@@ -219,16 +229,6 @@ function UploadPage() {
     } finally {
       if (fileRef.current) fileRef.current.value = "";
     }
-  };
-
-  const isInIframe = () => {
-    try { return window.self !== window.top; } catch { return true; }
-  };
-
-  const isIOS = () => {
-    if (typeof navigator === "undefined") return false;
-    const ua = navigator.userAgent || "";
-    return /iPad|iPhone|iPod/.test(ua) || (ua.includes("Mac") && "ontouchend" in document);
   };
 
   const onPickContacts = async () => {
