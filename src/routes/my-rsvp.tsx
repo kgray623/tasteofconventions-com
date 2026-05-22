@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Users } from "lucide-react";
+import { withTimeout } from "@/lib/async-safety";
 
 export const Route = createFileRoute("/my-rsvp")({
   head: () => ({ meta: [{ title: "My RSVP — A Taste of Special Conventions" }] }),
@@ -26,9 +27,12 @@ function MyRsvpPage() {
       return;
     }
     let cancelled = false;
+    const fallback = window.setTimeout(() => {
+      if (!cancelled) setState("none");
+    }, 10000);
     (async () => {
       try {
-        const r = await fetchMine();
+        const r = await withTimeout(fetchMine(), 10000);
         if (cancelled) return;
         if (r?.invitation) {
           setData(r);
@@ -38,9 +42,11 @@ function MyRsvpPage() {
         }
       } catch {
         setState("none");
+      } finally {
+        window.clearTimeout(fallback);
       }
     })();
-    return () => { cancelled = true; };
+    return () => { cancelled = true; window.clearTimeout(fallback); };
   }, [user, loading, fetchMine, navigate]);
 
   if (state === "loading") {
