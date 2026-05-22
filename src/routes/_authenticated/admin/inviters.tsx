@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Trash2, UserPlus } from "lucide-react";
+import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 
 export const Route = createFileRoute("/_authenticated/admin/inviters")({
   head: () => ({ meta: [{ title: "Inviters — Admin" }] }),
@@ -27,10 +28,11 @@ function InvitersPage() {
 
   const load = async () => {
     setLoading(true);
-    const [{ data: inv }, { data: rsvps }] = await Promise.all([
-      supabase.from("inviters").select("*").order("name"),
-      supabase.from("rsvps").select("invited_by,party_size,status"),
-    ]);
+    try {
+      const [{ data: inv }, { data: rsvps }] = await withTimeout(Promise.all([
+        supabase.from("inviters").select("*").order("name"),
+        supabase.from("rsvps").select("invited_by,party_size,status"),
+      ]), 10000);
     setInviters((inv as Inviter[]) ?? []);
     const counts: Record<string, number> = {};
     let other = 0;
@@ -48,7 +50,11 @@ function InvitersPage() {
     }
     setUsage(counts);
     setUnassigned(other);
-    setLoading(false);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { load(); }, []);
