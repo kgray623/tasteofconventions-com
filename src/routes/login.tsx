@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate, useNavigate, useSearch } from "@tanstack/react-router";
 import { FormEvent, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -35,18 +35,31 @@ function HelperLogin() {
   const [busy, setBusy] = useState(false);
   const [forgotBusy, setForgotBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [autoDestination, setAutoDestination] = useState<RouteDestination | null>(null);
 
   useEffect(() => {
-    if (loading || !user) return;
+    if (loading || !user) {
+      setAutoDestination(null);
+      return;
+    }
+    let cancelled = false;
     const redirectToUpload = search.redirect === "/admin/upload";
     routeForUser(user.id).then((destination) => {
+      if (cancelled) return;
       const next =
         redirectToUpload && destination.to === "/admin"
           ? { to: "/admin/upload" as const }
           : destination;
-      navigate({ to: next.to, replace: true });
+      setAutoDestination(next);
     });
-  }, [user, loading, search.redirect, navigate]);
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, loading, search.redirect]);
+
+  if (autoDestination) {
+    return <Navigate to={autoDestination.to} replace />;
+  }
 
   const signIn = async (event?: FormEvent) => {
     event?.preventDefault();
