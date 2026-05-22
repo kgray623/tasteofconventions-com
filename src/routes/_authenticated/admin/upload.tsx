@@ -463,10 +463,11 @@ function UploadPage() {
           )}
         </div>
         <p className="text-xs text-muted-foreground">
-          The easiest way. Type the guest's name and their phone <em>or</em> email, tap <em>Add guest</em>, and they're on the list. Open your phone's Contacts app side-by-side and copy/paste as you go.
+          The safest mobile flow. Open a person in your phone Contacts app, copy their details, come back here, paste, and tap <em>Add guest</em>.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <Input
+            ref={quickNameRef}
             value={quick.name}
             onChange={(e) => setQuick((q) => ({ ...q, name: e.target.value }))}
             placeholder="Full name"
@@ -489,7 +490,10 @@ function UploadPage() {
             autoComplete="email"
           />
         </div>
-        <div className="flex justify-end">
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button onClick={pasteFromClipboard} disabled={clipboardBusy} variant="outline">
+            <ClipboardPaste className="w-4 h-4 mr-2" /> Paste copied contact
+          </Button>
           <Button
             onClick={onQuickAdd}
             disabled={quickBusy || !eventId || !quick.name.trim() || (!quick.phone.trim() && !quick.email.trim())}
@@ -507,16 +511,13 @@ function UploadPage() {
           <p className="font-medium">Pick from your phone's contacts</p>
         </div>
         <p className="text-xs text-muted-foreground">
-          <strong>Android (Chrome):</strong> tap <em>Pick contacts</em> and your phone's contact
-          picker opens — choose guests and you're done.<br />
-          <strong>iPhone / iPad:</strong> open Contacts → select people → <em>Share Contact</em> →
-          <em>Save to Files</em>. Then tap <em>Pick contacts</em> (or <em>Import .vcf file</em>)
-          and choose that file.<br />
-          <strong>Desktop:</strong> export a <code>.vcf</code> from your address book and import it below.
+          {canPickContacts
+            ? "This Android browser supports direct contact picking. Choose people, review them, then add them."
+            : "Direct contact picking is not available in this preview/browser, so this button now keeps you on the page and sends you to Quick add instead of opening a broken file screen."}
         </p>
         <div className="flex flex-wrap gap-2">
           <Button onClick={onPickContacts} disabled={!eventId} className="bg-ink text-cream hover:bg-ink/90">
-            <Smartphone className="w-4 h-4 mr-2" /> Pick contacts
+            <Smartphone className="w-4 h-4 mr-2" /> {canPickContacts ? "Pick contacts" : "Use Quick add"}
           </Button>
           <label className="inline-flex">
             <input
