@@ -168,7 +168,15 @@ function loadUploadDraft(userId?: string) {
 
 function saveUploadDraft(userId: string | undefined, pasted: string, quick: { name: string; phone: string; email: string }, rows: Parsed[]) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(uploadDraftKey(userId), JSON.stringify({ pasted, quick, rows }));
+  try {
+    if (!pasted.trim() && !quick.name.trim() && !quick.phone.trim() && !quick.email.trim() && rows.length === 0) {
+      window.localStorage.removeItem(uploadDraftKey(userId));
+      return;
+    }
+    window.localStorage.setItem(uploadDraftKey(userId), JSON.stringify({ pasted, quick, rows }));
+  } catch (error) {
+    console.warn("[upload] draft save failed", error);
+  }
 }
 
 function clearUploadDraft(userId?: string) {
