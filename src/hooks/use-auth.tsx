@@ -10,15 +10,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let alive = true;
+    const finish = (nextSession: Session | null) => {
+      if (!alive) return;
+      setSession(nextSession);
+      setLoading(false);
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
-      setSession(s);
-      setLoading(false);
+      finish(s);
     });
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setLoading(false);
-    });
-    return () => subscription.unsubscribe();
+
+    const fallback = window.setTimeout(() => finish(null), 2500);
+    supabase.auth.getSession()
+      .then(({ data }) => finish(data.session))
+      .catch(() => finish(null))
+      .finally(() => window.clearTimeout(fallback));
+
+    return () => {
+      alive = false;
+      window.clearTimeout(fallback);
+      subscription.unsubscribe();
+    };
   }, []);
 
   return <Ctx.Provider value={{ session, user: session?.user ?? null, loading }}>{children}</Ctx.Provider>;
