@@ -963,7 +963,32 @@ function UploadPage() {
                 key={g.id}
                 className="px-4 py-2.5 flex flex-wrap items-center gap-3 text-sm"
               >
-                <span className="font-medium flex-1 min-w-[140px]">{g.guest_name}</span>
+                {editingSavedId === g.id ? (
+                  <input
+                    autoFocus
+                    disabled={updatingSavedId === g.id}
+                    className="flex-1 min-w-[140px] h-7 px-2 rounded-md border border-input bg-background text-sm font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+                    value={editingSavedValue}
+                    onChange={(e) => setEditingSavedValue(e.target.value)}
+                    onBlur={() => updateSavedGuestName(g.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") updateSavedGuestName(g.id);
+                      if (e.key === "Escape") setEditingSavedId(null);
+                    }}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    className="font-medium flex-1 min-w-[140px] text-left flex items-center gap-1 hover:text-terracotta"
+                    onClick={() => {
+                      setEditingSavedId(g.id);
+                      setEditingSavedValue(g.guest_name);
+                    }}
+                  >
+                    {g.guest_name}
+                    <Pencil className="w-3 h-3 opacity-40" />
+                  </button>
+                )}
                 <span className="text-muted-foreground min-w-[160px] break-all">
                   {g.guest_email ?? ""}
                 </span>
