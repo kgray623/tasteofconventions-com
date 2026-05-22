@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { Component, useEffect, useRef, useState, type ReactNode } from "react";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,27 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, ClipboardPaste, Smartphone } from "lucide-react";
+import { getErrorMessage } from "@/lib/async-safety";
+
+class UploadErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  componentDidCatch(error: Error) { console.error("[upload] render error", error); }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="space-y-4 p-4">
+          <Card className="p-5 border-destructive/40 bg-destructive/5">
+            <p className="font-medium">Something broke on this page.</p>
+            <p className="text-sm text-muted-foreground mt-1">{this.state.error.message}</p>
+            <Button className="mt-3" onClick={() => this.setState({ error: null })}>Try again</Button>
+          </Card>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // Browsers that support the Contact Picker API (Chrome on Android)
 type ContactInfo = { name?: string[]; email?: string[]; tel?: string[] };
