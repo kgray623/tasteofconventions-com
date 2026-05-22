@@ -21,14 +21,10 @@ import {
   FileSpreadsheet,
   AlertCircle,
   CheckCircle2,
-  ClipboardPaste,
-  Smartphone,
-  UserPlus,
   Camera,
   Loader2,
   X,
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { getErrorMessage } from "@/lib/async-safety";
 import { useServerFn } from "@tanstack/react-start";
 import { extractContactsFromImages } from "@/lib/contact-ocr.functions";
@@ -726,155 +722,24 @@ function UploadPage() {
         </p>
       </Card>
 
-      {/* PRIMARY (legacy fallback): paste anything */}
-      <Card className="p-6 space-y-3 border-terracotta/60 border-2 bg-terracotta/5">
-        <div className="flex items-center gap-2">
-          <ClipboardPaste className="w-5 h-5 text-terracotta" />
-          <p className="font-semibold text-base">Paste contacts — easiest way</p>
-        </div>
-        <ol className="text-sm text-muted-foreground list-decimal pl-5 space-y-1">
-          <li>
-            Open your phone's <strong>Contacts</strong> or <strong>Messages</strong> app.
-          </li>
-          <li>
-            Tap a person, long-press their name/number, choose <strong>Copy</strong> (or "Share
-            &rarr; Copy").
-          </li>
-          <li>
-            Come back here, tap the box below, and pick <strong>Paste</strong>. Repeat for as many
-            people as you want — one per line is fine, or just paste each person and tap{" "}
-            <em>Add these</em>.
-          </li>
-        </ol>
-        <textarea
-          value={pasted}
-          onChange={(e) => setPasted(e.target.value)}
-          placeholder={
-            "Jane Smith, jane@email.com, 555-123-4567\nMike Jones 555-987-6543"
-          }
-          rows={8}
-          className="w-full rounded-md border-2 border-input bg-background px-3 py-2 text-base font-mono"
-        />
-        <div className="flex flex-wrap justify-between gap-2">
-          <Button onClick={pasteFromClipboard} disabled={clipboardBusy} variant="outline" size="lg">
-            <ClipboardPaste className="w-4 h-4 mr-2" /> Paste from clipboard
-          </Button>
-          <Button
-            onClick={onPaste}
-            disabled={!pasted.trim() || !eventId}
-            size="lg"
-            className="bg-terracotta text-cream hover:bg-terracotta/90"
-          >
-            Add these &rarr;
-          </Button>
-        </div>
-      </Card>
-
       <Card className="p-6 space-y-3">
         <div className="flex items-center gap-2">
-          <UserPlus className="w-4 h-4 text-terracotta" />
-          <p className="font-medium">Type one guest at a time</p>
-          {quickAdded > 0 && (
-            <Badge variant="outline" className="border-emerald-600 text-emerald-700">
-              {quickAdded} added this session
-            </Badge>
-          )}
+          <FileSpreadsheet className="w-4 h-4 text-terracotta" />
+          <p className="font-medium">CSV / Excel file</p>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <Input
-            ref={quickNameRef}
-            value={quick.name}
-            onChange={(e) => setQuick((q) => ({ ...q, name: e.target.value }))}
-            placeholder="Full name"
-            autoComplete="name"
-          />
-          <Input
-            value={quick.phone}
-            onChange={(e) => setQuick((q) => ({ ...q, phone: e.target.value }))}
-            placeholder="Phone (555-123-4567)"
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel"
-          />
-          <Input
-            value={quick.email}
-            onChange={(e) => setQuick((q) => ({ ...q, email: e.target.value }))}
-            placeholder="Email (optional)"
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-          />
-        </div>
-        <div className="flex justify-end">
-          <Button
-            onClick={onQuickAdd}
-            disabled={
-              quickBusy ||
-              !eventId ||
-              !quick.name.trim() ||
-              (!quick.phone.trim() && !quick.email.trim())
-            }
-            className="bg-ink text-cream hover:bg-ink/90"
-          >
-            <UserPlus className="w-4 h-4 mr-2" /> Add guest
-          </Button>
-        </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".csv,.xlsx,.xls"
+          onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
+          className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-ink file:text-cream hover:file:bg-ink/90 file:cursor-pointer"
+        />
+        <p className="text-xs text-muted-foreground">
+          Expected columns: <code>name</code>, <code>email</code>, <code>phone</code>,{" "}
+          <code>notes</code>.
+        </p>
       </Card>
 
-      <details className="rounded-md">
-        <summary className="cursor-pointer text-sm text-muted-foreground py-2">
-          More import options (contacts file, CSV, Excel)
-        </summary>
-        <div className="space-y-6 pt-3">
-          <Card className="p-6 space-y-3">
-            <div className="flex items-center gap-2">
-              <Smartphone className="w-4 h-4 text-terracotta" />
-              <p className="font-medium">Pick from your phone's contacts</p>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {canPickContacts
-                ? "This Android browser supports direct contact picking."
-                : "Direct picking isn't available here. Use Paste above, or export a .vcf from your phone."}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={onPickContacts} disabled={!eventId} variant="outline">
-                <Smartphone className="w-4 h-4 mr-2" />{" "}
-                {canPickContacts ? "Pick contacts" : "Use Quick add"}
-              </Button>
-              <label className="inline-flex">
-                <input
-                  ref={vcardRef}
-                  type="file"
-                  accept=".vcf,text/vcard,text/x-vcard"
-                  className="hidden"
-                  onChange={(e) => e.target.files?.[0] && onVCard(e.target.files[0])}
-                />
-                <span className="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md border border-input bg-background text-sm font-medium cursor-pointer hover:bg-accent">
-                  <Upload className="w-4 h-4" /> Import .vcf file
-                </span>
-              </label>
-            </div>
-          </Card>
-
-          <Card className="p-6 space-y-3">
-            <div className="flex items-center gap-2">
-              <FileSpreadsheet className="w-4 h-4 text-terracotta" />
-              <p className="font-medium">CSV / Excel file</p>
-            </div>
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".csv,.xlsx,.xls"
-              onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
-              className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-ink file:text-cream hover:file:bg-ink/90 file:cursor-pointer"
-            />
-            <p className="text-xs text-muted-foreground">
-              Expected columns: <code>name</code>, <code>email</code>, <code>phone</code>,{" "}
-              <code>notes</code>.
-            </p>
-          </Card>
-        </div>
-      </details>
 
       {done && (
         <Card className="p-5 border-emerald-500/40 bg-emerald-500/5 flex items-start gap-3">
