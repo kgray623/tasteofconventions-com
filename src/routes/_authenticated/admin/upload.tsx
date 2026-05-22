@@ -262,6 +262,42 @@ function UploadPage() {
     }
   };
 
+  const commitEditRow = () => {
+    if (editingRowIdx === null) return;
+    const trimmed = editingRowValue.trim();
+    if (!trimmed) {
+      setEditingRowIdx(null);
+      return;
+    }
+    setRows((prev) =>
+      prev.map((r, i) => (i === editingRowIdx ? { ...r, guest_name: trimmed } : r)),
+    );
+    setEditingRowIdx(null);
+  };
+
+  const updateSavedGuestName = async (id: string) => {
+    const trimmed = editingSavedValue.trim();
+    if (!trimmed) {
+      setEditingSavedId(null);
+      return;
+    }
+    setUpdatingSavedId(id);
+    try {
+      const { error } = await supabase.from("invitations").update({ guest_name: trimmed }).eq("id", id);
+      if (error) throw error;
+      setSavedGuests((prev) =>
+        prev.map((g) => (g.id === id ? { ...g, guest_name: trimmed } : g)),
+      );
+      toast.success("Name updated");
+    } catch (e) {
+      console.error("[upload] update guest name failed", e);
+      toast.error("Couldn't update name", { description: getErrorMessage(e) });
+    } finally {
+      setUpdatingSavedId(null);
+      setEditingSavedId(null);
+    }
+  };
+
   useEffect(() => {
     let alive = true;
     supabase
