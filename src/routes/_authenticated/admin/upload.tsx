@@ -160,15 +160,15 @@ function loadUploadDraft(userId?: string) {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(uploadDraftKey(userId));
-    return raw ? JSON.parse(raw) as { pasted?: string; quick?: { name?: string; phone?: string; email?: string } } : null;
+    return raw ? JSON.parse(raw) as { pasted?: string; quick?: { name?: string; phone?: string; email?: string }; rows?: Parsed[] } : null;
   } catch {
     return null;
   }
 }
 
-function saveUploadDraft(userId: string | undefined, pasted: string, quick: { name: string; phone: string; email: string }) {
+function saveUploadDraft(userId: string | undefined, pasted: string, quick: { name: string; phone: string; email: string }, rows: Parsed[]) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(uploadDraftKey(userId), JSON.stringify({ pasted, quick }));
+  window.localStorage.setItem(uploadDraftKey(userId), JSON.stringify({ pasted, quick, rows }));
 }
 
 function UploadPage() {
@@ -177,6 +177,7 @@ function UploadPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const vcardRef = useRef<HTMLInputElement>(null);
   const quickNameRef = useRef<HTMLInputElement>(null);
+  const draftLoadedRef = useRef(false);
   const [events, setEvents] = useState<{ id: string; title: string }[]>([]);
   const [eventId, setEventId] = useState("");
   const [rows, setRows] = useState<Parsed[]>([]);
@@ -219,19 +220,22 @@ function UploadPage() {
   useEffect(() => {
     if (!user?.id) return;
     const draft = loadUploadDraft(user.id);
-    if (!draft) return;
-    setPasted((current) => current || draft.pasted || "");
-    setQuick((current) => ({
-      name: current.name || draft.quick?.name || "",
-      phone: current.phone || draft.quick?.phone || "",
-      email: current.email || draft.quick?.email || "",
-    }));
+    if (draft) {
+      setPasted((current) => current || draft.pasted || "");
+      setQuick((current) => ({
+        name: current.name || draft.quick?.name || "",
+        phone: current.phone || draft.quick?.phone || "",
+        email: current.email || draft.quick?.email || "",
+      }));
+      setRows((current) => current.length ? current : draft.rows ?? []);
+    }
+    draftLoadedRef.current = true;
   }, [user?.id]);
 
   useEffect(() => {
-    if (!user?.id) return;
-    saveUploadDraft(user.id, pasted, quick);
-  }, [user?.id, pasted, quick]);
+    if (!user?.id || !draftLoadedRef.current) return;
+    saveUploadDraft(user.id, pasted, quick, rows);
+  }, [user?.id, pasted, quick, rows]);
 
   if (rolesLoading) {
     return <p className="text-muted-foreground">Loading guest tools…</p>;
