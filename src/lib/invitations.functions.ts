@@ -202,19 +202,13 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
         throw new Error(createUserErr.message);
       }
 
-      let userId = createdUser.user?.id ?? null;
-      if (!userId) {
-        const { data: users, error: usersErr } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-        if (usersErr) throw new Error(usersErr.message);
-        userId = users.users.find((user) => user.email?.toLowerCase() === email.toLowerCase())?.id ?? null;
-      }
+      // SECURITY: Only seed profile for newly created users. NEVER call
+      // updateUserById here — that would let an anonymous RSVP submission
+      // overwrite the password of any existing account (account takeover).
+      // If the email is already registered, silently skip account setup;
+      // the user can sign in with their existing credentials.
+      const userId = createdUser?.user?.id ?? null;
       if (userId) {
-        const { error: updateUserErr } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-          password,
-          email_confirm: true,
-          user_metadata: { display_name: data.guest_name },
-        });
-        if (updateUserErr) throw new Error(updateUserErr.message);
         await supabaseAdmin.from("profiles").upsert({
           id: userId,
           email,
