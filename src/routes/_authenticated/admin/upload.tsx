@@ -21,14 +21,10 @@ import {
   FileSpreadsheet,
   AlertCircle,
   CheckCircle2,
-  ClipboardPaste,
-  Smartphone,
-  UserPlus,
   Camera,
   Loader2,
   X,
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { getErrorMessage } from "@/lib/async-safety";
 import { useServerFn } from "@tanstack/react-start";
 import { extractContactsFromImages } from "@/lib/contact-ocr.functions";
