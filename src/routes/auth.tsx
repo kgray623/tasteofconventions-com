@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { Eye, EyeOff } from "lucide-react";
+import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Sign in — A Taste of Special Conventions" }] }),
@@ -28,21 +29,31 @@ function AuthPage() {
 
   const signIn = async () => {
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    navigate({ to: "/dashboard" });
+    try {
+      const { error } = await withTimeout(supabase.auth.signInWithPassword({ email, password }), 10000);
+      if (error) return toast.error(error.message);
+      navigate({ to: "/dashboard" });
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const signUp = async () => {
     setBusy(true);
-    const { error } = await supabase.auth.signUp({
-      email, password,
-      options: { emailRedirectTo: window.location.origin, data: { display_name: name } },
-    });
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    toast.success("Check your inbox to confirm your email.");
+    try {
+      const { error } = await withTimeout(supabase.auth.signUp({
+        email, password,
+        options: { emailRedirectTo: window.location.origin, data: { display_name: name } },
+      }), 10000);
+      if (error) return toast.error(error.message);
+      toast.success("Check your inbox to confirm your email.");
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
