@@ -1,6 +1,5 @@
-import { createFileRoute, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Navigate, Outlet, useLocation } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
-import { useEffect } from "react";
 import { SiteHeader } from "@/components/site-header";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -10,18 +9,19 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthLayout() {
   const { user, loading } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
-  useEffect(() => {
-    if (!loading && !user) navigate({ to: "/login", search: { redirect: location.pathname } });
-  }, [user, loading, location.pathname, navigate]);
 
-  if (loading || !user) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-muted-foreground">
         Loading…
       </div>
     );
   }
+
+  if (!user) {
+    return <Navigate to="/login" search={{ redirect: location.pathname }} replace />;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
