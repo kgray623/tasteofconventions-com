@@ -339,23 +339,34 @@ function UploadPage() {
     if (!eventId || !user) return;
     setBusy(true);
     let inserted = 0, flagged = 0, skipped = 0;
-    for (const r of rows) {
-      if (skipDupes && r._dupReason) { skipped++; continue; }
-      const { error } = await supabase.from("invitations").insert({
-        event_id: eventId, host_id: user.id, guest_name: r.guest_name,
-        guest_email: r.guest_email || null, guest_phone: r.guest_phone || null,
-        notes: r.notes || null,
-      });
-      if (error) { skipped++; continue; }
-      inserted++;
-      if (r._dupReason) flagged++;
+    try {
+      for (const r of rows) {
+        if (skipDupes && r._dupReason) { skipped++; continue; }
+        try {
+          const { error } = await supabase.from("invitations").insert({
+            event_id: eventId, host_id: user.id, guest_name: r.guest_name,
+            guest_email: r.guest_email || null, guest_phone: r.guest_phone || null,
+            notes: r.notes || null,
+          });
+          if (error) { skipped++; continue; }
+          inserted++;
+          if (r._dupReason) flagged++;
+        } catch (e) {
+          console.error("[upload] insert failed", e);
+          skipped++;
+        }
+      }
+      setDone({ inserted, flagged, skipped });
+      setRows([]);
+      setPasted("");
+      if (fileRef.current) fileRef.current.value = "";
+      toast.success(`Added ${inserted} guest${inserted === 1 ? "" : "s"}`);
+    } catch (e) {
+      console.error("[upload] importAll failed", e);
+      toast.error("Import failed", { description: getErrorMessage(e) });
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
-    setDone({ inserted, flagged, skipped });
-    setRows([]);
-    setPasted("");
-    if (fileRef.current) fileRef.current.value = "";
-    toast.success(`Added ${inserted} guest${inserted === 1 ? "" : "s"}`);
   };
 
   const dupCount = rows.filter((r) => r._dupReason).length;
