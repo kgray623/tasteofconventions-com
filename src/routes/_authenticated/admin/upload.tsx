@@ -247,6 +247,47 @@ function UploadPage() {
     void loadSavedGuests(eventId);
   }, [eventId]);
 
+  const duplicateGroups = useMemo(() => {
+    const groups = new Map<string, string>(); // key -> groupId (first id)
+    const norm = (s: string | null | undefined) =>
+      (s ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+    const normPhone = (s: string | null | undefined) =>
+      (s ?? "").replace(/\D/g, "");
+    const keyToGroup = new Map<string, string>();
+    const idToGroup = new Map<string, string>();
+    for (const g of savedGuests) {
+      const keys: string[] = [];
+      const n = norm(g.guest_name);
+      const e = norm(g.guest_email);
+      const p = normPhone(g.guest_phone);
+      if (n) keys.push("n:" + n);
+      if (e) keys.push("e:" + e);
+      if (p && p.length >= 7) keys.push("p:" + p);
+      let groupId: string | null = null;
+      for (const k of keys) {
+        const existing = keyToGroup.get(k);
+        if (existing) {
+          groupId = existing;
+          break;
+        }
+      }
+      if (!groupId) groupId = g.id;
+      for (const k of keys) keyToGroup.set(k, groupId);
+      idToGroup.set(g.id, groupId);
+    }
+    // count per group
+    const counts = new Map<string, number>();
+    for (const gid of idToGroup.values()) counts.set(gid, (counts.get(gid) ?? 0) + 1);
+    const dupIds = new Set<string>();
+    for (const [id, gid] of idToGroup) {
+      if ((counts.get(gid) ?? 0) > 1) dupIds.add(id);
+    }
+    return { dupIds, groupOf: idToGroup };
+  }, [savedGuests]);
+
+  const duplicateCount = duplicateGroups.dupIds.size;
+
+
   const removeSavedGuest = async (id: string, name: string) => {
     if (typeof window !== "undefined" && !window.confirm(`Remove ${name} from this event's guest list?`)) return;
     setRemovingId(id);
