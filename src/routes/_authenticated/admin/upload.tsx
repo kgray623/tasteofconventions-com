@@ -24,6 +24,7 @@ import {
   Camera,
   Loader2,
   X,
+  Pencil,
 } from "lucide-react";
 import { getErrorMessage } from "@/lib/async-safety";
 import { useServerFn } from "@tanstack/react-start";
