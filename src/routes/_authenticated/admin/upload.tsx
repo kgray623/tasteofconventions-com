@@ -209,6 +209,52 @@ function UploadPage() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [ocrBusy, setOcrBusy] = useState(false);
   const runOcr = useServerFn(extractContactsFromImages);
+  const [savedGuests, setSavedGuests] = useState<
+    { id: string; guest_name: string; guest_email: string | null; guest_phone: string | null }[]
+  >([]);
+  const [savedLoading, setSavedLoading] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+
+  const loadSavedGuests = async (evId: string) => {
+    if (!evId) {
+      setSavedGuests([]);
+      return;
+    }
+    setSavedLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("invitations")
+        .select("id,guest_name,guest_email,guest_phone")
+        .eq("event_id", evId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setSavedGuests(data ?? []);
+    } catch (e) {
+      console.error("[upload] load saved guests failed", e);
+    } finally {
+      setSavedLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadSavedGuests(eventId);
+  }, [eventId]);
+
+  const removeSavedGuest = async (id: string, name: string) => {
+    if (typeof window !== "undefined" && !window.confirm(`Remove ${name} from this event's guest list?`)) return;
+    setRemovingId(id);
+    try {
+      const { error } = await supabase.from("invitations").delete().eq("id", id);
+      if (error) throw error;
+      setSavedGuests((prev) => prev.filter((g) => g.id !== id));
+      toast.success(`Removed ${name}`);
+    } catch (e) {
+      console.error("[upload] remove guest failed", e);
+      toast.error("Couldn't remove guest", { description: getErrorMessage(e) });
+    } finally {
+      setRemovingId(null);
+    }
+  };
 
   useEffect(() => {
     let alive = true;
