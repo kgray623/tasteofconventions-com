@@ -121,8 +121,8 @@ const OrderInput = z.object({
   restaurant_id: z.string().uuid(),
   items: z.array(z.object({
     menu_item_id: z.string().uuid(),
-    name: z.string(),
-    price: z.number(),
+    name: z.string().max(200).optional(),
+    price: z.number().optional(), // ignored server-side; authoritative price is loaded from DB
     quantity: z.number().int().min(1).max(10),
   })).min(1).max(20),
   notes: z.string().max(500).optional().nullable(),
@@ -134,11 +134,29 @@ export const submitOrder = createServerFn({ method: "POST" })
     const { data: inv } = await supabaseAdmin
       .from("invitations").select("id").in("rsvp_token", rsvpTokenCandidates(data.token)).maybeSingle();
     if (!inv) throw new Error("Invitation not found");
-    const total = data.items.reduce((s, i) => s + i.price * i.quantity, 0);
+
+    // Authoritative pricing: load menu items from DB. NEVER trust client-supplied price.
+    const ids = Array.from(new Set(data.items.map((i) => i.menu_item_id)));
+    const { data: menuItems, error: menuErr } = await supabaseAdmin
+      .from("menu_items")
+      .select("id,name,price,restaurant_id,available")
+      .in("id", ids);
+    if (menuErr) throw new Error(menuErr.message);
+    const byId = new Map((menuItems ?? []).map((m) => [m.id, m]));
+    if (byId.size !== ids.length) throw new Error("Unknown menu item");
+
+    const verifiedItems = data.items.map((i) => {
+      const m = byId.get(i.menu_item_id)!;
+      if (m.restaurant_id !== data.restaurant_id) throw new Error("Item not in selected restaurant");
+      if (m.available === false) throw new Error("Item not available");
+      return { menu_item_id: m.id, name: m.name, price: Number(m.price), quantity: i.quantity };
+    });
+    const total = verifiedItems.reduce((s, i) => s + i.price * i.quantity, 0);
+
     const { error } = await supabaseAdmin.from("orders").upsert({
       invitation_id: inv.id,
       restaurant_id: data.restaurant_id,
-      items: data.items,
+      items: verifiedItems,
       total,
       notes: data.notes ?? null,
     }, { onConflict: "invitation_id" });
