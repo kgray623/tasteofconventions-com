@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { withTimeout } from "@/lib/async-safety";
 
 export function useRoles() {
   const { user, loading: authLoading } = useAuth();
@@ -14,7 +15,10 @@ export function useRoles() {
     }
     setLoading(true);
     try {
-      const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
+      const { data } = await withTimeout(
+        supabase.from("user_roles").select("role").eq("user_id", user.id),
+        3000,
+      );
       if (active()) setRoles((data ?? []).map((r) => r.role as string));
     } catch {
       if (active()) setRoles([]);
@@ -27,15 +31,9 @@ export function useRoles() {
     if (authLoading) return;
     let alive = true;
     const active = () => alive;
-    const fallback = window.setTimeout(() => {
-      if (!alive) return;
-      setRoles([]);
-      setLoading(false);
-    }, 3000);
-    refresh(active).finally(() => window.clearTimeout(fallback));
+    refresh(active);
     return () => {
       alive = false;
-      window.clearTimeout(fallback);
     };
   }, [user?.id, authLoading]);
 
