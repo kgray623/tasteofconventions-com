@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Calendar, MapPin, Check, X, Minus, Plus, ArrowLeft } from "lucide-react";
+import { InvitationPage } from "@/components/invitation-page";
 
 export const Route = createFileRoute("/rsvp/$token")({
   head: () => ({ meta: [{ title: "Your invitation — RSVP" }] }),
@@ -81,16 +82,7 @@ function RsvpPage() {
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
-  if (!data?.invitation) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-6">
-        <Card className="p-10 text-center max-w-md">
-          <h1 className="font-display text-3xl">Invitation not found</h1>
-          <p className="text-muted-foreground mt-2">This link is invalid or has been revoked.</p>
-        </Card>
-      </div>
-    );
-  }
+  if (!data?.invitation) return <InvitationPage />;
   const ev = data.invitation.events;
   const restaurantMenu = menu.filter((m) => m.restaurant_id === restaurantId);
   const orderTotal = restaurantMenu.reduce((s, m) => s + (cart[m.id] ?? 0) * Number(m.price), 0);
