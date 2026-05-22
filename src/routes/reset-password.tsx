@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
+import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({ meta: [{ title: "Reset password — A Taste of Special Conventions" }] }),
@@ -40,9 +41,9 @@ function ResetPasswordPage() {
       const recoveryToken = getAuthParam("token");
       const recoveryTokenHash = getAuthParam("token_hash");
 
-      if (code) await supabase.auth.exchangeCodeForSession(code);
+      if (code) await withTimeout(supabase.auth.exchangeCodeForSession(code), 10000);
       if (accessToken && refreshToken)
-        await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+        await withTimeout(supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }), 10000);
       if (recoveryEmail) setEmail(recoveryEmail);
       if (recoveryToken) setToken(recoveryToken);
       if (recoveryTokenHash) setTokenHash(recoveryTokenHash);
@@ -65,7 +66,7 @@ function ResetPasswordPage() {
 
     setBusy(true);
     if (tokenHash || (token && email)) {
-      const { error: verifyError } = await supabase.auth.verifyOtp(
+      const { error: verifyError } = await withTimeout(supabase.auth.verifyOtp(
         tokenHash
           ? { token_hash: tokenHash, type: "recovery" }
           : {
@@ -73,7 +74,7 @@ function ResetPasswordPage() {
               token: token!,
               type: "recovery",
             },
-      );
+      ), 10000);
       if (verifyError) {
         setBusy(false);
         return toast.error(
@@ -82,12 +83,16 @@ function ResetPasswordPage() {
       }
     }
 
-    const { error } = await supabase.auth.updateUser({ password });
-    setBusy(false);
-    if (error) return toast.error(error.message);
-
-    toast.success("Password updated. You can log in now.");
-    navigate({ to: "/login" });
+    try {
+      const { error } = await withTimeout(supabase.auth.updateUser({ password }), 10000);
+      if (error) return toast.error(error.message);
+      toast.success("Password updated. You can log in now.");
+      navigate({ to: "/login" });
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
