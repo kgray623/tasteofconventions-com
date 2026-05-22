@@ -41,14 +41,17 @@ export function useDraftedState<T>(
   const hydrated = useRef(false);
 
   useEffect(() => {
+    hydrated.current = false;
     if (typeof window === "undefined") return;
+    let ready = 0;
     try {
       const raw = window.localStorage.getItem(draftScopeKey(scope));
       if (raw) setValue(JSON.parse(raw) as T);
     } catch {
       // Ignore bad draft data instead of breaking the page.
     }
-    hydrated.current = true;
+    ready = window.setTimeout(() => { hydrated.current = true; }, 0);
+    return () => window.clearTimeout(ready);
   }, [scope]);
 
   useEffect(() => {
@@ -73,11 +76,15 @@ export function useDraftState<T>(
   const hydrated = useRef(false);
 
   useEffect(() => {
+    hydrated.current = false;
     const draft = readScope(scope);
     if (Object.prototype.hasOwnProperty.call(draft, field)) {
       setValue(draft[field] as T);
     }
-    hydrated.current = true;
+    const ready = typeof window === "undefined" ? 0 : window.setTimeout(() => { hydrated.current = true; }, 0);
+    return () => {
+      if (ready) window.clearTimeout(ready);
+    };
   }, [scope, field]);
 
   useEffect(() => {
