@@ -242,15 +242,22 @@ function UploadPage() {
 
 
   const onVCard = async (file: File) => {
-    setDone(null);
-    const text = await file.text();
-    const raw = parseVCards(text);
-    if (!raw.length) {
-      toast.error("No contacts found in that file.");
-      return;
+    try {
+      setDone(null);
+      const text = await file.text();
+      const raw = parseVCards(text);
+      if (!raw.length) {
+        toast.error("No contacts found in that file.");
+        return;
+      }
+      await parseRows(raw);
+      toast.success(`Loaded ${raw.length} contact${raw.length === 1 ? "" : "s"} from vCard`);
+    } catch (e) {
+      console.error("[upload] onVCard failed", e);
+      toast.error("Couldn't read that contacts file", { description: getErrorMessage(e) });
+    } finally {
+      if (vcardRef.current) vcardRef.current.value = "";
     }
-    await parseRows(raw);
-    toast.success(`Loaded ${raw.length} contact${raw.length === 1 ? "" : "s"} from vCard`);
   };
 
   const onPaste = async () => {
