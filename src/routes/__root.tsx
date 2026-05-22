@@ -12,6 +12,20 @@ import appCss from "../styles.css?url";
 import { AuthProvider } from "@/hooks/use-auth";
 import { Toaster } from "@/components/ui/sonner";
 
+const clientStartupRecoveryScript = `
+(() => {
+  const marker = "lovable-client-startup-retry";
+  const shouldRecover = (value) => /Failed to fetch dynamically imported module|virtual:tanstack-start-client-entry|Importing a module script failed/i.test(String(value || ""));
+  const recover = (reason) => {
+    if (!shouldRecover(reason) || sessionStorage.getItem(marker) === "1") return;
+    sessionStorage.setItem(marker, "1");
+    setTimeout(() => window.location.reload(), 800);
+  };
+  window.addEventListener("unhandledrejection", (event) => recover(event.reason && (event.reason.message || event.reason)));
+  window.addEventListener("error", (event) => recover(event.message || event.error));
+  window.addEventListener("load", () => setTimeout(() => sessionStorage.removeItem(marker), 12000));
+})();`;
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -95,6 +109,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         {children}
+        <script dangerouslySetInnerHTML={{ __html: clientStartupRecoveryScript }} />
         <Scripts />
       </body>
     </html>
