@@ -100,6 +100,9 @@ function UploadPage() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<{ inserted: number; flagged: number; skipped: number } | null>(null);
   const [pasted, setPasted] = useState("");
+  const [quick, setQuick] = useState({ name: "", phone: "", email: "" });
+  const [quickBusy, setQuickBusy] = useState(false);
+  const [quickAdded, setQuickAdded] = useState(0);
 
   useEffect(() => {
     let alive = true;
