@@ -323,9 +323,12 @@ function UploadPage() {
           <p className="font-medium">Pick from your phone's contacts</p>
         </div>
         <p className="text-xs text-muted-foreground">
-          Tap the button below to open your phone's contact picker and select guests directly — no typing.
-          Works in Chrome on Android. On iPhone or desktop, export your contacts as a <code>.vcf</code> file
-          (Contacts app → Share) and choose it below.
+          <strong>Android (Chrome):</strong> tap <em>Pick contacts</em> and your phone's contact
+          picker opens — choose guests and you're done.<br />
+          <strong>iPhone / iPad:</strong> open Contacts → select people → <em>Share Contact</em> →
+          <em>Save to Files</em>. Then tap <em>Pick contacts</em> (or <em>Import .vcf file</em>)
+          and choose that file.<br />
+          <strong>Desktop:</strong> export a <code>.vcf</code> from your address book and import it below.
         </p>
         <div className="flex flex-wrap gap-2">
           <Button onClick={onPickContacts} disabled={!eventId} className="bg-ink text-cream hover:bg-ink/90">
