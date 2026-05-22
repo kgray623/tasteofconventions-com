@@ -67,7 +67,9 @@ function RsvpPage() {
       setMenu((ms as M[]) ?? []);
       setInviters(iv ?? []);
       if (rs?.[0]) setRestaurantId(rs[0].id);
-    })();
+    })().catch(() => {
+      if (alive) setLoading(false);
+    }).finally(() => window.clearTimeout(fallback));
     return () => {
       alive = false;
       window.clearTimeout(fallback);
