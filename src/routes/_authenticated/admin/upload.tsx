@@ -24,6 +24,7 @@ import {
   Camera,
   Loader2,
   X,
+  Pencil,
 } from "lucide-react";
 import { getErrorMessage } from "@/lib/async-safety";
 import { useServerFn } from "@tanstack/react-start";
@@ -214,6 +215,11 @@ function UploadPage() {
   >([]);
   const [savedLoading, setSavedLoading] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [editingRowIdx, setEditingRowIdx] = useState<number | null>(null);
+  const [editingRowValue, setEditingRowValue] = useState("");
+  const [editingSavedId, setEditingSavedId] = useState<string | null>(null);
+  const [editingSavedValue, setEditingSavedValue] = useState("");
+  const [updatingSavedId, setUpdatingSavedId] = useState<string | null>(null);
 
   const loadSavedGuests = async (evId: string) => {
     if (!evId) {
@@ -253,6 +259,42 @@ function UploadPage() {
       toast.error("Couldn't remove guest", { description: getErrorMessage(e) });
     } finally {
       setRemovingId(null);
+    }
+  };
+
+  const commitEditRow = () => {
+    if (editingRowIdx === null) return;
+    const trimmed = editingRowValue.trim();
+    if (!trimmed) {
+      setEditingRowIdx(null);
+      return;
+    }
+    setRows((prev) =>
+      prev.map((r, i) => (i === editingRowIdx ? { ...r, guest_name: trimmed } : r)),
+    );
+    setEditingRowIdx(null);
+  };
+
+  const updateSavedGuestName = async (id: string) => {
+    const trimmed = editingSavedValue.trim();
+    if (!trimmed) {
+      setEditingSavedId(null);
+      return;
+    }
+    setUpdatingSavedId(id);
+    try {
+      const { error } = await supabase.from("invitations").update({ guest_name: trimmed }).eq("id", id);
+      if (error) throw error;
+      setSavedGuests((prev) =>
+        prev.map((g) => (g.id === id ? { ...g, guest_name: trimmed } : g)),
+      );
+      toast.success("Name updated");
+    } catch (e) {
+      console.error("[upload] update guest name failed", e);
+      toast.error("Couldn't update name", { description: getErrorMessage(e) });
+    } finally {
+      setUpdatingSavedId(null);
+      setEditingSavedId(null);
     }
   };
 
@@ -837,7 +879,31 @@ function UploadPage() {
             {rows.map((r, idx) => (
               <div key={idx} className="px-4 py-2.5 flex flex-wrap items-center gap-3 text-sm">
                 <span className="text-xs text-muted-foreground w-8">#{r._row}</span>
-                <span className="font-medium flex-1 min-w-[140px]">{r.guest_name}</span>
+                {editingRowIdx === idx ? (
+                  <input
+                    autoFocus
+                    className="flex-1 min-w-[140px] h-7 px-2 rounded-md border border-input bg-background text-sm font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    value={editingRowValue}
+                    onChange={(e) => setEditingRowValue(e.target.value)}
+                    onBlur={commitEditRow}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") commitEditRow();
+                      if (e.key === "Escape") setEditingRowIdx(null);
+                    }}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    className="font-medium flex-1 min-w-[140px] text-left flex items-center gap-1 hover:text-terracotta"
+                    onClick={() => {
+                      setEditingRowIdx(idx);
+                      setEditingRowValue(r.guest_name);
+                    }}
+                  >
+                    {r.guest_name}
+                    <Pencil className="w-3 h-3 opacity-40" />
+                  </button>
+                )}
                 <span className="text-muted-foreground min-w-[160px] break-all">
                   {r.guest_email}
                 </span>
@@ -897,7 +963,32 @@ function UploadPage() {
                 key={g.id}
                 className="px-4 py-2.5 flex flex-wrap items-center gap-3 text-sm"
               >
-                <span className="font-medium flex-1 min-w-[140px]">{g.guest_name}</span>
+                {editingSavedId === g.id ? (
+                  <input
+                    autoFocus
+                    disabled={updatingSavedId === g.id}
+                    className="flex-1 min-w-[140px] h-7 px-2 rounded-md border border-input bg-background text-sm font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+                    value={editingSavedValue}
+                    onChange={(e) => setEditingSavedValue(e.target.value)}
+                    onBlur={() => updateSavedGuestName(g.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") updateSavedGuestName(g.id);
+                      if (e.key === "Escape") setEditingSavedId(null);
+                    }}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    className="font-medium flex-1 min-w-[140px] text-left flex items-center gap-1 hover:text-terracotta"
+                    onClick={() => {
+                      setEditingSavedId(g.id);
+                      setEditingSavedValue(g.guest_name);
+                    }}
+                  >
+                    {g.guest_name}
+                    <Pencil className="w-3 h-3 opacity-40" />
+                  </button>
+                )}
                 <span className="text-muted-foreground min-w-[160px] break-all">
                   {g.guest_email ?? ""}
                 </span>
