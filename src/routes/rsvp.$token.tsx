@@ -60,6 +60,7 @@ function RsvpPage() {
           setStatus(r.rsvp.status === "yes" ? "yes" : "no");
           setPartySize(r.rsvp.party_size);
           setAttendanceMode((r.rsvp.attendance_mode as "in_person" | "zoom") ?? "in_person");
+          setOrderingFood(r.rsvp.ordering_food === true ? "yes" : r.rsvp.ordering_food === false ? "no" : "");
           setInvitedBy(r.rsvp.invited_by ?? "");
         }
       } finally { if (alive) setLoading(false); }
