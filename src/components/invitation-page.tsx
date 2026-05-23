@@ -29,6 +29,24 @@ import {
 
 type R = { id: string; name: string; description: string | null; cuisine: string | null };
 type M = { id: string; restaurant_id: string; name: string; description: string | null; price: number; dietary_flags: string[] | null };
+type Stop = { country: string; when: string; note: string; restaurant: boolean };
+type Content = {
+  hero_eyebrow: string;
+  hero_title: string;
+  hero_title_emphasis: string;
+  hero_title_suffix: string;
+  hero_tagline: string;
+  hero_intro: string;
+  video_url: string | null;
+  itinerary: Stop[];
+  datetime_heading: string;
+  datetime_body: string;
+  location_name: string;
+  location_subtitle: string;
+  location_body: string;
+  dress_body: string;
+  gifts_body: string;
+};
 
 const tabs = [
   { id: "datetime", label: "Date & Time" },
@@ -38,9 +56,31 @@ const tabs = [
   { id: "entertainment", label: "Entertainment" },
 ];
 
+const defaultContent: Content = {
+  hero_eyebrow: "You're Cordially Invited To",
+  hero_title: "A Taste of",
+  hero_title_emphasis: "Special",
+  hero_title_suffix: "Conventions",
+  hero_tagline: "An event and an evening to remember.",
+  hero_intro:
+    "You are cordially invited to join us for a very special evening of association, cultural enrichment, gift exchanges, meeting new friends, and making wonderful memories — all on this side of paradise. See the video below for more details.",
+  video_url: null,
+  itinerary: [],
+  datetime_heading: "Sunday, November 1, 2026 · 4:00 PM – 9:00 PM",
+  datetime_body: "Join us from 4:00 PM to 9:00 PM for a full evening together.",
+  location_name: "Eagle's Landing",
+  location_subtitle: "La Platte, Nebraska",
+  location_body: "GPS coordinates and map will appear here once confirmed.",
+  dress_body:
+    "This is an international event, so international attire is encouraged. Is there a culture you love to dress in? Please do — it'll make the evening more fun and beautiful for everyone.",
+  gifts_body:
+    "In the spirit of the special and international conventions, friends bring gifts to exchange. See the video below — it'll walk you through exactly how it works.",
+};
+
 export function InvitationPage() {
   const [restaurants, setRestaurants] = useState<R[]>([]);
   const [items, setItems] = useState<M[]>([]);
+  const [content, setContent] = useState<Content>(defaultContent);
   const [openItems, setOpenItems] = useState<string[]>([]);
 
   useEffect(() => {
@@ -48,7 +88,18 @@ export function InvitationPage() {
       .then(({ data }) => setRestaurants((data as R[]) ?? []));
     supabase.from("menu_items").select("*").eq("available", true)
       .then(({ data }) => setItems((data as M[]) ?? []));
+    supabase.from("invitation_content").select("*").limit(1).maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          const row = data as unknown as Content;
+          setContent({
+            ...row,
+            itinerary: Array.isArray(row.itinerary) ? row.itinerary : [],
+          });
+        }
+      });
   }, []);
+
 
   // Open accordion panel matching the URL hash, and re-open whenever hash changes.
   useEffect(() => {
