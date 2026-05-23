@@ -92,6 +92,7 @@ function EditEventPage() {
     const { error } = await supabase.from("events").update(payload).eq("id", id);
     setSaving(false);
     if (error) return toast.error(error.message);
+    setInitial(current);
     toast.success("Event updated. Guest screens and emails will now show the new details.");
   };
 
