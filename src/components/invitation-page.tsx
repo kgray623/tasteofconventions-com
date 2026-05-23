@@ -104,14 +104,8 @@ export function InvitationPage() {
           <div className="absolute bottom-0 -left-20 w-[28rem] h-[28rem] rounded-full bg-iris/50 blur-3xl" />
           <div className="relative w-full max-w-xl">
             <p className="text-[10px] uppercase tracking-[0.4em] text-cream/90 mb-3 text-center">For Details · Watch the Invitation</p>
-            <div className="relative aspect-video rounded-2xl overflow-hidden border border-cream/20 bg-ink/40 backdrop-blur-md shadow-elegant">
-              <iframe
-                src="https://drive.google.com/file/d/1OkaByzAsVsAmvQIvp26vnKBLH_0Y8W-e/preview"
-                title="A Taste of Special Conventions · Invitation video"
-                allow="autoplay; encrypted-media"
-                allowFullScreen
-                className="absolute inset-0 w-full h-full"
-              />
+            <div className="rounded-2xl overflow-hidden border border-cream/20 shadow-elegant">
+              <VideoPlaceholder label="Invitation video · coming soon" />
             </div>
           </div>
         </div>
