@@ -214,6 +214,7 @@ function InvitersPage() {
               )}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
     </div>
