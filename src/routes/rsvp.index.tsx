@@ -58,6 +58,7 @@ function PreviewPage() {
   const [status, setStatus] = useDraftState<"yes" | "no">(draftScope, "status", "yes");
   const [attendanceMode, setAttendanceMode] = useDraftState<"in_person" | "zoom">(draftScope, "attendanceMode", "in_person");
   const [partySize, setPartySize] = useDraftState(draftScope, "partySize", 2);
+  const [orderingFood, setOrderingFood] = useDraftState<"yes" | "no" | "">(draftScope, "orderingFood", "");
   const [name, setName] = useDraftState(draftScope, "name", "");
   const [email, setEmail] = useDraftState(draftScope, "email", "");
   const [phone, setPhone] = useDraftState(draftScope, "phone", "");
@@ -84,8 +85,12 @@ function PreviewPage() {
     if (!email.trim()) return toast.error("Please enter your email");
     const phoneDigits = phone.replace(/\D/g, "");
     if (phoneDigits.length < 7) return toast.error("Please enter your phone number — it will be your password");
+    if (status === "yes" && attendanceMode === "in_person" && orderingFood === "") {
+      return toast.error("Please tell us whether you'll be ordering food");
+    }
     setSaving(true);
     try {
+      const orderingFoodBool = status === "yes" && attendanceMode === "in_person" ? orderingFood === "yes" : null;
       await save({ data: {
         guest_name: name.trim() || "Guest",
         guest_email: email.trim() || null,
@@ -94,6 +99,7 @@ function PreviewPage() {
         status,
         party_size: partySize,
         attendance_mode: attendanceMode,
+        ordering_food: orderingFoodBool,
         invited_by: (invitedBy === "__other__" ? invitedByOther.trim() : invitedBy) || null,
       }});
       setSaved(true);
@@ -144,8 +150,8 @@ function PreviewPage() {
                 <Label>How will you attend?</Label>
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { v: "in_person", icon: Users, label: "In person", sub: "Limited seating" },
-                    { v: "zoom", icon: Video, label: "Zoom", sub: "Join online" },
+                    { v: "in_person", icon: Users, label: "In-person Attendance", sub: "Limited seating" },
+                    { v: "zoom", icon: Video, label: "Virtual Attendance", sub: "Join on Zoom" },
                   ].map((o) => (
                     <button
                       key={o.v}
@@ -162,15 +168,36 @@ function PreviewPage() {
                 </div>
               </div>
               {attendanceMode === "in_person" && (
-                <div className="space-y-1.5">
-                  <Label>Party size (including you)</Label>
-                  <div className="flex items-center gap-3">
-                    <Button size="icon" variant="outline" onClick={() => setPartySize(Math.max(1, partySize - 1))}><Minus className="w-4 h-4" /></Button>
-                    <span className="font-display text-2xl w-10 text-center">{partySize}</span>
-                    <Button size="icon" variant="outline" onClick={() => setPartySize(Math.min(20, partySize + 1))}><Plus className="w-4 h-4" /></Button>
+                <>
+                  <div className="space-y-1.5">
+                    <Label>Party size (including you)</Label>
+                    <div className="flex items-center gap-3">
+                      <Button size="icon" variant="outline" onClick={() => setPartySize(Math.max(1, partySize - 1))}><Minus className="w-4 h-4" /></Button>
+                      <span className="font-display text-2xl w-10 text-center">{partySize}</span>
+                      <Button size="icon" variant="outline" onClick={() => setPartySize(Math.min(20, partySize + 1))}><Plus className="w-4 h-4" /></Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Seating is limited — please count everyone in your group.</p>
                   </div>
-                  <p className="text-xs text-muted-foreground">Seating is limited — please count everyone in your group.</p>
-                </div>
+                  <div className="space-y-1.5">
+                    <Label>Will you be ordering food?</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { v: "yes", label: "Ordering food" },
+                        { v: "no", label: "Not ordering food" },
+                      ].map((o) => (
+                        <button
+                          key={o.v}
+                          onClick={() => setOrderingFood(o.v as "yes" | "no")}
+                          className={`p-3 rounded-md border-2 transition text-sm font-medium ${
+                            orderingFood === o.v ? "border-ink bg-ink text-cream" : "border-border bg-card hover:border-ink/40"
+                          }`}
+                        >
+                          {o.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
               )}
               <div className="space-y-3 pt-2 border-t border-border">
                 <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground pt-3">So we can stay in touch</p>

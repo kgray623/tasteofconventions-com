@@ -603,6 +603,7 @@ export type Database = {
           invitation_id: string
           invited_by: string | null
           message: string | null
+          ordering_food: boolean | null
           party_size: number
           responded_at: string | null
           status: Database["public"]["Enums"]["rsvp_status"]
@@ -615,6 +616,7 @@ export type Database = {
           invitation_id: string
           invited_by?: string | null
           message?: string | null
+          ordering_food?: boolean | null
           party_size?: number
           responded_at?: string | null
           status?: Database["public"]["Enums"]["rsvp_status"]
@@ -627,6 +629,7 @@ export type Database = {
           invitation_id?: string
           invited_by?: string | null
           message?: string | null
+          ordering_food?: boolean | null
           party_size?: number
           responded_at?: string | null
           status?: Database["public"]["Enums"]["rsvp_status"]

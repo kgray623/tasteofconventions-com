@@ -36,6 +36,7 @@ function RsvpPage() {
   const [status, setStatus] = useDraftState<"yes" | "no">(rsvpDraftScope, "status", "yes");
   const [attendanceMode, setAttendanceMode] = useDraftState<"in_person" | "zoom">(rsvpDraftScope, "attendanceMode", "in_person");
   const [partySize, setPartySize] = useDraftState(rsvpDraftScope, "partySize", 1);
+  const [orderingFood, setOrderingFood] = useDraftState<"yes" | "no" | "">(rsvpDraftScope, "orderingFood", "");
   const [invitedBy, setInvitedBy] = useDraftState(rsvpDraftScope, "invitedBy", "");
   const [invitedByOther, setInvitedByOther] = useDraftState(rsvpDraftScope, "invitedByOther", "");
   const [inviters, setInviters] = useState<{ id: string; name: string }[]>([]);
@@ -59,6 +60,7 @@ function RsvpPage() {
           setStatus(r.rsvp.status === "yes" ? "yes" : "no");
           setPartySize(r.rsvp.party_size);
           setAttendanceMode((r.rsvp.attendance_mode as "in_person" | "zoom") ?? "in_person");
+          setOrderingFood(r.rsvp.ordering_food === true ? "yes" : r.rsvp.ordering_food === false ? "no" : "");
           setInvitedBy(r.rsvp.invited_by ?? "");
         }
       } finally { if (alive) setLoading(false); }
@@ -83,8 +85,12 @@ function RsvpPage() {
 
   const handleSubmit = async () => {
     try {
+      if (status === "yes" && attendanceMode === "in_person" && orderingFood === "") {
+        return toast.error("Please tell us whether you'll be ordering food");
+      }
       const finalInvitedBy = invitedBy === "__other__" ? invitedByOther.trim() : invitedBy;
-      await submit({ data: { token, status, party_size: partySize, attendance_mode: attendanceMode, dietary_notes: "", invited_by: finalInvitedBy } });
+      const orderingFoodBool = status === "yes" && attendanceMode === "in_person" ? orderingFood === "yes" : null;
+      await submit({ data: { token, status, party_size: partySize, attendance_mode: attendanceMode, ordering_food: orderingFoodBool, dietary_notes: "", invited_by: finalInvitedBy } });
       clearDraftScope(rsvpDraftScope);
       toast.success("RSVP saved — thank you!");
     } catch (e: any) { toast.error(e.message); }
@@ -142,7 +148,9 @@ function RsvpPage() {
               {data.rsvp.status === "yes" && (
                 <span className="text-base font-sans text-muted-foreground">
                   {" · "}
-                  {data.rsvp.attendance_mode === "zoom" ? "via Zoom" : `in person, party of ${data.rsvp.party_size}`}
+                  {data.rsvp.attendance_mode === "zoom" ? "Virtual (Zoom)" : `In person, party of ${data.rsvp.party_size}`}
+                  {data.rsvp.attendance_mode === "in_person" && data.rsvp.ordering_food === true && " · ordering food"}
+                  {data.rsvp.attendance_mode === "in_person" && data.rsvp.ordering_food === false && " · not ordering food"}
                 </span>
               )}
             </p>
@@ -177,8 +185,8 @@ function RsvpPage() {
                 <Label>How will you attend?</Label>
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { v: "in_person", icon: Users, label: "In person", sub: "Limited seating" },
-                    { v: "zoom", icon: Video, label: "Zoom", sub: "Join online" },
+                    { v: "in_person", icon: Users, label: "In-person Attendance", sub: "Limited seating" },
+                    { v: "zoom", icon: Video, label: "Virtual Attendance", sub: "Join on Zoom" },
                   ].map((o) => (
                     <button
                       key={o.v}
@@ -195,15 +203,36 @@ function RsvpPage() {
                 </div>
               </div>
               {attendanceMode === "in_person" && (
-                <div className="space-y-1.5">
-                  <Label>Party size (including you)</Label>
-                  <div className="flex items-center gap-3">
-                    <Button size="icon" variant="outline" onClick={() => setPartySize(Math.max(1, partySize - 1))}><Minus className="w-4 h-4" /></Button>
-                    <span className="font-display text-2xl w-10 text-center">{partySize}</span>
-                    <Button size="icon" variant="outline" onClick={() => setPartySize(Math.min(20, partySize + 1))}><Plus className="w-4 h-4" /></Button>
+                <>
+                  <div className="space-y-1.5">
+                    <Label>Party size (including you)</Label>
+                    <div className="flex items-center gap-3">
+                      <Button size="icon" variant="outline" onClick={() => setPartySize(Math.max(1, partySize - 1))}><Minus className="w-4 h-4" /></Button>
+                      <span className="font-display text-2xl w-10 text-center">{partySize}</span>
+                      <Button size="icon" variant="outline" onClick={() => setPartySize(Math.min(20, partySize + 1))}><Plus className="w-4 h-4" /></Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Seating is limited — please count everyone in your group.</p>
                   </div>
-                  <p className="text-xs text-muted-foreground">Seating is limited — please count everyone in your group.</p>
-                </div>
+                  <div className="space-y-1.5">
+                    <Label>Will you be ordering food?</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { v: "yes", label: "Ordering food" },
+                        { v: "no", label: "Not ordering food" },
+                      ].map((o) => (
+                        <button
+                          key={o.v}
+                          onClick={() => setOrderingFood(o.v as "yes" | "no")}
+                          className={`p-3 rounded-md border-2 transition text-sm font-medium ${
+                            orderingFood === o.v ? "border-ink bg-ink text-cream" : "border-border bg-card hover:border-ink/40"
+                          }`}
+                        >
+                          {o.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
               )}
             </>
           )}
