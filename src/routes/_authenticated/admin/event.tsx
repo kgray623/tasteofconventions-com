@@ -63,13 +63,15 @@ function EditEventPage() {
         .maybeSingle();
       if (error) toast.error(error.message);
       if (data) {
+        const t = data.title ?? "";
+        const d = data.description ?? "";
+        const s = toLocalInput(data.starts_at);
+        const e = toLocalInput(data.ends_at);
+        const l = data.location ?? "";
+        const v = data.virtual_link ?? "";
         setId(data.id);
-        setTitle(data.title ?? "");
-        setDescription(data.description ?? "");
-        setStartsAt(toLocalInput(data.starts_at));
-        setEndsAt(toLocalInput(data.ends_at));
-        setLocation(data.location ?? "");
-        setVirtualLink(data.virtual_link ?? "");
+        setTitle(t); setDescription(d); setStartsAt(s); setEndsAt(e); setLocation(l); setVirtualLink(v);
+        setInitial(JSON.stringify({ title: t, description: d, startsAt: s, endsAt: e, location: l, virtualLink: v }));
       }
       setLoading(false);
     })();
