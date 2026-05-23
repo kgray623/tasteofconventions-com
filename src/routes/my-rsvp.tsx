@@ -5,7 +5,7 @@ import { getMyInvitation } from "@/lib/invitations.functions";
 import { useAuth } from "@/hooks/use-auth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Users } from "lucide-react";
+import { Calendar, MapPin, Users, Check, X, UtensilsCrossed } from "lucide-react";
 import { withTimeout } from "@/lib/async-safety";
 
 export const Route = createFileRoute("/my-rsvp")({
