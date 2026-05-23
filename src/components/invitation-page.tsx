@@ -413,12 +413,6 @@ const gradients = [
   "linear-gradient(135deg, #6c5ce7, #ff6b35)",
 ];
 
-const itinerary = [
-  { country: "Myanmar", when: "Convention · 2014", note: "We open with Myanmar friends — flavors and stories from 2014.", restaurant: true },
-  { country: "Bolivia", when: "Convention · 2016", note: "Next, the highlands of Bolivia — a taste of 2016, shared together.", restaurant: true },
-  { country: "Jakarta, Indonesia", when: "Convention · December 2025", note: "Our most recent gathering — the warmth of Jakarta, fresh in heart.", restaurant: true },
-  { country: "New Zealand", when: "Convention · January 2026", note: "We close in New Zealand — no menu to order from, just memories to make.", restaurant: false },
-];
 
 function LoggedInRsvpCta() {
   const { user, loading } = useAuth();
