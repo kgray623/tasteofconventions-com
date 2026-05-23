@@ -128,25 +128,20 @@ export function InvitationPage() {
         <div className="relative flex items-center px-6 sm:px-12 lg:px-16 py-16 lg:py-24">
           <div className="max-w-xl">
             <p className="text-[10px] sm:text-xs uppercase tracking-[0.3em] sm:tracking-[0.4em] text-magenta mb-8 font-medium whitespace-nowrap">
-              You're Cordially Invited To
+              {content.hero_eyebrow}
             </p>
             <h1 className="font-display text-6xl sm:text-7xl lg:text-8xl text-ink leading-[0.95]">
-              A Taste of <em className="text-gradient-sunset">Special</em>
+              {content.hero_title}{" "}
+              <em className="text-gradient-sunset">{content.hero_title_emphasis}</em>
               <br />
-              Conventions
+              {content.hero_title_suffix}
             </h1>
             <p className="mt-6 font-display italic text-3xl sm:text-4xl text-ink/80">
-              An event and an evening to remember.
+              {content.hero_tagline}
             </p>
-            <p className="mt-6 text-xl sm:text-2xl text-muted-foreground leading-relaxed max-w-xl">
-              You are cordially invited to join us for a very special evening
-              of association, cultural enrichment, gift exchanges, meeting new
-              friends, and making wonderful memories — all on this side of
-              paradise. See the video below for more details.
+            <p className="mt-6 text-xl sm:text-2xl text-muted-foreground leading-relaxed max-w-xl whitespace-pre-line">
+              {content.hero_intro}
             </p>
-
-
-
           </div>
         </div>
 
@@ -155,12 +150,25 @@ export function InvitationPage() {
           <div className="absolute bottom-0 -left-20 w-[28rem] h-[28rem] rounded-full bg-iris/50 blur-3xl" />
           <div className="relative w-full max-w-xl">
             <p className="text-[10px] uppercase tracking-[0.4em] text-cream/90 mb-3 text-center">For Details · Watch the Invitation</p>
-            <div className="rounded-2xl overflow-hidden border border-cream/20 shadow-elegant">
-              <VideoPlaceholder label="Invitation video · coming soon" />
-            </div>
+            {content.video_url ? (
+              <div className="relative aspect-video rounded-2xl overflow-hidden border border-cream/20 bg-ink/40 backdrop-blur-md shadow-elegant">
+                <iframe
+                  src={content.video_url}
+                  title="Invitation video"
+                  allow="autoplay; encrypted-media"
+                  allowFullScreen
+                  className="absolute inset-0 w-full h-full"
+                />
+              </div>
+            ) : (
+              <div className="rounded-2xl overflow-hidden border border-cream/20 shadow-elegant">
+                <VideoPlaceholder label="Invitation video · coming soon" />
+              </div>
+            )}
           </div>
         </div>
       </section>
+
 
 
       {/* RSVP — primary call to action right under the video */}
