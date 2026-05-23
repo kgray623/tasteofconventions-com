@@ -154,7 +154,8 @@ function InvitersPage() {
               <tr>
                 <th className="px-6 py-3">Name</th>
                 <th className="px-4 py-3 w-28">Quota</th>
-                <th className="px-4 py-3 w-20">Used</th>
+                <th className="px-4 py-3 w-24">Invited</th>
+                <th className="px-4 py-3 w-24">Attending</th>
                 <th className="px-4 py-3 w-24">Remaining</th>
                 <th className="px-4 py-3 w-24">Status</th>
                 <th className="px-4 py-3 w-16"></th>
@@ -163,7 +164,8 @@ function InvitersPage() {
             <tbody>
               {inviters.map((i) => {
                 const used = usage[i.name.toLowerCase()] ?? 0;
-                const remaining = i.quota - used;
+                const invited = i.host_id ? (invitedCounts[i.host_id] ?? 0) : 0;
+                const remaining = i.quota - Math.max(used, invited);
                 return (
                   <tr key={i.id} className="border-t border-border">
                     <td className="px-6 py-3 font-medium">{i.name}</td>
@@ -179,6 +181,7 @@ function InvitersPage() {
                         className="h-8 w-20"
                       />
                     </td>
+                    <td className="px-4 py-3">{invited}</td>
                     <td className="px-4 py-3">{used}</td>
                     <td className={`px-4 py-3 ${remaining < 0 ? "text-destructive font-medium" : ""}`}>{remaining}</td>
                     <td className="px-4 py-3">
@@ -200,6 +203,7 @@ function InvitersPage() {
               {unassigned > 0 && (
                 <tr className="border-t border-border bg-muted/20">
                   <td className="px-6 py-3 italic text-muted-foreground">Unassigned / other</td>
+                  <td className="px-4 py-3">—</td>
                   <td className="px-4 py-3">—</td>
                   <td className="px-4 py-3">{unassigned}</td>
                   <td className="px-4 py-3">—</td>
