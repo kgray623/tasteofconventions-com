@@ -85,8 +85,12 @@ function PreviewPage() {
     if (!email.trim()) return toast.error("Please enter your email");
     const phoneDigits = phone.replace(/\D/g, "");
     if (phoneDigits.length < 7) return toast.error("Please enter your phone number — it will be your password");
+    if (status === "yes" && attendanceMode === "in_person" && orderingFood === "") {
+      return toast.error("Please tell us whether you'll be ordering food");
+    }
     setSaving(true);
     try {
+      const orderingFoodBool = status === "yes" && attendanceMode === "in_person" ? orderingFood === "yes" : null;
       await save({ data: {
         guest_name: name.trim() || "Guest",
         guest_email: email.trim() || null,
@@ -95,6 +99,7 @@ function PreviewPage() {
         status,
         party_size: partySize,
         attendance_mode: attendanceMode,
+        ordering_food: orderingFoodBool,
         invited_by: (invitedBy === "__other__" ? invitedByOther.trim() : invitedBy) || null,
       }});
       setSaved(true);
