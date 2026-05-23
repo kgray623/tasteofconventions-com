@@ -314,8 +314,8 @@ export function InvitationPage() {
               </span>
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-2">
-              <p><strong className="text-ink">Sunday, November 1, 2026 · 4:00 PM – 9:00 PM</strong></p>
-              <p>Join us from 4:00 PM to 9:00 PM for a full evening together.</p>
+              <p><strong className="text-ink">{content.datetime_heading}</strong></p>
+              <p className="whitespace-pre-line">{content.datetime_body}</p>
             </AccordionContent>
           </AccordionItem>
 
@@ -327,11 +327,11 @@ export function InvitationPage() {
               </span>
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-3">
-              <p><strong className="text-ink">Eagle's Landing</strong> · La Platte, Nebraska</p>
+              <p><strong className="text-ink">{content.location_name}</strong> · {content.location_subtitle}</p>
               <div className="relative aspect-[16/8] rounded-xl overflow-hidden border border-border bg-gradient-to-br from-amber-glow/20 via-magenta/15 to-iris/20 flex items-center justify-center">
                 <MapPin className="w-8 h-8 text-sunset" />
               </div>
-              <p className="text-sm">GPS coordinates and map will appear here once confirmed.</p>
+              <p className="text-sm whitespace-pre-line">{content.location_body}</p>
             </AccordionContent>
           </AccordionItem>
 
@@ -343,14 +343,11 @@ export function InvitationPage() {
               </span>
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-4">
-              <p>
-                This is an international event, so international attire is
-                encouraged. Is there a culture you love to dress in? Please do —
-                it'll make the evening more fun and beautiful for everyone.
-              </p>
+              <p className="whitespace-pre-line">{content.dress_body}</p>
               <VideoPlaceholder label="Dress code · video coming soon" />
             </AccordionContent>
           </AccordionItem>
+
 
           {/* Gifts */}
           <AccordionItem value="gifts" id="gifts" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
