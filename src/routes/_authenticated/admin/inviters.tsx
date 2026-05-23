@@ -153,9 +153,9 @@ function InvitersPage() {
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="px-6 py-3">Name</th>
-                <th className="px-4 py-3 w-28">Quota</th>
-                <th className="px-4 py-3 w-24">Invited</th>
-                <th className="px-4 py-3 w-24">Attending</th>
+                <th className="px-4 py-3 w-24">Quota</th>
+                <th className="px-4 py-3 w-24">Uploaded</th>
+                <th className="px-4 py-3 w-24">RSVP'd</th>
                 <th className="px-4 py-3 w-24">Remaining</th>
                 <th className="px-4 py-3 w-24">Status</th>
                 <th className="px-4 py-3 w-16"></th>
