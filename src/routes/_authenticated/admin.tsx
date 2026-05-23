@@ -4,7 +4,7 @@ import { useRoles } from "@/hooks/use-roles";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlus, UtensilsCrossed } from "lucide-react";
+import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlus, UtensilsCrossed, Mail } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — A Taste of Special Conventions" }] }),
@@ -16,6 +16,7 @@ import { CalendarCog } from "lucide-react";
 const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boolean; team?: boolean }[] = [
   { to: "/admin", label: "Overview", icon: ShieldCheck, exact: true, team: true },
   { to: "/admin/event", label: "Event details", icon: CalendarCog, team: true },
+  { to: "/admin/invitation", label: "Invitation page", icon: Mail },
   { to: "/admin/upload", label: "Add guests", icon: Upload, team: true },
   { to: "/admin/inviters", label: "Inviters", icon: UserPlus, team: true },
   { to: "/admin/restaurants", label: "Restaurants", icon: UtensilsCrossed },
