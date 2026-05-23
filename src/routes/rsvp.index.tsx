@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { clearDraftScope, useDraftState } from "@/hooks/use-draft-state";
-import { Check, X, Minus, Plus, ArrowLeft } from "lucide-react";
+import { Check, X, Minus, Plus, ArrowLeft, Users, Video } from "lucide-react";
 
 export const Route = createFileRoute("/rsvp/")({
   head: () => ({ meta: [{ title: "RSVP" }] }),
