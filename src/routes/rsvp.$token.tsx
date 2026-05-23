@@ -58,6 +58,7 @@ function RsvpPage() {
         if (r.rsvp) {
           setStatus(r.rsvp.status === "yes" ? "yes" : "no");
           setPartySize(r.rsvp.party_size);
+          setAttendanceMode((r.rsvp.attendance_mode as "in_person" | "zoom") ?? "in_person");
           setInvitedBy(r.rsvp.invited_by ?? "");
         }
       } finally { if (alive) setLoading(false); }
