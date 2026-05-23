@@ -220,8 +220,8 @@ export function InvitationPage() {
 
         <div className="rounded-3xl border border-border bg-card shadow-elegant p-6 sm:p-8">
           <ol className="relative border-l-2 border-dashed border-border ml-3 space-y-6">
-            {itinerary.map((stop, i) => (
-              <li key={stop.country} className="relative pl-6">
+            {content.itinerary.map((stop, i) => (
+              <li key={`${stop.country}-${i}`} className="relative pl-6">
                 <span
                   className="absolute -left-[11px] top-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-glow"
                   style={{ background: gradients[i % gradients.length] }}
@@ -243,6 +243,7 @@ export function InvitationPage() {
                 )}
               </li>
             ))}
+
           </ol>
 
           {restaurants.length > 0 && (
