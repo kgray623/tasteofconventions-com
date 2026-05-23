@@ -36,6 +36,7 @@ function RsvpPage() {
   const [status, setStatus] = useDraftState<"yes" | "no">(rsvpDraftScope, "status", "yes");
   const [attendanceMode, setAttendanceMode] = useDraftState<"in_person" | "zoom">(rsvpDraftScope, "attendanceMode", "in_person");
   const [partySize, setPartySize] = useDraftState(rsvpDraftScope, "partySize", 1);
+  const [orderingFood, setOrderingFood] = useDraftState<"yes" | "no" | "">(rsvpDraftScope, "orderingFood", "");
   const [invitedBy, setInvitedBy] = useDraftState(rsvpDraftScope, "invitedBy", "");
   const [invitedByOther, setInvitedByOther] = useDraftState(rsvpDraftScope, "invitedByOther", "");
   const [inviters, setInviters] = useState<{ id: string; name: string }[]>([]);
