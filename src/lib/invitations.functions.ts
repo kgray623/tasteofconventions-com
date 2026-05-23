@@ -180,6 +180,7 @@ const PublicRsvpInput = z.object({
   status: z.enum(["yes", "no"]),
   party_size: z.number().int().min(1).max(20),
   attendance_mode: z.enum(["in_person", "zoom"]).optional(),
+  ordering_food: z.boolean().optional().nullable(),
   invited_by: z.string().max(200).optional().nullable(),
 });
 
