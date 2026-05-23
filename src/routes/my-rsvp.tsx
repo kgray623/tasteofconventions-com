@@ -74,7 +74,7 @@ function MyRsvpPage() {
             <div className="grid gap-3 text-sm text-ink">
               <span className="inline-flex items-center gap-2"><Calendar className="w-4 h-4 text-gold" />{new Date(ev.starts_at).toLocaleString()}</span>
               {ev.location && <span className="inline-flex items-center gap-2"><MapPin className="w-4 h-4 text-gold" />{ev.location}</span>}
-              <span className="inline-flex items-center gap-2"><Users className="w-4 h-4 text-gold" />{rsvp?.status === "no" ? "Declined" : rsvp?.attendance_mode === "zoom" ? "Attending via Zoom" : `Attending in person · party of ${rsvp?.party_size ?? 1}`}</span>
+              <span className="inline-flex items-center gap-2"><Users className="w-4 h-4 text-gold" />{rsvp?.status === "no" ? "Declined" : rsvp?.attendance_mode === "zoom" ? "Attending virtually (Zoom)" : `Attending in person · party of ${rsvp?.party_size ?? 1}${rsvp?.ordering_food === true ? " · ordering food" : rsvp?.ordering_food === false ? " · not ordering food" : ""}`}</span>
             </div>
             <div className="rounded-md border border-border bg-cream/40 p-4 text-sm space-y-2">
               <p><strong>Name:</strong> {invitation.guest_name}</p>
