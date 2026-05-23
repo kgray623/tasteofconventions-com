@@ -150,13 +150,13 @@ function InvitersPage() {
           <div className="p-6 text-muted-foreground italic">No inviters yet. Add one above.</div>
         ) : (
           <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[640px]">
+            <table className="w-full text-sm min-w-[640px]">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="px-6 py-3">Name</th>
                 <th className="px-4 py-3 w-24">Quota</th>
                 <th className="px-4 py-3 w-24">Uploaded</th>
-                <th className="px-4 py-3 w-24">RSVP'd</th>
+                <th className="px-4 py-3 w-24">RSVPs</th>
                 <th className="px-4 py-3 w-24">Remaining</th>
                 <th className="px-4 py-3 w-24">Status</th>
                 <th className="px-4 py-3 w-16"></th>
