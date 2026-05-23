@@ -139,7 +139,12 @@ function RsvpPage() {
             <p className="text-xs uppercase tracking-[0.25em] text-terracotta mb-1">Your current RSVP</p>
             <p className="font-display text-2xl text-ink">
               {data.rsvp.status === "yes" ? "✓ Attending" : "✗ Declined"}
-              {data.rsvp.status === "yes" && <span className="text-base font-sans text-muted-foreground"> · party of {data.rsvp.party_size}</span>}
+              {data.rsvp.status === "yes" && (
+                <span className="text-base font-sans text-muted-foreground">
+                  {" · "}
+                  {data.rsvp.attendance_mode === "zoom" ? "via Zoom" : `in person, party of ${data.rsvp.party_size}`}
+                </span>
+              )}
             </p>
             {data.rsvp.invited_by && <p className="text-sm text-muted-foreground mt-1">Invited by {data.rsvp.invited_by}</p>}
             <p className="text-xs text-muted-foreground mt-2">You can update your response below at any time.</p>
