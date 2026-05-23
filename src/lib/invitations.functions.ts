@@ -261,11 +261,13 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
 
     const mode = data.attendance_mode ?? "in_person";
     const effectivePartySize = mode === "zoom" ? 1 : data.party_size;
+    const orderingFood = mode === "in_person" ? (data.ordering_food ?? null) : null;
     const { error: rsvpErr } = await supabaseAdmin.from("rsvps").upsert({
       invitation_id: invitationId,
       status: data.status,
       party_size: effectivePartySize,
       attendance_mode: mode,
+      ordering_food: orderingFood,
       message: null,
       invited_by: data.invited_by?.trim() || null,
       responded_at: new Date().toISOString(),
