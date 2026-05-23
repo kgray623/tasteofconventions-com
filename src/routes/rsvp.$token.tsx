@@ -148,7 +148,9 @@ function RsvpPage() {
               {data.rsvp.status === "yes" && (
                 <span className="text-base font-sans text-muted-foreground">
                   {" · "}
-                  {data.rsvp.attendance_mode === "zoom" ? "via Zoom" : `in person, party of ${data.rsvp.party_size}`}
+                  {data.rsvp.attendance_mode === "zoom" ? "Virtual (Zoom)" : `In person, party of ${data.rsvp.party_size}`}
+                  {data.rsvp.attendance_mode === "in_person" && data.rsvp.ordering_food === true && " · ordering food"}
+                  {data.rsvp.attendance_mode === "in_person" && data.rsvp.ordering_food === false && " · not ordering food"}
                 </span>
               )}
             </p>
