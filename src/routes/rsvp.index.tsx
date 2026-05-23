@@ -56,6 +56,7 @@ const menu: Record<string, { id: string; name: string; description: string; pric
 function PreviewPage() {
   const draftScope = "rsvp-public";
   const [status, setStatus] = useDraftState<"yes" | "no">(draftScope, "status", "yes");
+  const [attendanceMode, setAttendanceMode] = useDraftState<"in_person" | "zoom">(draftScope, "attendanceMode", "in_person");
   const [partySize, setPartySize] = useDraftState(draftScope, "partySize", 2);
   const [name, setName] = useDraftState(draftScope, "name", "");
   const [email, setEmail] = useDraftState(draftScope, "email", "");
