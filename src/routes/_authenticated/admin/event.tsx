@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useBlocker } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -23,6 +23,28 @@ function EditEventPage() {
   const [endsAt, setEndsAt] = useState("");
   const [location, setLocation] = useState("");
   const [virtualLink, setVirtualLink] = useState("");
+  const [initial, setInitial] = useState<string>("");
+
+  const current = JSON.stringify({ title, description, startsAt, endsAt, location, virtualLink });
+  const dirty = initial !== "" && current !== initial;
+
+  useBlocker({
+    shouldBlockFn: () => {
+      if (!dirty) return false;
+      return !confirm("You have unsaved event changes. Leave without saving?");
+    },
+    enableBeforeUnload: dirty,
+  });
+
+  useEffect(() => {
+    if (!dirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty]);
 
   const toLocalInput = (iso: string | null | undefined) => {
     if (!iso) return "";
@@ -41,13 +63,15 @@ function EditEventPage() {
         .maybeSingle();
       if (error) toast.error(error.message);
       if (data) {
+        const t = data.title ?? "";
+        const d = data.description ?? "";
+        const s = toLocalInput(data.starts_at);
+        const e = toLocalInput(data.ends_at);
+        const l = data.location ?? "";
+        const v = data.virtual_link ?? "";
         setId(data.id);
-        setTitle(data.title ?? "");
-        setDescription(data.description ?? "");
-        setStartsAt(toLocalInput(data.starts_at));
-        setEndsAt(toLocalInput(data.ends_at));
-        setLocation(data.location ?? "");
-        setVirtualLink(data.virtual_link ?? "");
+        setTitle(t); setDescription(d); setStartsAt(s); setEndsAt(e); setLocation(l); setVirtualLink(v);
+        setInitial(JSON.stringify({ title: t, description: d, startsAt: s, endsAt: e, location: l, virtualLink: v }));
       }
       setLoading(false);
     })();
@@ -68,6 +92,7 @@ function EditEventPage() {
     const { error } = await supabase.from("events").update(payload).eq("id", id);
     setSaving(false);
     if (error) return toast.error(error.message);
+    setInitial(current);
     toast.success("Event updated. Guest screens and emails will now show the new details.");
   };
 
@@ -110,9 +135,14 @@ function EditEventPage() {
           <Label htmlFor="vlink">Virtual link (optional)</Label>
           <Input id="vlink" value={virtualLink} onChange={(e) => setVirtualLink(e.target.value)} placeholder="https://…" />
         </div>
-        <Button onClick={save} disabled={saving} className="bg-ink text-cream hover:bg-ink/90">
-          {saving ? "Saving…" : "Save event"}
-        </Button>
+        <div className="flex items-center gap-3 pt-2">
+          <Button onClick={save} disabled={saving || !dirty} className="bg-ink text-cream hover:bg-ink/90">
+            {saving ? "Saving…" : dirty ? "Save event" : "Saved"}
+          </Button>
+          {dirty && (
+            <span className="text-xs text-terracotta">Unsaved changes — click Save event.</span>
+          )}
+        </div>
       </Card>
     </div>
   );
