@@ -23,6 +23,28 @@ function EditEventPage() {
   const [endsAt, setEndsAt] = useState("");
   const [location, setLocation] = useState("");
   const [virtualLink, setVirtualLink] = useState("");
+  const [initial, setInitial] = useState<string>("");
+
+  const current = JSON.stringify({ title, description, startsAt, endsAt, location, virtualLink });
+  const dirty = initial !== "" && current !== initial;
+
+  useBlocker({
+    shouldBlockFn: () => {
+      if (!dirty) return false;
+      return !confirm("You have unsaved event changes. Leave without saving?");
+    },
+    enableBeforeUnload: dirty,
+  });
+
+  useEffect(() => {
+    if (!dirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty]);
 
   const toLocalInput = (iso: string | null | undefined) => {
     if (!iso) return "";
