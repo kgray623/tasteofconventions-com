@@ -311,6 +311,69 @@ export type Database = {
         }
         Relationships: []
       }
+      invitation_content: {
+        Row: {
+          datetime_body: string
+          datetime_heading: string
+          dress_body: string
+          gifts_body: string
+          hero_eyebrow: string
+          hero_intro: string
+          hero_tagline: string
+          hero_title: string
+          hero_title_emphasis: string
+          hero_title_suffix: string
+          id: string
+          itinerary: Json
+          location_body: string
+          location_name: string
+          location_subtitle: string
+          singleton: boolean
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          datetime_body?: string
+          datetime_heading?: string
+          dress_body?: string
+          gifts_body?: string
+          hero_eyebrow?: string
+          hero_intro?: string
+          hero_tagline?: string
+          hero_title?: string
+          hero_title_emphasis?: string
+          hero_title_suffix?: string
+          id?: string
+          itinerary?: Json
+          location_body?: string
+          location_name?: string
+          location_subtitle?: string
+          singleton?: boolean
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          datetime_body?: string
+          datetime_heading?: string
+          dress_body?: string
+          gifts_body?: string
+          hero_eyebrow?: string
+          hero_intro?: string
+          hero_tagline?: string
+          hero_title?: string
+          hero_title_emphasis?: string
+          hero_title_suffix?: string
+          id?: string
+          itinerary?: Json
+          location_body?: string
+          location_name?: string
+          location_subtitle?: string
+          singleton?: boolean
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
       invitations: {
         Row: {
           created_at: string
