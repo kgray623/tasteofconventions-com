@@ -357,14 +357,11 @@ export function InvitationPage() {
               </span>
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-4">
-              <p>
-                In the spirit of the special and international conventions,
-                friends bring gifts to exchange. See the video below — it'll
-                walk you through exactly how it works.
-              </p>
+              <p className="whitespace-pre-line">{content.gifts_body}</p>
               <VideoPlaceholder label="Gift exchanges · video coming soon" />
             </AccordionContent>
           </AccordionItem>
+
 
           {/* Entertainment */}
           <AccordionItem value="entertainment" id="entertainment" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
