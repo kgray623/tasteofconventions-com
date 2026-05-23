@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Calendar, MapPin, Check, X, Minus, Plus, ArrowLeft } from "lucide-react";
+import { Calendar, MapPin, Check, X, Minus, Plus, ArrowLeft, Users, Video } from "lucide-react";
 import { InvitationPage } from "@/components/invitation-page";
 import { withTimeout } from "@/lib/async-safety";
 import { clearDraftScope, useDraftState } from "@/hooks/use-draft-state";
@@ -34,6 +34,7 @@ function RsvpPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useDraftState<"yes" | "no">(rsvpDraftScope, "status", "yes");
+  const [attendanceMode, setAttendanceMode] = useDraftState<"in_person" | "zoom">(rsvpDraftScope, "attendanceMode", "in_person");
   const [partySize, setPartySize] = useDraftState(rsvpDraftScope, "partySize", 1);
   const [invitedBy, setInvitedBy] = useDraftState(rsvpDraftScope, "invitedBy", "");
   const [invitedByOther, setInvitedByOther] = useDraftState(rsvpDraftScope, "invitedByOther", "");
@@ -57,6 +58,7 @@ function RsvpPage() {
         if (r.rsvp) {
           setStatus(r.rsvp.status === "yes" ? "yes" : "no");
           setPartySize(r.rsvp.party_size);
+          setAttendanceMode((r.rsvp.attendance_mode as "in_person" | "zoom") ?? "in_person");
           setInvitedBy(r.rsvp.invited_by ?? "");
         }
       } finally { if (alive) setLoading(false); }
@@ -82,7 +84,7 @@ function RsvpPage() {
   const handleSubmit = async () => {
     try {
       const finalInvitedBy = invitedBy === "__other__" ? invitedByOther.trim() : invitedBy;
-      await submit({ data: { token, status, party_size: partySize, dietary_notes: "", invited_by: finalInvitedBy } });
+      await submit({ data: { token, status, party_size: partySize, attendance_mode: attendanceMode, dietary_notes: "", invited_by: finalInvitedBy } });
       clearDraftScope(rsvpDraftScope);
       toast.success("RSVP saved — thank you!");
     } catch (e: any) { toast.error(e.message); }
@@ -137,7 +139,12 @@ function RsvpPage() {
             <p className="text-xs uppercase tracking-[0.25em] text-terracotta mb-1">Your current RSVP</p>
             <p className="font-display text-2xl text-ink">
               {data.rsvp.status === "yes" ? "✓ Attending" : "✗ Declined"}
-              {data.rsvp.status === "yes" && <span className="text-base font-sans text-muted-foreground"> · party of {data.rsvp.party_size}</span>}
+              {data.rsvp.status === "yes" && (
+                <span className="text-base font-sans text-muted-foreground">
+                  {" · "}
+                  {data.rsvp.attendance_mode === "zoom" ? "via Zoom" : `in person, party of ${data.rsvp.party_size}`}
+                </span>
+              )}
             </p>
             {data.rsvp.invited_by && <p className="text-sm text-muted-foreground mt-1">Invited by {data.rsvp.invited_by}</p>}
             <p className="text-xs text-muted-foreground mt-2">You can update your response below at any time.</p>
@@ -165,14 +172,40 @@ function RsvpPage() {
             ))}
           </div>
           {status !== "no" && (
-            <div className="space-y-1.5">
-              <Label>Party size</Label>
-              <div className="flex items-center gap-3">
-                <Button size="icon" variant="outline" onClick={() => setPartySize(Math.max(1, partySize - 1))}><Minus className="w-4 h-4" /></Button>
-                <span className="font-display text-2xl w-10 text-center">{partySize}</span>
-                <Button size="icon" variant="outline" onClick={() => setPartySize(Math.min(20, partySize + 1))}><Plus className="w-4 h-4" /></Button>
+            <>
+              <div className="space-y-1.5">
+                <Label>How will you attend?</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { v: "in_person", icon: Users, label: "In person", sub: "Limited seating" },
+                    { v: "zoom", icon: Video, label: "Zoom", sub: "Join online" },
+                  ].map((o) => (
+                    <button
+                      key={o.v}
+                      onClick={() => setAttendanceMode(o.v as "in_person" | "zoom")}
+                      className={`p-4 rounded-md border-2 transition flex flex-col items-center gap-1.5 ${
+                        attendanceMode === o.v ? "border-ink bg-ink text-cream" : "border-border bg-card hover:border-ink/40"
+                      }`}
+                    >
+                      <o.icon className="w-5 h-5" />
+                      <span className="text-sm font-medium">{o.label}</span>
+                      <span className={`text-[10px] uppercase tracking-widest ${attendanceMode === o.v ? "text-cream/70" : "text-muted-foreground"}`}>{o.sub}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+              {attendanceMode === "in_person" && (
+                <div className="space-y-1.5">
+                  <Label>Party size (including you)</Label>
+                  <div className="flex items-center gap-3">
+                    <Button size="icon" variant="outline" onClick={() => setPartySize(Math.max(1, partySize - 1))}><Minus className="w-4 h-4" /></Button>
+                    <span className="font-display text-2xl w-10 text-center">{partySize}</span>
+                    <Button size="icon" variant="outline" onClick={() => setPartySize(Math.min(20, partySize + 1))}><Plus className="w-4 h-4" /></Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Seating is limited — please count everyone in your group.</p>
+                </div>
+              )}
+            </>
           )}
           <div className="space-y-1.5">
             <Label htmlFor="invited-by">Invited by</Label>

@@ -92,6 +92,7 @@ const RsvpInput = z.object({
   token: z.string().min(8).max(120),
   status: z.enum(["yes", "no", "maybe"]),
   party_size: z.number().int().min(1).max(20),
+  attendance_mode: z.enum(["in_person", "zoom"]).optional(),
   dietary_notes: z.string().max(500).optional().nullable(),
   invited_by: z.string().max(200).optional().nullable(),
 });
@@ -102,19 +103,23 @@ export const submitRsvp = createServerFn({ method: "POST" })
     const { data: inv } = await supabaseAdmin
       .from("invitations").select("id").in("rsvp_token", rsvpTokenCandidates(data.token)).maybeSingle();
     if (!inv) throw new Error("Invitation not found");
+    const mode = data.attendance_mode ?? "in_person";
+    const effectivePartySize = mode === "zoom" ? 1 : data.party_size;
     const { error } = await supabaseAdmin.from("rsvps").upsert({
       invitation_id: inv.id,
       status: data.status,
-      party_size: data.party_size,
+      party_size: effectivePartySize,
+      attendance_mode: mode,
       dietary_notes: data.dietary_notes ?? null,
       message: null,
       invited_by: data.invited_by?.trim() || null,
       responded_at: new Date().toISOString(),
     }, { onConflict: "invitation_id" });
     if (error) throw new Error(error.message);
-    await sendRsvpConfirmation(inv.id, data.status, data.party_size);
+    await sendRsvpConfirmation(inv.id, data.status, effectivePartySize);
     return { ok: true };
   });
+
 
 const OrderInput = z.object({
   token: z.string().min(8).max(120),
@@ -171,8 +176,10 @@ const PublicRsvpInput = z.object({
   password: z.string().min(6).max(72).optional().nullable(),
   status: z.enum(["yes", "no"]),
   party_size: z.number().int().min(1).max(20),
+  attendance_mode: z.enum(["in_person", "zoom"]).optional(),
   invited_by: z.string().max(200).optional().nullable(),
 });
+
 
 export const submitPublicRsvp = createServerFn({ method: "POST" })
   .inputValidator((d) => PublicRsvpInput.parse(d))
@@ -248,16 +255,20 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
       invitationId = inv.id;
     }
 
+    const mode = data.attendance_mode ?? "in_person";
+    const effectivePartySize = mode === "zoom" ? 1 : data.party_size;
     const { error: rsvpErr } = await supabaseAdmin.from("rsvps").upsert({
       invitation_id: invitationId,
       status: data.status,
-      party_size: data.party_size,
+      party_size: effectivePartySize,
+      attendance_mode: mode,
       message: null,
       invited_by: data.invited_by?.trim() || null,
       responded_at: new Date().toISOString(),
     }, { onConflict: "invitation_id" });
     if (rsvpErr) throw new Error(rsvpErr.message);
 
-    await sendRsvpConfirmation(invitationId, data.status, data.party_size);
+    await sendRsvpConfirmation(invitationId, data.status, effectivePartySize);
     return { ok: true, invitation_id: invitationId };
   });
+

@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { clearDraftScope, useDraftState } from "@/hooks/use-draft-state";
-import { Check, X, Minus, Plus, ArrowLeft } from "lucide-react";
+import { Check, X, Minus, Plus, ArrowLeft, Users, Video } from "lucide-react";
 
 export const Route = createFileRoute("/rsvp/")({
   head: () => ({ meta: [{ title: "RSVP" }] }),
@@ -56,6 +56,7 @@ const menu: Record<string, { id: string; name: string; description: string; pric
 function PreviewPage() {
   const draftScope = "rsvp-public";
   const [status, setStatus] = useDraftState<"yes" | "no">(draftScope, "status", "yes");
+  const [attendanceMode, setAttendanceMode] = useDraftState<"in_person" | "zoom">(draftScope, "attendanceMode", "in_person");
   const [partySize, setPartySize] = useDraftState(draftScope, "partySize", 2);
   const [name, setName] = useDraftState(draftScope, "name", "");
   const [email, setEmail] = useDraftState(draftScope, "email", "");
@@ -92,6 +93,7 @@ function PreviewPage() {
         password: phoneDigits,
         status,
         party_size: partySize,
+        attendance_mode: attendanceMode,
         invited_by: (invitedBy === "__other__" ? invitedByOther.trim() : invitedBy) || null,
       }});
       setSaved(true);
@@ -139,13 +141,37 @@ function PreviewPage() {
           {status !== "no" && (
             <>
               <div className="space-y-1.5">
-                <Label>Party size</Label>
-                <div className="flex items-center gap-3">
-                  <Button size="icon" variant="outline" onClick={() => setPartySize(Math.max(1, partySize - 1))}><Minus className="w-4 h-4" /></Button>
-                  <span className="font-display text-2xl w-10 text-center">{partySize}</span>
-                  <Button size="icon" variant="outline" onClick={() => setPartySize(Math.min(20, partySize + 1))}><Plus className="w-4 h-4" /></Button>
+                <Label>How will you attend?</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { v: "in_person", icon: Users, label: "In person", sub: "Limited seating" },
+                    { v: "zoom", icon: Video, label: "Zoom", sub: "Join online" },
+                  ].map((o) => (
+                    <button
+                      key={o.v}
+                      onClick={() => setAttendanceMode(o.v as "in_person" | "zoom")}
+                      className={`p-4 rounded-md border-2 transition flex flex-col items-center gap-1.5 ${
+                        attendanceMode === o.v ? "border-ink bg-ink text-cream" : "border-border bg-card hover:border-ink/40"
+                      }`}
+                    >
+                      <o.icon className="w-5 h-5" />
+                      <span className="text-sm font-medium">{o.label}</span>
+                      <span className={`text-[10px] uppercase tracking-widest ${attendanceMode === o.v ? "text-cream/70" : "text-muted-foreground"}`}>{o.sub}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
+              {attendanceMode === "in_person" && (
+                <div className="space-y-1.5">
+                  <Label>Party size (including you)</Label>
+                  <div className="flex items-center gap-3">
+                    <Button size="icon" variant="outline" onClick={() => setPartySize(Math.max(1, partySize - 1))}><Minus className="w-4 h-4" /></Button>
+                    <span className="font-display text-2xl w-10 text-center">{partySize}</span>
+                    <Button size="icon" variant="outline" onClick={() => setPartySize(Math.min(20, partySize + 1))}><Plus className="w-4 h-4" /></Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Seating is limited — please count everyone in your group.</p>
+                </div>
+              )}
               <div className="space-y-3 pt-2 border-t border-border">
                 <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground pt-3">So we can stay in touch</p>
                 <div className="space-y-1.5">

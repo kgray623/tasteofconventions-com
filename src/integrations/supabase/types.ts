@@ -596,6 +596,7 @@ export type Database = {
       }
       rsvps: {
         Row: {
+          attendance_mode: string
           created_at: string
           dietary_notes: string | null
           id: string
@@ -607,6 +608,7 @@ export type Database = {
           status: Database["public"]["Enums"]["rsvp_status"]
         }
         Insert: {
+          attendance_mode?: string
           created_at?: string
           dietary_notes?: string | null
           id?: string
@@ -618,6 +620,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["rsvp_status"]
         }
         Update: {
+          attendance_mode?: string
           created_at?: string
           dietary_notes?: string | null
           id?: string
