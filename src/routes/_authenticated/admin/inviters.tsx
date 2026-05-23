@@ -14,13 +14,14 @@ export const Route = createFileRoute("/_authenticated/admin/inviters")({
   component: InvitersPage,
 });
 
-type Inviter = { id: string; name: string; quota: number; active: boolean };
+type Inviter = { id: string; name: string; quota: number; active: boolean; host_id: string | null };
 
 const TOTAL_CAP = 550;
 
 function InvitersPage() {
   const [inviters, setInviters] = useState<Inviter[]>([]);
   const [usage, setUsage] = useState<Record<string, number>>({});
+  const [invitedCounts, setInvitedCounts] = useState<Record<string, number>>({});
   const [unassigned, setUnassigned] = useState(0);
   const [name, setName] = useState("");
   const [quota, setQuota] = useState(40);
@@ -29,27 +30,34 @@ function InvitersPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const [{ data: inv }, { data: rsvps }] = await withTimeout(Promise.all([
+      const [{ data: inv }, { data: rsvps }, { data: invites }] = await withTimeout(Promise.all([
         supabase.from("inviters").select("*").order("name"),
         supabase.from("rsvps").select("invited_by,party_size,status"),
+        supabase.from("invitations").select("host_id"),
       ]), 10000);
-    setInviters((inv as Inviter[]) ?? []);
-    const counts: Record<string, number> = {};
-    let other = 0;
-    const known = new Set((inv ?? []).map((i: any) => i.name.toLowerCase()));
-    for (const r of rsvps ?? []) {
-      if (r.status !== "yes") continue;
-      const key = (r.invited_by ?? "").trim();
-      const seats = r.party_size ?? 1;
-      if (!key) { other += seats; continue; }
-      if (known.has(key.toLowerCase())) {
-        counts[key.toLowerCase()] = (counts[key.toLowerCase()] ?? 0) + seats;
-      } else {
-        other += seats;
+      setInviters((inv as Inviter[]) ?? []);
+      const counts: Record<string, number> = {};
+      let other = 0;
+      const known = new Set((inv ?? []).map((i: any) => i.name.toLowerCase()));
+      for (const r of rsvps ?? []) {
+        if (r.status !== "yes") continue;
+        const key = (r.invited_by ?? "").trim();
+        const seats = r.party_size ?? 1;
+        if (!key) { other += seats; continue; }
+        if (known.has(key.toLowerCase())) {
+          counts[key.toLowerCase()] = (counts[key.toLowerCase()] ?? 0) + seats;
+        } else {
+          other += seats;
+        }
       }
-    }
-    setUsage(counts);
-    setUnassigned(other);
+      setUsage(counts);
+      setUnassigned(other);
+      const invByHost: Record<string, number> = {};
+      for (const row of invites ?? []) {
+        if (!row.host_id) continue;
+        invByHost[row.host_id] = (invByHost[row.host_id] ?? 0) + 1;
+      }
+      setInvitedCounts(invByHost);
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
@@ -146,7 +154,8 @@ function InvitersPage() {
               <tr>
                 <th className="px-6 py-3">Name</th>
                 <th className="px-4 py-3 w-28">Quota</th>
-                <th className="px-4 py-3 w-20">Used</th>
+                <th className="px-4 py-3 w-24">Invited</th>
+                <th className="px-4 py-3 w-24">Attending</th>
                 <th className="px-4 py-3 w-24">Remaining</th>
                 <th className="px-4 py-3 w-24">Status</th>
                 <th className="px-4 py-3 w-16"></th>
@@ -155,7 +164,8 @@ function InvitersPage() {
             <tbody>
               {inviters.map((i) => {
                 const used = usage[i.name.toLowerCase()] ?? 0;
-                const remaining = i.quota - used;
+                const invited = i.host_id ? (invitedCounts[i.host_id] ?? 0) : 0;
+                const remaining = i.quota - Math.max(used, invited);
                 return (
                   <tr key={i.id} className="border-t border-border">
                     <td className="px-6 py-3 font-medium">{i.name}</td>
@@ -171,6 +181,7 @@ function InvitersPage() {
                         className="h-8 w-20"
                       />
                     </td>
+                    <td className="px-4 py-3">{invited}</td>
                     <td className="px-4 py-3">{used}</td>
                     <td className={`px-4 py-3 ${remaining < 0 ? "text-destructive font-medium" : ""}`}>{remaining}</td>
                     <td className="px-4 py-3">
@@ -192,6 +203,7 @@ function InvitersPage() {
               {unassigned > 0 && (
                 <tr className="border-t border-border bg-muted/20">
                   <td className="px-6 py-3 italic text-muted-foreground">Unassigned / other</td>
+                  <td className="px-4 py-3">—</td>
                   <td className="px-4 py-3">—</td>
                   <td className="px-4 py-3">{unassigned}</td>
                   <td className="px-4 py-3">—</td>
