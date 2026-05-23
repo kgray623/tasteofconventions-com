@@ -176,8 +176,10 @@ const PublicRsvpInput = z.object({
   password: z.string().min(6).max(72).optional().nullable(),
   status: z.enum(["yes", "no"]),
   party_size: z.number().int().min(1).max(20),
+  attendance_mode: z.enum(["in_person", "zoom"]).optional(),
   invited_by: z.string().max(200).optional().nullable(),
 });
+
 
 export const submitPublicRsvp = createServerFn({ method: "POST" })
   .inputValidator((d) => PublicRsvpInput.parse(d))
