@@ -93,6 +93,7 @@ const RsvpInput = z.object({
   status: z.enum(["yes", "no", "maybe"]),
   party_size: z.number().int().min(1).max(20),
   attendance_mode: z.enum(["in_person", "zoom"]).optional(),
+  ordering_food: z.boolean().optional().nullable(),
   dietary_notes: z.string().max(500).optional().nullable(),
   invited_by: z.string().max(200).optional().nullable(),
 });
@@ -105,11 +106,13 @@ export const submitRsvp = createServerFn({ method: "POST" })
     if (!inv) throw new Error("Invitation not found");
     const mode = data.attendance_mode ?? "in_person";
     const effectivePartySize = mode === "zoom" ? 1 : data.party_size;
+    const orderingFood = mode === "in_person" ? (data.ordering_food ?? null) : null;
     const { error } = await supabaseAdmin.from("rsvps").upsert({
       invitation_id: inv.id,
       status: data.status,
       party_size: effectivePartySize,
       attendance_mode: mode,
+      ordering_food: orderingFood,
       dietary_notes: data.dietary_notes ?? null,
       message: null,
       invited_by: data.invited_by?.trim() || null,
