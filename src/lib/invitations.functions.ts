@@ -255,16 +255,20 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
       invitationId = inv.id;
     }
 
+    const mode = data.attendance_mode ?? "in_person";
+    const effectivePartySize = mode === "zoom" ? 1 : data.party_size;
     const { error: rsvpErr } = await supabaseAdmin.from("rsvps").upsert({
       invitation_id: invitationId,
       status: data.status,
-      party_size: data.party_size,
+      party_size: effectivePartySize,
+      attendance_mode: mode,
       message: null,
       invited_by: data.invited_by?.trim() || null,
       responded_at: new Date().toISOString(),
     }, { onConflict: "invitation_id" });
     if (rsvpErr) throw new Error(rsvpErr.message);
 
-    await sendRsvpConfirmation(invitationId, data.status, data.party_size);
+    await sendRsvpConfirmation(invitationId, data.status, effectivePartySize);
     return { ok: true, invitation_id: invitationId };
   });
+
