@@ -58,6 +58,7 @@ function PreviewPage() {
   const [status, setStatus] = useDraftState<"yes" | "no">(draftScope, "status", "yes");
   const [attendanceMode, setAttendanceMode] = useDraftState<"in_person" | "zoom">(draftScope, "attendanceMode", "in_person");
   const [partySize, setPartySize] = useDraftState(draftScope, "partySize", 2);
+  const [orderingFood, setOrderingFood] = useDraftState<"yes" | "no" | "">(draftScope, "orderingFood", "");
   const [name, setName] = useDraftState(draftScope, "name", "");
   const [email, setEmail] = useDraftState(draftScope, "email", "");
   const [phone, setPhone] = useDraftState(draftScope, "phone", "");
