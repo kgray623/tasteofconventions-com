@@ -34,6 +34,7 @@ function RsvpPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useDraftState<"yes" | "no">(rsvpDraftScope, "status", "yes");
+  const [attendanceMode, setAttendanceMode] = useDraftState<"in_person" | "zoom">(rsvpDraftScope, "attendanceMode", "in_person");
   const [partySize, setPartySize] = useDraftState(rsvpDraftScope, "partySize", 1);
   const [invitedBy, setInvitedBy] = useDraftState(rsvpDraftScope, "invitedBy", "");
   const [invitedByOther, setInvitedByOther] = useDraftState(rsvpDraftScope, "invitedByOther", "");
