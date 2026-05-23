@@ -365,6 +365,7 @@ export type Database = {
         Row: {
           active: boolean
           created_at: string
+          host_id: string | null
           id: string
           name: string
           quota: number
@@ -372,6 +373,7 @@ export type Database = {
         Insert: {
           active?: boolean
           created_at?: string
+          host_id?: string | null
           id?: string
           name: string
           quota?: number
@@ -379,6 +381,7 @@ export type Database = {
         Update: {
           active?: boolean
           created_at?: string
+          host_id?: string | null
           id?: string
           name?: string
           quota?: number
