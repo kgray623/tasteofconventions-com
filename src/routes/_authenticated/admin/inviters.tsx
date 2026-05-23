@@ -14,7 +14,7 @@ export const Route = createFileRoute("/_authenticated/admin/inviters")({
   component: InvitersPage,
 });
 
-type Inviter = { id: string; name: string; quota: number; active: boolean };
+type Inviter = { id: string; name: string; quota: number; active: boolean; host_id: string | null };
 
 const TOTAL_CAP = 550;
 
