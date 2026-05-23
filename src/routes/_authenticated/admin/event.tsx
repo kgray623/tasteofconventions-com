@@ -135,9 +135,14 @@ function EditEventPage() {
           <Label htmlFor="vlink">Virtual link (optional)</Label>
           <Input id="vlink" value={virtualLink} onChange={(e) => setVirtualLink(e.target.value)} placeholder="https://…" />
         </div>
-        <Button onClick={save} disabled={saving} className="bg-ink text-cream hover:bg-ink/90">
-          {saving ? "Saving…" : "Save event"}
-        </Button>
+        <div className="flex items-center gap-3 pt-2">
+          <Button onClick={save} disabled={saving || !dirty} className="bg-ink text-cream hover:bg-ink/90">
+            {saving ? "Saving…" : dirty ? "Save event" : "Saved"}
+          </Button>
+          {dirty && (
+            <span className="text-xs text-terracotta">Unsaved changes — click Save event.</span>
+          )}
+        </div>
       </Card>
     </div>
   );
