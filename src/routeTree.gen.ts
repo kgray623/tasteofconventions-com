@@ -27,6 +27,7 @@ import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/em
 import { Route as AuthenticatedInvitationsNewRouteImport } from './routes/_authenticated/invitations.new'
 import { Route as AuthenticatedAdminUploadRouteImport } from './routes/_authenticated/admin/upload'
 import { Route as AuthenticatedAdminTeamRouteImport } from './routes/_authenticated/admin/team'
+import { Route as AuthenticatedAdminRestaurantsRouteImport } from './routes/_authenticated/admin/restaurants'
 import { Route as AuthenticatedAdminInvitersRouteImport } from './routes/_authenticated/admin/inviters'
 import { Route as AuthenticatedAdminEventRouteImport } from './routes/_authenticated/admin/event'
 import { Route as AuthenticatedAdminChatRouteImport } from './routes/_authenticated/admin/chat'
@@ -128,6 +129,12 @@ const AuthenticatedAdminTeamRoute = AuthenticatedAdminTeamRouteImport.update({
   path: '/team',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedAdminRestaurantsRoute =
+  AuthenticatedAdminRestaurantsRouteImport.update({
+    id: '/restaurants',
+    path: '/restaurants',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminInvitersRoute =
   AuthenticatedAdminInvitersRouteImport.update({
     id: '/inviters',
@@ -196,6 +203,7 @@ export interface FileRoutesByFullPath {
   '/admin/chat': typeof AuthenticatedAdminChatRoute
   '/admin/event': typeof AuthenticatedAdminEventRoute
   '/admin/inviters': typeof AuthenticatedAdminInvitersRoute
+  '/admin/restaurants': typeof AuthenticatedAdminRestaurantsRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
   '/admin/upload': typeof AuthenticatedAdminUploadRoute
   '/invitations/new': typeof AuthenticatedInvitationsNewRoute
@@ -223,6 +231,7 @@ export interface FileRoutesByTo {
   '/admin/chat': typeof AuthenticatedAdminChatRoute
   '/admin/event': typeof AuthenticatedAdminEventRoute
   '/admin/inviters': typeof AuthenticatedAdminInvitersRoute
+  '/admin/restaurants': typeof AuthenticatedAdminRestaurantsRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
   '/admin/upload': typeof AuthenticatedAdminUploadRoute
   '/invitations/new': typeof AuthenticatedInvitationsNewRoute
@@ -253,6 +262,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/chat': typeof AuthenticatedAdminChatRoute
   '/_authenticated/admin/event': typeof AuthenticatedAdminEventRoute
   '/_authenticated/admin/inviters': typeof AuthenticatedAdminInvitersRoute
+  '/_authenticated/admin/restaurants': typeof AuthenticatedAdminRestaurantsRoute
   '/_authenticated/admin/team': typeof AuthenticatedAdminTeamRoute
   '/_authenticated/admin/upload': typeof AuthenticatedAdminUploadRoute
   '/_authenticated/invitations/new': typeof AuthenticatedInvitationsNewRoute
@@ -283,6 +293,7 @@ export interface FileRouteTypes {
     | '/admin/chat'
     | '/admin/event'
     | '/admin/inviters'
+    | '/admin/restaurants'
     | '/admin/team'
     | '/admin/upload'
     | '/invitations/new'
@@ -310,6 +321,7 @@ export interface FileRouteTypes {
     | '/admin/chat'
     | '/admin/event'
     | '/admin/inviters'
+    | '/admin/restaurants'
     | '/admin/team'
     | '/admin/upload'
     | '/invitations/new'
@@ -339,6 +351,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/chat'
     | '/_authenticated/admin/event'
     | '/_authenticated/admin/inviters'
+    | '/_authenticated/admin/restaurants'
     | '/_authenticated/admin/team'
     | '/_authenticated/admin/upload'
     | '/_authenticated/invitations/new'
@@ -499,6 +512,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminTeamRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/restaurants': {
+      id: '/_authenticated/admin/restaurants'
+      path: '/restaurants'
+      fullPath: '/admin/restaurants'
+      preLoaderRoute: typeof AuthenticatedAdminRestaurantsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/inviters': {
       id: '/_authenticated/admin/inviters'
       path: '/inviters'
@@ -570,6 +590,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminChatRoute: typeof AuthenticatedAdminChatRoute
   AuthenticatedAdminEventRoute: typeof AuthenticatedAdminEventRoute
   AuthenticatedAdminInvitersRoute: typeof AuthenticatedAdminInvitersRoute
+  AuthenticatedAdminRestaurantsRoute: typeof AuthenticatedAdminRestaurantsRoute
   AuthenticatedAdminTeamRoute: typeof AuthenticatedAdminTeamRoute
   AuthenticatedAdminUploadRoute: typeof AuthenticatedAdminUploadRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
@@ -580,6 +601,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminChatRoute: AuthenticatedAdminChatRoute,
   AuthenticatedAdminEventRoute: AuthenticatedAdminEventRoute,
   AuthenticatedAdminInvitersRoute: AuthenticatedAdminInvitersRoute,
+  AuthenticatedAdminRestaurantsRoute: AuthenticatedAdminRestaurantsRoute,
   AuthenticatedAdminTeamRoute: AuthenticatedAdminTeamRoute,
   AuthenticatedAdminUploadRoute: AuthenticatedAdminUploadRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
