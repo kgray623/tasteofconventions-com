@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Trash2, UserPlus } from "lucide-react";
+import { Trash2, UserPlus, Send } from "lucide-react";
 import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 import { inviteTeamMember } from "@/lib/team.functions";
 
@@ -31,6 +31,7 @@ function InvitersPage() {
   const [quota, setQuota] = useState(40);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+  const [resendingId, setResendingId] = useState<string | null>(null);
   const inviteTeamMemberFn = useServerFn(inviteTeamMember);
 
   const load = async () => {
@@ -123,6 +124,29 @@ function InvitersPage() {
     const { error } = await supabase.from("inviters").update({ quota: q }).eq("id", id);
     if (error) return toast.error(error.message);
     load();
+  };
+  const resend = async (i: Inviter) => {
+    if (!i.email) return toast.error("No email on file for this person. Edit them and add an email first.");
+    setResendingId(i.id);
+    try {
+      const res = await inviteTeamMemberFn({
+        data: {
+          email: i.email,
+          role: "team",
+          name: i.name,
+          phone: i.phone || "n/a",
+        },
+      });
+      if (res.emailQueued) {
+        toast.success(`Invite resent to ${i.email}.`);
+      } else {
+        toast.error(`Invite could not be emailed (${res.reason ?? "unknown"}).`);
+      }
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to resend invite");
+    } finally {
+      setResendingId(null);
+    }
   };
 
   const toggleActive = async (id: string, active: boolean) => {
@@ -245,9 +269,23 @@ function InvitersPage() {
                       </button>
                     </td>
                     <td className="px-4 py-3">
-                      <Button variant="ghost" size="icon" onClick={() => remove(i.id)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <div className="flex items-center gap-1 justify-end">
+                        {i.email && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => resend(i)}
+                            disabled={resendingId === i.id}
+                            className="gap-1 h-8"
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                            {resendingId === i.id ? "Sending…" : "Resend"}
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="icon" onClick={() => remove(i.id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 );
