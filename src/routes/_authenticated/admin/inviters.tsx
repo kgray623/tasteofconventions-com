@@ -14,7 +14,7 @@ export const Route = createFileRoute("/_authenticated/admin/inviters")({
   component: InvitersPage,
 });
 
-type Inviter = { id: string; name: string; quota: number; active: boolean; host_id: string | null };
+type Inviter = { id: string; name: string; quota: number; active: boolean; host_id: string | null; email: string | null; phone: string | null };
 
 const TOTAL_CAP = 550;
 
@@ -24,6 +24,8 @@ function InvitersPage() {
   const [invitedCounts, setInvitedCounts] = useState<Record<string, number>>({});
   const [unassigned, setUnassigned] = useState(0);
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [quota, setQuota] = useState(40);
   const [loading, setLoading] = useState(true);
 
@@ -69,10 +71,15 @@ function InvitersPage() {
 
   const add = async () => {
     if (!name.trim()) return toast.error("Name is required");
-    const { error } = await supabase.from("inviters").insert({ name: name.trim(), quota });
+    const { error } = await supabase.from("inviters").insert({
+      name: name.trim(),
+      quota,
+      email: email.trim() || null,
+      phone: phone.trim() || null,
+    });
     if (error) return toast.error(error.message);
-    setName(""); setQuota(40);
-    toast.success("Inviter added");
+    setName(""); setEmail(""); setPhone(""); setQuota(40);
+    toast.success("Team member added");
     load();
   };
 
@@ -121,22 +128,30 @@ function InvitersPage() {
 
       <Card className="p-6 space-y-4">
         <div>
-          <h2 className="font-display text-xl">Add inviter</h2>
+          <h2 className="font-display text-xl">Add Team Member</h2>
           <p className="text-sm text-muted-foreground">They'll appear in the dropdown on the RSVP form.</p>
         </div>
-        <div className="flex flex-wrap gap-3 items-end">
-          <div className="flex-1 min-w-[200px] space-y-1.5">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
             <Label htmlFor="name">Name</Label>
             <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Jane Doe" />
           </div>
-          <div className="w-32 space-y-1.5">
+          <div className="space-y-1.5">
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="phone">Phone</Label>
+            <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" />
+          </div>
+          <div className="space-y-1.5">
             <Label htmlFor="quota">Quota</Label>
             <Input id="quota" type="number" min={0} value={quota} onChange={(e) => setQuota(parseInt(e.target.value) || 0)} />
           </div>
-          <Button onClick={add} className="bg-ink text-cream hover:bg-ink/90">
-            <UserPlus className="w-4 h-4 mr-2" /> Add
-          </Button>
         </div>
+        <Button onClick={add} className="bg-ink text-cream hover:bg-ink/90">
+          <UserPlus className="w-4 h-4 mr-2" /> Add
+        </Button>
       </Card>
 
       <Card className="p-0 overflow-hidden">

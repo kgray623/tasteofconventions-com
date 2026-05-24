@@ -449,25 +449,31 @@ export type Database = {
         Row: {
           active: boolean
           created_at: string
+          email: string | null
           host_id: string | null
           id: string
           name: string
+          phone: string | null
           quota: number
         }
         Insert: {
           active?: boolean
           created_at?: string
+          email?: string | null
           host_id?: string | null
           id?: string
           name: string
+          phone?: string | null
           quota?: number
         }
         Update: {
           active?: boolean
           created_at?: string
+          email?: string | null
           host_id?: string | null
           id?: string
           name?: string
+          phone?: string | null
           quota?: number
         }
         Relationships: []
