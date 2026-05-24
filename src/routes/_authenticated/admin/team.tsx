@@ -112,7 +112,7 @@ function TeamPage() {
       <Card className="p-5 space-y-4">
         <div className="flex items-center gap-2">
           <Mail className="w-4 h-4 text-terracotta" />
-          <h2 className="font-display text-xl">Invite a team member</h2>
+          <h2 className="font-display text-xl">Add Team Member</h2>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <Input
