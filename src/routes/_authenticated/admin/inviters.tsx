@@ -63,10 +63,20 @@ function parseVCards(text: string): ContactRow[] {
 }
 
 function InvitersPage() {
+  const { user } = useAuth();
   const [inviters, setInviters] = useState<Inviter[]>([]);
   const [usage, setUsage] = useState<Record<string, number>>({});
   const [invitedCounts, setInvitedCounts] = useState<Record<string, number>>({});
   const [unassigned, setUnassigned] = useState(0);
+  const [msgs, setMsgs] = useState<TeamMsg[]>([]);
+  const [profiles, setProfiles] = useState<Record<string, Profile>>({});
+  const [messageBody, setMessageBody] = useState("");
+  const [cats, setCats] = useState<Cat[]>([]);
+  const [assigns, setAssigns] = useState<Assign[]>([]);
+  const [events, setEvents] = useState<EventRow[]>([]);
+  const [eventId, setEventId] = useState("");
+  const [contacts, setContacts] = useState<ContactRow[]>([]);
+  const [savingContacts, setSavingContacts] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -74,6 +84,9 @@ function InvitersPage() {
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const vcardRef = useRef<HTMLInputElement>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
   const inviteTeamMemberFn = useServerFn(inviteTeamMember);
 
   const load = async () => {
