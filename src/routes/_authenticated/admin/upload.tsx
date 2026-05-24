@@ -221,6 +221,9 @@ function UploadPage() {
   const [editingSavedId, setEditingSavedId] = useState<string | null>(null);
   const [editingSavedValue, setEditingSavedValue] = useState("");
   const [updatingSavedId, setUpdatingSavedId] = useState<string | null>(null);
+  const [myQuota, setMyQuota] = useState<number | null>(null);
+  const [myRsvpSeats, setMyRsvpSeats] = useState(0);
+  const [myRsvpCount, setMyRsvpCount] = useState(0);
 
   const loadSavedGuests = async (evId: string) => {
     if (!evId) {
@@ -246,6 +249,60 @@ function UploadPage() {
   useEffect(() => {
     void loadSavedGuests(eventId);
   }, [eventId]);
+
+  // Load this team member's quota
+  useEffect(() => {
+    if (!user?.id) return;
+    let alive = true;
+    void (async () => {
+      const { data } = await supabase
+        .from("inviters")
+        .select("quota")
+        .eq("host_id", user.id)
+        .maybeSingle();
+      if (alive) setMyQuota(data?.quota ?? null);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [user?.id]);
+
+  // Load this team member's RSVP totals for the selected event
+  useEffect(() => {
+    if (!user?.id || !eventId) {
+      setMyRsvpSeats(0);
+      setMyRsvpCount(0);
+      return;
+    }
+    let alive = true;
+    void (async () => {
+      const { data: invs } = await supabase
+        .from("invitations")
+        .select("id")
+        .eq("event_id", eventId)
+        .eq("host_id", user.id);
+      const ids = (invs ?? []).map((i) => i.id);
+      if (ids.length === 0) {
+        if (alive) {
+          setMyRsvpSeats(0);
+          setMyRsvpCount(0);
+        }
+        return;
+      }
+      const { data: rs } = await supabase
+        .from("rsvps")
+        .select("party_size,status")
+        .in("invitation_id", ids);
+      if (!alive) return;
+      const yes = (rs ?? []).filter((r) => r.status === "yes");
+      setMyRsvpCount(yes.length);
+      setMyRsvpSeats(yes.reduce((s, r) => s + (r.party_size ?? 1), 0));
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [user?.id, eventId, savedGuests.length]);
+
 
   const duplicateGroups = useMemo(() => {
     const groups = new Map<string, string>(); // key -> groupId (first id)
@@ -980,8 +1037,38 @@ function UploadPage() {
         </Card>
       )}
 
+      <div className="grid grid-cols-3 gap-3">
+        <Card className="p-4">
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+            Invites sent
+          </p>
+          <p className="font-display text-2xl mt-1">{savedGuests.length}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+            RSVPs (yes)
+          </p>
+          <p className="font-display text-2xl mt-1">{myRsvpCount}</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">{myRsvpSeats} seats</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+            Your quota
+          </p>
+          <p className="font-display text-2xl mt-1">
+            {myQuota ?? "—"}
+          </p>
+          {myQuota !== null && (
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              {Math.max(0, myQuota - savedGuests.length)} invites left to send
+            </p>
+          )}
+        </Card>
+      </div>
+
       <Card className="overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">
+
           <div className="flex items-center gap-2 flex-wrap">
             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
             <p className="font-medium">
