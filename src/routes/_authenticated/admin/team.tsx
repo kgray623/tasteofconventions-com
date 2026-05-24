@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Mail, Trash2, ShieldCheck, Users } from "lucide-react";
+import { inviteTeamMember } from "@/lib/team.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/team")({
   component: TeamPage,
@@ -26,6 +28,8 @@ function TeamPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"team" | "admin">("team");
+  const [sending, setSending] = useState(false);
+  const sendInviteFn = useServerFn(inviteTeamMember);
 
   const load = async () => {
     const [inv, mem, prof] = await Promise.all([
@@ -43,13 +47,21 @@ function TeamPage() {
     const parsed = emailSchema.safeParse(email);
     if (!parsed.success) return toast.error("Enter a valid email");
     if (!user) return;
-    const { error } = await supabase.from("team_invites").insert({
-      email: parsed.data, role, invited_by: user.id,
-    });
-    if (error) return toast.error(error.message);
-    setEmail("");
-    toast.success(`Invited ${parsed.data}. They'll get ${role} access on signup.`);
-    load();
+    setSending(true);
+    try {
+      const res = await sendInviteFn({ data: { email: parsed.data, role } });
+      setEmail("");
+      if (res.emailQueued) {
+        toast.success(`Invite emailed to ${parsed.data}.`);
+      } else {
+        toast.success(`Invited ${parsed.data}, but email could not be sent (${res.reason ?? "unknown"}).`);
+      }
+      load();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to send invite");
+    } finally {
+      setSending(false);
+    }
   };
 
   const revoke = async (id: string) => {
@@ -87,7 +99,7 @@ function TeamPage() {
               <SelectItem value="admin">Admin</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={sendInvite} className="bg-ink text-cream hover:bg-ink/90">Invite</Button>
+          <Button onClick={sendInvite} disabled={sending} className="bg-ink text-cream hover:bg-ink/90">{sending ? "Sending…" : "Invite"}</Button>
         </div>
         <p className="text-xs text-muted-foreground">
           When the invited person signs up with this exact email, they'll automatically get {role} access.
