@@ -142,7 +142,8 @@ function InvitersPage() {
         ]),
         10000,
       );
-      setInviters((inv as Inviter[]) ?? []);
+      const inviterRows = (inv as Inviter[]) ?? [];
+      setInviters(inviterRows);
       setMsgs((messages.data as TeamMsg[]) ?? []);
       setProfiles(
         Object.fromEntries(((profileRows.data as Profile[]) ?? []).map((p) => [p.id, p])),
@@ -154,7 +155,7 @@ function InvitersPage() {
       setEventId((current) => current || eventData[0]?.id || "");
       const counts: Record<string, number> = {};
       let other = 0;
-      const known = new Set((inv ?? []).map((i: any) => i.name.toLowerCase()));
+      const known = new Set(inviterRows.map((i) => i.name.toLowerCase()));
       for (const r of rsvps ?? []) {
         if (r.status !== "yes") continue;
         const key = (r.invited_by ?? "").trim();
