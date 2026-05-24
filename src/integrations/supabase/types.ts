@@ -790,6 +790,13 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      get_public_inviters: {
+        Args: never
+        Returns: {
+          id: string
+          name: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

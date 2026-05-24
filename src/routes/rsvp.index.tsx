@@ -70,7 +70,7 @@ function PreviewPage() {
   const [orderNotes, setOrderNotes] = useDraftState(draftScope, "orderNotes", "");
 
   useEffect(() => {
-    supabase.from("inviters").select("id,name").eq("active", true).order("name")
+    supabase.rpc("get_public_inviters")
       .then(({ data }) => setInviters(data ?? []));
   }, []);
 
