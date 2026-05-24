@@ -18,7 +18,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "invite-palooza-connect"
+const SITE_NAME = "Cellibrate Health"
 const ROOT_DOMAIN = "cellibratehealth.com"
 
 // Sample data for preview mode ONLY (not used in actual email sending).
