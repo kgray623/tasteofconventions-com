@@ -75,16 +75,48 @@ function InvitersPage() {
 
   const add = async () => {
     if (!name.trim()) return toast.error("Name is required");
-    const { error } = await supabase.from("inviters").insert({
-      name: name.trim(),
-      quota,
-      email: email.trim() || null,
-      phone: phone.trim() || null,
-    });
-    if (error) return toast.error(error.message);
-    setName(""); setEmail(""); setPhone(""); setQuota(40);
-    toast.success("Team member added");
-    load();
+    const trimmedEmail = email.trim();
+    const trimmedPhone = phone.trim();
+    setAdding(true);
+    try {
+      const { error } = await supabase.from("inviters").insert({
+        name: name.trim(),
+        quota,
+        email: trimmedEmail || null,
+        phone: trimmedPhone || null,
+      });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      if (trimmedEmail) {
+        try {
+          const res = await inviteTeamMemberFn({
+            data: {
+              email: trimmedEmail,
+              role: "team",
+              name: name.trim(),
+              phone: trimmedPhone || "n/a",
+            },
+          });
+          if (res.emailQueued) {
+            toast.success(`Added and emailed invite to ${trimmedEmail}.`);
+          } else {
+            toast.success(`Added ${name.trim()}, but invite email could not be sent (${res.reason ?? "unknown"}).`);
+          }
+        } catch (err: any) {
+          toast.error(`Added ${name.trim()}, but invite email failed: ${err?.message ?? "unknown error"}`);
+        }
+      } else {
+        toast.success("Team member added");
+      }
+
+      setName(""); setEmail(""); setPhone(""); setQuota(40);
+      load();
+    } finally {
+      setAdding(false);
+    }
   };
 
   const updateQuota = async (id: string, q: number) => {
