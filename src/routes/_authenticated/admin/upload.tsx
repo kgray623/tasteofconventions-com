@@ -215,7 +215,16 @@ function UploadPage() {
   const [ocrBusy, setOcrBusy] = useState(false);
   const runOcr = useServerFn(extractContactsFromImages);
   const [savedGuests, setSavedGuests] = useState<
-    { id: string; guest_name: string; guest_email: string | null; guest_phone: string | null }[]
+    {
+      id: string;
+      guest_name: string;
+      guest_email: string | null;
+      guest_phone: string | null;
+      rsvp_token: string;
+      invite_sent_at: string | null;
+      rsvp_expires_at: string | null;
+      rsvp_status: string | null;
+    }[]
   >([]);
   const [savedLoading, setSavedLoading] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
@@ -224,6 +233,8 @@ function UploadPage() {
   const [editingSavedId, setEditingSavedId] = useState<string | null>(null);
   const [editingSavedValue, setEditingSavedValue] = useState("");
   const [updatingSavedId, setUpdatingSavedId] = useState<string | null>(null);
+  const [markingSentId, setMarkingSentId] = useState<string | null>(null);
+  const [inviterName, setInviterName] = useState<string>("");
   const [myQuota, setMyQuota] = useState<number | null>(null);
   const [myRsvpSeats, setMyRsvpSeats] = useState(0);
   const [myRsvpCount, setMyRsvpCount] = useState(0);
