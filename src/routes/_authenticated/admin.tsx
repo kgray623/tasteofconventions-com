@@ -27,7 +27,7 @@ const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boole
 const teamAllowedPaths = new Set(["/admin", "/admin/event", "/admin/upload", "/admin/categories", "/admin/chat"]);
 
 function AdminLayout() {
-  const { isAdmin, isTeam, loading, refresh } = useRoles();
+  const { isAdmin, isTeam, loading } = useRoles();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
 
@@ -35,13 +35,6 @@ function AdminLayout() {
     await supabase.auth.signOut();
     toast.success("Signed out.");
     navigate({ to: "/" });
-  };
-
-  const claim = async () => {
-    const { data, error } = await supabase.rpc("claim_admin");
-    if (error) return toast.error(error.message);
-    if (data) { toast.success("You are now the master admin."); refresh(); }
-    else toast.info("An admin already exists.");
   };
 
   // Check if any admin already exists in the system; if so, redirect non-team
