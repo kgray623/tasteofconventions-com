@@ -381,6 +381,18 @@ export function InvitationPage() {
               <EntertainmentSubmissionForm />
             </AccordionContent>
           </AccordionItem>
+
+          {/* Donations */}
+          <AccordionItem value="donations" id="donations" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
+            <AccordionTrigger className="hover:no-underline">
+              <span className="flex items-center gap-3 text-2xl">
+                <Heart className="w-5 h-5 text-sunset" /> Donations
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="pb-6 text-muted-foreground space-y-2">
+              <p>Donations are appreciated</p>
+            </AccordionContent>
+          </AccordionItem>
         </Accordion>
       </section>
 
