@@ -248,11 +248,37 @@ function UploadPage() {
     try {
       const { data, error } = await supabase
         .from("invitations")
-        .select("id,guest_name,guest_email,guest_phone")
+        .select(
+          "id,guest_name,guest_email,guest_phone,rsvp_token,invite_sent_at,rsvp_expires_at,rsvps(status)",
+        )
         .eq("event_id", evId)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      setSavedGuests(data ?? []);
+      type Row = {
+        id: string;
+        guest_name: string;
+        guest_email: string | null;
+        guest_phone: string | null;
+        rsvp_token: string;
+        invite_sent_at: string | null;
+        rsvp_expires_at: string | null;
+        rsvps: { status: string }[] | { status: string } | null;
+      };
+      setSavedGuests(
+        ((data ?? []) as Row[]).map((r) => {
+          const rsvp = Array.isArray(r.rsvps) ? r.rsvps[0] : r.rsvps;
+          return {
+            id: r.id,
+            guest_name: r.guest_name,
+            guest_email: r.guest_email,
+            guest_phone: r.guest_phone,
+            rsvp_token: r.rsvp_token,
+            invite_sent_at: r.invite_sent_at,
+            rsvp_expires_at: r.rsvp_expires_at,
+            rsvp_status: rsvp?.status ?? null,
+          };
+        }),
+      );
     } catch (e) {
       console.error("[upload] load saved guests failed", e);
     } finally {
