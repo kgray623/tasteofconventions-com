@@ -159,7 +159,7 @@ function MyRsvpPage() {
     <div className="min-h-screen flex items-center justify-center px-6 bg-gradient-warm">
       <Card className="p-10 text-center max-w-md space-y-4">
         <h1 className="font-display text-3xl">No RSVP on file</h1>
-        <p className="text-muted-foreground">We couldn't find an RSVP linked to <strong>{user?.email}</strong>. Make sure you RSVP'd with the same email.</p>
+        <p className="text-muted-foreground">We couldn't find an RSVP linked to your phone number. Make sure your RSVP uses the same phone number as your account.</p>
         <Link to="/rsvp"><Button className="bg-ink text-cream hover:bg-ink/90">RSVP now</Button></Link>
       </Card>
     </div>

@@ -42,7 +42,7 @@ function MyRsvpCard() {
     return (
       <Card className="p-6 space-y-3">
         <h2 className="font-display text-2xl">Your RSVP</h2>
-        <p className="text-sm text-muted-foreground">No invitation is linked to your account email yet. Once an inviter adds you (or you RSVP with the same email), your details will appear here.</p>
+        <p className="text-sm text-muted-foreground">No invitation is linked to your phone number yet. Once an inviter adds you (or you RSVP using the same phone number on your account), your details will appear here.</p>
         <Link to="/rsvp"><Button variant="outline" size="sm">Open RSVP page</Button></Link>
       </Card>
     );

@@ -4,27 +4,22 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { sendTransactionalEmailServer } from "@/lib/email/send-server";
 
-// Lookup the currently signed-in guest's most recent invitation (by email).
+// Lookup the currently signed-in guest's most recent invitation (by phone number).
 export const getMyInvitation = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const userId = (context as any).userId as string | undefined;
-    const claimEmail = ((context as any).claims?.email as string | undefined) ?? undefined;
-    let email = claimEmail?.trim().toLowerCase() || null;
+    if (!userId) return { invitation: null, rsvp: null, order: null };
 
-    if (userId) {
-      const [{ data: profile }, { data: authUser }] = await Promise.all([
-        supabaseAdmin.from("profiles").select("email").eq("id", userId).maybeSingle(),
-        supabaseAdmin.auth.admin.getUserById(userId),
-      ]);
-      email = profile?.email?.trim().toLowerCase() || authUser.user?.email?.trim().toLowerCase() || email;
-    }
+    const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId);
+    const rawPhone = authUser?.user?.phone || (authUser?.user?.user_metadata as any)?.phone || "";
+    const phoneNorm = String(rawPhone).replace(/[^0-9]/g, "");
+    if (!phoneNorm || phoneNorm.length < 7) return { invitation: null, rsvp: null, order: null };
 
-    if (!email) return { invitation: null, rsvp: null, order: null };
     const { data: inv, error } = await supabaseAdmin
       .from("invitations")
       .select("id,event_id,guest_name,guest_email,guest_phone,notes,rsvp_token,created_at,events(title,description,starts_at,ends_at,location,virtual_link)")
-      .eq("guest_email_normalized", email)
+      .eq("guest_phone_normalized", phoneNorm)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
