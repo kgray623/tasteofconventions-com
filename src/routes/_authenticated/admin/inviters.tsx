@@ -307,19 +307,110 @@ function InvitersPage() {
 
   return (
     <div className="space-y-8">
-      <Card className="p-5 flex flex-wrap items-center justify-between gap-4 border-terracotta/30 bg-terracotta/5">
-        <div>
-          <h2 className="font-display text-lg">Upload your contacts &amp; send invitations</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Import a CSV, vCard, paste a list, or use OCR. Each guest you add counts toward your quota and shows up below.
-          </p>
+      <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+        <Card className="flex min-h-[360px] flex-col overflow-hidden">
+          <div className="border-b border-border px-5 py-4">
+            <h2 className="font-display text-xl flex items-center gap-2"><MessageSquare className="w-5 h-5 text-terracotta" /> Team communication</h2>
+            <p className="text-sm text-muted-foreground mt-1">Everyone on the team can see and respond here.</p>
+          </div>
+          <div ref={chatScrollRef} className="flex-1 max-h-[360px] overflow-y-auto p-5 space-y-3">
+            {msgs.length === 0 ? (
+              <p className="text-center text-muted-foreground text-sm py-12">No messages yet.</p>
+            ) : msgs.map((m) => {
+              const mine = m.user_id === user?.id;
+              return (
+                <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[82%] rounded-lg px-4 py-2.5 ${mine ? "bg-ink text-cream" : "bg-secondary"}`}>
+                    <p className="text-[10px] uppercase tracking-wider opacity-70 mb-1">
+                      {profileLabel(m.user_id)} · {new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                    <p className="text-sm whitespace-pre-wrap">{m.body}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="border-t border-border p-3 flex gap-2">
+            <Textarea
+              value={messageBody}
+              onChange={(e) => setMessageBody(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+              placeholder="Message the team…"
+              rows={2}
+              className="resize-none"
+            />
+            <Button onClick={sendMessage} className="bg-ink text-cream hover:bg-ink/90 self-stretch" aria-label="Send message">
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+        </Card>
+
+        <div className="space-y-4">
+          <Card className="p-5 space-y-4">
+            <div>
+              <h2 className="font-display text-xl flex items-center gap-2"><ListChecks className="w-5 h-5 text-terracotta" /> Team tasks</h2>
+              <p className="text-sm text-muted-foreground mt-1">All current needs and assignments are visible here.</p>
+            </div>
+            <div className="space-y-3 max-h-[260px] overflow-y-auto pr-1">
+              {cats.length === 0 ? (
+                <p className="text-sm text-muted-foreground italic">No tasks have been added yet.</p>
+              ) : cats.map((cat) => {
+                const items = assigns.filter((a) => a.category_id === cat.id);
+                return (
+                  <div key={cat.id} className="rounded-lg border border-border p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-medium">{cat.name}</p>
+                      <Badge variant="secondary">{items.length}</Badge>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {items.length === 0 ? (
+                        <span className="text-xs text-muted-foreground">Needs a volunteer</span>
+                      ) : items.map((item) => (
+                        <Badge key={item.id} variant={item.user_id ? "default" : "outline"}>{assignmentLabel(item)}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <Link to="/admin/categories">
+              <Button variant="outline" className="w-full"><Plus className="w-4 h-4 mr-2" /> Add or update tasks</Button>
+            </Link>
+          </Card>
+
+          <Card className="p-5 space-y-4 border-terracotta/30 bg-terracotta/5">
+            <div>
+              <h2 className="font-display text-xl flex items-center gap-2"><Upload className="w-5 h-5 text-terracotta" /> Upload contacts &amp; send invitations</h2>
+              <p className="text-sm text-muted-foreground mt-1">Add your guests from a CSV or phone contact file without leaving this page.</p>
+            </div>
+            {events.length > 1 && (
+              <select value={eventId} onChange={(e) => setEventId(e.target.value)} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                {events.map((event) => <option key={event.id} value={event.id}>{event.title}</option>)}
+              </select>
+            )}
+            <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => e.target.files?.[0] && parseContactFile(e.target.files[0])} />
+            <input ref={vcardRef} type="file" accept=".vcf,text/vcard" className="hidden" onChange={(e) => e.target.files?.[0] && parseContactFile(e.target.files[0])} />
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" onClick={() => fileRef.current?.click()}><FileUp className="w-4 h-4 mr-2" /> CSV</Button>
+              <Button variant="outline" onClick={() => vcardRef.current?.click()}><FileUp className="w-4 h-4 mr-2" /> Contacts</Button>
+            </div>
+            {contacts.length > 0 && (
+              <div className="rounded-lg border border-border bg-background p-3 space-y-3">
+                <p className="text-sm font-medium">{contacts.length} contact{contacts.length === 1 ? "" : "s"} ready</p>
+                <div className="max-h-28 overflow-y-auto space-y-1 text-xs text-muted-foreground">
+                  {contacts.slice(0, 8).map((row, idx) => <p key={`${row.email}-${idx}`}>{row.name || "Guest"} {row.email ? `· ${row.email}` : ""} {row.phone ? `· ${row.phone}` : ""}</p>)}
+                </div>
+                <Button onClick={saveContacts} disabled={savingContacts} className="w-full bg-ink text-cream hover:bg-ink/90">
+                  <Send className="w-4 h-4 mr-2" /> {savingContacts ? "Adding…" : "Add invitations"}
+                </Button>
+              </div>
+            )}
+            <Link to="/admin/upload">
+              <Button variant="ghost" className="w-full">Open full uploader</Button>
+            </Link>
+          </Card>
         </div>
-        <Link to="/admin/upload">
-          <Button className="bg-ink text-cream hover:bg-ink/90">
-            <Upload className="w-4 h-4 mr-2" /> Add guests
-          </Button>
-        </Link>
-      </Card>
+      </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-5">
