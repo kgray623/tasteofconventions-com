@@ -447,10 +447,13 @@ function UploadPage() {
       ? window.location.origin
       : "https://tasteofconventions.com";
 
+  const rsvpLinkToken = (token: string) =>
+    encodeURIComponent(token.trim().replace(/\+/g, "-").replace(/\//g, "_"));
+
   const buildSmsBody = (guestName: string, token: string) => {
     const firstName = (guestName || "Friend").split(/\s+/)[0];
     const sender = inviterName || "your friend";
-    const link = `${SITE_URL}/rsvp/${token}`;
+    const link = `${SITE_URL}/rsvp/${rsvpLinkToken(token)}`;
     return `Hi ${firstName}, it's ${sender}. You're invited to A Taste of Special Conventions on Sunday, August 30, 2026. Please RSVP here (link expires in 7 days): ${link}`;
   };
 
