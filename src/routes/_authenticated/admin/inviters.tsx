@@ -71,10 +71,15 @@ function InvitersPage() {
 
   const add = async () => {
     if (!name.trim()) return toast.error("Name is required");
-    const { error } = await supabase.from("inviters").insert({ name: name.trim(), quota });
+    const { error } = await supabase.from("inviters").insert({
+      name: name.trim(),
+      quota,
+      email: email.trim() || null,
+      phone: phone.trim() || null,
+    });
     if (error) return toast.error(error.message);
-    setName(""); setQuota(40);
-    toast.success("Inviter added");
+    setName(""); setEmail(""); setPhone(""); setQuota(40);
+    toast.success("Team member added");
     load();
   };
 
