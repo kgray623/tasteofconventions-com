@@ -31,6 +31,7 @@ import { Route as AuthenticatedAdminRestaurantsRouteImport } from './routes/_aut
 import { Route as AuthenticatedAdminInvitersRouteImport } from './routes/_authenticated/admin/inviters'
 import { Route as AuthenticatedAdminInvitationRouteImport } from './routes/_authenticated/admin/invitation'
 import { Route as AuthenticatedAdminEventRouteImport } from './routes/_authenticated/admin/event'
+import { Route as AuthenticatedAdminDonationsRouteImport } from './routes/_authenticated/admin/donations'
 import { Route as AuthenticatedAdminChatRouteImport } from './routes/_authenticated/admin/chat'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin/categories'
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
@@ -153,6 +154,12 @@ const AuthenticatedAdminEventRoute = AuthenticatedAdminEventRouteImport.update({
   path: '/event',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedAdminDonationsRoute =
+  AuthenticatedAdminDonationsRouteImport.update({
+    id: '/donations',
+    path: '/donations',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminChatRoute = AuthenticatedAdminChatRouteImport.update({
   id: '/chat',
   path: '/chat',
@@ -208,6 +215,7 @@ export interface FileRoutesByFullPath {
   '/rsvp/': typeof RsvpIndexRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/chat': typeof AuthenticatedAdminChatRoute
+  '/admin/donations': typeof AuthenticatedAdminDonationsRoute
   '/admin/event': typeof AuthenticatedAdminEventRoute
   '/admin/invitation': typeof AuthenticatedAdminInvitationRoute
   '/admin/inviters': typeof AuthenticatedAdminInvitersRoute
@@ -237,6 +245,7 @@ export interface FileRoutesByTo {
   '/rsvp': typeof RsvpIndexRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/chat': typeof AuthenticatedAdminChatRoute
+  '/admin/donations': typeof AuthenticatedAdminDonationsRoute
   '/admin/event': typeof AuthenticatedAdminEventRoute
   '/admin/invitation': typeof AuthenticatedAdminInvitationRoute
   '/admin/inviters': typeof AuthenticatedAdminInvitersRoute
@@ -269,6 +278,7 @@ export interface FileRoutesById {
   '/rsvp/': typeof RsvpIndexRoute
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/chat': typeof AuthenticatedAdminChatRoute
+  '/_authenticated/admin/donations': typeof AuthenticatedAdminDonationsRoute
   '/_authenticated/admin/event': typeof AuthenticatedAdminEventRoute
   '/_authenticated/admin/invitation': typeof AuthenticatedAdminInvitationRoute
   '/_authenticated/admin/inviters': typeof AuthenticatedAdminInvitersRoute
@@ -301,6 +311,7 @@ export interface FileRouteTypes {
     | '/rsvp/'
     | '/admin/categories'
     | '/admin/chat'
+    | '/admin/donations'
     | '/admin/event'
     | '/admin/invitation'
     | '/admin/inviters'
@@ -330,6 +341,7 @@ export interface FileRouteTypes {
     | '/rsvp'
     | '/admin/categories'
     | '/admin/chat'
+    | '/admin/donations'
     | '/admin/event'
     | '/admin/invitation'
     | '/admin/inviters'
@@ -361,6 +373,7 @@ export interface FileRouteTypes {
     | '/rsvp/'
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/chat'
+    | '/_authenticated/admin/donations'
     | '/_authenticated/admin/event'
     | '/_authenticated/admin/invitation'
     | '/_authenticated/admin/inviters'
@@ -553,6 +566,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminEventRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/donations': {
+      id: '/_authenticated/admin/donations'
+      path: '/donations'
+      fullPath: '/admin/donations'
+      preLoaderRoute: typeof AuthenticatedAdminDonationsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/chat': {
       id: '/_authenticated/admin/chat'
       path: '/chat'
@@ -608,6 +628,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedAdminChatRoute: typeof AuthenticatedAdminChatRoute
+  AuthenticatedAdminDonationsRoute: typeof AuthenticatedAdminDonationsRoute
   AuthenticatedAdminEventRoute: typeof AuthenticatedAdminEventRoute
   AuthenticatedAdminInvitationRoute: typeof AuthenticatedAdminInvitationRoute
   AuthenticatedAdminInvitersRoute: typeof AuthenticatedAdminInvitersRoute
@@ -620,6 +641,7 @@ interface AuthenticatedAdminRouteChildren {
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
   AuthenticatedAdminChatRoute: AuthenticatedAdminChatRoute,
+  AuthenticatedAdminDonationsRoute: AuthenticatedAdminDonationsRoute,
   AuthenticatedAdminEventRoute: AuthenticatedAdminEventRoute,
   AuthenticatedAdminInvitationRoute: AuthenticatedAdminInvitationRoute,
   AuthenticatedAdminInvitersRoute: AuthenticatedAdminInvitersRoute,
