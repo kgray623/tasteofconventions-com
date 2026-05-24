@@ -266,6 +266,8 @@ function EditEventPage() {
           )}
         </div>}
       </Card>
+      <MyRsvpCard />
     </div>
   );
 }
+
