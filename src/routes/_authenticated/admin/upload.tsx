@@ -1184,34 +1184,67 @@ function UploadPage() {
         </Card>
       )}
 
-      <div className="grid grid-cols-3 gap-3">
-        <Card className="p-4">
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-            Invites sent
-          </p>
-          <p className="font-display text-2xl mt-1">{savedGuests.length}</p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-            RSVPs (yes)
-          </p>
-          <p className="font-display text-2xl mt-1">{myRsvpCount}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">{myRsvpSeats} seats</p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-            Your quota
-          </p>
-          <p className="font-display text-2xl mt-1">
-            {myQuota ?? "—"}
-          </p>
-          {myQuota !== null && (
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              {Math.max(0, myQuota - savedGuests.length)} invites left to send
-            </p>
-          )}
-        </Card>
-      </div>
+      {(() => {
+        const now = Date.now();
+        const sentCount = savedGuests.filter((g) => g.invite_sent_at).length;
+        const pendingCount = savedGuests.filter((g) => !g.invite_sent_at).length;
+        const expiredCount = savedGuests.filter(
+          (g) =>
+            g.invite_sent_at &&
+            g.rsvp_expires_at &&
+            new Date(g.rsvp_expires_at).getTime() < now &&
+            g.rsvp_status !== "yes",
+        ).length;
+        const activeCount = savedGuests.filter(
+          (g) =>
+            g.rsvp_status === "yes" ||
+            (g.invite_sent_at &&
+              g.rsvp_expires_at &&
+              new Date(g.rsvp_expires_at).getTime() >= now),
+        ).length;
+        const left = myQuota !== null ? Math.max(0, myQuota - activeCount) : null;
+        return (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Card className="p-4">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                Invites sent
+              </p>
+              <p className="font-display text-2xl mt-1">{sentCount}</p>
+              {pendingCount > 0 && (
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {pendingCount} not sent yet
+                </p>
+              )}
+            </Card>
+            <Card className="p-4">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                RSVPs (yes)
+              </p>
+              <p className="font-display text-2xl mt-1">{myRsvpCount}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{myRsvpSeats} seats</p>
+            </Card>
+            <Card className="p-4">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                Expired
+              </p>
+              <p className="font-display text-2xl mt-1">{expiredCount}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">returned to pool</p>
+            </Card>
+            <Card className="p-4">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                Your quota
+              </p>
+              <p className="font-display text-2xl mt-1">{myQuota ?? "—"}</p>
+              {left !== null && (
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {left} invite{left === 1 ? "" : "s"} left to send
+                </p>
+              )}
+            </Card>
+          </div>
+        );
+      })()}
+
 
       <Card className="overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">
