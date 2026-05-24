@@ -18,9 +18,14 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() =>
+    typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("email") ?? "",
+  );
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [tab, setTab] = useState(() =>
+    typeof window === "undefined" ? "signin" : new URLSearchParams(window.location.search).get("mode") === "signup" ? "signup" : "signin",
+  );
   const [busy, setBusy] = useState(false);
 
   if (!loading && user) {
@@ -69,7 +74,7 @@ function AuthPage() {
           </Link>
         </div>
         <div className="bg-card border border-border rounded-xl p-8 shadow-elegant">
-          <Tabs defaultValue="signin">
+          <Tabs value={tab} onValueChange={setTab}>
             <TabsList className="grid grid-cols-2 w-full mb-6">
               <TabsTrigger value="signin">Sign in</TabsTrigger>
               <TabsTrigger value="signup">Create account</TabsTrigger>

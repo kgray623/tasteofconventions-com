@@ -11,6 +11,20 @@ const InviteInput = z.object({
   phone: z.string().trim().min(1).max(40),
 });
 
+const InviteIdInput = z.object({
+  inviteId: z.string().uuid(),
+});
+
+async function assertAdmin(userId: string) {
+  const { data: rolesRows, error } = await supabaseAdmin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
+  if (error) throw new Error(error.message);
+  const isAdmin = (rolesRows ?? []).some((r) => r.role === "admin");
+  if (!isAdmin) throw new Error("Only admins can manage team invites");
+}
+
 async function refreshPendingInvite(
   inviteId: string,
   role: "team" | "admin",
@@ -26,6 +40,36 @@ async function refreshPendingInvite(
   return inviteId;
 }
 
+async function sendTeamInviteEmail({
+  inviteId,
+  email,
+  role,
+  inviterName,
+  recipientName,
+}: {
+  inviteId: string;
+  email: string;
+  role: "team" | "admin";
+  inviterName?: string;
+  recipientName?: string | null;
+}) {
+  const origin = process.env.SITE_URL || "https://tasteofconventions.com";
+  const signupUrl = `${origin.replace(/\/$/, "")}/auth?mode=signup&email=${encodeURIComponent(email)}`;
+
+  return sendTransactionalEmailServer({
+    templateName: "team-invite",
+    recipientEmail: email,
+    idempotencyKey: `team-invite-${inviteId}-${Date.now()}`,
+    templateData: {
+      inviterName,
+      recipientName,
+      recipientEmail: email,
+      role,
+      signupUrl,
+    },
+  });
+}
+
 export const inviteTeamMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => InviteInput.parse(d))
@@ -33,13 +77,7 @@ export const inviteTeamMember = createServerFn({ method: "POST" })
     const userId = (context as any).userId as string | undefined;
     if (!userId) throw new Error("Not authenticated");
 
-    // Only admins can invite
-    const { data: rolesRows } = await supabaseAdmin
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId);
-    const isAdmin = (rolesRows ?? []).some((r) => r.role === "admin");
-    if (!isAdmin) throw new Error("Only admins can invite team members");
+    await assertAdmin(userId);
 
     const email = data.email.toLowerCase();
 
@@ -93,21 +131,87 @@ export const inviteTeamMember = createServerFn({ method: "POST" })
       inviterProfile?.email?.split("@")[0] ||
       undefined;
 
-    const origin =
-      process.env.SITE_URL ||
-      "https://tasteofconventions.com";
-    const signupUrl = `${origin.replace(/\/$/, "")}/auth`;
-
-    const result = await sendTransactionalEmailServer({
-      templateName: "team-invite",
-      recipientEmail: email,
-      idempotencyKey: `team-invite-${inviteId}-${Date.now()}`,
-      templateData: {
-        inviterName,
-        role: data.role,
-        signupUrl,
-      },
+    const result = await sendTeamInviteEmail({
+      inviteId,
+      email,
+      role: data.role,
+      inviterName,
+      recipientName: data.name,
     });
 
     return { ok: true, emailQueued: result.success, reason: result.reason };
+  });
+
+export const resendTeamInvite = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => InviteIdInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const userId = (context as any).userId as string | undefined;
+    if (!userId) throw new Error("Not authenticated");
+
+    await assertAdmin(userId);
+
+    const { data: invite, error: inviteError } = await supabaseAdmin
+      .from("team_invites")
+      .select("id,email,role,name,accepted_at")
+      .eq("id", data.inviteId)
+      .maybeSingle();
+    if (inviteError) throw new Error(inviteError.message);
+    if (!invite) throw new Error("Invite not found");
+    if (invite.accepted_at) throw new Error("This invite has already been accepted.");
+
+    const { data: inviterProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("display_name,email")
+      .eq("id", userId)
+      .maybeSingle();
+    const inviterName =
+      inviterProfile?.display_name ||
+      inviterProfile?.email?.split("@")[0] ||
+      undefined;
+
+    const result = await sendTeamInviteEmail({
+      inviteId: invite.id,
+      email: invite.email.toLowerCase(),
+      role: invite.role as "team" | "admin",
+      inviterName,
+      recipientName: invite.name,
+    });
+
+    await supabaseAdmin
+      .from("team_invites")
+      .update({ created_at: new Date().toISOString(), invited_by: userId })
+      .eq("id", invite.id);
+
+    return { ok: true, emailQueued: result.success, reason: result.reason };
+  });
+
+export const getTeamInviteEmailStatuses = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const userId = (context as any).userId as string | undefined;
+    if (!userId) throw new Error("Not authenticated");
+
+    await assertAdmin(userId);
+
+    const { data, error } = await supabaseAdmin
+      .from("email_send_log")
+      .select("recipient_email,status,error_message,created_at")
+      .eq("template_name", "team-invite")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error) throw new Error(error.message);
+
+    const byEmail: Record<string, { status: string; errorMessage: string | null; createdAt: string }> = {};
+    for (const row of data ?? []) {
+      const key = row.recipient_email.toLowerCase();
+      if (!byEmail[key]) {
+        byEmail[key] = {
+          status: row.status,
+          errorMessage: row.error_message,
+          createdAt: row.created_at,
+        };
+      }
+    }
+    return byEmail;
   });

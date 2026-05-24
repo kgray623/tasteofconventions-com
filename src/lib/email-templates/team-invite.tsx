@@ -16,6 +16,8 @@ const SITE_NAME = 'Cellibrate Health'
 
 interface TeamInviteProps {
   inviterName?: string
+  recipientName?: string
+  recipientEmail?: string
   role?: string
   signupUrl?: string
 }
@@ -26,13 +28,13 @@ const roleLabel = (role?: string) => {
   return role || 'Team member'
 }
 
-const TeamInviteEmail = ({ inviterName, role, signupUrl }: TeamInviteProps) => (
+const TeamInviteEmail = ({ inviterName, recipientName, recipientEmail, role, signupUrl }: TeamInviteProps) => (
   <Html lang="en" dir="ltr">
     <Head />
     <Preview>You've been invited to join the {SITE_NAME} team</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>You're invited to join the team</Heading>
+        <Heading style={h1}>{recipientName ? `${recipientName}, you're invited` : "You're invited to join the team"}</Heading>
         <Text style={text}>
           {inviterName ? `${inviterName} has` : "You've been"} invited
           {inviterName ? ' you ' : ' '}to join the {SITE_NAME} team as a{' '}
@@ -40,8 +42,8 @@ const TeamInviteEmail = ({ inviterName, role, signupUrl }: TeamInviteProps) => (
         </Text>
         <Section style={card}>
           <Text style={cardRow}>
-            To accept, create your account using <strong>this exact email
-            address</strong>. Your {roleLabel(role).toLowerCase()} access is
+            To accept, create your account using <strong>{recipientEmail || 'this exact email address'}</strong>.
+            Your {roleLabel(role).toLowerCase()} access is
             applied automatically as soon as you sign up.
           </Text>
         </Section>
@@ -64,6 +66,8 @@ export const template = {
   displayName: 'Team invite',
   previewData: {
     inviterName: 'Kim',
+    recipientName: 'Kari Samson',
+    recipientEmail: 'livingprevention@gmail.com',
     role: 'team',
     signupUrl: 'https://tasteofconventions.com/auth',
   },

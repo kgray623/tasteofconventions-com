@@ -10,8 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Mail, Trash2, ShieldCheck, Users } from "lucide-react";
-import { inviteTeamMember } from "@/lib/team.functions";
+import { Mail, Send, Trash2, ShieldCheck, Users } from "lucide-react";
+import { getTeamInviteEmailStatuses, inviteTeamMember, resendTeamInvite } from "@/lib/team.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/team")({
   component: TeamPage,
@@ -35,15 +35,21 @@ function TeamPage() {
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState<"team" | "admin">("team");
   const [sending, setSending] = useState(false);
+  const [resendingId, setResendingId] = useState<string | null>(null);
+  const [inviteEmailStatuses, setInviteEmailStatuses] = useState<Record<string, { status: string; errorMessage: string | null; createdAt: string }>>({});
   const sendInviteFn = useServerFn(inviteTeamMember);
+  const resendInviteFn = useServerFn(resendTeamInvite);
+  const getInviteEmailStatusesFn = useServerFn(getTeamInviteEmailStatuses);
 
   const load = async () => {
-    const [inv, mem, prof] = await Promise.all([
+    const [inv, mem, prof, emailStatuses] = await Promise.all([
       supabase.from("team_invites").select("*").order("created_at", { ascending: false }),
       supabase.from("user_roles").select("user_id,role").in("role", ["admin", "team"]),
       supabase.from("profiles").select("id,display_name,email"),
+      getInviteEmailStatusesFn(),
     ]);
     setInvites(inv.data ?? []);
+    setInviteEmailStatuses(emailStatuses ?? {});
     const profMap = new Map((prof.data ?? []).map((p) => [p.id, p]));
     setMembers((mem.data ?? []).map((m) => ({ ...m, profile: profMap.get(m.user_id) })));
   };
@@ -74,6 +80,23 @@ function TeamPage() {
     const { error } = await supabase.from("team_invites").delete().eq("id", id);
     if (error) return toast.error(error.message);
     load();
+  };
+
+  const resendInvite = async (invite: Invite) => {
+    setResendingId(invite.id);
+    try {
+      const res = await resendInviteFn({ data: { inviteId: invite.id } });
+      if (res.emailQueued) {
+        toast.success(`Invite resent to ${invite.email}.`);
+      } else {
+        toast.error(`Invite could not be emailed (${res.reason ?? "unknown"}).`);
+      }
+      load();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to resend invite");
+    } finally {
+      setResendingId(null);
+    }
   };
 
   const removeRole = async (userId: string, r: string) => {
@@ -154,24 +177,44 @@ function TeamPage() {
         </div>
         <div className="divide-y divide-border">
           {invites.length === 0 && <p className="p-6 text-sm text-muted-foreground text-center">No invites sent yet.</p>}
-          {invites.map((i) => (
+          {invites.map((i) => {
+            const emailStatus = inviteEmailStatuses[i.email.toLowerCase()];
+            return (
             <div key={i.id} className="p-4 flex items-center justify-between gap-3">
               <div>
                 <p className="font-medium">{i.email}</p>
                 <p className="text-xs text-muted-foreground">
                   {i.accepted_at ? `Accepted ${new Date(i.accepted_at).toLocaleDateString()}` : "Awaiting signup"}
                 </p>
+                {!i.accepted_at && emailStatus && (
+                  <p className="text-xs text-muted-foreground">
+                    Email {emailStatus.status} {new Date(emailStatus.createdAt).toLocaleString()}
+                    {emailStatus.errorMessage ? ` — ${emailStatus.errorMessage}` : ""}
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant="outline">{i.role}</Badge>
                 {!i.accepted_at && (
-                  <button onClick={() => revoke(i.id)} className="text-muted-foreground hover:text-terracotta">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => resendInvite(i)}
+                      disabled={resendingId === i.id}
+                      className="gap-1"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      {resendingId === i.id ? "Sending…" : "Resend"}
+                    </Button>
+                    <button onClick={() => revoke(i.id)} className="text-muted-foreground hover:text-terracotta">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </>
                 )}
               </div>
             </div>
-          ))}
+          );})}
         </div>
       </Card>
     </div>
