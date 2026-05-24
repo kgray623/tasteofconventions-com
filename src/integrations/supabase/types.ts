@@ -778,7 +778,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      inviters_public: {
+        Row: {
+          active: boolean | null
+          id: string | null
+          name: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          id?: string | null
+          name?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          id?: string | null
+          name?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       claim_admin: { Args: never; Returns: boolean }
