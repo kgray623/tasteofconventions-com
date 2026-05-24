@@ -882,10 +882,12 @@ function InvitersPage() {
                                                 ? "bg-green-100 text-green-800"
                                                 : status === "no"
                                                   ? "bg-red-100 text-red-800"
-                                                  : "bg-muted text-muted-foreground"
+                                                  : status === "waitlist"
+                                                    ? "bg-amber-100 text-amber-800"
+                                                    : "bg-muted text-muted-foreground"
                                             }`}
                                           >
-                                            {status}
+                                            {status === "waitlist" ? "waiting list" : status}
                                             {g.rsvp_party_size ? ` · ${g.rsvp_party_size}` : ""}
                                           </span>
                                         </td>

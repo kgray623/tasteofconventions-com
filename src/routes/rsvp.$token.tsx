@@ -90,9 +90,13 @@ function RsvpPage() {
       }
       const finalInvitedBy = invitedBy === "__other__" ? invitedByOther.trim() : invitedBy;
       const orderingFoodBool = status === "yes" && attendanceMode === "in_person" ? orderingFood === "yes" : null;
-      await submit({ data: { token, status, party_size: partySize, attendance_mode: attendanceMode, ordering_food: orderingFoodBool, dietary_notes: "", invited_by: finalInvitedBy } });
+      const res = await submit({ data: { token, status, party_size: partySize, attendance_mode: attendanceMode, ordering_food: orderingFoodBool, dietary_notes: "", invited_by: finalInvitedBy } });
       clearDraftScope(rsvpDraftScope);
-      toast.success("RSVP saved — thank you!");
+      if ((res as any)?.waitlisted) {
+        toast.success("You're on the waiting list — seats with your inviter are full. We'll be in touch if one opens up.");
+      } else {
+        toast.success("RSVP saved — thank you!");
+      }
     } catch (e: any) { toast.error(e.message); }
   };
 

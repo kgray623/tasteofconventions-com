@@ -1,0 +1,1 @@
+ALTER TYPE public.rsvp_status ADD VALUE IF NOT EXISTS 'waitlist';

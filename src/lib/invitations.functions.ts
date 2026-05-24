@@ -58,6 +58,28 @@ async function sendRsvpConfirmation(invitationId: string, status: "yes" | "no" |
   }
 }
 
+// Determine if a "yes" RSVP should be placed on the waiting list because
+// the inviter's quota is already full. Counts existing "yes" seats for
+// every invitation tied to the same inviter (host_id) and compares to quota.
+async function shouldWaitlist(invitationId: string, partySize: number): Promise<boolean> {
+  const { data: inv } = await supabaseAdmin
+    .from("invitations").select("host_id").eq("id", invitationId).maybeSingle();
+  const hostId = (inv as any)?.host_id;
+  if (!hostId) return false;
+  const { data: inviter } = await supabaseAdmin
+    .from("inviters").select("quota").eq("host_id", hostId).maybeSingle();
+  const quota = (inviter as any)?.quota;
+  if (!quota || quota <= 0) return false;
+  const { data: invs } = await supabaseAdmin
+    .from("invitations").select("id").eq("host_id", hostId);
+  const otherIds = ((invs as any[]) ?? []).map((r) => r.id).filter((id) => id !== invitationId);
+  if (otherIds.length === 0) return partySize > quota;
+  const { data: yesRsvps } = await supabaseAdmin
+    .from("rsvps").select("party_size,status").in("invitation_id", otherIds).eq("status", "yes");
+  const used = ((yesRsvps as any[]) ?? []).reduce((s, r) => s + (r.party_size ?? 1), 0);
+  return used + partySize > quota;
+}
+
 function rsvpTokenCandidates(token: string) {
   const trimmed = token.trim();
   return Array.from(new Set([
@@ -116,9 +138,15 @@ export const submitRsvp = createServerFn({ method: "POST" })
     const mode = data.attendance_mode ?? "in_person";
     const effectivePartySize = mode === "zoom" ? 1 : data.party_size;
     const orderingFood = mode === "in_person" ? (data.ordering_food ?? null) : null;
+    let finalStatus: "yes" | "no" | "maybe" | "waitlist" = data.status;
+    let waitlisted = false;
+    if (data.status === "yes" && await shouldWaitlist(inv.id, effectivePartySize)) {
+      finalStatus = "waitlist";
+      waitlisted = true;
+    }
     const { error } = await supabaseAdmin.from("rsvps").upsert({
       invitation_id: inv.id,
-      status: data.status,
+      status: finalStatus,
       party_size: effectivePartySize,
       attendance_mode: mode,
       ordering_food: orderingFood,
@@ -129,7 +157,7 @@ export const submitRsvp = createServerFn({ method: "POST" })
     }, { onConflict: "invitation_id" });
     if (error) throw new Error(error.message);
     await sendRsvpConfirmation(inv.id, data.status, effectivePartySize);
-    return { ok: true };
+    return { ok: true, waitlisted };
   });
 
 
@@ -271,9 +299,15 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
     const mode = data.attendance_mode ?? "in_person";
     const effectivePartySize = mode === "zoom" ? 1 : data.party_size;
     const orderingFood = mode === "in_person" ? (data.ordering_food ?? null) : null;
+    let finalStatus: "yes" | "no" | "waitlist" = data.status;
+    let waitlisted = false;
+    if (data.status === "yes" && await shouldWaitlist(invitationId, effectivePartySize)) {
+      finalStatus = "waitlist";
+      waitlisted = true;
+    }
     const { error: rsvpErr } = await supabaseAdmin.from("rsvps").upsert({
       invitation_id: invitationId,
-      status: data.status,
+      status: finalStatus,
       party_size: effectivePartySize,
       attendance_mode: mode,
       ordering_food: orderingFood,
@@ -284,6 +318,6 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
     if (rsvpErr) throw new Error(rsvpErr.message);
 
     await sendRsvpConfirmation(invitationId, data.status, effectivePartySize);
-    return { ok: true, invitation_id: invitationId };
+    return { ok: true, invitation_id: invitationId, waitlisted };
   });
 
