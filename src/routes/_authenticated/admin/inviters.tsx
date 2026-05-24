@@ -773,7 +773,7 @@ function InvitersPage() {
                   const guests = i.host_id ? (guestsByHost[i.host_id] ?? []) : [];
                   const isOpen = expandedHost === i.id;
                   return (
-                    <>
+                    <Fragment key={i.id}>
                       <tr key={i.id} className="border-t border-border">
                         <td className="px-2 py-3">
                           {guests.length > 0 && (
