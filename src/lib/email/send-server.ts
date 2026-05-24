@@ -9,7 +9,7 @@ import { render } from '@react-email/components'
 import { supabaseAdmin } from '@/integrations/supabase/client.server'
 import { TEMPLATES } from '@/lib/email-templates/registry'
 
-const SITE_NAME = 'Cellibrate Health'
+const SITE_NAME = 'Taste of Conventions'
 const SENDER_DOMAIN = 'notify.cellibratehealth.com'
 const FROM_DOMAIN = 'notify.cellibratehealth.com'
 
