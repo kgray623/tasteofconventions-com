@@ -114,6 +114,13 @@ function PreviewPage() {
     }
   };
 
+  if (authLoading) {
+    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
+  }
+  if (user) {
+    return <Navigate to="/my-rsvp" replace />;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-warm">
       <div className="mx-auto max-w-3xl px-6 py-12 space-y-6">
