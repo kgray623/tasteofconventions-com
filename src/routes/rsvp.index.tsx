@@ -55,6 +55,7 @@ const menu: Record<string, { id: string; name: string; description: string; pric
 };
 
 function PreviewPage() {
+  const { user, loading: authLoading } = useAuth();
   const draftScope = "rsvp-public";
   const [status, setStatus] = useDraftState<"yes" | "no">(draftScope, "status", "yes");
   const [attendanceMode, setAttendanceMode] = useDraftState<"in_person" | "zoom">(draftScope, "attendanceMode", "in_person");
