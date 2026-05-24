@@ -288,7 +288,7 @@ export function InvitationPage() {
                 );
               })}
               <p className="text-xs text-muted-foreground italic">
-                Pre-orders are collected here and submitted to each restaurant a few days before the event.
+                Pre-orders are collected here and submitted to each restaurant before the event.
               </p>
             </div>
           )}
