@@ -78,14 +78,19 @@ export const getInvitationByToken = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const { data: inv, error } = await supabaseAdmin
       .from("invitations")
-      .select("id,event_id,guest_name,guest_email,guest_phone,notes,events(title,description,starts_at,ends_at,location,virtual_link)")
+      .select("id,event_id,guest_name,guest_email,guest_phone,notes,invite_sent_at,rsvp_expires_at,events(title,description,starts_at,ends_at,location,virtual_link)")
       .in("rsvp_token", rsvpTokenCandidates(data.token))
       .maybeSingle();
     if (error) throw new Error(error.message);
-    if (!inv) return { invitation: null, rsvp: null, order: null };
+    if (!inv) return { invitation: null, rsvp: null, order: null, expired: false };
     const { data: rsvp } = await supabaseAdmin.from("rsvps").select("*").eq("invitation_id", inv.id).maybeSingle();
     const { data: order } = await supabaseAdmin.from("orders").select("*").eq("invitation_id", inv.id).maybeSingle();
-    return { invitation: inv, rsvp, order };
+    const expired = Boolean(
+      (inv as any).rsvp_expires_at &&
+        new Date((inv as any).rsvp_expires_at).getTime() < Date.now() &&
+        rsvp?.status !== "yes",
+    );
+    return { invitation: inv, rsvp, order, expired };
   });
 
 const RsvpInput = z.object({
@@ -102,8 +107,17 @@ export const submitRsvp = createServerFn({ method: "POST" })
   .inputValidator((d) => RsvpInput.parse(d))
   .handler(async ({ data }) => {
     const { data: inv } = await supabaseAdmin
-      .from("invitations").select("id").in("rsvp_token", rsvpTokenCandidates(data.token)).maybeSingle();
+      .from("invitations").select("id,rsvp_expires_at").in("rsvp_token", rsvpTokenCandidates(data.token)).maybeSingle();
     if (!inv) throw new Error("Invitation not found");
+    const { data: existingRsvp } = await supabaseAdmin
+      .from("rsvps").select("status").eq("invitation_id", inv.id).maybeSingle();
+    if (
+      (inv as any).rsvp_expires_at &&
+      new Date((inv as any).rsvp_expires_at).getTime() < Date.now() &&
+      existingRsvp?.status !== "yes"
+    ) {
+      throw new Error("This invitation has expired. Please ask the person who invited you to send a new link.");
+    }
     const mode = data.attendance_mode ?? "in_person";
     const effectivePartySize = mode === "zoom" ? 1 : data.party_size;
     const orderingFood = mode === "in_person" ? (data.ordering_food ?? null) : null;

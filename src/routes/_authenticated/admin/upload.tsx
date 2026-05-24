@@ -26,6 +26,9 @@ import {
   X,
   Pencil,
   AlertTriangle,
+  MessageSquare,
+  Send,
+  Clock,
 } from "lucide-react";
 import { getErrorMessage } from "@/lib/async-safety";
 import { useServerFn } from "@tanstack/react-start";
@@ -212,7 +215,16 @@ function UploadPage() {
   const [ocrBusy, setOcrBusy] = useState(false);
   const runOcr = useServerFn(extractContactsFromImages);
   const [savedGuests, setSavedGuests] = useState<
-    { id: string; guest_name: string; guest_email: string | null; guest_phone: string | null }[]
+    {
+      id: string;
+      guest_name: string;
+      guest_email: string | null;
+      guest_phone: string | null;
+      rsvp_token: string;
+      invite_sent_at: string | null;
+      rsvp_expires_at: string | null;
+      rsvp_status: string | null;
+    }[]
   >([]);
   const [savedLoading, setSavedLoading] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
@@ -221,6 +233,8 @@ function UploadPage() {
   const [editingSavedId, setEditingSavedId] = useState<string | null>(null);
   const [editingSavedValue, setEditingSavedValue] = useState("");
   const [updatingSavedId, setUpdatingSavedId] = useState<string | null>(null);
+  const [markingSentId, setMarkingSentId] = useState<string | null>(null);
+  const [inviterName, setInviterName] = useState<string>("");
   const [myQuota, setMyQuota] = useState<number | null>(null);
   const [myRsvpSeats, setMyRsvpSeats] = useState(0);
   const [myRsvpCount, setMyRsvpCount] = useState(0);
@@ -234,11 +248,37 @@ function UploadPage() {
     try {
       const { data, error } = await supabase
         .from("invitations")
-        .select("id,guest_name,guest_email,guest_phone")
+        .select(
+          "id,guest_name,guest_email,guest_phone,rsvp_token,invite_sent_at,rsvp_expires_at,rsvps(status)",
+        )
         .eq("event_id", evId)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      setSavedGuests(data ?? []);
+      type Row = {
+        id: string;
+        guest_name: string;
+        guest_email: string | null;
+        guest_phone: string | null;
+        rsvp_token: string;
+        invite_sent_at: string | null;
+        rsvp_expires_at: string | null;
+        rsvps: { status: string }[] | { status: string } | null;
+      };
+      setSavedGuests(
+        ((data ?? []) as Row[]).map((r) => {
+          const rsvp = Array.isArray(r.rsvps) ? r.rsvps[0] : r.rsvps;
+          return {
+            id: r.id,
+            guest_name: r.guest_name,
+            guest_email: r.guest_email,
+            guest_phone: r.guest_phone,
+            rsvp_token: r.rsvp_token,
+            invite_sent_at: r.invite_sent_at,
+            rsvp_expires_at: r.rsvp_expires_at,
+            rsvp_status: rsvp?.status ?? null,
+          };
+        }),
+      );
     } catch (e) {
       console.error("[upload] load saved guests failed", e);
     } finally {
@@ -250,17 +290,22 @@ function UploadPage() {
     void loadSavedGuests(eventId);
   }, [eventId]);
 
-  // Load this team member's quota
+  // Load this team member's quota and display name (for SMS personalization)
   useEffect(() => {
     if (!user?.id) return;
     let alive = true;
     void (async () => {
-      const { data } = await supabase
-        .from("inviters")
-        .select("quota")
-        .eq("host_id", user.id)
-        .maybeSingle();
-      if (alive) setMyQuota(data?.quota ?? null);
+      const [{ data: inv }, { data: profile }] = await Promise.all([
+        supabase.from("inviters").select("quota,name").eq("host_id", user.id).maybeSingle(),
+        supabase.from("profiles").select("display_name,email").eq("id", user.id).maybeSingle(),
+      ]);
+      if (!alive) return;
+      setMyQuota(inv?.quota ?? null);
+      setInviterName(
+        inv?.name ||
+          profile?.display_name ||
+          (profile?.email ? profile.email.split("@")[0] : "your friend"),
+      );
     })();
     return () => {
       alive = false;
@@ -395,6 +440,108 @@ function UploadPage() {
       setUpdatingSavedId(null);
       setEditingSavedId(null);
     }
+  };
+
+  const SITE_URL =
+    typeof window !== "undefined"
+      ? window.location.origin
+      : "https://tasteofconventions.com";
+
+  const buildSmsBody = (guestName: string, token: string) => {
+    const firstName = (guestName || "Friend").split(/\s+/)[0];
+    const sender = inviterName || "your friend";
+    const link = `${SITE_URL}/rsvp/${token}`;
+    return `Hi ${firstName}, it's ${sender}. You're invited to A Taste of Special Conventions on Sunday, August 30, 2026. Please RSVP here (link expires in 7 days): ${link}`;
+  };
+
+  const guestStatus = (g: (typeof savedGuests)[number]) => {
+    if (g.rsvp_status === "yes") return { label: "RSVP'd yes", tone: "yes" as const };
+    if (g.rsvp_status === "no") return { label: "RSVP'd no", tone: "no" as const };
+    if (!g.invite_sent_at) return { label: "Not sent", tone: "pending" as const };
+    if (g.rsvp_expires_at && new Date(g.rsvp_expires_at) < new Date())
+      return { label: "Expired", tone: "expired" as const };
+    if (g.rsvp_expires_at) {
+      const days = Math.max(
+        0,
+        Math.ceil(
+          (new Date(g.rsvp_expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+        ),
+      );
+      return {
+        label: `Sent · ${days} day${days === 1 ? "" : "s"} left`,
+        tone: "sent" as const,
+      };
+    }
+    return { label: "Sent", tone: "sent" as const };
+  };
+
+  const copyAndMarkSent = async (g: (typeof savedGuests)[number]) => {
+    const body = buildSmsBody(g.guest_name, g.rsvp_token);
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(body);
+      }
+    } catch {
+      // clipboard may be blocked; sms: link still works as fallback
+    }
+    if (!g.invite_sent_at) {
+      setMarkingSentId(g.id);
+      const sentAt = new Date().toISOString();
+      const { error } = await supabase
+        .from("invitations")
+        .update({ invite_sent_at: sentAt })
+        .eq("id", g.id);
+      setMarkingSentId(null);
+      if (error) {
+        toast.error("Couldn't mark as sent", { description: error.message });
+        return;
+      }
+      setSavedGuests((prev) =>
+        prev.map((row) =>
+          row.id === g.id
+            ? {
+                ...row,
+                invite_sent_at: sentAt,
+                rsvp_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+              }
+            : row,
+        ),
+      );
+      toast.success(`Copied. Marked sent — expires in 7 days.`);
+    } else {
+      toast.success("Message copied to clipboard.");
+    }
+  };
+
+  const resendReset = async (g: (typeof savedGuests)[number]) => {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(
+        `Reset the 7-day window for ${g.guest_name}? Use this only if you're re-sending the invite.`,
+      )
+    )
+      return;
+    const sentAt = new Date().toISOString();
+    const { error } = await supabase
+      .from("invitations")
+      .update({ invite_sent_at: sentAt })
+      .eq("id", g.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setSavedGuests((prev) =>
+      prev.map((row) =>
+        row.id === g.id
+          ? {
+              ...row,
+              invite_sent_at: sentAt,
+              rsvp_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            }
+          : row,
+      ),
+    );
+    toast.success("Reset. Now expires in 7 days.");
   };
 
   useEffect(() => {
@@ -1037,34 +1184,67 @@ function UploadPage() {
         </Card>
       )}
 
-      <div className="grid grid-cols-3 gap-3">
-        <Card className="p-4">
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-            Invites sent
-          </p>
-          <p className="font-display text-2xl mt-1">{savedGuests.length}</p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-            RSVPs (yes)
-          </p>
-          <p className="font-display text-2xl mt-1">{myRsvpCount}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">{myRsvpSeats} seats</p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-            Your quota
-          </p>
-          <p className="font-display text-2xl mt-1">
-            {myQuota ?? "—"}
-          </p>
-          {myQuota !== null && (
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              {Math.max(0, myQuota - savedGuests.length)} invites left to send
-            </p>
-          )}
-        </Card>
-      </div>
+      {(() => {
+        const now = Date.now();
+        const sentCount = savedGuests.filter((g) => g.invite_sent_at).length;
+        const pendingCount = savedGuests.filter((g) => !g.invite_sent_at).length;
+        const expiredCount = savedGuests.filter(
+          (g) =>
+            g.invite_sent_at &&
+            g.rsvp_expires_at &&
+            new Date(g.rsvp_expires_at).getTime() < now &&
+            g.rsvp_status !== "yes",
+        ).length;
+        const activeCount = savedGuests.filter(
+          (g) =>
+            g.rsvp_status === "yes" ||
+            (g.invite_sent_at &&
+              g.rsvp_expires_at &&
+              new Date(g.rsvp_expires_at).getTime() >= now),
+        ).length;
+        const left = myQuota !== null ? Math.max(0, myQuota - activeCount) : null;
+        return (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Card className="p-4">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                Invites sent
+              </p>
+              <p className="font-display text-2xl mt-1">{sentCount}</p>
+              {pendingCount > 0 && (
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {pendingCount} not sent yet
+                </p>
+              )}
+            </Card>
+            <Card className="p-4">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                RSVPs (yes)
+              </p>
+              <p className="font-display text-2xl mt-1">{myRsvpCount}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{myRsvpSeats} seats</p>
+            </Card>
+            <Card className="p-4">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                Expired
+              </p>
+              <p className="font-display text-2xl mt-1">{expiredCount}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">returned to pool</p>
+            </Card>
+            <Card className="p-4">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                Your quota
+              </p>
+              <p className="font-display text-2xl mt-1">{myQuota ?? "—"}</p>
+              {left !== null && (
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {left} invite{left === 1 ? "" : "s"} left to send
+                </p>
+              )}
+            </Card>
+          </div>
+        );
+      })()}
+
 
       <Card className="overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">
@@ -1131,28 +1311,87 @@ function UploadPage() {
                     Duplicate
                   </Badge>
                 )}
-                <span className="text-muted-foreground min-w-[160px] break-all">
-                  {g.guest_email ?? ""}
-                </span>
+                {(() => {
+                  const s = guestStatus(g);
+                  const cls =
+                    s.tone === "yes"
+                      ? "bg-emerald-100 text-emerald-800 border-emerald-200"
+                      : s.tone === "no"
+                        ? "bg-muted text-muted-foreground"
+                        : s.tone === "expired"
+                          ? "bg-destructive/10 text-destructive border-destructive/30"
+                          : s.tone === "pending"
+                            ? "bg-amber-100 text-amber-800 border-amber-200"
+                            : "bg-sky-100 text-sky-800 border-sky-200";
+                  return (
+                    <span
+                      className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border ${cls}`}
+                    >
+                      <Clock className="w-3 h-3" />
+                      {s.label}
+                    </span>
+                  );
+                })()}
                 <span className="text-muted-foreground min-w-[110px]">
-                  {g.guest_phone ?? ""}
+                  {g.guest_phone ?? <span className="italic text-destructive/70">no phone</span>}
                 </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  disabled={removingId === g.id}
-                  aria-label={`Remove ${g.guest_name}`}
-                  onClick={() => removeSavedGuest(g.id, g.guest_name)}
-                  className="text-muted-foreground hover:text-destructive"
-                >
-                  {removingId === g.id ? (
-                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                  ) : (
-                    <X className="w-4 h-4 mr-1" />
+                <div className="flex items-center gap-1 ml-auto">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={markingSentId === g.id}
+                    onClick={() => copyAndMarkSent(g)}
+                    className="gap-1 h-8"
+                    title="Copies a ready-to-send SMS and starts the 7-day RSVP window"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    {markingSentId === g.id
+                      ? "Saving…"
+                      : g.invite_sent_at
+                        ? "Copy again"
+                        : "Copy text & mark sent"}
+                  </Button>
+                  {g.guest_phone && (
+                    <a
+                      href={`sms:${g.guest_phone}?&body=${encodeURIComponent(buildSmsBody(g.guest_name, g.rsvp_token))}`}
+                      className="inline-flex items-center justify-center h-8 px-2 rounded-md border border-input text-xs hover:bg-accent"
+                      onClick={() => {
+                        if (!g.invite_sent_at) void copyAndMarkSent(g);
+                      }}
+                    >
+                      <Send className="w-3.5 h-3.5 mr-1" /> Open Messages
+                    </a>
                   )}
-                  Remove
-                </Button>
+                  {g.invite_sent_at && g.rsvp_status !== "yes" && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => resendReset(g)}
+                      className="h-8 text-xs"
+                      title="Reset the 7-day RSVP window"
+                    >
+                      Reset 7 days
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={removingId === g.id}
+                    aria-label={`Remove ${g.guest_name}`}
+                    onClick={() => removeSavedGuest(g.id, g.guest_name)}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    {removingId === g.id ? (
+                      <Loader2 className="w-4 h-4" />
+                    ) : (
+                      <X className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+
               </div>
               );
             })}

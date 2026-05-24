@@ -406,7 +406,9 @@ export type Database = {
           guest_phone_normalized: string | null
           host_id: string
           id: string
+          invite_sent_at: string | null
           notes: string | null
+          rsvp_expires_at: string | null
           rsvp_token: string
         }
         Insert: {
@@ -419,7 +421,9 @@ export type Database = {
           guest_phone_normalized?: string | null
           host_id: string
           id?: string
+          invite_sent_at?: string | null
           notes?: string | null
+          rsvp_expires_at?: string | null
           rsvp_token?: string
         }
         Update: {
@@ -432,7 +436,9 @@ export type Database = {
           guest_phone_normalized?: string | null
           host_id?: string
           id?: string
+          invite_sent_at?: string | null
           notes?: string | null
+          rsvp_expires_at?: string | null
           rsvp_token?: string
         }
         Relationships: [
