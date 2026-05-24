@@ -26,13 +26,33 @@ export const inviteTeamMember = createServerFn({ method: "POST" })
 
     const email = data.email.toLowerCase();
 
-    // Insert invite (idempotent-ish: surface DB error if duplicate)
-    const { data: invite, error: insertErr } = await supabaseAdmin
+    // Reuse existing pending invite (or update role); error only if already accepted
+    let inviteId: string;
+    const { data: existing } = await supabaseAdmin
       .from("team_invites")
-      .insert({ email, role: data.role, invited_by: userId })
-      .select("id")
-      .single();
-    if (insertErr) throw new Error(insertErr.message);
+      .select("id,accepted_at")
+      .eq("email_normalized", email)
+      .maybeSingle();
+
+    if (existing) {
+      if (existing.accepted_at) {
+        throw new Error("This person has already accepted an invite.");
+      }
+      const { error: updErr } = await supabaseAdmin
+        .from("team_invites")
+        .update({ role: data.role, invited_by: userId, created_at: new Date().toISOString() })
+        .eq("id", existing.id);
+      if (updErr) throw new Error(updErr.message);
+      inviteId = existing.id;
+    } else {
+      const { data: inserted, error: insertErr } = await supabaseAdmin
+        .from("team_invites")
+        .insert({ email, role: data.role, invited_by: userId })
+        .select("id")
+        .single();
+      if (insertErr) throw new Error(insertErr.message);
+      inviteId = inserted.id;
+    }
 
     // Get inviter name for the email
     const { data: inviterProfile } = await supabaseAdmin
@@ -53,7 +73,7 @@ export const inviteTeamMember = createServerFn({ method: "POST" })
     const result = await sendTransactionalEmailServer({
       templateName: "team-invite",
       recipientEmail: email,
-      idempotencyKey: `team-invite-${invite.id}`,
+      idempotencyKey: `team-invite-${inviteId}-${Date.now()}`,
       templateData: {
         inviterName,
         role: data.role,
