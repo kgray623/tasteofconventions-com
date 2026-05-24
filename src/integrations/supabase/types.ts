@@ -70,6 +70,27 @@ export type Database = {
           },
         ]
       }
+      donations_summary: {
+        Row: {
+          id: boolean
+          notes: string | null
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          id?: boolean
+          notes?: string | null
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: boolean
+          notes?: string | null
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       duplicate_flags: {
         Row: {
           created_at: string
