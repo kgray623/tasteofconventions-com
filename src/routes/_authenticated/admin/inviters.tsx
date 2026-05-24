@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Trash2, UserPlus } from "lucide-react";
+import { Trash2, UserPlus, Send } from "lucide-react";
 import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 import { inviteTeamMember } from "@/lib/team.functions";
 
