@@ -24,6 +24,8 @@ function InvitersPage() {
   const [invitedCounts, setInvitedCounts] = useState<Record<string, number>>({});
   const [unassigned, setUnassigned] = useState(0);
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [quota, setQuota] = useState(40);
   const [loading, setLoading] = useState(true);
 
