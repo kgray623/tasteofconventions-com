@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRoles } from "@/hooks/use-roles";
-import { CalendarCog, ListChecks, MessageSquare, Upload, UserPlus } from "lucide-react";
+import { CalendarCog, ListChecks, MessageSquare, Play, Upload, UserPlus, Video } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: AdminOverview,
