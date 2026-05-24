@@ -322,7 +322,7 @@ export function InvitationPage() {
           {/* Location */}
           <AccordionItem value="location" id="location" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
             <AccordionTrigger className="hover:no-underline">
-              <span className="flex items-center gap-3 font-display text-2xl">
+              <span className="flex items-center gap-3 text-2xl">
                 <MapPin className="w-5 h-5 text-sunset" /> Location
               </span>
             </AccordionTrigger>
@@ -338,7 +338,7 @@ export function InvitationPage() {
           {/* Dress */}
           <AccordionItem value="dress" id="dress" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
             <AccordionTrigger className="hover:no-underline">
-              <span className="flex items-center gap-3 font-display text-2xl">
+              <span className="flex items-center gap-3 text-2xl">
                 <Shirt className="w-5 h-5 text-sunset" /> Dress Code
               </span>
             </AccordionTrigger>
@@ -352,7 +352,7 @@ export function InvitationPage() {
           {/* Gifts */}
           <AccordionItem value="gifts" id="gifts" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
             <AccordionTrigger className="hover:no-underline">
-              <span className="flex items-center gap-3 font-display text-2xl">
+              <span className="flex items-center gap-3 text-2xl">
                 <Gift className="w-5 h-5 text-sunset" /> Gift Exchanges
               </span>
             </AccordionTrigger>
@@ -366,7 +366,7 @@ export function InvitationPage() {
           {/* Entertainment */}
           <AccordionItem value="entertainment" id="entertainment" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
             <AccordionTrigger className="hover:no-underline">
-              <span className="flex items-center gap-3 font-display text-2xl">
+              <span className="flex items-center gap-3 text-2xl">
                 <Music className="w-5 h-5 text-sunset" /> Entertainment
               </span>
             </AccordionTrigger>
