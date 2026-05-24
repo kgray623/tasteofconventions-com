@@ -67,7 +67,7 @@ function RsvpPage() {
       const [{ data: rs }, { data: ms }, { data: iv }] = await withTimeout(Promise.all([
         supabase.from("restaurants").select("id,name,cuisine").eq("active", true),
         supabase.from("menu_items").select("id,restaurant_id,name,description,price").eq("available", true),
-        supabase.from("inviters").select("id,name").eq("active", true).order("name"),
+        supabase.rpc("get_public_inviters"),
       ]), 10000);
       if (!alive) return;
       setRestaurants(rs ?? []);
