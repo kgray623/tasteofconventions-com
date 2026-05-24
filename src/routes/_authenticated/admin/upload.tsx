@@ -1311,28 +1311,87 @@ function UploadPage() {
                     Duplicate
                   </Badge>
                 )}
-                <span className="text-muted-foreground min-w-[160px] break-all">
-                  {g.guest_email ?? ""}
-                </span>
+                {(() => {
+                  const s = guestStatus(g);
+                  const cls =
+                    s.tone === "yes"
+                      ? "bg-emerald-100 text-emerald-800 border-emerald-200"
+                      : s.tone === "no"
+                        ? "bg-muted text-muted-foreground"
+                        : s.tone === "expired"
+                          ? "bg-destructive/10 text-destructive border-destructive/30"
+                          : s.tone === "pending"
+                            ? "bg-amber-100 text-amber-800 border-amber-200"
+                            : "bg-sky-100 text-sky-800 border-sky-200";
+                  return (
+                    <span
+                      className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border ${cls}`}
+                    >
+                      <Clock className="w-3 h-3" />
+                      {s.label}
+                    </span>
+                  );
+                })()}
                 <span className="text-muted-foreground min-w-[110px]">
-                  {g.guest_phone ?? ""}
+                  {g.guest_phone ?? <span className="italic text-destructive/70">no phone</span>}
                 </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  disabled={removingId === g.id}
-                  aria-label={`Remove ${g.guest_name}`}
-                  onClick={() => removeSavedGuest(g.id, g.guest_name)}
-                  className="text-muted-foreground hover:text-destructive"
-                >
-                  {removingId === g.id ? (
-                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                  ) : (
-                    <X className="w-4 h-4 mr-1" />
+                <div className="flex items-center gap-1 ml-auto">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={markingSentId === g.id}
+                    onClick={() => copyAndMarkSent(g)}
+                    className="gap-1 h-8"
+                    title="Copies a ready-to-send SMS and starts the 7-day RSVP window"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    {markingSentId === g.id
+                      ? "Saving…"
+                      : g.invite_sent_at
+                        ? "Copy again"
+                        : "Copy text & mark sent"}
+                  </Button>
+                  {g.guest_phone && (
+                    <a
+                      href={`sms:${g.guest_phone}?&body=${encodeURIComponent(buildSmsBody(g.guest_name, g.rsvp_token))}`}
+                      className="inline-flex items-center justify-center h-8 px-2 rounded-md border border-input text-xs hover:bg-accent"
+                      onClick={() => {
+                        if (!g.invite_sent_at) void copyAndMarkSent(g);
+                      }}
+                    >
+                      <Send className="w-3.5 h-3.5 mr-1" /> Open Messages
+                    </a>
                   )}
-                  Remove
-                </Button>
+                  {g.invite_sent_at && g.rsvp_status !== "yes" && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => resendReset(g)}
+                      className="h-8 text-xs"
+                      title="Reset the 7-day RSVP window"
+                    >
+                      Reset 7 days
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={removingId === g.id}
+                    aria-label={`Remove ${g.guest_name}`}
+                    onClick={() => removeSavedGuest(g.id, g.guest_name)}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    {removingId === g.id ? (
+                      <Loader2 className="w-4 h-4" />
+                    ) : (
+                      <X className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+
               </div>
               );
             })}
