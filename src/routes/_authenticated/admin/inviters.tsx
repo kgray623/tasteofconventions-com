@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -8,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Trash2, UserPlus } from "lucide-react";
 import { getErrorMessage, withTimeout } from "@/lib/async-safety";
+import { inviteTeamMember } from "@/lib/team.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/inviters")({
   head: () => ({ meta: [{ title: "Inviters — Admin" }] }),
@@ -28,6 +30,8 @@ function InvitersPage() {
   const [phone, setPhone] = useState("");
   const [quota, setQuota] = useState(40);
   const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
+  const inviteTeamMemberFn = useServerFn(inviteTeamMember);
 
   const load = async () => {
     setLoading(true);
@@ -71,16 +75,48 @@ function InvitersPage() {
 
   const add = async () => {
     if (!name.trim()) return toast.error("Name is required");
-    const { error } = await supabase.from("inviters").insert({
-      name: name.trim(),
-      quota,
-      email: email.trim() || null,
-      phone: phone.trim() || null,
-    });
-    if (error) return toast.error(error.message);
-    setName(""); setEmail(""); setPhone(""); setQuota(40);
-    toast.success("Team member added");
-    load();
+    const trimmedEmail = email.trim();
+    const trimmedPhone = phone.trim();
+    setAdding(true);
+    try {
+      const { error } = await supabase.from("inviters").insert({
+        name: name.trim(),
+        quota,
+        email: trimmedEmail || null,
+        phone: trimmedPhone || null,
+      });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      if (trimmedEmail) {
+        try {
+          const res = await inviteTeamMemberFn({
+            data: {
+              email: trimmedEmail,
+              role: "team",
+              name: name.trim(),
+              phone: trimmedPhone || "n/a",
+            },
+          });
+          if (res.emailQueued) {
+            toast.success(`Added and emailed invite to ${trimmedEmail}.`);
+          } else {
+            toast.success(`Added ${name.trim()}, but invite email could not be sent (${res.reason ?? "unknown"}).`);
+          }
+        } catch (err: any) {
+          toast.error(`Added ${name.trim()}, but invite email failed: ${err?.message ?? "unknown error"}`);
+        }
+      } else {
+        toast.success("Team member added");
+      }
+
+      setName(""); setEmail(""); setPhone(""); setQuota(40);
+      load();
+    } finally {
+      setAdding(false);
+    }
   };
 
   const updateQuota = async (id: string, q: number) => {
@@ -149,8 +185,8 @@ function InvitersPage() {
             <Input id="quota" type="number" min={0} value={quota} onChange={(e) => setQuota(parseInt(e.target.value) || 0)} />
           </div>
         </div>
-        <Button onClick={add} className="bg-ink text-cream hover:bg-ink/90">
-          <UserPlus className="w-4 h-4 mr-2" /> Add
+        <Button onClick={add} disabled={adding} className="bg-ink text-cream hover:bg-ink/90">
+          <UserPlus className="w-4 h-4 mr-2" /> {adding ? "Adding…" : "Add"}
         </Button>
       </Card>
 
