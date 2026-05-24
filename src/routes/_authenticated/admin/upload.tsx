@@ -442,6 +442,108 @@ function UploadPage() {
     }
   };
 
+  const SITE_URL =
+    typeof window !== "undefined"
+      ? window.location.origin
+      : "https://tasteofconventions.com";
+
+  const buildSmsBody = (guestName: string, token: string) => {
+    const firstName = (guestName || "Friend").split(/\s+/)[0];
+    const sender = inviterName || "your friend";
+    const link = `${SITE_URL}/rsvp/${token}`;
+    return `Hi ${firstName}, it's ${sender}. You're invited to A Taste of Special Conventions on Sunday, August 30, 2026. Please RSVP here (link expires in 7 days): ${link}`;
+  };
+
+  const guestStatus = (g: (typeof savedGuests)[number]) => {
+    if (g.rsvp_status === "yes") return { label: "RSVP'd yes", tone: "yes" as const };
+    if (g.rsvp_status === "no") return { label: "RSVP'd no", tone: "no" as const };
+    if (!g.invite_sent_at) return { label: "Not sent", tone: "pending" as const };
+    if (g.rsvp_expires_at && new Date(g.rsvp_expires_at) < new Date())
+      return { label: "Expired", tone: "expired" as const };
+    if (g.rsvp_expires_at) {
+      const days = Math.max(
+        0,
+        Math.ceil(
+          (new Date(g.rsvp_expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+        ),
+      );
+      return {
+        label: `Sent · ${days} day${days === 1 ? "" : "s"} left`,
+        tone: "sent" as const,
+      };
+    }
+    return { label: "Sent", tone: "sent" as const };
+  };
+
+  const copyAndMarkSent = async (g: (typeof savedGuests)[number]) => {
+    const body = buildSmsBody(g.guest_name, g.rsvp_token);
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(body);
+      }
+    } catch {
+      // clipboard may be blocked; sms: link still works as fallback
+    }
+    if (!g.invite_sent_at) {
+      setMarkingSentId(g.id);
+      const sentAt = new Date().toISOString();
+      const { error } = await supabase
+        .from("invitations")
+        .update({ invite_sent_at: sentAt })
+        .eq("id", g.id);
+      setMarkingSentId(null);
+      if (error) {
+        toast.error("Couldn't mark as sent", { description: error.message });
+        return;
+      }
+      setSavedGuests((prev) =>
+        prev.map((row) =>
+          row.id === g.id
+            ? {
+                ...row,
+                invite_sent_at: sentAt,
+                rsvp_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+              }
+            : row,
+        ),
+      );
+      toast.success(`Copied. Marked sent — expires in 7 days.`);
+    } else {
+      toast.success("Message copied to clipboard.");
+    }
+  };
+
+  const resendReset = async (g: (typeof savedGuests)[number]) => {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(
+        `Reset the 7-day window for ${g.guest_name}? Use this only if you're re-sending the invite.`,
+      )
+    )
+      return;
+    const sentAt = new Date().toISOString();
+    const { error } = await supabase
+      .from("invitations")
+      .update({ invite_sent_at: sentAt })
+      .eq("id", g.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setSavedGuests((prev) =>
+      prev.map((row) =>
+        row.id === g.id
+          ? {
+              ...row,
+              invite_sent_at: sentAt,
+              rsvp_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            }
+          : row,
+      ),
+    );
+    toast.success("Reset. Now expires in 7 days.");
+  };
+
   useEffect(() => {
     let alive = true;
     supabase
