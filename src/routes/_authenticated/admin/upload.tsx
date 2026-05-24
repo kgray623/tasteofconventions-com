@@ -221,6 +221,9 @@ function UploadPage() {
   const [editingSavedId, setEditingSavedId] = useState<string | null>(null);
   const [editingSavedValue, setEditingSavedValue] = useState("");
   const [updatingSavedId, setUpdatingSavedId] = useState<string | null>(null);
+  const [myQuota, setMyQuota] = useState<number | null>(null);
+  const [myRsvpSeats, setMyRsvpSeats] = useState(0);
+  const [myRsvpCount, setMyRsvpCount] = useState(0);
 
   const loadSavedGuests = async (evId: string) => {
     if (!evId) {
