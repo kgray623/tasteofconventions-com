@@ -138,9 +138,15 @@ export const submitRsvp = createServerFn({ method: "POST" })
     const mode = data.attendance_mode ?? "in_person";
     const effectivePartySize = mode === "zoom" ? 1 : data.party_size;
     const orderingFood = mode === "in_person" ? (data.ordering_food ?? null) : null;
+    let finalStatus: "yes" | "no" | "maybe" | "waitlist" = data.status;
+    let waitlisted = false;
+    if (data.status === "yes" && await shouldWaitlist(inv.id, effectivePartySize)) {
+      finalStatus = "waitlist";
+      waitlisted = true;
+    }
     const { error } = await supabaseAdmin.from("rsvps").upsert({
       invitation_id: inv.id,
-      status: data.status,
+      status: finalStatus,
       party_size: effectivePartySize,
       attendance_mode: mode,
       ordering_food: orderingFood,
@@ -151,7 +157,7 @@ export const submitRsvp = createServerFn({ method: "POST" })
     }, { onConflict: "invitation_id" });
     if (error) throw new Error(error.message);
     await sendRsvpConfirmation(inv.id, data.status, effectivePartySize);
-    return { ok: true };
+    return { ok: true, waitlisted };
   });
 
 
