@@ -11,7 +11,7 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 });
 
 function AdminOverview() {
-  const { isAdmin } = useRoles();
+  const { isAdmin, loading: rolesLoading } = useRoles();
   const [counts, setCounts] = useState({
     invites: 0,
     flags: 0,
@@ -21,6 +21,7 @@ function AdminOverview() {
   });
 
   useEffect(() => {
+    if (rolesLoading || !isAdmin) return;
     (async () => {
       const [i, f, c, t, p] = await Promise.all([
         supabase.from("invitations").select("id", { count: "exact", head: true }),
@@ -43,7 +44,7 @@ function AdminOverview() {
         pending: p.count ?? 0,
       });
     })();
-  }, []);
+  }, [rolesLoading, isAdmin]);
 
   const stats = [
     { label: "Guest invitations", value: counts.invites, to: "/admin/upload" },
@@ -52,6 +53,8 @@ function AdminOverview() {
     { label: "Team members", value: counts.team, to: "/admin/team" },
     { label: "Pending invites", value: counts.pending, to: "/admin/team" },
   ] as const;
+
+  if (rolesLoading) return <p className="text-muted-foreground">Loading workspace…</p>;
 
   if (!isAdmin) {
     return (
