@@ -12,7 +12,7 @@ import {
 } from '@react-email/components'
 import type { TemplateEntry } from './registry'
 
-const SITE_NAME = 'Cellibrate Health'
+const SITE_NAME = 'Taste of Conventions'
 
 interface TeamInviteProps {
   inviterName?: string
