@@ -288,6 +288,28 @@ function RsvpPage() {
               <h2 className="font-display text-2xl">Pre-order from your cultural choice restaurant</h2>
               <p className="text-sm text-muted-foreground mt-1">Browse each kitchen's digital menu and choose what you'd like that evening.</p>
             </div>
+            {attendanceMode === "in_person" && (
+              <div className="space-y-1.5">
+                <Label>Will you be ordering?</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { v: "yes", label: "Ordering food" },
+                    { v: "no", label: "Not ordering food" },
+                  ].map((o) => (
+                    <button
+                      key={o.v}
+                      onClick={() => setOrderingFood(o.v as "yes" | "no")}
+                      className={`p-3 rounded-md border-2 transition text-sm font-medium ${
+                        orderingFood === o.v ? "border-terracotta bg-terracotta text-cream" : "border-border bg-card hover:border-terracotta/40"
+                      }`}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <Select value={restaurantId} onValueChange={(v) => { setRestaurantId(v); setCart({}); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
