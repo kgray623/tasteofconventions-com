@@ -290,17 +290,22 @@ function UploadPage() {
     void loadSavedGuests(eventId);
   }, [eventId]);
 
-  // Load this team member's quota
+  // Load this team member's quota and display name (for SMS personalization)
   useEffect(() => {
     if (!user?.id) return;
     let alive = true;
     void (async () => {
-      const { data } = await supabase
-        .from("inviters")
-        .select("quota")
-        .eq("host_id", user.id)
-        .maybeSingle();
-      if (alive) setMyQuota(data?.quota ?? null);
+      const [{ data: inv }, { data: profile }] = await Promise.all([
+        supabase.from("inviters").select("quota,name").eq("host_id", user.id).maybeSingle(),
+        supabase.from("profiles").select("display_name,email").eq("id", user.id).maybeSingle(),
+      ]);
+      if (!alive) return;
+      setMyQuota(inv?.quota ?? null);
+      setInviterName(
+        inv?.name ||
+          profile?.display_name ||
+          (profile?.email ? profile.email.split("@")[0] : "your friend"),
+      );
     })();
     return () => {
       alive = false;
