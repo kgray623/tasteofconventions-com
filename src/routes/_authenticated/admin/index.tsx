@@ -12,7 +12,13 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 
 function AdminOverview() {
   const { isAdmin } = useRoles();
-  const [counts, setCounts] = useState({ invites: 0, flags: 0, categories: 0, team: 0, pending: 0 });
+  const [counts, setCounts] = useState({
+    invites: 0,
+    flags: 0,
+    categories: 0,
+    team: 0,
+    pending: 0,
+  });
 
   useEffect(() => {
     (async () => {
@@ -20,12 +26,21 @@ function AdminOverview() {
         supabase.from("invitations").select("id", { count: "exact", head: true }),
         supabase.from("duplicate_flags").select("id", { count: "exact", head: true }),
         supabase.from("categories").select("id", { count: "exact", head: true }),
-        supabase.from("user_roles").select("id", { count: "exact", head: true }).in("role", ["admin", "team"]),
-        supabase.from("team_invites").select("id", { count: "exact", head: true }).is("accepted_at", null),
+        supabase
+          .from("user_roles")
+          .select("id", { count: "exact", head: true })
+          .in("role", ["admin", "team"]),
+        supabase
+          .from("team_invites")
+          .select("id", { count: "exact", head: true })
+          .is("accepted_at", null),
       ]);
       setCounts({
-        invites: i.count ?? 0, flags: f.count ?? 0, categories: c.count ?? 0,
-        team: t.count ?? 0, pending: p.count ?? 0,
+        invites: i.count ?? 0,
+        flags: f.count ?? 0,
+        categories: c.count ?? 0,
+        team: t.count ?? 0,
+        pending: p.count ?? 0,
       });
     })();
   }, []);
@@ -54,16 +69,24 @@ function AdminOverview() {
         </div>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <Button asChild className="bg-ink text-cream hover:bg-ink/90 justify-start">
-            <Link to="/admin/inviters"><UserPlus className="w-4 h-4" /> Team invitations</Link>
+            <Link to="/admin/inviters">
+              <UserPlus className="w-4 h-4" /> Team invitations
+            </Link>
           </Button>
           <Button asChild variant="outline" className="justify-start">
-            <Link to="/admin/upload"><Upload className="w-4 h-4" /> Upload contacts</Link>
+            <Link to="/admin/upload">
+              <Upload className="w-4 h-4" /> Upload contacts
+            </Link>
           </Button>
           <Button asChild variant="outline" className="justify-start">
-            <Link to="/admin/categories"><ListChecks className="w-4 h-4" /> Tasks</Link>
+            <Link to="/admin/categories">
+              <ListChecks className="w-4 h-4" /> Tasks
+            </Link>
           </Button>
           <Button asChild variant="outline" className="justify-start">
-            <Link to="/admin/chat"><MessageSquare className="w-4 h-4" /> Team chat</Link>
+            <Link to="/admin/chat">
+              <MessageSquare className="w-4 h-4" /> Team chat
+            </Link>
           </Button>
         </div>
       </Card>
