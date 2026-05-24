@@ -56,11 +56,11 @@ export const inviteTeamMember = createServerFn({ method: "POST" })
       if (existing.accepted_at) {
         throw new Error("This person has already accepted an invite.");
       }
-      inviteId = await refreshPendingInvite(existing.id, data.role, userId);
+      inviteId = await refreshPendingInvite(existing.id, data.role, userId, data.name, data.phone);
     } else {
       const { data: inserted, error: insertErr } = await supabaseAdmin
         .from("team_invites")
-        .insert({ email, role: data.role, invited_by: userId })
+        .insert({ email, role: data.role, invited_by: userId, name: data.name, phone: data.phone })
         .select("id")
         .single();
       if (insertErr) {
@@ -76,7 +76,7 @@ export const inviteTeamMember = createServerFn({ method: "POST" })
         if (conflicted.accepted_at) {
           throw new Error("This person has already accepted an invite.");
         }
-        inviteId = await refreshPendingInvite(conflicted.id, data.role, userId);
+        inviteId = await refreshPendingInvite(conflicted.id, data.role, userId, data.name, data.phone);
       } else {
         inviteId = inserted.id;
       }
