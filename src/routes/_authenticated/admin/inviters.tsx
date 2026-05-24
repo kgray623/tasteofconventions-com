@@ -167,6 +167,20 @@ function InvitersPage() {
 
   return (
     <div className="space-y-8">
+      <Card className="p-5 flex flex-wrap items-center justify-between gap-4 border-terracotta/30 bg-terracotta/5">
+        <div>
+          <h2 className="font-display text-lg">Upload your contacts &amp; send invitations</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Import a CSV, vCard, paste a list, or use OCR. Each guest you add counts toward your quota and shows up below.
+          </p>
+        </div>
+        <Link to="/admin/upload">
+          <Button className="bg-ink text-cream hover:bg-ink/90">
+            <Upload className="w-4 h-4 mr-2" /> Add guests
+          </Button>
+        </Link>
+      </Card>
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-5">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Total cap</p>
