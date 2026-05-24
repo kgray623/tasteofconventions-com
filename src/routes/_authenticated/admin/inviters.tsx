@@ -185,8 +185,8 @@ function InvitersPage() {
             <Input id="quota" type="number" min={0} value={quota} onChange={(e) => setQuota(parseInt(e.target.value) || 0)} />
           </div>
         </div>
-        <Button onClick={add} className="bg-ink text-cream hover:bg-ink/90">
-          <UserPlus className="w-4 h-4 mr-2" /> Add
+        <Button onClick={add} disabled={adding} className="bg-ink text-cream hover:bg-ink/90">
+          <UserPlus className="w-4 h-4 mr-2" /> {adding ? "Adding…" : "Add"}
         </Button>
       </Card>
 
