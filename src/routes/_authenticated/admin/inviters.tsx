@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Trash2, UserPlus, Send } from "lucide-react";
+import { Trash2, UserPlus, Send, Upload } from "lucide-react";
 import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 import { inviteTeamMember } from "@/lib/team.functions";
 
