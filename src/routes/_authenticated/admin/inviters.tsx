@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import Papa from "papaparse";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -20,8 +20,13 @@ import {
   UserPlus,
   Send,
   Upload,
+  ChevronDown,
+  ChevronRight,
+  XCircle,
+  Clock,
 } from "lucide-react";
 import { getErrorMessage, withTimeout } from "@/lib/async-safety";
+
 import { inviteTeamMember } from "@/lib/team.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/inviters")({
@@ -50,6 +55,19 @@ type Assign = {
 };
 type EventRow = { id: string; title: string };
 type ContactRow = { name: string; email: string; phone: string; notes: string };
+type GuestRow = {
+  id: string;
+  host_id: string | null;
+  guest_name: string;
+  guest_email: string | null;
+  guest_phone: string | null;
+  invite_sent_at: string | null;
+  rsvp_expires_at: string | null;
+  rsvp_status: string | null;
+  rsvp_party_size: number | null;
+  rsvp_id: string | null;
+};
+
 
 const TOTAL_CAP = 550;
 
@@ -95,6 +113,9 @@ function InvitersPage() {
   const [inviters, setInviters] = useState<Inviter[]>([]);
   const [usage, setUsage] = useState<Record<string, number>>({});
   const [invitedCounts, setInvitedCounts] = useState<Record<string, number>>({});
+  const [guestsByHost, setGuestsByHost] = useState<Record<string, GuestRow[]>>({});
+  const [expandedHost, setExpandedHost] = useState<string | null>(null);
+  const [rowBusy, setRowBusy] = useState<string | null>(null);
   const [unassigned, setUnassigned] = useState(0);
   const [msgs, setMsgs] = useState<TeamMsg[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
@@ -117,6 +138,7 @@ function InvitersPage() {
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const inviteTeamMemberFn = useServerFn(inviteTeamMember);
 
+
   const load = async () => {
     setLoading(true);
     try {
@@ -129,6 +151,8 @@ function InvitersPage() {
         catRows,
         assignRows,
         eventRows,
+        { data: invitationsFull },
+        { data: rsvpsFull },
       ] = await withTimeout(
         Promise.all([
           supabase.from("inviters").select("*").order("name"),
@@ -139,6 +163,11 @@ function InvitersPage() {
           supabase.from("categories").select("*").order("sort_order"),
           supabase.from("category_assignments").select("*"),
           supabase.from("events").select("id,title").order("starts_at", { ascending: true }),
+          supabase
+            .from("invitations")
+            .select("id,host_id,guest_name,guest_email,guest_phone,invite_sent_at,rsvp_expires_at")
+            .order("guest_name"),
+          supabase.from("rsvps").select("id,invitation_id,status,party_size"),
         ]),
         10000,
       );
@@ -178,6 +207,24 @@ function InvitersPage() {
         invByHost[row.host_id] = (invByHost[row.host_id] ?? 0) + 1;
       }
       setInvitedCounts(invByHost);
+
+      const rsvpByInvite = new Map<string, { id: string; status: string; party_size: number }>();
+      for (const r of (rsvpsFull as { id: string; invitation_id: string; status: string; party_size: number }[]) ?? []) {
+        rsvpByInvite.set(r.invitation_id, r);
+      }
+      const byHost: Record<string, GuestRow[]> = {};
+      for (const row of (invitationsFull as Omit<GuestRow, "rsvp_status" | "rsvp_party_size" | "rsvp_id">[]) ?? []) {
+        const key = row.host_id ?? "_none";
+        const r = rsvpByInvite.get(row.id);
+        (byHost[key] ||= []).push({
+          ...row,
+          rsvp_id: r?.id ?? null,
+          rsvp_status: r?.status ?? null,
+          rsvp_party_size: r?.party_size ?? null,
+        });
+      }
+      setGuestsByHost(byHost);
+
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
@@ -362,6 +409,66 @@ function InvitersPage() {
     await supabase.from("inviters").update({ active }).eq("id", id);
     load();
   };
+
+  const declineGuest = async (g: GuestRow) => {
+    if (!confirm(`Mark ${g.guest_name} as declined? Their seat returns to the open pool.`)) return;
+    setRowBusy(g.id);
+    try {
+      if (g.rsvp_id) {
+        const { error } = await supabase
+          .from("rsvps")
+          .update({ status: "no", responded_at: new Date().toISOString() })
+          .eq("id", g.rsvp_id);
+        if (error) return toast.error(error.message);
+      } else {
+        const { error } = await supabase.from("rsvps").insert({
+          invitation_id: g.id,
+          status: "no",
+          party_size: 0,
+          responded_at: new Date().toISOString(),
+        });
+        if (error) return toast.error(error.message);
+      }
+      toast.success("Marked as declined.");
+      load();
+    } finally {
+      setRowBusy(null);
+    }
+  };
+
+  const expireGuest = async (g: GuestRow) => {
+    if (!confirm(`Expire ${g.guest_name}'s invite now? Their seat returns to the open pool.`))
+      return;
+    setRowBusy(g.id);
+    try {
+      const past = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString();
+      const { error } = await supabase
+        .from("invitations")
+        .update({ invite_sent_at: past })
+        .eq("id", g.id);
+      if (error) return toast.error(error.message);
+      toast.success("Invite expired.");
+      load();
+    } finally {
+      setRowBusy(null);
+    }
+  };
+
+  const deleteGuest = async (g: GuestRow) => {
+    if (!confirm(`Delete ${g.guest_name}'s invitation entirely?`)) return;
+    setRowBusy(g.id);
+    try {
+      if (g.rsvp_id) await supabase.from("rsvps").delete().eq("id", g.rsvp_id);
+      const { error } = await supabase.from("invitations").delete().eq("id", g.id);
+      if (error) return toast.error(error.message);
+      toast.success("Invitation removed.");
+      load();
+    } finally {
+      setRowBusy(null);
+    }
+  };
+
+
 
   const remove = async (id: string) => {
     if (!confirm("Remove this inviter? Past RSVPs keep the name.")) return;
@@ -648,7 +755,8 @@ function InvitersPage() {
             <table className="w-full text-sm min-w-[640px]">
               <thead className="bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
                 <tr>
-                  <th className="px-6 py-3">Name</th>
+                  <th className="px-4 py-3 w-8"></th>
+                  <th className="px-2 py-3">Name</th>
                   <th className="px-4 py-3 w-24">Quota</th>
                   <th className="px-4 py-3 w-24">Uploaded</th>
                   <th className="px-4 py-3 w-24">RSVPs</th>
@@ -662,61 +770,175 @@ function InvitersPage() {
                   const used = usage[i.name.toLowerCase()] ?? 0;
                   const invited = i.host_id ? (invitedCounts[i.host_id] ?? 0) : 0;
                   const remaining = i.quota - Math.max(used, invited);
+                  const guests = i.host_id ? (guestsByHost[i.host_id] ?? []) : [];
+                  const isOpen = expandedHost === i.id;
                   return (
-                    <tr key={i.id} className="border-t border-border">
-                      <td className="px-6 py-3 font-medium">{i.name}</td>
-                      <td className="px-4 py-3">
-                        <Input
-                          type="number"
-                          min={0}
-                          defaultValue={i.quota}
-                          onBlur={(e) => {
-                            const v = parseInt(e.target.value) || 0;
-                            if (v !== i.quota) updateQuota(i.id, v);
-                          }}
-                          className="h-8 w-20"
-                        />
-                      </td>
-                      <td className="px-4 py-3">{invited}</td>
-                      <td className="px-4 py-3">{used}</td>
-                      <td
-                        className={`px-4 py-3 ${remaining < 0 ? "text-destructive font-medium" : ""}`}
-                      >
-                        {remaining}
-                      </td>
-                      <td className="px-4 py-3">
-                        <button
-                          onClick={() => toggleActive(i.id, !i.active)}
-                          className={`text-xs px-2 py-1 rounded ${i.active ? "bg-green-100 text-green-800" : "bg-muted text-muted-foreground"}`}
-                        >
-                          {i.active ? "Active" : "Off"}
-                        </button>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1 justify-end">
-                          {i.email && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => resend(i)}
-                              disabled={resendingId === i.id}
-                              className="gap-1 h-8"
+                    <Fragment key={i.id}>
+                      <tr className="border-t border-border">
+                        <td className="px-2 py-3">
+                          {guests.length > 0 && (
+                            <button
+                              onClick={() => setExpandedHost(isOpen ? null : i.id)}
+                              className="p-1 hover:bg-muted rounded"
+                              aria-label={isOpen ? "Collapse guests" : "Expand guests"}
                             >
-                              <Send className="w-3.5 h-3.5" />
-                              {resendingId === i.id ? "Sending…" : "Resend"}
-                            </Button>
+                              {isOpen ? (
+                                <ChevronDown className="w-4 h-4" />
+                              ) : (
+                                <ChevronRight className="w-4 h-4" />
+                              )}
+                            </button>
                           )}
-                          <Button variant="ghost" size="icon" onClick={() => remove(i.id)}>
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
+                        </td>
+                        <td className="px-2 py-3 font-medium">{i.name}</td>
+                        <td className="px-4 py-3">
+                          <Input
+                            type="number"
+                            min={0}
+                            defaultValue={i.quota}
+                            onBlur={(e) => {
+                              const v = parseInt(e.target.value) || 0;
+                              if (v !== i.quota) updateQuota(i.id, v);
+                            }}
+                            className="h-8 w-20"
+                          />
+                        </td>
+                        <td className="px-4 py-3">{invited}</td>
+                        <td className="px-4 py-3">{used}</td>
+                        <td
+                          className={`px-4 py-3 ${remaining < 0 ? "text-destructive font-medium" : ""}`}
+                        >
+                          {remaining}
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => toggleActive(i.id, !i.active)}
+                            className={`text-xs px-2 py-1 rounded ${i.active ? "bg-green-100 text-green-800" : "bg-muted text-muted-foreground"}`}
+                          >
+                            {i.active ? "Active" : "Off"}
+                          </button>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1 justify-end">
+                            {i.email && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => resend(i)}
+                                disabled={resendingId === i.id}
+                                className="gap-1 h-8"
+                              >
+                                <Send className="w-3.5 h-3.5" />
+                                {resendingId === i.id ? "Sending…" : "Resend"}
+                              </Button>
+                            )}
+                            <Button variant="ghost" size="icon" onClick={() => remove(i.id)}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                      {isOpen && guests.length > 0 && (
+                        <tr className="bg-muted/20 border-t border-border">
+                          <td></td>
+                          <td colSpan={7} className="px-2 py-3">
+                            <div className="space-y-2">
+                              <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                                Guests invited by {i.name} ({guests.length})
+                              </p>
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-xs">
+                                  <thead className="text-left text-muted-foreground">
+                                    <tr>
+                                      <th className="px-2 py-1">Guest</th>
+                                      <th className="px-2 py-1">Contact</th>
+                                      <th className="px-2 py-1">RSVP</th>
+                                      <th className="px-2 py-1">Expires</th>
+                                      <th className="px-2 py-1 text-right">Actions</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {guests.map((g) => {
+                                      const status = g.rsvp_status ?? "no response";
+                                      const expired =
+                                        g.rsvp_expires_at &&
+                                        new Date(g.rsvp_expires_at) < new Date();
+                                      const busy = rowBusy === g.id;
+                                      return (
+                                        <tr key={g.id} className="border-t border-border/60">
+                                          <td className="px-2 py-2 font-medium">{g.guest_name}</td>
+                                          <td className="px-2 py-2 text-muted-foreground">
+                                            {g.guest_email || g.guest_phone || "—"}
+                                          </td>
+                                          <td className="px-2 py-2">
+                                            <span
+                                              className={`px-1.5 py-0.5 rounded text-[10px] uppercase ${
+                                                status === "yes"
+                                                  ? "bg-green-100 text-green-800"
+                                                  : status === "no"
+                                                    ? "bg-red-100 text-red-800"
+                                                    : "bg-muted text-muted-foreground"
+                                              }`}
+                                            >
+                                              {status}
+                                              {g.rsvp_party_size
+                                                ? ` · ${g.rsvp_party_size}`
+                                                : ""}
+                                            </span>
+                                          </td>
+                                          <td className="px-2 py-2 text-muted-foreground">
+                                            {g.rsvp_expires_at
+                                              ? `${new Date(g.rsvp_expires_at).toLocaleDateString()}${expired ? " (expired)" : ""}`
+                                              : "—"}
+                                          </td>
+                                          <td className="px-2 py-2">
+                                            <div className="flex items-center gap-1 justify-end">
+                                              <Button
+                                                variant="outline"
+                                                size="sm"
+                                                disabled={busy || status === "no"}
+                                                onClick={() => declineGuest(g)}
+                                                className="h-7 gap-1"
+                                              >
+                                                <XCircle className="w-3 h-3" /> Decline
+                                              </Button>
+                                              <Button
+                                                variant="outline"
+                                                size="sm"
+                                                disabled={busy || !!expired}
+                                                onClick={() => expireGuest(g)}
+                                                className="h-7 gap-1"
+                                              >
+                                                <Clock className="w-3 h-3" /> Expire
+                                              </Button>
+                                              <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                disabled={busy}
+                                                onClick={() => deleteGuest(g)}
+                                                className="h-7 w-7"
+                                              >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                              </Button>
+                                            </div>
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   );
                 })}
                 {unassigned > 0 && (
                   <tr className="border-t border-border bg-muted/20">
-                    <td className="px-6 py-3 italic text-muted-foreground">Unassigned / other</td>
+                    <td></td>
+                    <td className="px-2 py-3 italic text-muted-foreground">Unassigned / other</td>
                     <td className="px-4 py-3">—</td>
                     <td className="px-4 py-3">—</td>
                     <td className="px-4 py-3">{unassigned}</td>
@@ -726,6 +948,7 @@ function InvitersPage() {
                   </tr>
                 )}
               </tbody>
+
             </table>
           </div>
         )}
