@@ -10,7 +10,9 @@ export interface TemplateEntry {
 }
 
 import { template as rsvpConfirmation } from './rsvp-confirmation'
+import { template as teamInvite } from './team-invite'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'rsvp-confirmation': rsvpConfirmation,
+  'team-invite': teamInvite,
 }
