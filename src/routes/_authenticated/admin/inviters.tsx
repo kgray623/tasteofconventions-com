@@ -55,6 +55,19 @@ type Assign = {
 };
 type EventRow = { id: string; title: string };
 type ContactRow = { name: string; email: string; phone: string; notes: string };
+type GuestRow = {
+  id: string;
+  host_id: string | null;
+  guest_name: string;
+  guest_email: string | null;
+  guest_phone: string | null;
+  invite_sent_at: string | null;
+  rsvp_expires_at: string | null;
+  rsvp_status: string | null;
+  rsvp_party_size: number | null;
+  rsvp_id: string | null;
+};
+
 
 const TOTAL_CAP = 550;
 
