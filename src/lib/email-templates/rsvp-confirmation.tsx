@@ -12,7 +12,7 @@ import {
 } from '@react-email/components'
 import type { TemplateEntry } from './registry'
 
-const SITE_NAME = 'Cellibrate Health'
+const SITE_NAME = 'Taste of Conventions'
 
 interface RsvpConfirmationProps {
   guestName?: string
@@ -101,7 +101,7 @@ export const template = {
   displayName: 'RSVP confirmation',
   previewData: {
     guestName: 'Jane Doe',
-    eventTitle: 'Cellibrate Health Feast',
+    eventTitle: 'Taste of Conventions',
     eventStartsAt: new Date(Date.now() + 7 * 86400000).toISOString(),
     location: '123 Wellness Way, Springfield',
     status: 'yes',
