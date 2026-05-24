@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { useRoles } from "@/hooks/use-roles";
 
 export const Route = createFileRoute("/_authenticated/admin/event")({
   head: () => ({ meta: [{ title: "Edit Event — A Taste of Special Conventions" }] }),
@@ -14,6 +15,7 @@ export const Route = createFileRoute("/_authenticated/admin/event")({
 });
 
 function EditEventPage() {
+  const { isAdmin, loading: rolesLoading } = useRoles();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [id, setId] = useState<string>("");
@@ -96,53 +98,55 @@ function EditEventPage() {
     toast.success("Event updated. Guest screens and emails will now show the new details.");
   };
 
-  if (loading) return <div className="text-muted-foreground">Loading event…</div>;
+  if (loading || rolesLoading) return <div className="text-muted-foreground">Loading event…</div>;
   if (!id) return <div className="text-muted-foreground">No event found.</div>;
 
   return (
     <div className="max-w-2xl space-y-6">
       <div>
         <p className="text-xs uppercase tracking-[0.3em] text-terracotta">Event details</p>
-        <h1 className="font-display text-3xl mt-1">Edit event</h1>
+        <h1 className="font-display text-3xl mt-1">{isAdmin ? "Edit event" : "Event details"}</h1>
         <p className="text-sm text-muted-foreground mt-2">
-          These details show on every invitation, RSVP page, and confirmation email.
+          {isAdmin
+            ? "These details show on every invitation, RSVP page, and confirmation email."
+            : "These are the current event details for team coordination."}
         </p>
       </div>
       <Card className="p-6 space-y-4">
         <div>
           <Label htmlFor="title">Title</Label>
-          <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} disabled={!isAdmin} />
         </div>
         <div>
           <Label htmlFor="desc">Description</Label>
-          <Textarea id="desc" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
+          <Textarea id="desc" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} disabled={!isAdmin} />
         </div>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="starts">Starts at</Label>
-            <Input id="starts" type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
+            <Input id="starts" type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} disabled={!isAdmin} />
           </div>
           <div>
             <Label htmlFor="ends">Ends at (optional)</Label>
-            <Input id="ends" type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} />
+            <Input id="ends" type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} disabled={!isAdmin} />
           </div>
         </div>
         <div>
           <Label htmlFor="loc">Location / address</Label>
-          <Input id="loc" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. 123 Main St, Sacramento, CA" />
+          <Input id="loc" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. 123 Main St, Sacramento, CA" disabled={!isAdmin} />
         </div>
         <div>
           <Label htmlFor="vlink">Virtual link (optional)</Label>
-          <Input id="vlink" value={virtualLink} onChange={(e) => setVirtualLink(e.target.value)} placeholder="https://…" />
+          <Input id="vlink" value={virtualLink} onChange={(e) => setVirtualLink(e.target.value)} placeholder="https://…" disabled={!isAdmin} />
         </div>
-        <div className="flex items-center gap-3 pt-2">
+        {isAdmin && <div className="flex items-center gap-3 pt-2">
           <Button onClick={save} disabled={saving || !dirty} className="bg-ink text-cream hover:bg-ink/90">
             {saving ? "Saving…" : dirty ? "Save event" : "Saved"}
           </Button>
           {dirty && (
             <span className="text-xs text-terracotta">Unsaved changes — click Save event.</span>
           )}
-        </div>
+        </div>}
       </Card>
     </div>
   );
