@@ -151,6 +151,8 @@ function InvitersPage() {
         catRows,
         assignRows,
         eventRows,
+        { data: invitationsFull },
+        { data: rsvpsFull },
       ] = await withTimeout(
         Promise.all([
           supabase.from("inviters").select("*").order("name"),
@@ -161,6 +163,11 @@ function InvitersPage() {
           supabase.from("categories").select("*").order("sort_order"),
           supabase.from("category_assignments").select("*"),
           supabase.from("events").select("id,title").order("starts_at", { ascending: true }),
+          supabase
+            .from("invitations")
+            .select("id,host_id,guest_name,guest_email,guest_phone,invite_sent_at,rsvp_expires_at")
+            .order("guest_name"),
+          supabase.from("rsvps").select("id,invitation_id,status,party_size"),
         ]),
         10000,
       );
@@ -200,6 +207,24 @@ function InvitersPage() {
         invByHost[row.host_id] = (invByHost[row.host_id] ?? 0) + 1;
       }
       setInvitedCounts(invByHost);
+
+      const rsvpByInvite = new Map<string, { id: string; status: string; party_size: number }>();
+      for (const r of (rsvpsFull as { id: string; invitation_id: string; status: string; party_size: number }[]) ?? []) {
+        rsvpByInvite.set(r.invitation_id, r);
+      }
+      const byHost: Record<string, GuestRow[]> = {};
+      for (const row of (invitationsFull as Omit<GuestRow, "rsvp_status" | "rsvp_party_size" | "rsvp_id">[]) ?? []) {
+        const key = row.host_id ?? "_none";
+        const r = rsvpByInvite.get(row.id);
+        (byHost[key] ||= []).push({
+          ...row,
+          rsvp_id: r?.id ?? null,
+          rsvp_status: r?.status ?? null,
+          rsvp_party_size: r?.party_size ?? null,
+        });
+      }
+      setGuestsByHost(byHost);
+
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
