@@ -20,7 +20,7 @@ const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boole
   { to: "/admin/upload", label: "Add guests", icon: Upload, team: true },
   { to: "/admin/inviters", label: "Inviters", icon: UserPlus, team: true },
   { to: "/admin/restaurants", label: "Restaurants", icon: UtensilsCrossed },
-  { to: "/admin/categories", label: "Assignments", icon: ListChecks },
+  { to: "/admin/categories", label: "Assignments", icon: ListChecks, team: true },
   { to: "/admin/donations", label: "Donations", icon: HandCoins, team: true },
   { to: "/admin/team", label: "Team access", icon: Users },
   { to: "/admin/chat", label: "Team chat", icon: MessagesSquare, team: true },
