@@ -44,7 +44,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<EmailTemplateProps>> =
 };
 
 // Configuration
-const SITE_NAME = "invite-palooza-connect";
+const SITE_NAME = "Cellibrate Health";
 const SENDER_DOMAIN = "notify.cellibratehealth.com";
 const ROOT_DOMAIN = "cellibratehealth.com";
 const FROM_DOMAIN = "notify.cellibratehealth.com";
