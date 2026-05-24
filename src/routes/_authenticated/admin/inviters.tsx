@@ -410,6 +410,66 @@ function InvitersPage() {
     load();
   };
 
+  const declineGuest = async (g: GuestRow) => {
+    if (!confirm(`Mark ${g.guest_name} as declined? Their seat returns to the open pool.`)) return;
+    setRowBusy(g.id);
+    try {
+      if (g.rsvp_id) {
+        const { error } = await supabase
+          .from("rsvps")
+          .update({ status: "no", responded_at: new Date().toISOString() })
+          .eq("id", g.rsvp_id);
+        if (error) return toast.error(error.message);
+      } else {
+        const { error } = await supabase.from("rsvps").insert({
+          invitation_id: g.id,
+          status: "no",
+          party_size: 0,
+          responded_at: new Date().toISOString(),
+        });
+        if (error) return toast.error(error.message);
+      }
+      toast.success("Marked as declined.");
+      load();
+    } finally {
+      setRowBusy(null);
+    }
+  };
+
+  const expireGuest = async (g: GuestRow) => {
+    if (!confirm(`Expire ${g.guest_name}'s invite now? Their seat returns to the open pool.`))
+      return;
+    setRowBusy(g.id);
+    try {
+      const past = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString();
+      const { error } = await supabase
+        .from("invitations")
+        .update({ invite_sent_at: past })
+        .eq("id", g.id);
+      if (error) return toast.error(error.message);
+      toast.success("Invite expired.");
+      load();
+    } finally {
+      setRowBusy(null);
+    }
+  };
+
+  const deleteGuest = async (g: GuestRow) => {
+    if (!confirm(`Delete ${g.guest_name}'s invitation entirely?`)) return;
+    setRowBusy(g.id);
+    try {
+      if (g.rsvp_id) await supabase.from("rsvps").delete().eq("id", g.rsvp_id);
+      const { error } = await supabase.from("invitations").delete().eq("id", g.id);
+      if (error) return toast.error(error.message);
+      toast.success("Invitation removed.");
+      load();
+    } finally {
+      setRowBusy(null);
+    }
+  };
+
+
+
   const remove = async (id: string) => {
     if (!confirm("Remove this inviter? Past RSVPs keep the name.")) return;
     const { error } = await supabase.from("inviters").delete().eq("id", id);
