@@ -128,22 +128,30 @@ function InvitersPage() {
 
       <Card className="p-6 space-y-4">
         <div>
-          <h2 className="font-display text-xl">Add inviter</h2>
+          <h2 className="font-display text-xl">Add Team Member</h2>
           <p className="text-sm text-muted-foreground">They'll appear in the dropdown on the RSVP form.</p>
         </div>
-        <div className="flex flex-wrap gap-3 items-end">
-          <div className="flex-1 min-w-[200px] space-y-1.5">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
             <Label htmlFor="name">Name</Label>
             <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Jane Doe" />
           </div>
-          <div className="w-32 space-y-1.5">
+          <div className="space-y-1.5">
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="phone">Phone</Label>
+            <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" />
+          </div>
+          <div className="space-y-1.5">
             <Label htmlFor="quota">Quota</Label>
             <Input id="quota" type="number" min={0} value={quota} onChange={(e) => setQuota(parseInt(e.target.value) || 0)} />
           </div>
-          <Button onClick={add} className="bg-ink text-cream hover:bg-ink/90">
-            <UserPlus className="w-4 h-4 mr-2" /> Add
-          </Button>
         </div>
+        <Button onClick={add} className="bg-ink text-cream hover:bg-ink/90">
+          <UserPlus className="w-4 h-4 mr-2" /> Add
+        </Button>
       </Card>
 
       <Card className="p-0 overflow-hidden">
