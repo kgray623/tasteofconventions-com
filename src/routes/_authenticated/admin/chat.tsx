@@ -70,17 +70,22 @@ function ChatPage() {
         )}
         {msgs.map((m) => {
           const mine = m.user_id === user?.id;
+          const name = labelFor(m.user_id);
           return (
-            <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+            <div key={m.id} className={`flex flex-col ${mine ? "items-end" : "items-start"}`}>
+              <p className="text-xs font-semibold text-ink mb-1 px-1">
+                {mine ? `${name} (you)` : name}
+              </p>
               <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${mine ? "bg-ink text-cream" : "bg-secondary"}`}>
-                <p className="text-[10px] uppercase tracking-wider opacity-70 mb-1">
-                  {labelFor(m.user_id)} · {new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                </p>
                 <p className="text-sm whitespace-pre-wrap">{m.body}</p>
+                <p className="text-[10px] opacity-70 mt-1 text-right">
+                  {new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </p>
               </div>
             </div>
           );
         })}
+
       </div>
       <div className="border-t border-border p-3 flex gap-2">
         <Textarea
