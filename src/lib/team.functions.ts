@@ -63,6 +63,7 @@ async function sendTeamInviteEmail({
     templateData: {
       inviterName,
       recipientName,
+      recipientEmail: email,
       role,
       signupUrl,
     },
