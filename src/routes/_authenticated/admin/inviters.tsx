@@ -31,6 +31,7 @@ function InvitersPage() {
   const [quota, setQuota] = useState(40);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+  const [resendingId, setResendingId] = useState<string | null>(null);
   const inviteTeamMemberFn = useServerFn(inviteTeamMember);
 
   const load = async () => {
