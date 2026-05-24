@@ -932,7 +932,7 @@ function InvitersPage() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   );
                 })}
                 {unassigned > 0 && (
