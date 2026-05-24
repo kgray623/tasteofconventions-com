@@ -2,7 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useRoles } from "@/hooks/use-roles";
+import { ListChecks, MessageSquare, Upload, UserPlus } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: AdminOverview,
@@ -43,6 +45,28 @@ function AdminOverview() {
           ? "You have full admin access. Manage the guest list, assignments, team, and chat."
           : "You have team access. Use the chat to coordinate with the host team."}
       </p>
+      <Card className="p-5 border-terracotta/30 bg-terracotta/5 space-y-4">
+        <div>
+          <h2 className="font-display text-xl">Team workspace</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Communicate with the team, see tasks, make invitations, and upload your contacts here.
+          </p>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <Button asChild className="bg-ink text-cream hover:bg-ink/90 justify-start">
+            <Link to="/admin/inviters"><UserPlus className="w-4 h-4" /> Team invitations</Link>
+          </Button>
+          <Button asChild variant="outline" className="justify-start">
+            <Link to="/admin/upload"><Upload className="w-4 h-4" /> Upload contacts</Link>
+          </Button>
+          <Button asChild variant="outline" className="justify-start">
+            <Link to="/admin/categories"><ListChecks className="w-4 h-4" /> Tasks</Link>
+          </Button>
+          <Button asChild variant="outline" className="justify-start">
+            <Link to="/admin/chat"><MessageSquare className="w-4 h-4" /> Team chat</Link>
+          </Button>
+        </div>
+      </Card>
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {stats.map((s) => (
           <Link key={s.label} to={s.to}>
