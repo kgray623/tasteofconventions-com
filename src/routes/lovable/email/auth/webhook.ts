@@ -44,9 +44,9 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<EmailTemplateProps>> =
 };
 
 // Configuration
-const SITE_NAME = "Cellibrate Health";
+const SITE_NAME = "Taste of Conventions";
 const SENDER_DOMAIN = "notify.cellibratehealth.com";
-const ROOT_DOMAIN = "cellibratehealth.com";
+const ROOT_DOMAIN = "tasteofconventions.com";
 const FROM_DOMAIN = "notify.cellibratehealth.com";
 
 function redactEmail(email: string | null | undefined): string {
