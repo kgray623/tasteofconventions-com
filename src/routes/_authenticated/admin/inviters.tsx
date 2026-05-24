@@ -772,7 +772,7 @@ function InvitersPage() {
                   const remaining = i.quota - Math.max(used, invited);
                   const guests = i.host_id ? (guestsByHost[i.host_id] ?? []) : [];
                   const isOpen = expandedHost === i.id;
-                  const rows = [];
+                  const rows: ReactNode[] = [];
                   rows.push(
                     <tr key={`${i.id}-main`} className="border-t border-border">
 
