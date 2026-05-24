@@ -26,6 +26,9 @@ import {
   X,
   Pencil,
   AlertTriangle,
+  MessageSquare,
+  Send,
+  Clock,
 } from "lucide-react";
 import { getErrorMessage } from "@/lib/async-safety";
 import { useServerFn } from "@tanstack/react-start";
