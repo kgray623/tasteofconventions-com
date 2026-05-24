@@ -250,6 +250,60 @@ function UploadPage() {
     void loadSavedGuests(eventId);
   }, [eventId]);
 
+  // Load this team member's quota
+  useEffect(() => {
+    if (!user?.id) return;
+    let alive = true;
+    void (async () => {
+      const { data } = await supabase
+        .from("inviters")
+        .select("quota")
+        .eq("host_id", user.id)
+        .maybeSingle();
+      if (alive) setMyQuota(data?.quota ?? null);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [user?.id]);
+
+  // Load this team member's RSVP totals for the selected event
+  useEffect(() => {
+    if (!user?.id || !eventId) {
+      setMyRsvpSeats(0);
+      setMyRsvpCount(0);
+      return;
+    }
+    let alive = true;
+    void (async () => {
+      const { data: invs } = await supabase
+        .from("invitations")
+        .select("id")
+        .eq("event_id", eventId)
+        .eq("host_id", user.id);
+      const ids = (invs ?? []).map((i) => i.id);
+      if (ids.length === 0) {
+        if (alive) {
+          setMyRsvpSeats(0);
+          setMyRsvpCount(0);
+        }
+        return;
+      }
+      const { data: rs } = await supabase
+        .from("rsvps")
+        .select("party_size,status")
+        .in("invitation_id", ids);
+      if (!alive) return;
+      const yes = (rs ?? []).filter((r) => r.status === "yes");
+      setMyRsvpCount(yes.length);
+      setMyRsvpSeats(yes.reduce((s, r) => s + (r.party_size ?? 1), 0));
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [user?.id, eventId, savedGuests.length]);
+
+
   const duplicateGroups = useMemo(() => {
     const groups = new Map<string, string>(); // key -> groupId (first id)
     const norm = (s: string | null | undefined) =>
