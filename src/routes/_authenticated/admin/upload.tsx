@@ -1037,8 +1037,38 @@ function UploadPage() {
         </Card>
       )}
 
+      <div className="grid grid-cols-3 gap-3">
+        <Card className="p-4">
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+            Invites sent
+          </p>
+          <p className="font-display text-2xl mt-1">{savedGuests.length}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+            RSVPs (yes)
+          </p>
+          <p className="font-display text-2xl mt-1">{myRsvpCount}</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">{myRsvpSeats} seats</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+            Your quota
+          </p>
+          <p className="font-display text-2xl mt-1">
+            {myQuota ?? "—"}
+          </p>
+          {myQuota !== null && (
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              {Math.max(0, myQuota - savedGuests.length)} invites left to send
+            </p>
+          )}
+        </Card>
+      </div>
+
       <Card className="overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">
+
           <div className="flex items-center gap-2 flex-wrap">
             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
             <p className="font-medium">
