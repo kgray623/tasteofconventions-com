@@ -840,104 +840,105 @@ function InvitersPage() {
                             </Button>
                           </div>
                         </td>
-                      </tr>
-                      {isOpen && guests.length > 0 && (
-                        <tr className="bg-muted/20 border-t border-border">
-                          <td></td>
-                          <td colSpan={7} className="px-2 py-3">
-                            <div className="space-y-2">
-                              <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                                Guests invited by {i.name} ({guests.length})
-                              </p>
-                              <div className="overflow-x-auto">
-                                <table className="w-full text-xs">
-                                  <thead className="text-left text-muted-foreground">
-                                    <tr>
-                                      <th className="px-2 py-1">Guest</th>
-                                      <th className="px-2 py-1">Contact</th>
-                                      <th className="px-2 py-1">RSVP</th>
-                                      <th className="px-2 py-1">Expires</th>
-                                      <th className="px-2 py-1 text-right">Actions</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {guests.map((g) => {
-                                      const status = g.rsvp_status ?? "no response";
-                                      const expired =
-                                        g.rsvp_expires_at &&
-                                        new Date(g.rsvp_expires_at) < new Date();
-                                      const busy = rowBusy === g.id;
-                                      return (
-                                        <tr key={g.id} className="border-t border-border/60">
-                                          <td className="px-2 py-2 font-medium">{g.guest_name}</td>
-                                          <td className="px-2 py-2 text-muted-foreground">
-                                            {g.guest_email || g.guest_phone || "—"}
-                                          </td>
-                                          <td className="px-2 py-2">
-                                            <span
-                                              className={`px-1.5 py-0.5 rounded text-[10px] uppercase ${
-                                                status === "yes"
-                                                  ? "bg-green-100 text-green-800"
-                                                  : status === "no"
-                                                    ? "bg-red-100 text-red-800"
-                                                    : "bg-muted text-muted-foreground"
-                                              }`}
-                                            >
-                                              {status}
-                                              {g.rsvp_party_size
-                                                ? ` · ${g.rsvp_party_size}`
-                                                : ""}
-                                            </span>
-                                          </td>
-                                          <td className="px-2 py-2 text-muted-foreground">
-                                            {g.rsvp_expires_at
-                                              ? `${new Date(g.rsvp_expires_at).toLocaleDateString()}${expired ? " (expired)" : ""}`
-                                              : "—"}
-                                          </td>
-                                          <td className="px-2 py-2">
-                                            <div className="flex items-center gap-1 justify-end">
-                                              <Button
-                                                variant="outline"
-                                                size="sm"
-                                                disabled={busy || status === "no"}
-                                                onClick={() => declineGuest(g)}
-                                                className="h-7 gap-1"
-                                              >
-                                                <XCircle className="w-3 h-3" /> Decline
-                                              </Button>
-                                              <Button
-                                                variant="outline"
-                                                size="sm"
-                                                disabled={busy || !!expired}
-                                                onClick={() => expireGuest(g)}
-                                                className="h-7 gap-1"
-                                              >
-                                                <Clock className="w-3 h-3" /> Expire
-                                              </Button>
-                                              <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                disabled={busy}
-                                                onClick={() => deleteGuest(g)}
-                                                className="h-7 w-7"
-                                              >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                              </Button>
-                                            </div>
-                                          </td>
-                                        </tr>
-                                      );
-                                    })}
-                                  </tbody>
-                                </table>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
+                      </tr>,
                   );
+                  if (isOpen && guests.length > 0) {
+                    rows.push(
+                      <tr key={`${i.id}-exp`} className="bg-muted/20 border-t border-border">
+                        <td></td>
+                        <td colSpan={7} className="px-2 py-3">
+                          <div className="space-y-2">
+                            <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                              Guests invited by {i.name} ({guests.length})
+                            </p>
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-xs">
+                                <thead className="text-left text-muted-foreground">
+                                  <tr>
+                                    <th className="px-2 py-1">Guest</th>
+                                    <th className="px-2 py-1">Contact</th>
+                                    <th className="px-2 py-1">RSVP</th>
+                                    <th className="px-2 py-1">Expires</th>
+                                    <th className="px-2 py-1 text-right">Actions</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {guests.map((g) => {
+                                    const status = g.rsvp_status ?? "no response";
+                                    const expired =
+                                      g.rsvp_expires_at &&
+                                      new Date(g.rsvp_expires_at) < new Date();
+                                    const busy = rowBusy === g.id;
+                                    return (
+                                      <tr key={g.id} className="border-t border-border/60">
+                                        <td className="px-2 py-2 font-medium">{g.guest_name}</td>
+                                        <td className="px-2 py-2 text-muted-foreground">
+                                          {g.guest_email || g.guest_phone || "—"}
+                                        </td>
+                                        <td className="px-2 py-2">
+                                          <span
+                                            className={`px-1.5 py-0.5 rounded text-[10px] uppercase ${
+                                              status === "yes"
+                                                ? "bg-green-100 text-green-800"
+                                                : status === "no"
+                                                  ? "bg-red-100 text-red-800"
+                                                  : "bg-muted text-muted-foreground"
+                                            }`}
+                                          >
+                                            {status}
+                                            {g.rsvp_party_size ? ` · ${g.rsvp_party_size}` : ""}
+                                          </span>
+                                        </td>
+                                        <td className="px-2 py-2 text-muted-foreground">
+                                          {g.rsvp_expires_at
+                                            ? `${new Date(g.rsvp_expires_at).toLocaleDateString()}${expired ? " (expired)" : ""}`
+                                            : "—"}
+                                        </td>
+                                        <td className="px-2 py-2">
+                                          <div className="flex items-center gap-1 justify-end">
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              disabled={busy || status === "no"}
+                                              onClick={() => declineGuest(g)}
+                                              className="h-7 gap-1"
+                                            >
+                                              <XCircle className="w-3 h-3" /> Decline
+                                            </Button>
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              disabled={busy || !!expired}
+                                              onClick={() => expireGuest(g)}
+                                              className="h-7 gap-1"
+                                            >
+                                              <Clock className="w-3 h-3" /> Expire
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              disabled={busy}
+                                              onClick={() => deleteGuest(g)}
+                                              className="h-7 w-7"
+                                            >
+                                              <Trash2 className="w-3.5 h-3.5" />
+                                            </Button>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>,
+                    );
+                  }
+                  return rows;
                 })}
+
                 {unassigned > 0 && (
                   <tr className="border-t border-border bg-muted/20">
                     <td></td>
