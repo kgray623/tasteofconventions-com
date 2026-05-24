@@ -9,6 +9,15 @@ const InviteInput = z.object({
   role: z.enum(["team", "admin"]),
 });
 
+async function refreshPendingInvite(inviteId: string, role: "team" | "admin", invitedBy: string) {
+  const { error } = await supabaseAdmin
+    .from("team_invites")
+    .update({ role, invited_by: invitedBy, created_at: new Date().toISOString() })
+    .eq("id", inviteId);
+  if (error) throw new Error(error.message);
+  return inviteId;
+}
+
 export const inviteTeamMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => InviteInput.parse(d))
@@ -26,7 +35,8 @@ export const inviteTeamMember = createServerFn({ method: "POST" })
 
     const email = data.email.toLowerCase();
 
-    // Reuse existing pending invite (or update role); error only if already accepted
+    // Reuse existing pending invite (or update role); error only if already accepted.
+    // The insert fallback also handles fast repeat clicks where the unique constraint wins the race.
     let inviteId: string;
     const { data: existing } = await supabaseAdmin
       .from("team_invites")
@@ -38,20 +48,30 @@ export const inviteTeamMember = createServerFn({ method: "POST" })
       if (existing.accepted_at) {
         throw new Error("This person has already accepted an invite.");
       }
-      const { error: updErr } = await supabaseAdmin
-        .from("team_invites")
-        .update({ role: data.role, invited_by: userId, created_at: new Date().toISOString() })
-        .eq("id", existing.id);
-      if (updErr) throw new Error(updErr.message);
-      inviteId = existing.id;
+      inviteId = await refreshPendingInvite(existing.id, data.role, userId);
     } else {
       const { data: inserted, error: insertErr } = await supabaseAdmin
         .from("team_invites")
         .insert({ email, role: data.role, invited_by: userId })
         .select("id")
         .single();
-      if (insertErr) throw new Error(insertErr.message);
-      inviteId = inserted.id;
+      if (insertErr) {
+        if (insertErr.code !== "23505") throw new Error(insertErr.message);
+
+        const { data: conflicted, error: conflictErr } = await supabaseAdmin
+          .from("team_invites")
+          .select("id,accepted_at")
+          .eq("email_normalized", email)
+          .maybeSingle();
+        if (conflictErr) throw new Error(conflictErr.message);
+        if (!conflicted) throw new Error("Invite already exists, but could not be loaded.");
+        if (conflicted.accepted_at) {
+          throw new Error("This person has already accepted an invite.");
+        }
+        inviteId = await refreshPendingInvite(conflicted.id, data.role, userId);
+      } else {
+        inviteId = inserted.id;
+      }
     }
 
     // Get inviter name for the email
