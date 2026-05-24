@@ -92,12 +92,24 @@ function InvitersPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const [{ data: inv }, { data: rsvps }, { data: invites }] = await withTimeout(Promise.all([
+      const [{ data: inv }, { data: rsvps }, { data: invites }, messages, profileRows, catRows, assignRows, eventRows] = await withTimeout(Promise.all([
         supabase.from("inviters").select("*").order("name"),
         supabase.from("rsvps").select("invited_by,party_size,status"),
         supabase.from("invitations").select("host_id"),
+        supabase.from("team_messages").select("*").order("created_at").limit(250),
+        supabase.from("profiles").select("id,display_name,email"),
+        supabase.from("categories").select("*").order("sort_order"),
+        supabase.from("category_assignments").select("*"),
+        supabase.from("events").select("id,title").order("starts_at", { ascending: true }),
       ]), 10000);
       setInviters((inv as Inviter[]) ?? []);
+      setMsgs((messages.data as TeamMsg[]) ?? []);
+      setProfiles(Object.fromEntries(((profileRows.data as Profile[]) ?? []).map((p) => [p.id, p])));
+      setCats((catRows.data as Cat[]) ?? []);
+      setAssigns((assignRows.data as Assign[]) ?? []);
+      const eventData = (eventRows.data as EventRow[]) ?? [];
+      setEvents(eventData);
+      setEventId((current) => current || eventData[0]?.id || "");
       const counts: Record<string, number> = {};
       let other = 0;
       const known = new Set((inv ?? []).map((i: any) => i.name.toLowerCase()));
