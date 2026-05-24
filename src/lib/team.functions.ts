@@ -7,12 +7,20 @@ import { sendTransactionalEmailServer } from "@/lib/email/send-server";
 const InviteInput = z.object({
   email: z.string().trim().email().max(255),
   role: z.enum(["team", "admin"]),
+  name: z.string().trim().min(1).max(120),
+  phone: z.string().trim().min(1).max(40),
 });
 
-async function refreshPendingInvite(inviteId: string, role: "team" | "admin", invitedBy: string) {
+async function refreshPendingInvite(
+  inviteId: string,
+  role: "team" | "admin",
+  invitedBy: string,
+  name: string,
+  phone: string,
+) {
   const { error } = await supabaseAdmin
     .from("team_invites")
-    .update({ role, invited_by: invitedBy, created_at: new Date().toISOString() })
+    .update({ role, invited_by: invitedBy, name, phone, created_at: new Date().toISOString() })
     .eq("id", inviteId);
   if (error) throw new Error(error.message);
   return inviteId;
