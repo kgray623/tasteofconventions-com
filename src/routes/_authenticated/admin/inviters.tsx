@@ -1,13 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Papa from "papaparse";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Trash2, UserPlus, Send, Upload } from "lucide-react";
+import { FileUp, ListChecks, MessageSquare, Plus, Trash2, UserPlus, Send, Upload } from "lucide-react";
 import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 import { inviteTeamMember } from "@/lib/team.functions";
 
@@ -17,8 +21,46 @@ export const Route = createFileRoute("/_authenticated/admin/inviters")({
 });
 
 type Inviter = { id: string; name: string; quota: number; active: boolean; host_id: string | null; email: string | null; phone: string | null };
+type TeamMsg = { id: string; user_id: string; body: string; created_at: string };
+type Profile = { id: string; display_name: string | null; email: string | null };
+type Cat = { id: string; name: string; sort_order: number };
+type Assign = { id: string; category_id: string; user_id: string | null; volunteer_name: string | null; notes: string | null };
+type EventRow = { id: string; title: string };
+type ContactRow = { name: string; email: string; phone: string; notes: string };
 
 const TOTAL_CAP = 550;
+
+const normalizePhone = (value: string) => value.replace(/\D/g, "");
+const pickContactField = (row: Record<string, unknown>, keys: string[]) => {
+  for (const [key, value] of Object.entries(row)) {
+    if (keys.includes(key.toLowerCase().trim())) return String(value ?? "").trim();
+  }
+  return "";
+};
+
+function parseVCards(text: string): ContactRow[] {
+  return text
+    .split(/BEGIN:VCARD/i)
+    .slice(1)
+    .map((card) => {
+      const lines = card.split(/END:VCARD/i)[0].replace(/\r?\n[ \t]/g, "").split(/\r?\n/);
+      let name = "", email = "", phone = "";
+      for (const raw of lines) {
+        const idx = raw.indexOf(":");
+        if (idx < 0) continue;
+        const key = raw.slice(0, idx).toUpperCase();
+        const value = raw.slice(idx + 1).trim();
+        if (!name && key.startsWith("FN")) name = value;
+        else if (!name && key.startsWith("N")) {
+          const [last, first] = value.split(";");
+          name = [first, last].filter(Boolean).join(" ").trim();
+        } else if (!email && key.startsWith("EMAIL")) email = value;
+        else if (!phone && key.startsWith("TEL")) phone = value;
+      }
+      return { name, email, phone, notes: "" };
+    })
+    .filter((row) => row.name || row.email || row.phone);
+}
 
 function InvitersPage() {
   const [inviters, setInviters] = useState<Inviter[]>([]);
