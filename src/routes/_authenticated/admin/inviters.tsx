@@ -766,15 +766,16 @@ function InvitersPage() {
                 </tr>
               </thead>
               <tbody>
-                {inviters.map((i) => {
+                {inviters.flatMap((i) => {
                   const used = usage[i.name.toLowerCase()] ?? 0;
                   const invited = i.host_id ? (invitedCounts[i.host_id] ?? 0) : 0;
                   const remaining = i.quota - Math.max(used, invited);
                   const guests = i.host_id ? (guestsByHost[i.host_id] ?? []) : [];
                   const isOpen = expandedHost === i.id;
-                  return (
-                    <Fragment key={i.id}>
-                      <tr className="border-t border-border">
+                  const rows = [];
+                  rows.push(
+                    <tr key={`${i.id}-main`} className="border-t border-border">
+
 
 
                         <td className="px-2 py-3">
