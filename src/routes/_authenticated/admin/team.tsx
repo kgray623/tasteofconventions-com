@@ -20,13 +20,19 @@ export const Route = createFileRoute("/_authenticated/admin/team")({
 type Invite = { id: string; email: string; role: string; accepted_at: string | null; created_at: string };
 type Member = { user_id: string; role: string; profile?: { display_name: string | null; email: string | null } };
 
-const emailSchema = z.string().trim().email().max(255);
+const inviteSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(120),
+  email: z.string().trim().email("Enter a valid email").max(255),
+  phone: z.string().trim().min(1, "Phone is required").max(40),
+});
 
 function TeamPage() {
   const { user } = useAuth();
   const [invites, setInvites] = useState<Invite[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [role, setRole] = useState<"team" | "admin">("team");
   const [sending, setSending] = useState(false);
   const sendInviteFn = useServerFn(inviteTeamMember);
@@ -44,17 +50,17 @@ function TeamPage() {
   useEffect(() => { load(); }, []);
 
   const sendInvite = async () => {
-    const parsed = emailSchema.safeParse(email);
-    if (!parsed.success) return toast.error("Enter a valid email");
+    const parsed = inviteSchema.safeParse({ name, email, phone });
+    if (!parsed.success) return toast.error(parsed.error.issues[0]?.message ?? "Check the form");
     if (!user) return;
     setSending(true);
     try {
-      const res = await sendInviteFn({ data: { email: parsed.data, role } });
-      setEmail("");
+      const res = await sendInviteFn({ data: { ...parsed.data, role } });
+      setName(""); setEmail(""); setPhone("");
       if (res.emailQueued) {
-        toast.success(`Invite emailed to ${parsed.data}.`);
+        toast.success(`Invite emailed to ${parsed.data.email}.`);
       } else {
-        toast.success(`Invited ${parsed.data}, but email could not be sent (${res.reason ?? "unknown"}).`);
+        toast.success(`Invited ${parsed.data.email}, but email could not be sent (${res.reason ?? "unknown"}).`);
       }
       load();
     } catch (err: any) {
