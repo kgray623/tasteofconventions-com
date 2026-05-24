@@ -139,7 +139,80 @@ function InvitersPage() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    const ch = supabase
+      .channel("team-workspace-chat")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "team_messages" }, (payload) => {
+        setMsgs((prev) => [...prev, payload.new as TeamMsg]);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
+
+  useEffect(() => {
+    chatScrollRef.current?.scrollTo({ top: chatScrollRef.current.scrollHeight });
+  }, [msgs.length]);
+
+  const profileLabel = (id: string) => profiles[id]?.display_name || profiles[id]?.email || "Team member";
+
+  const sendMessage = async () => {
+    const text = messageBody.trim();
+    if (!text || !user) return;
+    setMessageBody("");
+    const { error } = await supabase.from("team_messages").insert({ user_id: user.id, body: text });
+    if (error) { toast.error(error.message); setMessageBody(text); }
+  };
+
+  const assignmentLabel = (a: Assign) => {
+    if (a.volunteer_name) return a.volunteer_name;
+    return profiles[a.user_id ?? ""]?.display_name || profiles[a.user_id ?? ""]?.email || "Unassigned";
+  };
+
+  const parseContactFile = async (file: File) => {
+    const text = await file.text();
+    if (file.name.toLowerCase().endsWith(".vcf")) {
+      setContacts(parseVCards(text));
+      return;
+    }
+    Papa.parse<Record<string, unknown>>(text, {
+      header: true,
+      skipEmptyLines: true,
+      complete: ({ data }) => {
+        setContacts(data.map((row) => ({
+          name: pickContactField(row, ["name", "full name", "guest", "guest name"]),
+          email: pickContactField(row, ["email", "e-mail", "guest email"]),
+          phone: pickContactField(row, ["phone", "tel", "mobile", "cell", "guest phone"]),
+          notes: pickContactField(row, ["notes", "note"]),
+        })).filter((row) => row.name || row.email || row.phone));
+      },
+      error: (error: Error) => toast.error(error.message),
+    });
+  };
+
+  const saveContacts = async () => {
+    if (!user || !eventId || contacts.length === 0) return toast.error("Choose contacts and an event first.");
+    setSavingContacts(true);
+    try {
+      const rows = contacts.map((row) => ({
+        event_id: eventId,
+        host_id: user.id,
+        guest_name: row.name || row.email || row.phone || "Guest",
+        guest_email: row.email || null,
+        guest_phone: row.phone || null,
+        guest_email_normalized: row.email ? row.email.trim().toLowerCase() : null,
+        guest_phone_normalized: row.phone ? normalizePhone(row.phone) : null,
+        notes: row.notes || null,
+      }));
+      const { error } = await supabase.from("invitations").insert(rows);
+      if (error) return toast.error(error.message);
+      toast.success(`${rows.length} invitation${rows.length === 1 ? "" : "s"} added.`);
+      setContacts([]);
+      load();
+    } finally {
+      setSavingContacts(false);
+    }
+  };
 
   const add = async () => {
     if (!name.trim()) return toast.error("Name is required");
