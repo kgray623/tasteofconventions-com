@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRoles } from "@/hooks/use-roles";
-import { CalendarCog, ListChecks, MessageSquare, Upload, UserPlus } from "lucide-react";
+import { CalendarCog, ListChecks, MessageSquare, Play, Upload, UserPlus, Video } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: AdminOverview,
@@ -59,6 +59,25 @@ function AdminOverview() {
   if (!isAdmin) {
     return (
       <div className="space-y-6">
+        <Card className="overflow-hidden border-ink/10">
+          <div className="relative aspect-video bg-gradient-to-br from-ink/5 to-ink/10 flex flex-col items-center justify-center gap-4 p-8">
+            <div className="w-16 h-16 rounded-full bg-ink/5 flex items-center justify-center border border-ink/10">
+              <Video className="w-7 h-7 text-ink/40" />
+            </div>
+            <div className="text-center space-y-1">
+              <p className="text-sm font-medium text-ink/70">Feature Walkthrough</p>
+              <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+                A video will be placed here explaining every team workspace feature — assignments, guest uploads, team chat, and event details.
+              </p>
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-20 h-20 rounded-full bg-ink/[0.03] flex items-center justify-center">
+                <Play className="w-8 h-8 text-ink/20 ml-1" />
+              </div>
+            </div>
+          </div>
+        </Card>
+
         <p className="text-muted-foreground">
           Use these team tools to coordinate assignments, add your guests, chat with everyone, and review event details.
         </p>
