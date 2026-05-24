@@ -311,10 +311,8 @@ function InvitersPage() {
               `Added ${name.trim()}, but invite email could not be sent (${res.reason ?? "unknown"}).`,
             );
           }
-        } catch (err: any) {
-          toast.error(
-            `Added ${name.trim()}, but invite email failed: ${err?.message ?? "unknown error"}`,
-          );
+        } catch (err) {
+          toast.error(`Added ${name.trim()}, but invite email failed: ${getErrorMessage(err)}`);
         }
       } else {
         toast.success("Team member added");
@@ -353,8 +351,8 @@ function InvitersPage() {
       } else {
         toast.error(`Invite could not be emailed (${res.reason ?? "unknown"}).`);
       }
-    } catch (err: any) {
-      toast.error(err?.message ?? "Failed to resend invite");
+    } catch (err) {
+      toast.error(getErrorMessage(err) || "Failed to resend invite");
     } finally {
       setResendingId(null);
     }
