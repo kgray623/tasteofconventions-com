@@ -231,8 +231,8 @@ function PreviewPage() {
         {status === "yes" && (
           <Card className="p-7 space-y-5">
             <div>
-              <h2 className="font-display text-2xl">Pre-order from your cultural choice restaurant</h2>
-              <p className="text-sm text-muted-foreground mt-1">Choose from the following.</p>
+              <h2 className="font-display text-2xl">Optional. Pre-order from your cultural choice restaurant</h2>
+              <p className="text-sm text-muted-foreground mt-1">Refreshments provided at the event.</p>
             </div>
             {attendanceMode === "in_person" && (
               <div className="space-y-1.5">
