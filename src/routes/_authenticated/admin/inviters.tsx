@@ -113,6 +113,9 @@ function InvitersPage() {
   const [inviters, setInviters] = useState<Inviter[]>([]);
   const [usage, setUsage] = useState<Record<string, number>>({});
   const [invitedCounts, setInvitedCounts] = useState<Record<string, number>>({});
+  const [guestsByHost, setGuestsByHost] = useState<Record<string, GuestRow[]>>({});
+  const [expandedHost, setExpandedHost] = useState<string | null>(null);
+  const [rowBusy, setRowBusy] = useState<string | null>(null);
   const [unassigned, setUnassigned] = useState(0);
   const [msgs, setMsgs] = useState<TeamMsg[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
@@ -134,6 +137,7 @@ function InvitersPage() {
   const vcardRef = useRef<HTMLInputElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const inviteTeamMemberFn = useServerFn(inviteTeamMember);
+
 
   const load = async () => {
     setLoading(true);
