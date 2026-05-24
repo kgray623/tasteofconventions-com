@@ -125,6 +125,29 @@ function InvitersPage() {
     if (error) return toast.error(error.message);
     load();
   };
+  const resend = async (i: Inviter) => {
+    if (!i.email) return toast.error("No email on file for this person. Edit them and add an email first.");
+    setResendingId(i.id);
+    try {
+      const res = await inviteTeamMemberFn({
+        data: {
+          email: i.email,
+          role: "team",
+          name: i.name,
+          phone: i.phone || "n/a",
+        },
+      });
+      if (res.emailQueued) {
+        toast.success(`Invite resent to ${i.email}.`);
+      } else {
+        toast.error(`Invite could not be emailed (${res.reason ?? "unknown"}).`);
+      }
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to resend invite");
+    } finally {
+      setResendingId(null);
+    }
+  };
 
   const toggleActive = async (id: string, active: boolean) => {
     await supabase.from("inviters").update({ active }).eq("id", id);
