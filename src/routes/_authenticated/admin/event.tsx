@@ -261,6 +261,7 @@ function EditEventPage() {
             {saving ? "Saving…" : dirty ? "Save event" : "Saved"}
           </Button>
           {dirty && (
+
             <span className="text-xs text-terracotta">Unsaved changes — click Save event.</span>
           )}
         </div>}
