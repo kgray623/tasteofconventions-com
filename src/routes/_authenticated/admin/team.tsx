@@ -91,22 +91,33 @@ function TeamPage() {
           <Mail className="w-4 h-4 text-terracotta" />
           <h2 className="font-display text-xl">Invite a team member</h2>
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Full name"
+          />
+          <Input
+            type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="name@example.com"
-            className="flex-1 min-w-[220px]"
+          />
+          <Input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="Phone number"
           />
           <Select value={role} onValueChange={(v) => setRole(v as "team" | "admin")}>
-            <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="team">Team</SelectItem>
               <SelectItem value="admin">Admin</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={sendInvite} disabled={sending} className="bg-ink text-cream hover:bg-ink/90">{sending ? "Sending…" : "Invite"}</Button>
         </div>
+        <Button onClick={sendInvite} disabled={sending} className="bg-ink text-cream hover:bg-ink/90">{sending ? "Sending…" : "Invite"}</Button>
         <p className="text-xs text-muted-foreground">
           When the invited person signs up with this exact email, they'll automatically get {role} access.
         </p>
