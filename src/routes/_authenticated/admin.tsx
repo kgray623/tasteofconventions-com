@@ -4,30 +4,30 @@ import { useRoles } from "@/hooks/use-roles";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlus, UtensilsCrossed, Mail, HandCoins } from "lucide-react";
+import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlus, UtensilsCrossed, Mail, HandCoins, CalendarCog } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — A Taste of Special Conventions" }] }),
   component: AdminLayout,
 });
 
-import { CalendarCog } from "lucide-react";
-
 const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boolean; team?: boolean }[] = [
-  { to: "/admin", label: "Overview", icon: ShieldCheck, exact: true, team: true },
+  { to: "/admin", label: "Overview", icon: ShieldCheck, exact: true },
   { to: "/admin/event", label: "Event details", icon: CalendarCog, team: true },
   { to: "/admin/invitation", label: "Invitation page", icon: Mail },
   { to: "/admin/upload", label: "Add guests", icon: Upload, team: true },
-  { to: "/admin/inviters", label: "Inviters", icon: UserPlus, team: true },
+  { to: "/admin/inviters", label: "Inviters", icon: UserPlus },
   { to: "/admin/restaurants", label: "Restaurants", icon: UtensilsCrossed },
   { to: "/admin/categories", label: "Assignments", icon: ListChecks, team: true },
-  { to: "/admin/donations", label: "Donations", icon: HandCoins, team: true },
+  { to: "/admin/donations", label: "Donations", icon: HandCoins },
   { to: "/admin/team", label: "Team access", icon: Users },
   { to: "/admin/chat", label: "Team chat", icon: MessagesSquare, team: true },
 ];
 
+const teamAllowedPaths = new Set(["/admin", "/admin/event", "/admin/upload", "/admin/categories", "/admin/chat"]);
+
 function AdminLayout() {
-  const { isAdmin, isTeam, loading, refresh } = useRoles();
+  const { isAdmin, isTeam, loading } = useRoles();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
 
@@ -35,13 +35,6 @@ function AdminLayout() {
     await supabase.auth.signOut();
     toast.success("Signed out.");
     navigate({ to: "/" });
-  };
-
-  const claim = async () => {
-    const { data, error } = await supabase.rpc("claim_admin");
-    if (error) return toast.error(error.message);
-    if (data) { toast.success("You are now the master admin."); refresh(); }
-    else toast.info("An admin already exists.");
   };
 
   // Check if any admin already exists in the system; if so, redirect non-team
@@ -61,6 +54,11 @@ function AdminLayout() {
     })();
     return () => { cancelled = true; };
   }, [loading, isTeam, navigate]);
+
+  useEffect(() => {
+    if (loading || isAdmin || !isTeam || teamAllowedPaths.has(path)) return;
+    navigate({ to: "/admin" });
+  }, [loading, isAdmin, isTeam, path, navigate]);
 
   if (loading) {
     return <div className="mx-auto max-w-6xl px-6 py-10 text-muted-foreground">Loading…</div>;
@@ -86,14 +84,20 @@ function AdminLayout() {
     );
   }
 
+  if (isTeam && !isAdmin && !teamAllowedPaths.has(path)) {
+    return <div className="mx-auto max-w-6xl px-6 py-10 text-muted-foreground">Opening team workspace…</div>;
+  }
+
   const visibleTabs = tabs.filter((t) => isAdmin || t.team);
+  const headingEyebrow = isAdmin ? "Event admin" : "Team member";
+  const headingTitle = isAdmin ? "Master control" : "Team workspace";
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-terracotta">Event admin</p>
-          <h1 className="font-display text-3xl mt-1">Master control</h1>
+          <p className="text-xs uppercase tracking-[0.3em] text-terracotta">{headingEyebrow}</p>
+          <h1 className="font-display text-3xl mt-1">{headingTitle}</h1>
         </div>
         <Button onClick={signOut} variant="outline" size="sm">
           <LogOut className="w-4 h-4 mr-2" /> Log out

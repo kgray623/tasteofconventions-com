@@ -4,14 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRoles } from "@/hooks/use-roles";
-import { ListChecks, MessageSquare, Upload, UserPlus } from "lucide-react";
+import { CalendarCog, ListChecks, MessageSquare, Upload, UserPlus } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: AdminOverview,
 });
 
 function AdminOverview() {
-  const { isAdmin } = useRoles();
+  const { isAdmin, loading: rolesLoading } = useRoles();
   const [counts, setCounts] = useState({
     invites: 0,
     flags: 0,
@@ -21,6 +21,7 @@ function AdminOverview() {
   });
 
   useEffect(() => {
+    if (rolesLoading || !isAdmin) return;
     (async () => {
       const [i, f, c, t, p] = await Promise.all([
         supabase.from("invitations").select("id", { count: "exact", head: true }),
@@ -43,7 +44,7 @@ function AdminOverview() {
         pending: p.count ?? 0,
       });
     })();
-  }, []);
+  }, [rolesLoading, isAdmin]);
 
   const stats = [
     { label: "Guest invitations", value: counts.invites, to: "/admin/upload" },
@@ -53,12 +54,44 @@ function AdminOverview() {
     { label: "Pending invites", value: counts.pending, to: "/admin/team" },
   ] as const;
 
+  if (rolesLoading) return <p className="text-muted-foreground">Loading workspace…</p>;
+
+  if (!isAdmin) {
+    return (
+      <div className="space-y-6">
+        <p className="text-muted-foreground">
+          Use these team tools to coordinate assignments, add your guests, chat with everyone, and review event details.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Button asChild className="bg-ink text-cream hover:bg-ink/90 justify-start h-14">
+            <Link to="/admin/categories">
+              <ListChecks className="w-4 h-4" /> Assignments
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="justify-start h-14">
+            <Link to="/admin/upload">
+              <Upload className="w-4 h-4" /> Add guests
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="justify-start h-14">
+            <Link to="/admin/chat">
+              <MessageSquare className="w-4 h-4" /> Team chat
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="justify-start h-14">
+            <Link to="/admin/event">
+              <CalendarCog className="w-4 h-4" /> Event details
+            </Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <p className="text-muted-foreground">
-        {isAdmin
-          ? "You have full admin access. Manage the guest list, assignments, team, and chat."
-          : "You have team access. Use the chat to coordinate with the host team."}
+        You have full admin access. Manage the guest list, assignments, team, and chat.
       </p>
       <Card className="p-5 border-terracotta/30 bg-terracotta/5 space-y-4">
         <div>

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 
 export function SiteHeader() {
   const { user } = useAuth();
-  const { isTeam } = useRoles();
+  const { isAdmin, isTeam, loading } = useRoles();
   const navigate = useNavigate();
 
   const signOut = async () => {
@@ -20,9 +20,9 @@ export function SiteHeader() {
         <nav className="flex items-center gap-2 text-sm">
           {user ? (
             <>
-              {isTeam ? (
+              {loading ? null : isTeam ? (
                 <Link to="/admin" className="px-3 py-2 rounded-md hover:bg-secondary transition">
-                  Admin
+                  {isAdmin ? "Admin" : "Team"}
                 </Link>
               ) : (
                 <Link to="/my-rsvp" className="px-3 py-2 rounded-md hover:bg-secondary transition">

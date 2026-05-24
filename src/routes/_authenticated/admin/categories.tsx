@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, X, UserPlus } from "lucide-react";
+import { useRoles } from "@/hooks/use-roles";
 
 export const Route = createFileRoute("/_authenticated/admin/categories")({
   component: CategoriesPage,
@@ -17,6 +18,7 @@ type Assign = { id: string; category_id: string; user_id: string | null; volunte
 type Profile = { id: string; display_name: string | null; email: string | null };
 
 function CategoriesPage() {
+  const { isAdmin, loading: rolesLoading } = useRoles();
   const [cats, setCats] = useState<Cat[]>([]);
   const [assigns, setAssigns] = useState<Assign[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -76,17 +78,21 @@ function CategoriesPage() {
     return p?.display_name || p?.email || "Unknown";
   };
 
+  if (rolesLoading) return <p className="text-muted-foreground">Loading assignments…</p>;
+
   return (
     <div className="space-y-6">
-      <Card className="p-4 flex flex-wrap items-end gap-3">
-        <div className="flex-1 min-w-[240px]">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1.5">New category</p>
-          <Input value={newCat} onChange={(e) => setNewCat(e.target.value)} placeholder="e.g., Valet" />
-        </div>
-        <Button onClick={addCategory} className="bg-ink text-cream hover:bg-ink/90">
-          <Plus className="w-4 h-4 mr-2" /> Add category
-        </Button>
-      </Card>
+      {isAdmin && (
+        <Card className="p-4 flex flex-wrap items-end gap-3">
+          <div className="flex-1 min-w-[240px]">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1.5">New category</p>
+            <Input value={newCat} onChange={(e) => setNewCat(e.target.value)} placeholder="e.g., Valet" />
+          </div>
+          <Button onClick={addCategory} className="bg-ink text-cream hover:bg-ink/90">
+            <Plus className="w-4 h-4 mr-2" /> Add category
+          </Button>
+        </Card>
+      )}
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {cats.map((c) => {
@@ -95,9 +101,11 @@ function CategoriesPage() {
             <Card key={c.id} className="p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="font-display text-lg">{c.name}</h3>
-                <button onClick={() => deleteCategory(c.id)} className="text-muted-foreground hover:text-terracotta">
-                  <X className="w-4 h-4" />
-                </button>
+                {isAdmin && (
+                  <button onClick={() => deleteCategory(c.id)} className="text-muted-foreground hover:text-terracotta">
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
               </div>
               <div className="space-y-1.5">
                 {items.length === 0 && (
@@ -111,13 +119,16 @@ function CategoriesPage() {
                       </Badge>
                       <span className="text-sm truncate">{labelFor(a)}</span>
                     </div>
-                    <button onClick={() => removeAssign(a.id)} className="text-muted-foreground hover:text-terracotta">
-                      <X className="w-3.5 h-3.5" />
-                    </button>
+                    {isAdmin && (
+                      <button onClick={() => removeAssign(a.id)} className="text-muted-foreground hover:text-terracotta">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
-              <div className="flex gap-2 pt-1">
+              {isAdmin && (
+                <div className="flex gap-2 pt-1">
                 <Input
                   list={`profiles-${c.id}`}
                   value={drafts[c.id] || ""}
@@ -135,6 +146,7 @@ function CategoriesPage() {
                   <UserPlus className="w-4 h-4" />
                 </Button>
               </div>
+              )}
             </Card>
           );
         })}
