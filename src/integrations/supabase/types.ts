@@ -697,6 +697,8 @@ export type Database = {
           email_normalized: string | null
           id: string
           invited_by: string
+          name: string | null
+          phone: string | null
           role: Database["public"]["Enums"]["app_role"]
         }
         Insert: {
@@ -706,6 +708,8 @@ export type Database = {
           email_normalized?: string | null
           id?: string
           invited_by: string
+          name?: string | null
+          phone?: string | null
           role?: Database["public"]["Enums"]["app_role"]
         }
         Update: {
@@ -715,6 +719,8 @@ export type Database = {
           email_normalized?: string | null
           id?: string
           invited_by?: string
+          name?: string | null
+          phone?: string | null
           role?: Database["public"]["Enums"]["app_role"]
         }
         Relationships: []
