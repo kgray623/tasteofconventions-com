@@ -73,7 +73,7 @@ export const inviteTeamMember = createServerFn({ method: "POST" })
     const result = await sendTransactionalEmailServer({
       templateName: "team-invite",
       recipientEmail: email,
-      idempotencyKey: `team-invite-${invite.id}`,
+      idempotencyKey: `team-invite-${inviteId}-${Date.now()}`,
       templateData: {
         inviterName,
         role: data.role,
