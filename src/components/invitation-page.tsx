@@ -309,7 +309,7 @@ export function InvitationPage() {
           {/* Date & Time */}
           <AccordionItem value="datetime" id="datetime" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
             <AccordionTrigger className="hover:no-underline">
-              <span className="flex items-center gap-3 font-display text-2xl">
+              <span className="flex items-center gap-3 text-2xl">
                 <Clock className="w-5 h-5 text-sunset" /> Date & Time
               </span>
             </AccordionTrigger>
