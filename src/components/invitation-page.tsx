@@ -80,13 +80,8 @@ const defaultContent: Content = {
 export function InvitationPage() {
   const [content, setContent] = useState<Content>(defaultContent);
   const [openItems, setOpenItems] = useState<string[]>([]);
-  const [openItems, setOpenItems] = useState<string[]>([]);
 
   useEffect(() => {
-    supabase.from("restaurants").select("*").eq("active", true).order("name")
-      .then(({ data }) => setRestaurants((data as R[]) ?? []));
-    supabase.from("menu_items").select("*").eq("available", true)
-      .then(({ data }) => setItems((data as M[]) ?? []));
     supabase.from("invitation_content").select("*").limit(1).maybeSingle()
       .then(({ data }) => {
         if (data) {
