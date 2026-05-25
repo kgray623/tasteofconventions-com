@@ -326,43 +326,31 @@ function InvitersPage() {
 
   const add = async () => {
     if (!name.trim()) return toast.error("Name is required");
-    const trimmedEmail = email.trim();
     const trimmedPhone = phone.trim();
+    if (!trimmedPhone) return toast.error("Phone is required");
     setAdding(true);
     try {
       const { error } = await supabase.from("inviters").insert({
         name: name.trim(),
         quota,
-        email: trimmedEmail || null,
-        phone: trimmedPhone || null,
+        phone: trimmedPhone,
       });
       if (error) {
         toast.error(error.message);
         return;
       }
 
-      if (trimmedEmail) {
-        try {
-          const res = await inviteTeamMemberFn({
-            data: {
-              email: trimmedEmail,
-              role: "team",
-              name: name.trim(),
-              phone: trimmedPhone || "n/a",
-            },
-          });
-          if (res.emailQueued) {
-            toast.success(`Added and emailed invite to ${trimmedEmail}.`);
-          } else {
-            toast.success(
-              `Added ${name.trim()}, but invite email could not be sent (${res.reason ?? "unknown"}).`,
-            );
-          }
-        } catch (err) {
-          toast.error(`Added ${name.trim()}, but invite email failed: ${getErrorMessage(err)}`);
-        }
-      } else {
-        toast.success("Team member added");
+      try {
+        await inviteTeamMemberFn({
+          data: {
+            role: "team",
+            name: name.trim(),
+            phone: trimmedPhone,
+          },
+        });
+        toast.success(`Added ${name.trim()}. They'll get team access when they sign up with ${trimmedPhone}.`);
+      } catch (err) {
+        toast.error(`Added ${name.trim()}, but team grant failed: ${getErrorMessage(err)}`);
       }
 
       setName("");
@@ -380,30 +368,7 @@ function InvitersPage() {
     if (error) return toast.error(error.message);
     load();
   };
-  const resend = async (i: Inviter) => {
-    if (!i.email)
-      return toast.error("No email on file for this person. Edit them and add an email first.");
-    setResendingId(i.id);
-    try {
-      const res = await inviteTeamMemberFn({
-        data: {
-          email: i.email,
-          role: "team",
-          name: i.name,
-          phone: i.phone || "n/a",
-        },
-      });
-      if (res.emailQueued) {
-        toast.success(`Invite resent to ${i.email}.`);
-      } else {
-        toast.error(`Invite could not be emailed (${res.reason ?? "unknown"}).`);
-      }
-    } catch (err) {
-      toast.error(getErrorMessage(err) || "Failed to resend invite");
-    } finally {
-      setResendingId(null);
-    }
-  };
+
 
   const toggleActive = async (id: string, active: boolean) => {
     await supabase.from("inviters").update({ active }).eq("id", id);
