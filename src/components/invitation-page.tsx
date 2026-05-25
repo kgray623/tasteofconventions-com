@@ -355,7 +355,11 @@ export function InvitationPage() {
               </span>
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-3">
-              <p>Details on dinner and menu options will be shared here soon.</p>
+              <p className="whitespace-pre-line">
+                Please bring snacks to share.
+                {"\n\n"}
+                If you're ordering from the restaurants, catering will be available on premises.
+              </p>
               {isAdmin && (
                 <Link to="/admin/invitation">
                   <Button variant="outline" size="sm" className="gap-2">
