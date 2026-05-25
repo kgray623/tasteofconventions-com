@@ -50,7 +50,7 @@ function AdminOverview() {
     { label: "Guest invitations", value: counts.invites, to: "/admin/upload" },
     { label: "Duplicate flags", value: counts.flags, to: "/dashboard" },
     { label: "Categories", value: counts.categories, to: "/admin/categories" },
-    { label: "Team members", value: counts.team, to: "/admin/team" },
+    { label: "Committee members", value: counts.team, to: "/admin/team" },
     { label: "Pending invites", value: counts.pending, to: "/admin/team" },
   ] as const;
 
@@ -67,7 +67,7 @@ function AdminOverview() {
             <div className="text-center space-y-1">
               <p className="text-sm font-medium text-ink/70">Feature Walkthrough</p>
               <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-                A video will be placed here explaining every team workspace feature — assignments, guest uploads, team chat, and event details.
+                A video will be placed here explaining every Steering Committee workspace feature — assignments, guest uploads, committee chat, and event details.
               </p>
             </div>
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -79,7 +79,7 @@ function AdminOverview() {
         </Card>
 
         <p className="text-muted-foreground">
-          Use these team tools to coordinate assignments, add your guests, chat with everyone, and review event details.
+          Use these committee tools to coordinate assignments, add your guests, chat with everyone, and review event details.
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <Button asChild className="bg-ink text-cream hover:bg-ink/90 justify-start h-14">
@@ -94,7 +94,7 @@ function AdminOverview() {
           </Button>
           <Button asChild variant="outline" className="justify-start h-14">
             <Link to="/admin/chat">
-              <MessageSquare className="w-4 h-4" /> Team chat
+              <MessageSquare className="w-4 h-4" /> Committee chat
             </Link>
           </Button>
           <Button asChild variant="outline" className="justify-start h-14">
@@ -114,15 +114,15 @@ function AdminOverview() {
       </p>
       <Card className="p-5 border-terracotta/30 bg-terracotta/5 space-y-4">
         <div>
-          <h2 className="font-display text-xl">Team workspace</h2>
+          <h2 className="font-display text-xl">Steering Committee workspace</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Communicate with the team, see tasks, make invitations, and upload your contacts here.
+            Communicate with the committee, see tasks, make invitations, and upload your contacts here.
           </p>
         </div>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <Button asChild className="bg-ink text-cream hover:bg-ink/90 justify-start">
             <Link to="/admin/inviters">
-              <UserPlus className="w-4 h-4" /> Team invitations
+              <UserPlus className="w-4 h-4" /> Committee invitations
             </Link>
           </Button>
           <Button asChild variant="outline" className="justify-start">
@@ -137,7 +137,7 @@ function AdminOverview() {
           </Button>
           <Button asChild variant="outline" className="justify-start">
             <Link to="/admin/chat">
-              <MessageSquare className="w-4 h-4" /> Team chat
+              <MessageSquare className="w-4 h-4" /> Committee chat
             </Link>
           </Button>
         </div>

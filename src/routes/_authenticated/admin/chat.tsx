@@ -65,7 +65,7 @@ function ChatPage() {
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 space-y-4">
         {msgs.length === 0 && (
           <p className="text-center text-muted-foreground text-sm py-12">
-            No messages yet. Say hi to your team.
+            No messages yet. Say hi to your committee.
           </p>
         )}
         {msgs.map((m) => {

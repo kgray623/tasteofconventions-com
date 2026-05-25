@@ -22,7 +22,7 @@ export function SiteHeader() {
             <>
               {loading ? null : isTeam ? (
                 <Link to="/admin" className="px-3 py-2 rounded-md hover:bg-secondary transition">
-                  {isAdmin ? "Admin" : "Team"}
+                  {isAdmin ? "Admin" : "Steering Committee"}
                 </Link>
               ) : (
                 <Link to="/my-rsvp" className="px-3 py-2 rounded-md hover:bg-secondary transition">
