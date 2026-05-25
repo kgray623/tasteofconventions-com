@@ -788,22 +788,11 @@ function InvitersPage() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1 justify-end">
-                            {i.email && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => resend(i)}
-                                disabled={resendingId === i.id}
-                                className="gap-1 h-8"
-                              >
-                                <Send className="w-3.5 h-3.5" />
-                                {resendingId === i.id ? "Sending…" : "Resend"}
-                              </Button>
-                            )}
                             <Button variant="ghost" size="icon" onClick={() => remove(i.id)}>
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
+
                         </td>
                       </tr>,
                   );
