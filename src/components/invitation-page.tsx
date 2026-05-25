@@ -29,8 +29,7 @@ import {
   Wine,
 } from "lucide-react";
 
-type R = { id: string; name: string; description: string | null; cuisine: string | null };
-type M = { id: string; restaurant_id: string; name: string; description: string | null; price: number; dietary_flags: string[] | null };
+type Stop = { country: string; when: string; note: string; restaurant: boolean };
 type Stop = { country: string; when: string; note: string; restaurant: boolean };
 type Content = {
   hero_eyebrow: string;
