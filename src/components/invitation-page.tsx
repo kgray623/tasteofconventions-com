@@ -394,6 +394,18 @@ export function InvitationPage() {
               <p>Donations are appreciated</p>
             </AccordionContent>
           </AccordionItem>
+
+          {/* Adult Beverages */}
+          <AccordionItem value="adult-beverages" id="adult-beverages" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
+            <AccordionTrigger className="hover:no-underline">
+              <span className="flex items-center gap-3 text-2xl">
+                <Wine className="w-5 h-5 text-sunset" /> Adult Beverages
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="pb-6 text-muted-foreground space-y-2">
+              <p>Adult beverages will be available for purchase from the venue. Outside bringing alcohol is not allowed.</p>
+            </AccordionContent>
+          </AccordionItem>
         </Accordion>
       </section>
 
