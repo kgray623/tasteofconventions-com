@@ -668,16 +668,8 @@ function InvitersPage() {
               placeholder="e.g. Jane Doe"
             />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@example.com"
-            />
-          </div>
+
+
           <div className="space-y-1.5">
             <Label htmlFor="phone">Phone</Label>
             <Input
