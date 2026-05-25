@@ -26,6 +26,7 @@ import {
   UtensilsCrossed,
   ExternalLink,
   Heart,
+  Wine,
 } from "lucide-react";
 
 type R = { id: string; name: string; description: string | null; cuisine: string | null };
