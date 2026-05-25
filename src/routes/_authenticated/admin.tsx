@@ -20,8 +20,8 @@ const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boole
   { to: "/admin/restaurants", label: "Restaurants", icon: UtensilsCrossed },
   { to: "/admin/categories", label: "Assignments", icon: ListChecks, team: true },
   { to: "/admin/donations", label: "Donations", icon: HandCoins },
-  { to: "/admin/team", label: "Team access", icon: Users },
-  { to: "/admin/chat", label: "Team chat", icon: MessagesSquare, team: true },
+  { to: "/admin/team", label: "Committee", icon: Users },
+  { to: "/admin/chat", label: "Committee chat", icon: MessagesSquare, team: true },
 ];
 
 const teamAllowedPaths = new Set(["/admin", "/admin/event", "/admin/upload", "/admin/categories", "/admin/chat"]);
@@ -85,12 +85,12 @@ function AdminLayout() {
   }
 
   if (isTeam && !isAdmin && !teamAllowedPaths.has(path)) {
-    return <div className="mx-auto max-w-6xl px-6 py-10 text-muted-foreground">Opening team workspace…</div>;
+    return <div className="mx-auto max-w-6xl px-6 py-10 text-muted-foreground">Opening committee workspace…</div>;
   }
 
   const visibleTabs = tabs.filter((t) => isAdmin || t.team);
-  const headingEyebrow = isAdmin ? "Event admin" : "Team member";
-  const headingTitle = isAdmin ? "Master control" : "Team workspace";
+  const headingEyebrow = isAdmin ? "Event admin" : "Steering Committee member";
+  const headingTitle = isAdmin ? "Master control" : "Steering Committee workspace";
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">

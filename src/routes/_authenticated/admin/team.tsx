@@ -90,7 +90,7 @@ function TeamPage() {
       <Card className="p-5 space-y-4">
         <div className="flex items-center gap-2">
           <Phone className="w-4 h-4 text-terracotta" />
-          <h2 className="font-display text-xl">Add Team Member</h2>
+          <h2 className="font-display text-xl">Add Steering Committee Member</h2>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <Input
@@ -107,7 +107,7 @@ function TeamPage() {
           <Select value={role} onValueChange={(v) => setRole(v as "team" | "admin")}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="team">Team</SelectItem>
+              <SelectItem value="team">Committee</SelectItem>
               <SelectItem value="admin">Admin</SelectItem>
             </SelectContent>
           </Select>
@@ -120,10 +120,10 @@ function TeamPage() {
 
       <Card className="overflow-hidden">
         <div className="p-4 border-b border-border flex items-center gap-2">
-          <Users className="w-4 h-4" /> <h2 className="font-display text-lg">Team members</h2>
+          <Users className="w-4 h-4" /> <h2 className="font-display text-lg">Committee members</h2>
         </div>
         <div className="divide-y divide-border">
-          {members.length === 0 && <p className="p-6 text-sm text-muted-foreground text-center">No team members yet.</p>}
+          {members.length === 0 && <p className="p-6 text-sm text-muted-foreground text-center">No committee members yet.</p>}
           {members.map((m) => (
             <div key={`${m.user_id}-${m.role}`} className="p-4 flex items-center justify-between gap-3">
               <div>

@@ -65,7 +65,7 @@ function ChatPage() {
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 space-y-4">
         {msgs.length === 0 && (
           <p className="text-center text-muted-foreground text-sm py-12">
-            No messages yet. Say hi to your team.
+            No messages yet. Say hi to your committee.
           </p>
         )}
         {msgs.map((m) => {
@@ -92,7 +92,7 @@ function ChatPage() {
           value={body}
           onChange={(e) => setBody(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-          placeholder="Message your team… (Enter to send, Shift+Enter for newline)"
+          placeholder="Message your committee… (Enter to send, Shift+Enter for newline)"
           rows={2}
           className="resize-none"
         />

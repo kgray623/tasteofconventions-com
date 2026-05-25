@@ -254,7 +254,7 @@ function InvitersPage() {
   }, [msgs.length]);
 
   const profileLabel = (id: string) =>
-    profiles[id]?.display_name || profiles[id]?.email || "Team member";
+    profiles[id]?.display_name || profiles[id]?.email || "Committee member";
 
   const sendMessage = async () => {
     const text = messageBody.trim();
@@ -348,9 +348,9 @@ function InvitersPage() {
             phone: trimmedPhone,
           },
         });
-        toast.success(`Added ${name.trim()}. They'll get team access when they sign up with ${trimmedPhone}.`);
+        toast.success(`Added ${name.trim()}. They'll get committee access when they sign up with ${trimmedPhone}.`);
       } catch (err) {
-        toast.error(`Added ${name.trim()}, but team grant failed: ${getErrorMessage(err)}`);
+        toast.error(`Added ${name.trim()}, but committee grant failed: ${getErrorMessage(err)}`);
       }
 
       setName("");
@@ -452,10 +452,10 @@ function InvitersPage() {
         <Card className="flex min-h-[360px] flex-col overflow-hidden">
           <div className="border-b border-border px-5 py-4">
             <h2 className="font-display text-xl flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-terracotta" /> Team communication
+              <MessageSquare className="w-5 h-5 text-terracotta" /> Committee communication
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
-              Everyone on the team can see and respond here.
+              Everyone on the committee can see and respond here.
             </p>
           </div>
           <div ref={chatScrollRef} className="flex-1 max-h-[360px] overflow-y-auto p-5 space-y-3">
@@ -493,7 +493,7 @@ function InvitersPage() {
                   sendMessage();
                 }
               }}
-              placeholder="Message the team…"
+              placeholder="Message the committee…"
               rows={2}
               className="resize-none"
             />
@@ -511,7 +511,7 @@ function InvitersPage() {
           <Card className="p-5 space-y-4">
             <div>
               <h2 className="font-display text-xl flex items-center gap-2">
-                <ListChecks className="w-5 h-5 text-terracotta" /> Team tasks
+                <ListChecks className="w-5 h-5 text-terracotta" /> Committee tasks
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
                 All current needs and assignments are visible here.
@@ -653,7 +653,7 @@ function InvitersPage() {
 
       <Card className="p-6 space-y-4">
         <div>
-          <h2 className="font-display text-xl">Add Team Member</h2>
+          <h2 className="font-display text-xl">Add Steering Committee Member</h2>
           <p className="text-sm text-muted-foreground">
             They'll appear in the dropdown on the RSVP form.
           </p>
