@@ -12,6 +12,7 @@ import {
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useRoles } from "@/hooks/use-roles";
 import {
   Calendar,
   MapPin,
@@ -27,6 +28,8 @@ import {
   
   Heart,
   Wine,
+  Plus,
+  HandHeart,
 } from "lucide-react";
 
 type Stop = { country: string; when: string; note: string; restaurant: boolean };
@@ -80,6 +83,7 @@ const defaultContent: Content = {
 export function InvitationPage() {
   const [content, setContent] = useState<Content>(defaultContent);
   const [openItems, setOpenItems] = useState<string[]>([]);
+  const { isAdmin } = useRoles();
 
   useEffect(() => {
     supabase.from("invitation_content").select("*").limit(1).maybeSingle()
@@ -350,10 +354,37 @@ export function InvitationPage() {
                 <UtensilsCrossed className="w-5 h-5 text-sunset" /> Food
               </span>
             </AccordionTrigger>
-            <AccordionContent className="pb-6 text-muted-foreground space-y-2">
+            <AccordionContent className="pb-6 text-muted-foreground space-y-3">
               <p>Details on dinner and menu options will be shared here soon.</p>
+              {isAdmin && (
+                <Link to="/admin/invitation">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Plus className="w-4 h-4" /> Add content
+                  </Button>
+                </Link>
+              )}
             </AccordionContent>
           </AccordionItem>
+
+          {/* Volunteer */}
+          <AccordionItem value="volunteer" id="volunteer" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
+            <AccordionTrigger className="hover:no-underline">
+              <span className="flex items-center gap-3 text-2xl">
+                <HandHeart className="w-5 h-5 text-sunset" /> Volunteer
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="pb-6 text-muted-foreground space-y-3">
+              <p>Volunteer opportunities and sign-up details will be shared here soon.</p>
+              {isAdmin && (
+                <Link to="/admin/invitation">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Plus className="w-4 h-4" /> Add content
+                  </Button>
+                </Link>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+
 
           {/* Adult Beverages */}
           <AccordionItem value="adult-beverages" id="adult-beverages" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
