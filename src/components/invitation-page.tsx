@@ -83,6 +83,7 @@ const defaultContent: Content = {
 export function InvitationPage() {
   const [content, setContent] = useState<Content>(defaultContent);
   const [openItems, setOpenItems] = useState<string[]>([]);
+  const { isAdmin } = useRoles();
 
   useEffect(() => {
     supabase.from("invitation_content").select("*").limit(1).maybeSingle()
