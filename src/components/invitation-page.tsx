@@ -343,6 +343,18 @@ export function InvitationPage() {
             </AccordionContent>
           </AccordionItem>
 
+          {/* Food */}
+          <AccordionItem value="food" id="food" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
+            <AccordionTrigger className="hover:no-underline">
+              <span className="flex items-center gap-3 text-2xl">
+                <UtensilsCrossed className="w-5 h-5 text-sunset" /> Food
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="pb-6 text-muted-foreground space-y-2">
+              <p>Details on dinner and menu options will be shared here soon.</p>
+            </AccordionContent>
+          </AccordionItem>
+
           {/* Adult Beverages */}
           <AccordionItem value="adult-beverages" id="adult-beverages" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
             <AccordionTrigger className="hover:no-underline">
