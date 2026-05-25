@@ -10,19 +10,25 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Mail, Send, Trash2, ShieldCheck, Users } from "lucide-react";
-import { getTeamInviteEmailStatuses, inviteTeamMember, resendTeamInvite } from "@/lib/team.functions";
+import { Phone, Trash2, ShieldCheck, Users } from "lucide-react";
+import { inviteTeamMember } from "@/lib/team.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/team")({
   component: TeamPage,
 });
 
-type Invite = { id: string; email: string; role: string; accepted_at: string | null; created_at: string };
+type Invite = {
+  id: string;
+  name: string | null;
+  phone: string | null;
+  role: string;
+  accepted_at: string | null;
+  created_at: string;
+};
 type Member = { user_id: string; role: string; profile?: { display_name: string | null; email: string | null } };
 
 const inviteSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(120),
-  email: z.string().trim().email("Enter a valid email").max(255),
   phone: z.string().trim().min(1, "Phone is required").max(40),
 });
 
@@ -31,46 +37,35 @@ function TeamPage() {
   const [invites, setInvites] = useState<Invite[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState<"team" | "admin">("team");
   const [sending, setSending] = useState(false);
-  const [resendingId, setResendingId] = useState<string | null>(null);
-  const [inviteEmailStatuses, setInviteEmailStatuses] = useState<Record<string, { status: string; errorMessage: string | null; createdAt: string }>>({});
   const sendInviteFn = useServerFn(inviteTeamMember);
-  const resendInviteFn = useServerFn(resendTeamInvite);
-  const getInviteEmailStatusesFn = useServerFn(getTeamInviteEmailStatuses);
 
   const load = async () => {
-    const [inv, mem, prof, emailStatuses] = await Promise.all([
-      supabase.from("team_invites").select("*").order("created_at", { ascending: false }),
+    const [inv, mem, prof] = await Promise.all([
+      supabase.from("team_invites").select("id,name,phone,role,accepted_at,created_at").order("created_at", { ascending: false }),
       supabase.from("user_roles").select("user_id,role").in("role", ["admin", "team"]),
       supabase.from("profiles").select("id,display_name,email"),
-      getInviteEmailStatusesFn(),
     ]);
-    setInvites(inv.data ?? []);
-    setInviteEmailStatuses(emailStatuses ?? {});
+    setInvites((inv.data ?? []) as Invite[]);
     const profMap = new Map((prof.data ?? []).map((p) => [p.id, p]));
     setMembers((mem.data ?? []).map((m) => ({ ...m, profile: profMap.get(m.user_id) })));
   };
   useEffect(() => { load(); }, []);
 
   const sendInvite = async () => {
-    const parsed = inviteSchema.safeParse({ name, email, phone });
+    const parsed = inviteSchema.safeParse({ name, phone });
     if (!parsed.success) return toast.error(parsed.error.issues[0]?.message ?? "Check the form");
     if (!user) return;
     setSending(true);
     try {
-      const res = await sendInviteFn({ data: { ...parsed.data, role } });
-      setName(""); setEmail(""); setPhone("");
-      if (res.emailQueued) {
-        toast.success(`Invite emailed to ${parsed.data.email}.`);
-      } else {
-        toast.success(`Invited ${parsed.data.email}, but email could not be sent (${res.reason ?? "unknown"}).`);
-      }
+      await sendInviteFn({ data: { ...parsed.data, role } });
+      setName(""); setPhone("");
+      toast.success(`Added ${parsed.data.name}. They'll get their role automatically when they sign up with ${parsed.data.phone}.`);
       load();
     } catch (err: any) {
-      toast.error(err?.message ?? "Failed to send invite");
+      toast.error(err?.message ?? "Failed to add team member");
     } finally {
       setSending(false);
     }
@@ -80,23 +75,6 @@ function TeamPage() {
     const { error } = await supabase.from("team_invites").delete().eq("id", id);
     if (error) return toast.error(error.message);
     load();
-  };
-
-  const resendInvite = async (invite: Invite) => {
-    setResendingId(invite.id);
-    try {
-      const res = await resendInviteFn({ data: { inviteId: invite.id } });
-      if (res.emailQueued) {
-        toast.success(`Invite resent to ${invite.email}.`);
-      } else {
-        toast.error(`Invite could not be emailed (${res.reason ?? "unknown"}).`);
-      }
-      load();
-    } catch (err: any) {
-      toast.error(err?.message ?? "Failed to resend invite");
-    } finally {
-      setResendingId(null);
-    }
   };
 
   const removeRole = async (userId: string, r: string) => {
@@ -111,7 +89,7 @@ function TeamPage() {
     <div className="space-y-6">
       <Card className="p-5 space-y-4">
         <div className="flex items-center gap-2">
-          <Mail className="w-4 h-4 text-terracotta" />
+          <Phone className="w-4 h-4 text-terracotta" />
           <h2 className="font-display text-xl">Add Team Member</h2>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -119,12 +97,6 @@ function TeamPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Full name"
-          />
-          <Input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="name@example.com"
           />
           <Input
             type="tel"
@@ -140,9 +112,9 @@ function TeamPage() {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={sendInvite} disabled={sending} className="bg-ink text-cream hover:bg-ink/90">{sending ? "Sending…" : "Invite"}</Button>
+        <Button onClick={sendInvite} disabled={sending} className="bg-ink text-cream hover:bg-ink/90">{sending ? "Adding…" : "Add"}</Button>
         <p className="text-xs text-muted-foreground">
-          When the invited person signs up with this exact email, they'll automatically get {role} access.
+          When this person signs up and enters the same phone number, they'll automatically get {role} access.
         </p>
       </Card>
 
@@ -176,45 +148,25 @@ function TeamPage() {
           <h2 className="font-display text-lg">Pending &amp; past invites</h2>
         </div>
         <div className="divide-y divide-border">
-          {invites.length === 0 && <p className="p-6 text-sm text-muted-foreground text-center">No invites sent yet.</p>}
-          {invites.map((i) => {
-            const emailStatus = inviteEmailStatuses[i.email.toLowerCase()];
-            return (
+          {invites.length === 0 && <p className="p-6 text-sm text-muted-foreground text-center">No invites added yet.</p>}
+          {invites.map((i) => (
             <div key={i.id} className="p-4 flex items-center justify-between gap-3">
               <div>
-                <p className="font-medium">{i.email}</p>
+                <p className="font-medium">{i.name || i.phone || "—"}</p>
                 <p className="text-xs text-muted-foreground">
-                  {i.accepted_at ? `Accepted ${new Date(i.accepted_at).toLocaleDateString()}` : "Awaiting signup"}
+                  {i.phone ? i.phone : "No phone"} · {i.accepted_at ? `Accepted ${new Date(i.accepted_at).toLocaleDateString()}` : "Awaiting signup"}
                 </p>
-                {!i.accepted_at && emailStatus && (
-                  <p className="text-xs text-muted-foreground">
-                    Email {emailStatus.status} {new Date(emailStatus.createdAt).toLocaleString()}
-                    {emailStatus.errorMessage ? ` — ${emailStatus.errorMessage}` : ""}
-                  </p>
-                )}
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant="outline">{i.role}</Badge>
                 {!i.accepted_at && (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => resendInvite(i)}
-                      disabled={resendingId === i.id}
-                      className="gap-1"
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                      {resendingId === i.id ? "Sending…" : "Resend"}
-                    </Button>
-                    <button onClick={() => revoke(i.id)} className="text-muted-foreground hover:text-terracotta">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </>
+                  <button onClick={() => revoke(i.id)} className="text-muted-foreground hover:text-terracotta">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 )}
               </div>
             </div>
-          );})}
+          ))}
         </div>
       </Card>
     </div>

@@ -326,43 +326,31 @@ function InvitersPage() {
 
   const add = async () => {
     if (!name.trim()) return toast.error("Name is required");
-    const trimmedEmail = email.trim();
     const trimmedPhone = phone.trim();
+    if (!trimmedPhone) return toast.error("Phone is required");
     setAdding(true);
     try {
       const { error } = await supabase.from("inviters").insert({
         name: name.trim(),
         quota,
-        email: trimmedEmail || null,
-        phone: trimmedPhone || null,
+        phone: trimmedPhone,
       });
       if (error) {
         toast.error(error.message);
         return;
       }
 
-      if (trimmedEmail) {
-        try {
-          const res = await inviteTeamMemberFn({
-            data: {
-              email: trimmedEmail,
-              role: "team",
-              name: name.trim(),
-              phone: trimmedPhone || "n/a",
-            },
-          });
-          if (res.emailQueued) {
-            toast.success(`Added and emailed invite to ${trimmedEmail}.`);
-          } else {
-            toast.success(
-              `Added ${name.trim()}, but invite email could not be sent (${res.reason ?? "unknown"}).`,
-            );
-          }
-        } catch (err) {
-          toast.error(`Added ${name.trim()}, but invite email failed: ${getErrorMessage(err)}`);
-        }
-      } else {
-        toast.success("Team member added");
+      try {
+        await inviteTeamMemberFn({
+          data: {
+            role: "team",
+            name: name.trim(),
+            phone: trimmedPhone,
+          },
+        });
+        toast.success(`Added ${name.trim()}. They'll get team access when they sign up with ${trimmedPhone}.`);
+      } catch (err) {
+        toast.error(`Added ${name.trim()}, but team grant failed: ${getErrorMessage(err)}`);
       }
 
       setName("");
@@ -380,30 +368,7 @@ function InvitersPage() {
     if (error) return toast.error(error.message);
     load();
   };
-  const resend = async (i: Inviter) => {
-    if (!i.email)
-      return toast.error("No email on file for this person. Edit them and add an email first.");
-    setResendingId(i.id);
-    try {
-      const res = await inviteTeamMemberFn({
-        data: {
-          email: i.email,
-          role: "team",
-          name: i.name,
-          phone: i.phone || "n/a",
-        },
-      });
-      if (res.emailQueued) {
-        toast.success(`Invite resent to ${i.email}.`);
-      } else {
-        toast.error(`Invite could not be emailed (${res.reason ?? "unknown"}).`);
-      }
-    } catch (err) {
-      toast.error(getErrorMessage(err) || "Failed to resend invite");
-    } finally {
-      setResendingId(null);
-    }
-  };
+
 
   const toggleActive = async (id: string, active: boolean) => {
     await supabase.from("inviters").update({ active }).eq("id", id);
@@ -703,16 +668,8 @@ function InvitersPage() {
               placeholder="e.g. Jane Doe"
             />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@example.com"
-            />
-          </div>
+
+
           <div className="space-y-1.5">
             <Label htmlFor="phone">Phone</Label>
             <Input
@@ -823,22 +780,11 @@ function InvitersPage() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1 justify-end">
-                            {i.email && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => resend(i)}
-                                disabled={resendingId === i.id}
-                                className="gap-1 h-8"
-                              >
-                                <Send className="w-3.5 h-3.5" />
-                                {resendingId === i.id ? "Sending…" : "Resend"}
-                              </Button>
-                            )}
                             <Button variant="ghost" size="icon" onClick={() => remove(i.id)}>
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
+
                         </td>
                       </tr>,
                   );

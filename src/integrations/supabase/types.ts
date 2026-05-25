@@ -705,34 +705,37 @@ export type Database = {
         Row: {
           accepted_at: string | null
           created_at: string
-          email: string
+          email: string | null
           email_normalized: string | null
           id: string
           invited_by: string
           name: string | null
           phone: string | null
+          phone_normalized: string | null
           role: Database["public"]["Enums"]["app_role"]
         }
         Insert: {
           accepted_at?: string | null
           created_at?: string
-          email: string
+          email?: string | null
           email_normalized?: string | null
           id?: string
           invited_by: string
           name?: string | null
           phone?: string | null
+          phone_normalized?: string | null
           role?: Database["public"]["Enums"]["app_role"]
         }
         Update: {
           accepted_at?: string | null
           created_at?: string
-          email?: string
+          email?: string | null
           email_normalized?: string | null
           id?: string
           invited_by?: string
           name?: string | null
           phone?: string | null
+          phone_normalized?: string | null
           role?: Database["public"]["Enums"]["app_role"]
         }
         Relationships: []
