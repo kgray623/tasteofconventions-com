@@ -391,7 +391,10 @@ export function InvitationPage() {
               </span>
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-2">
-              <p>Donations are appreciated</p>
+              <p>
+                Donations are appreciated. If you want to send a donation, please
+                contact Kari Gray at 808.278.7562.
+              </p>
             </AccordionContent>
           </AccordionItem>
 
