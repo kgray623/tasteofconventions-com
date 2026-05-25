@@ -26,6 +26,7 @@ import {
   UtensilsCrossed,
   ExternalLink,
   Heart,
+  Wine,
 } from "lucide-react";
 
 type R = { id: string; name: string; description: string | null; cuisine: string | null };
@@ -302,7 +303,7 @@ export function InvitationPage() {
           <p className="text-xs uppercase tracking-[0.35em] text-magenta mb-3">For more details, see the following</p>
           <h2 className="font-display text-5xl sm:text-6xl text-ink">Tap to open</h2>
           <p className="mt-4 text-muted-foreground">
-            Date & time, location, dress code, gift exchanges, entertainment, donations.
+            Date & time, location, dress code, gift exchanges, entertainment, donations, adult beverages.
           </p>
         </div>
 
@@ -391,6 +392,18 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-2">
               <p>Donations are appreciated</p>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Adult Beverages */}
+          <AccordionItem value="adult-beverages" id="adult-beverages" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
+            <AccordionTrigger className="hover:no-underline">
+              <span className="flex items-center gap-3 text-2xl">
+                <Wine className="w-5 h-5 text-sunset" /> Adult Beverages
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="pb-6 text-muted-foreground space-y-2">
+              <p>Adult beverages will be available for purchase from the venue. Outside bringing alcohol is not allowed.</p>
             </AccordionContent>
           </AccordionItem>
         </Accordion>
