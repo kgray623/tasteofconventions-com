@@ -92,7 +92,7 @@ function ChatPage() {
           value={body}
           onChange={(e) => setBody(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-          placeholder="Message your team… (Enter to send, Shift+Enter for newline)"
+          placeholder="Message your committee… (Enter to send, Shift+Enter for newline)"
           rows={2}
           className="resize-none"
         />
