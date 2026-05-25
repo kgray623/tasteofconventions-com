@@ -12,6 +12,8 @@ import {
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useRoles } from "@/hooks/use-roles";
+import { Plus } from "lucide-react";
 import {
   Calendar,
   MapPin,
