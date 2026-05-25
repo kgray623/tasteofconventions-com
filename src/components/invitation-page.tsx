@@ -24,7 +24,7 @@ import {
   Clock,
   Globe2,
   UtensilsCrossed,
-  ExternalLink,
+  
   Heart,
   Wine,
 } from "lucide-react";
