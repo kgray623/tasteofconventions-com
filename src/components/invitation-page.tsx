@@ -247,53 +247,6 @@ export function InvitationPage() {
             ))}
 
           </ol>
-
-          {restaurants.length > 0 && (
-            <div className="mt-8 space-y-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-magenta">Featured restaurants & menus</p>
-              {restaurants.map((r) => {
-                const menu = items.filter((m) => m.restaurant_id === r.id);
-                return (
-                  <div key={r.id} className="rounded-xl border border-border p-5 bg-background">
-                    <div className="flex items-baseline justify-between gap-3 mb-3">
-                      <div>
-                        <h3 className="font-display text-2xl">{r.name}</h3>
-                        {r.cuisine && <p className="text-xs uppercase tracking-widest text-muted-foreground mt-1">{r.cuisine}</p>}
-                      </div>
-                      <Link to="/rsvp">
-                        <Button size="sm" variant="outline">
-                          Pre-order <ExternalLink className="ml-1.5 w-3 h-3" />
-                        </Button>
-                      </Link>
-                    </div>
-                    {r.description && <p className="text-sm text-muted-foreground mb-3">{r.description}</p>}
-                    {menu.length > 0 && (
-                      <div className="grid sm:grid-cols-2 gap-2">
-                        {menu.slice(0, 6).map((m) => (
-                          <div key={m.id} className="flex justify-between gap-3 text-sm py-1.5 border-t border-border first:border-t-0">
-                            <div>
-                              <p className="font-medium">{m.name}</p>
-                              {m.dietary_flags && m.dietary_flags.length > 0 && (
-                                <div className="flex gap-1 mt-0.5">
-                                  {m.dietary_flags.map((f) => (
-                                    <Badge key={f} variant="outline" className="text-[9px]">{f}</Badge>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                            <span className="font-display shrink-0">${Number(m.price).toFixed(2)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-              <p className="text-xs text-muted-foreground italic">
-                Pre-orders are collected here and submitted to each restaurant before the event.
-              </p>
-            </div>
-          )}
         </div>
       </section>
 
