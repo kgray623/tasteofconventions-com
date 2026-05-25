@@ -28,6 +28,8 @@ import {
   
   Heart,
   Wine,
+  Plus,
+  HandHeart,
 } from "lucide-react";
 
 type Stop = { country: string; when: string; note: string; restaurant: boolean };
