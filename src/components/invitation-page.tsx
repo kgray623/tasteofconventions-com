@@ -78,9 +78,8 @@ const defaultContent: Content = {
 };
 
 export function InvitationPage() {
-  const [restaurants, setRestaurants] = useState<R[]>([]);
-  const [items, setItems] = useState<M[]>([]);
   const [content, setContent] = useState<Content>(defaultContent);
+  const [openItems, setOpenItems] = useState<string[]>([]);
   const [openItems, setOpenItems] = useState<string[]>([]);
 
   useEffect(() => {
