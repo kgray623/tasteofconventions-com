@@ -30,7 +30,6 @@ import {
 } from "lucide-react";
 
 type Stop = { country: string; when: string; note: string; restaurant: boolean };
-type Stop = { country: string; when: string; note: string; restaurant: boolean };
 type Content = {
   hero_eyebrow: string;
   hero_title: string;
