@@ -459,15 +459,13 @@ function UploadPage() {
     const firstName = (guestName || "Friend").split(/\s+/)[0];
     const sender = inviterName || "your friend";
     const link = `${SITE_URL}/rsvp/${rsvpLinkToken(token)}`;
-    return `Hi ${firstName}, it's ${sender}. You're invited to A Taste of Special Conventions on Sunday, August 30, 2026. Please RSVP here (link expires in 7 days): ${link}`;
+    return `Hi ${firstName}, it's ${sender}. You're invited to A Taste of Special Conventions on Sunday, August 30, 2026. Please RSVP here: ${link}`;
   };
 
   const guestStatus = (g: (typeof savedGuests)[number]) => {
     if (g.rsvp_status === "yes") return { label: "RSVP'd yes", tone: "yes" as const };
     if (g.rsvp_status === "no") return { label: "RSVP'd no", tone: "no" as const };
     if (!g.invite_sent_at) return { label: "Not sent", tone: "pending" as const };
-    if (g.rsvp_expires_at && new Date(g.rsvp_expires_at) < new Date())
-      return { label: "Expired", tone: "expired" as const };
     const daysAgo = Math.max(
       0,
       Math.floor((Date.now() - new Date(g.invite_sent_at).getTime()) / (1000 * 60 * 60 * 24)),
