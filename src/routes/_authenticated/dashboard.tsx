@@ -191,6 +191,7 @@ function Dashboard() {
                   <div className="flex-1 min-w-[200px]">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{i.guest_name}</span>
+                      {i.is_committee && <Badge className="bg-terracotta text-cream hover:bg-terracotta text-[10px]">Committee</Badge>}
                       {isDupe && <Badge variant="outline" className="border-terracotta text-terracotta text-[10px]">duplicate</Badge>}
                       {i.host_id === user?.id && <Badge variant="secondary" className="text-[10px]">yours</Badge>}
                     </div>
