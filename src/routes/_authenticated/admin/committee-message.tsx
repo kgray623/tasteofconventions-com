@@ -34,7 +34,7 @@ type Guest = {
 };
 
 const DEFAULT_TEMPLATE =
-  "Hi {{first}}, it's {{sender}}. You're on the Steering Committee for A Taste of Special Conventions on Sunday, August 30, 2026. Please RSVP here (link expires in 7 days): {{link}}";
+  "Hi {{first}}, it's {{sender}}. You're on the Steering Committee for A Taste of Special Conventions on Sunday, August 30, 2026. Please RSVP here: {{link}}";
 
 const templateKey = (uid?: string) => `committee-sms-template:${uid ?? "unknown"}`;
 
