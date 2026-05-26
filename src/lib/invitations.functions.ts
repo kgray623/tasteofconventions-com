@@ -321,6 +321,16 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
     }, { onConflict: "invitation_id" });
     if (rsvpErr) throw new Error(rsvpErr.message);
 
+    // Capture cuisine pre-order interest (separate table, no restaurant binding yet)
+    const selections = (data.cuisine_selections ?? []).filter((s) => s.qty > 0);
+    if (selections.length > 0 && (data.guest_name || phone)) {
+      await supabaseAdmin.from("cuisine_preorders").insert({
+        name: data.guest_name.slice(0, 120),
+        phone: (phone ?? "").slice(0, 40) || "—",
+        selections,
+      });
+    }
+
     await sendRsvpConfirmation(invitationId, data.status, effectivePartySize);
     return { ok: true, invitation_id: invitationId, waitlisted };
   });
