@@ -206,9 +206,9 @@ function CommitteeMessagePage() {
           <h2 className="font-display text-2xl">Committee invitation message</h2>
         </div>
         <p className="text-sm text-muted-foreground">
-          A dedicated message just for committee-tagged guests. Edit the template below, then send
-          each text from your own phone or copy it to paste anywhere. Tap{" "}
-          <em>I sent the text</em> to start the 7-day RSVP window.
+          A dedicated in-app message just for committee-tagged guests. Edit the template below,
+          then copy each personalized message to share however you like. Tap{" "}
+          <em>Mark as delivered</em> to start the 7-day RSVP window.
         </p>
       </Card>
 
