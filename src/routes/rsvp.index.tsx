@@ -2,7 +2,7 @@ import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { submitPublicRsvp } from "@/lib/invitations.functions";
+import { getPublicRsvpByPhone, submitPublicRsvp } from "@/lib/invitations.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Card } from "@/components/ui/card";
@@ -21,6 +21,20 @@ export const Route = createFileRoute("/rsvp/")({
 const ev = {
   title: "A Taste of Special Conventions",
 };
+
+type CuisineSelection = { cuisine: string; qty: number };
+
+function isSelection(value: unknown): value is CuisineSelection {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      "cuisine" in value &&
+      "qty" in value &&
+      typeof (value as CuisineSelection).cuisine === "string" &&
+      typeof (value as CuisineSelection).qty === "number",
+  );
+}
 
 function PreviewPage() {
   const { user, loading: authLoading } = useAuth();
@@ -45,9 +59,43 @@ function PreviewPage() {
   }, []);
 
   const save = useServerFn(submitPublicRsvp);
+  const lookupRsvp = useServerFn(getPublicRsvpByPhone);
   const [saving, setSaving] = useState(false);
+  const [restoring, setRestoring] = useState(false);
   const [saved, setSaved] = useState(false);
   const hasSubmitted = saved || Boolean(submittedAt);
+
+  const restoreByPhone = async () => {
+    if (phoneDigits.length < 7) return toast.error("Enter your mobile number first");
+    setRestoring(true);
+    try {
+      const result = await lookupRsvp({ data: { phone } });
+      if (!result.invitation || !result.rsvp) {
+        return toast.error("No RSVP was found for that mobile number");
+      }
+      setName(result.invitation.guest_name ?? name);
+      setPhone(result.invitation.guest_phone ?? phone);
+      setStatus(result.rsvp.status === "no" ? "no" : "yes");
+      setAttendanceMode(result.rsvp.attendance_mode === "zoom" ? "zoom" : "in_person");
+      setPartySize(result.rsvp.party_size ?? 1);
+      setInvitedBy(result.rsvp.invited_by ?? "");
+      const restoredCounts = Array.isArray(result.preorder?.selections)
+        ? result.preorder.selections.filter(isSelection).reduce<Record<string, number>>((acc, item) => {
+            acc[item.cuisine] = item.qty;
+            return acc;
+          }, {})
+        : {};
+      setCuisineCounts(restoredCounts);
+      setSubmittedAt(result.rsvp.responded_at ?? new Date().toISOString());
+      setSaved(false);
+      toast.success("Your RSVP was restored.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not restore RSVP");
+    } finally {
+      setRestoring(false);
+    }
+  };
+
   const handleSave = async () => {
     if (status !== "no" && !name.trim()) return toast.error("Please enter your full name");
     if (phoneDigits.length < 7) return toast.error("Please enter your mobile number");
