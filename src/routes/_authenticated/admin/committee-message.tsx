@@ -104,7 +104,7 @@ function CommitteeMessagePage() {
       const { data, error } = await supabase
         .from("invitations")
         .select(
-          "id,guest_name,guest_phone,rsvp_token,invite_sent_at,rsvp_expires_at,is_committee,rsvps(status)",
+          "id,guest_name,guest_phone,rsvp_token,invite_sent_at,is_committee,rsvps(status)",
         )
         .eq("is_committee", true)
         .order("guest_name", { ascending: true });
