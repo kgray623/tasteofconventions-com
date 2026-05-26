@@ -362,7 +362,7 @@ export function InvitationPage() {
           <AccordionItem value="food" id="food" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
             <AccordionTrigger className="hover:no-underline">
               <span className="flex items-center gap-3 text-2xl">
-                <UtensilsCrossed className="w-5 h-5 text-sunset" /> Food
+                <UtensilsCrossed className="w-5 h-5 text-sunset" /> ​
               </span>
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-3">
