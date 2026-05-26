@@ -241,6 +241,11 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
     const email = data.guest_email?.trim() || null;
     const phone = data.guest_phone?.trim() || null;
     const password = data.password?.trim() || null;
+    const selections = (data.cuisine_selections ?? []).filter((s) => s.qty > 0);
+
+    if (selections.length > 0 && !phone) {
+      throw new Error("A mobile number is required before meal choices can be saved.");
+    }
 
     if (email && password) {
       const { data: createdUser, error: createUserErr } = await supabaseAdmin.auth.admin.createUser({
@@ -309,6 +314,13 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
       finalStatus = "waitlist";
       waitlisted = true;
     }
+    const { error: invUpdateErr } = await supabaseAdmin.from("invitations").update({
+      guest_name: data.guest_name,
+      guest_email: email,
+      guest_phone: phone,
+    }).eq("id", invitationId);
+    if (invUpdateErr) throw new Error(invUpdateErr.message);
+
     const { error: rsvpErr } = await supabaseAdmin.from("rsvps").upsert({
       invitation_id: invitationId,
       status: finalStatus,
@@ -322,7 +334,6 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
     if (rsvpErr) throw new Error(rsvpErr.message);
 
     // Capture cuisine pre-order interest (separate table, no restaurant binding yet)
-    const selections = (data.cuisine_selections ?? []).filter((s) => s.qty > 0);
     if (selections.length > 0 && (data.guest_name || phone)) {
       await supabaseAdmin.from("cuisine_preorders").upsert({
         invitation_id: invitationId,
