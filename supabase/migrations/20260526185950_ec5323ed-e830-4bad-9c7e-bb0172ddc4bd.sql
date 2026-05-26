@@ -1,0 +1,1 @@
+CREATE POLICY "admin or team delete cuisine preorders" ON public.cuisine_preorders FOR DELETE TO authenticated USING (has_role(auth.uid(), 'admin'::app_role) OR has_role(auth.uid(), 'team'::app_role));
