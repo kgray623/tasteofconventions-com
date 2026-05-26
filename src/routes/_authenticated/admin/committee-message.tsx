@@ -121,7 +121,6 @@ function CommitteeMessagePage() {
             guest_phone: r.guest_phone,
             rsvp_token: r.rsvp_token,
             invite_sent_at: r.invite_sent_at,
-            rsvp_expires_at: r.rsvp_expires_at,
             rsvp_status: rsvp?.status ?? null,
           };
         }),
