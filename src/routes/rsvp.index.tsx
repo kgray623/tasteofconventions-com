@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { clearDraftScope, useDraftState } from "@/hooks/use-draft-state";
+import { useDraftState } from "@/hooks/use-draft-state";
 import { Check, X, Minus, Plus, ArrowLeft, Users, Video } from "lucide-react";
 
 export const Route = createFileRoute("/rsvp/")({
@@ -33,8 +33,11 @@ function PreviewPage() {
   const [invitedBy, setInvitedBy] = useDraftState(draftScope, "invitedBy", "");
   const [invitedByOther, setInvitedByOther] = useDraftState(draftScope, "invitedByOther", "");
   const [cuisineCounts, setCuisineCounts] = useDraftState<Record<string, number>>(draftScope, "cuisineCounts", {});
+  const [submittedAt, setSubmittedAt] = useDraftState<string | null>(draftScope, "submittedAt", null);
   const [inviters, setInviters] = useState<{ id: string; name: string }[]>([]);
   const cuisines = ["Myanmar", "African", "Indonesian"];
+  const phoneDigits = phone.replace(/\D/g, "");
+  const canChooseMeals = name.trim().length > 0 && phoneDigits.length >= 7;
 
   useEffect(() => {
     supabase.rpc("get_public_inviters")
@@ -44,9 +47,9 @@ function PreviewPage() {
   const save = useServerFn(submitPublicRsvp);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const hasSubmitted = saved || Boolean(submittedAt);
   const handleSave = async () => {
     if (status !== "no" && !name.trim()) return toast.error("Please enter your full name");
-    const phoneDigits = phone.replace(/\D/g, "");
     if (phoneDigits.length < 7) return toast.error("Please enter your mobile number");
     setSaving(true);
     try {
@@ -55,6 +58,9 @@ function PreviewPage() {
             .filter(([, qty]) => qty > 0)
             .map(([cuisine, qty]) => ({ cuisine, qty }))
         : [];
+      if (selections.length > 0 && !canChooseMeals) {
+        return toast.error("Please enter your full name and mobile number before choosing meals");
+      }
       const orderingFoodBool = status === "yes" && attendanceMode === "in_person" ? selections.length > 0 : null;
       await save({ data: {
         guest_name: name.trim() || "Guest",
@@ -69,7 +75,7 @@ function PreviewPage() {
         cuisine_selections: selections,
       }});
       setSaved(true);
-      clearDraftScope(draftScope);
+      setSubmittedAt(new Date().toISOString());
       toast.success("RSVP saved — thank you!");
     } catch (e: any) {
       toast.error(e?.message ?? "Could not save RSVP");
