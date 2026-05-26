@@ -1,13 +1,14 @@
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { FormEvent, useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
-import { Eye, EyeOff } from "lucide-react";
 import { getErrorMessage, withTimeout } from "@/lib/async-safety";
+import { signInWithPhoneOnly } from "@/lib/auth-phone.functions";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Log in — A Taste of Special Conventions" }] }),
@@ -43,10 +44,9 @@ function HelperLogin() {
   const { user, loading } = useAuth();
   const search = useSearch({ strict: false }) as { redirect?: string };
   const navigate = useNavigate();
+  const phoneLogin = useServerFn(signInWithPhoneOnly);
   const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (loading || !user) return;
@@ -67,33 +67,25 @@ function HelperLogin() {
 
   const signIn = async (event?: FormEvent) => {
     event?.preventDefault();
-    const normalizedPhone = normalizeMobilePhone(phone);
-    if (!normalizedPhone) return toast.error("Enter a valid mobile phone number");
+    if (!normalizeMobilePhone(phone)) return toast.error("Enter a valid mobile phone number");
     setBusy(true);
     try {
-      const { data, error } = await withTimeout(
-        supabase.auth.signInWithPassword({
-          phone: normalizedPhone,
-          password,
-        }),
-        10000,
-      );
-      if (error) {
+      const session = await withTimeout(phoneLogin({ data: { phone } }), 15000);
+      const { error: setErr } = await supabase.auth.setSession({
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+      });
+      if (setErr) {
         setBusy(false);
-        return toast.error(error.message);
+        return toast.error(setErr.message);
       }
-      if (data.user) {
-        toast.success("Signed in.");
-        const destination = await routeForUser(data.user.id);
-        const next =
-          search.redirect === "/admin/upload" && destination.to === "/admin"
-            ? { to: "/admin/upload" as const }
-            : destination;
-        navigate({ to: next.to });
-        return;
-      }
-      setBusy(false);
-      toast.error("Signed in, but we could not open your account. Please try again.");
+      toast.success("Signed in.");
+      const destination = await routeForUser(session.user_id);
+      const next =
+        search.redirect === "/admin/upload" && destination.to === "/admin"
+          ? { to: "/admin/upload" as const }
+          : destination;
+      navigate({ to: next.to });
     } catch (error) {
       setBusy(false);
       toast.error(getErrorMessage(error));
@@ -118,6 +110,9 @@ function HelperLogin() {
         <div className="bg-card border border-border rounded-xl p-8 shadow-elegant space-y-5">
           <div className="text-center space-y-1">
             <h2 className="font-display text-2xl text-ink">Log in</h2>
+            <p className="text-xs text-muted-foreground">
+              Enter your mobile number. We'll recognize you from your invitation.
+            </p>
           </div>
           <form onSubmit={signIn} className="space-y-4">
             <div className="space-y-1.5">
@@ -132,28 +127,6 @@ function HelperLogin() {
                 placeholder="(555) 123-4567"
               />
             </div>
-            <div className="space-y-1.5">
-              <Label>Password</Label>
-              <div className="relative">
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((s) => !s)}
-                  className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-ink"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
             <Button
               type="submit"
               disabled={busy}
@@ -163,7 +136,7 @@ function HelperLogin() {
             </Button>
           </form>
           <p className="text-xs text-center text-muted-foreground pt-2">
-            Accounts are created automatically when you RSVP.
+            Don't see your account? You need to be on the invitation list first.
           </p>
         </div>
       </div>
