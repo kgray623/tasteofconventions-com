@@ -98,7 +98,16 @@ export function InvitationPage() {
           });
         }
       });
+    supabase
+      .from("categories")
+      .select("name")
+      .order("sort_order", { ascending: true })
+      .order("name", { ascending: true })
+      .then(({ data }) => {
+        if (data) setAssignments(data.map((c: { name: string }) => c.name));
+      });
   }, []);
+
 
 
   // Open accordion panel matching the URL hash, and re-open whenever hash changes.
