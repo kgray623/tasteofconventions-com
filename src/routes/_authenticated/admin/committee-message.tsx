@@ -274,7 +274,7 @@ function CommitteeMessagePage() {
       <Card className="p-6 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Send className="w-4 h-4 text-terracotta" />
+            <Copy className="w-4 h-4 text-terracotta" />
             <p className="font-medium">Bulk actions</p>
           </div>
           <label className="inline-flex items-center gap-2 h-8 px-2 rounded-md border border-input text-xs cursor-pointer hover:bg-accent">
@@ -282,57 +282,16 @@ function CommitteeMessagePage() {
               checked={pendingOnly}
               onCheckedChange={(v) => setPendingOnly(v === true)}
             />
-            <span>Show only "not sent" committee guests</span>
+            <span>Show only "not delivered" committee guests</span>
           </label>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Group SMS can't personalize each name, so the bulk action sends a generic version (uses{" "}
-          <em>"Hi committee,"</em> instead of <code>{"{{first}}"}</code>) to everyone visible
-          below. For personalized texts, use each row's Send button.
-        </p>
         <div className="flex flex-wrap gap-2">
-          <Button
-            disabled={withPhone.length === 0}
-            onClick={() => {
-              const phones = withPhone
-                .map((g) => (g.guest_phone ?? "").replace(/\s+/g, ""))
-                .filter(Boolean)
-                .join(",");
-              const body =
-                renderTemplate(template, {
-                  first: "committee",
-                  sender: senderName || "your friend",
-                  link: `${SITE_URL}/rsvp/YOUR_PERSONAL_LINK`,
-                }) +
-                "\n\n(Heads up: your personal RSVP link was sent in an earlier text or email — use that one.)";
-              window.location.href = `sms:${phones}?&body=${encodeURIComponent(body)}`;
-            }}
-            className="bg-ink text-cream hover:bg-ink/90"
-          >
-            <Send className="w-4 h-4 mr-2" /> Open group SMS ({withPhone.length})
-          </Button>
-          <Button
-            variant="outline"
-            disabled={withPhone.length === 0}
-            onClick={() =>
-              copy(
-                withPhone
-                  .map((g) => (g.guest_phone ?? "").trim())
-                  .filter(Boolean)
-                  .join(", "),
-                "Phone numbers copied",
-              )
-            }
-          >
-            <Phone className="w-4 h-4 mr-2" /> Copy all phone numbers
-          </Button>
           <Button
             variant="outline"
             disabled={visible.length === 0}
             onClick={() => {
               const lines = visible.map(
-                (g) =>
-                  `${g.guest_name}${g.guest_phone ? ` (${g.guest_phone})` : ""}:\n${messageFor(g)}`,
+                (g) => `${g.guest_name}:\n${messageFor(g)}`,
               );
               void copy(lines.join("\n\n---\n\n"), "All personalized messages copied");
             }}
