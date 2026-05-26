@@ -226,6 +226,7 @@ function PreviewPage() {
             {orderingFood === "yes" && (
               <div className="space-y-2">
                 <Label>How many meals from each cuisine?</Label>
+                <p className="text-xs text-muted-foreground">Pick any combination — one cuisine, two, or all three. Quantities are total meals per cuisine.</p>
                 <div className="divide-y divide-border rounded-md border border-border">
                   {["Myanmar / Burmese", "African", "Indonesian"].map((cuisine) => {
                     const qty = cuisineCounts[cuisine] ?? 0;
@@ -249,6 +250,9 @@ function PreviewPage() {
                 </div>
                 <p className="text-xs text-muted-foreground italic">Menu details will follow once we negotiate with each restaurant.</p>
               </div>
+            )}
+            {orderingFood === "" && (
+              <p className="text-xs text-muted-foreground italic">Tap "Ordering food" above to pick how many meals from Myanmar/Burmese, African, or Indonesian.</p>
             )}
           </Card>
         )}
