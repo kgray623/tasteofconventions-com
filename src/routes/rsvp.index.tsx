@@ -8,7 +8,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { clearDraftScope, useDraftState } from "@/hooks/use-draft-state";
@@ -21,37 +20,6 @@ export const Route = createFileRoute("/rsvp/")({
 
 const ev = {
   title: "A Taste of Special Conventions",
-  description: "An intimate sundown gathering with curated tastings from our four partner kitchens. Dress: garden chic.",
-  starts_at: "2026-06-20T18:30:00Z",
-  location: "The Conservatory · 412 Vine Street",
-};
-
-
-
-const restaurants = [
-  { id: "r1", name: "Maison Laurent", cuisine: "French" },
-  { id: "r2", name: "Sakura House", cuisine: "Japanese" },
-  { id: "r3", name: "Olive & Vine", cuisine: "Mediterranean" },
-  { id: "r4", name: "Casa Verde", cuisine: "Mexican" },
-];
-
-const menu: Record<string, { id: string; name: string; description: string; price: number }[]> = {
-  r1: [
-    { id: "r1-1", name: "Coq au Vin", description: "Braised chicken in burgundy, pearl onions", price: 32 },
-    { id: "r1-2", name: "Tarte Tatin", description: "Caramelized apple, crème fraîche", price: 14 },
-  ],
-  r2: [
-    { id: "r2-1", name: "Omakase Selection", description: "Chef's seven-piece nigiri", price: 48 },
-    { id: "r2-2", name: "Matcha Mille-feuille", description: "Layered matcha cream pastry", price: 12 },
-  ],
-  r3: [
-    { id: "r3-1", name: "Lamb Tagine", description: "Slow-braised, preserved lemon, olives", price: 28 },
-    { id: "r3-2", name: "Mezze Platter", description: "Hummus, baba ghanoush, warm pita", price: 18 },
-  ],
-  r4: [
-    { id: "r4-1", name: "Mole Negro", description: "Heritage chicken, twenty-spice mole", price: 26 },
-    { id: "r4-2", name: "Tres Leches", description: "Vanilla bean, cinnamon cream", price: 11 },
-  ],
 };
 
 function PreviewPage() {
@@ -62,31 +30,23 @@ function PreviewPage() {
   const [partySize, setPartySize] = useDraftState(draftScope, "partySize", 2);
   const [orderingFood, setOrderingFood] = useDraftState<"yes" | "no" | "">(draftScope, "orderingFood", "");
   const [name, setName] = useDraftState(draftScope, "name", "");
-  const [email, setEmail] = useDraftState(draftScope, "email", "");
   const [phone, setPhone] = useDraftState(draftScope, "phone", "");
   const [invitedBy, setInvitedBy] = useDraftState(draftScope, "invitedBy", "");
   const [invitedByOther, setInvitedByOther] = useDraftState(draftScope, "invitedByOther", "");
   const [inviters, setInviters] = useState<{ id: string; name: string }[]>([]);
-  const [restaurantId, setRestaurantId] = useDraftState(draftScope, "restaurantId", "r1");
-  const [cart, setCart] = useDraftState<Record<string, number>>(draftScope, "cart", {});
-  const [orderNotes, setOrderNotes] = useDraftState(draftScope, "orderNotes", "");
 
   useEffect(() => {
     supabase.rpc("get_public_inviters")
       .then(({ data }) => setInviters(data ?? []));
   }, []);
 
-  const restaurantMenu = menu[restaurantId] ?? [];
-  const orderTotal = restaurantMenu.reduce((s, m) => s + (cart[m.id] ?? 0) * m.price, 0);
-
   const save = useServerFn(submitPublicRsvp);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const handleSave = async () => {
-    if (status !== "no" && !name.trim()) return toast.error("Please enter your name");
-    if (!email.trim()) return toast.error("Please enter your email");
+    if (status !== "no" && !name.trim()) return toast.error("Please enter your full name");
     const phoneDigits = phone.replace(/\D/g, "");
-    if (phoneDigits.length < 7) return toast.error("Please enter your phone number — it will be your password");
+    if (phoneDigits.length < 7) return toast.error("Please enter your mobile number");
     if (status === "yes" && attendanceMode === "in_person" && orderingFood === "") {
       return toast.error("Please tell us whether you'll be ordering food");
     }
@@ -95,7 +55,7 @@ function PreviewPage() {
       const orderingFoodBool = status === "yes" && attendanceMode === "in_person" ? orderingFood === "yes" : null;
       await save({ data: {
         guest_name: name.trim() || "Guest",
-        guest_email: email.trim() || null,
+        guest_email: null,
         guest_phone: phone.trim() || null,
         password: phoneDigits,
         status,
@@ -106,7 +66,7 @@ function PreviewPage() {
       }});
       setSaved(true);
       clearDraftScope(draftScope);
-      toast.success("RSVP saved — your password is your phone number (digits only).");
+      toast.success("RSVP saved — thank you!");
     } catch (e: any) {
       toast.error(e?.message ?? "Could not save RSVP");
     } finally {
@@ -132,14 +92,12 @@ function PreviewPage() {
           <h1 className="font-display text-5xl mt-3 text-ink">{ev.title}</h1>
         </div>
 
-
         <Card className="p-7 space-y-5">
-          <h2 className="font-display text-2xl">Will you join us?</h2>
+          <h2 className="font-display text-2xl">Will you be joining us?</h2>
           <div className="grid grid-cols-2 gap-2">
             {[
               { v: "yes", icon: Check, label: "Attending" },
               { v: "no", icon: X, label: "Decline" },
-
             ].map((o) => (
               <button
                 key={o.v}
@@ -191,16 +149,11 @@ function PreviewPage() {
                 <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground pt-3">So we can stay in touch</p>
                 <div className="space-y-1.5">
                   <Label htmlFor="name">Full name</Label>
-                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
+                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your full name" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="phone">Phone <span className="text-muted-foreground font-normal">(this will be your password)</span></Label>
+                  <Label htmlFor="phone">Mobile number</Label>
                   <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" />
-                  <p className="text-xs text-muted-foreground">Your password is the digits of your phone number — e.g. 8082787562. You can change it later after logging in.</p>
                 </div>
               </div>
             </>
@@ -227,70 +180,36 @@ function PreviewPage() {
           {saved && (
             <div className="rounded-md border border-border bg-cream/40 p-4 text-sm text-ink space-y-2">
               <p className="font-medium">Your RSVP is saved.</p>
-              <p className="text-muted-foreground">
-                To make any changes later, log in with your <strong>email</strong> and your <strong>phone number (digits only)</strong> as the password — the same phone you entered above.
-              </p>
-              <Link to="/login" className="inline-flex items-center gap-1 text-terracotta font-medium hover:underline">
-                Log in to your account →
-              </Link>
+              <p className="text-muted-foreground">We'll be in touch with more details soon.</p>
             </div>
           )}
         </Card>
 
-        {status === "yes" && (
+        {status === "yes" && attendanceMode === "in_person" && (
           <Card className="p-7 space-y-5">
             <div>
-              <h2 className="font-display text-2xl">Optional. Pre-order from your cultural choice restaurant</h2>
-              <p className="text-sm text-muted-foreground mt-1">Refreshments provided at the event.</p>
+              <h2 className="font-display text-2xl">Pre-order from your cultural choice restaurant</h2>
             </div>
-            {attendanceMode === "in_person" && (
-              <div className="space-y-1.5">
-                <Label>Will you be ordering?</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { v: "yes", label: "Ordering food" },
-                    { v: "no", label: "Not ordering food" },
-                  ].map((o) => (
-                    <button
-                      key={o.v}
-                      onClick={() => setOrderingFood(o.v as "yes" | "no")}
-                      className={`p-3 rounded-md border-2 transition text-sm font-medium ${
-                        orderingFood === o.v ? "border-terracotta bg-terracotta text-cream" : "border-border bg-card hover:border-terracotta/40"
-                      }`}
-                    >
-                      {o.label}
-                    </button>
-                  ))}
-                </div>
+            <div className="space-y-1.5">
+              <Label>Will you be ordering?</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { v: "yes", label: "Ordering food" },
+                  { v: "no", label: "Not ordering food" },
+                ].map((o) => (
+                  <button
+                    key={o.v}
+                    onClick={() => setOrderingFood(o.v as "yes" | "no")}
+                    className={`p-3 rounded-md border-2 transition text-sm font-medium ${
+                      orderingFood === o.v ? "border-terracotta bg-terracotta text-cream" : "border-border bg-card hover:border-terracotta/40"
+                    }`}
+                  >
+                    {o.label}
+                  </button>
+                ))}
               </div>
-            )}
-            <Select value={restaurantId} onValueChange={(v) => { setRestaurantId(v); setCart({}); }}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {restaurants.map((r) => <SelectItem key={r.id} value={r.id}>{r.name} · {r.cuisine}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <div className="divide-y divide-border">
-              {restaurantMenu.map((m) => (
-                <div key={m.id} className="py-3 flex items-center gap-3">
-                  <div className="flex-1">
-                    <p className="font-medium">{m.name}</p>
-                    <p className="text-xs text-muted-foreground">{m.description}</p>
-                  </div>
-                  <span className="font-display text-lg w-16 text-right">${m.price.toFixed(2)}</span>
-                  <div className="flex items-center gap-2">
-                    <Button size="icon" variant="outline" onClick={() => setCart({ ...cart, [m.id]: Math.max(0, (cart[m.id] ?? 0) - 1) })}><Minus className="w-3 h-3" /></Button>
-                    <span className="w-6 text-center">{cart[m.id] ?? 0}</span>
-                    <Button size="icon" variant="outline" onClick={() => setCart({ ...cart, [m.id]: Math.min(10, (cart[m.id] ?? 0) + 1) })}><Plus className="w-3 h-3" /></Button>
-                  </div>
-                </div>
-              ))}
             </div>
-            <Textarea value={orderNotes} onChange={(e) => setOrderNotes(e.target.value)} placeholder="Special requests" />
-            <div className="flex items-center justify-between">
-              <span className="font-display text-2xl">Total: ${orderTotal.toFixed(2)}</span>
-              <Button className="bg-terracotta text-cream hover:bg-terracotta/90">Place order</Button>
-            </div>
+            <p className="text-sm text-muted-foreground italic">More details coming soon.</p>
           </Card>
         )}
       </div>
