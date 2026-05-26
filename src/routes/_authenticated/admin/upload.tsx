@@ -1342,33 +1342,20 @@ function UploadPage() {
                        <Trash2 className="w-4 h-4" />
                      )}
                    </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={markingSentId === g.id}
-                    onClick={() => copyAndMarkSent(g)}
-                    className="gap-1 h-8"
-                    title="Copies a ready-to-send SMS and starts the 7-day RSVP window"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    {markingSentId === g.id
-                      ? "Saving…"
-                      : g.invite_sent_at
-                        ? "Copy again"
-                        : "Copy text & mark sent"}
-                  </Button>
-                  {g.guest_phone && (
-                    <a
-                      href={`sms:${g.guest_phone}?&body=${encodeURIComponent(buildSmsBody(g.guest_name, g.rsvp_token))}`}
-                      className="inline-flex items-center justify-center h-8 px-2 rounded-md border border-input text-xs hover:bg-accent"
-                      onClick={() => {
-                        if (!g.invite_sent_at) void copyAndMarkSent(g);
-                      }}
-                    >
-                      <Send className="w-3.5 h-3.5 mr-1" /> Open Messages
-                    </a>
-                  )}
+                  <label className="inline-flex items-center gap-2 h-8 px-2 rounded-md border border-input text-xs cursor-pointer hover:bg-accent">
+                    <Checkbox
+                      checked={!!g.invite_sent_at}
+                      disabled={markingSentId === g.id}
+                      onCheckedChange={(v) => void toggleSent(g, v === true)}
+                    />
+                    <span>
+                      {markingSentId === g.id
+                        ? "Saving…"
+                        : g.invite_sent_at
+                          ? "Text sent"
+                          : "I sent the text"}
+                    </span>
+                  </label>
                   {g.invite_sent_at && g.rsvp_status !== "yes" && (
                     <Button
                       type="button"
