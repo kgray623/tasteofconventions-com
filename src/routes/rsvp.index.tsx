@@ -54,6 +54,15 @@ function PreviewPage() {
     setSaving(true);
     try {
       const orderingFoodBool = status === "yes" && attendanceMode === "in_person" ? orderingFood === "yes" : null;
+      const selections = orderingFoodBool
+        ? Object.entries(cuisineCounts)
+            .filter(([, qty]) => qty > 0)
+            .map(([cuisine, qty]) => ({ cuisine, qty }))
+        : [];
+      if (orderingFoodBool && selections.length === 0) {
+        setSaving(false);
+        return toast.error("Please pick at least one cuisine and meal count.");
+      }
       await save({ data: {
         guest_name: name.trim() || "Guest",
         guest_email: null,
@@ -64,6 +73,7 @@ function PreviewPage() {
         attendance_mode: attendanceMode,
         ordering_food: orderingFoodBool,
         invited_by: (invitedBy === "__other__" ? invitedByOther.trim() : invitedBy) || null,
+        cuisine_selections: selections,
       }});
       setSaved(true);
       clearDraftScope(draftScope);
