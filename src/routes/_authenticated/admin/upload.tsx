@@ -226,8 +226,12 @@ function UploadPage() {
       invite_sent_at: string | null;
       rsvp_expires_at: string | null;
       rsvp_status: string | null;
+      is_committee: boolean;
     }[]
   >([]);
+  const [importAsCommittee, setImportAsCommittee] = useState(false);
+  const [committeeFilter, setCommitteeFilter] = useState(false);
+  const [togglingCommitteeId, setTogglingCommitteeId] = useState<string | null>(null);
   const [savedLoading, setSavedLoading] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [editingRowIdx, setEditingRowIdx] = useState<number | null>(null);
@@ -251,7 +255,7 @@ function UploadPage() {
       const { data, error } = await supabase
         .from("invitations")
         .select(
-          "id,guest_name,guest_email,guest_phone,rsvp_token,invite_sent_at,rsvp_expires_at,rsvps(status)",
+          "id,guest_name,guest_email,guest_phone,rsvp_token,invite_sent_at,rsvp_expires_at,is_committee,rsvps(status)",
         )
         .eq("event_id", evId)
         .order("created_at", { ascending: false });
@@ -264,6 +268,7 @@ function UploadPage() {
         rsvp_token: string;
         invite_sent_at: string | null;
         rsvp_expires_at: string | null;
+        is_committee: boolean | null;
         rsvps: { status: string }[] | { status: string } | null;
       };
       setSavedGuests(
@@ -278,6 +283,7 @@ function UploadPage() {
             invite_sent_at: r.invite_sent_at,
             rsvp_expires_at: r.rsvp_expires_at,
             rsvp_status: rsvp?.status ?? null,
+            is_committee: !!r.is_committee,
           };
         }),
       );
@@ -500,6 +506,23 @@ function UploadPage() {
       ),
     );
     toast.success(checked ? "Marked as sent — RSVP window started." : "Marked as not sent.");
+  };
+
+  const toggleCommittee = async (g: (typeof savedGuests)[number], checked: boolean) => {
+    setTogglingCommitteeId(g.id);
+    const { error } = await supabase
+      .from("invitations")
+      .update({ is_committee: checked })
+      .eq("id", g.id);
+    setTogglingCommitteeId(null);
+    if (error) {
+      toast.error("Couldn't update committee tag", { description: error.message });
+      return;
+    }
+    setSavedGuests((prev) =>
+      prev.map((row) => (row.id === g.id ? { ...row, is_committee: checked } : row)),
+    );
+    toast.success(checked ? `Tagged ${g.guest_name} as committee` : `Removed committee tag from ${g.guest_name}`);
   };
 
   const resendReset = async (g: (typeof savedGuests)[number]) => {
@@ -854,6 +877,7 @@ function UploadPage() {
             guest_email: r.guest_email || null,
             guest_phone: r.guest_phone || null,
             notes: r.notes || null,
+            is_committee: importAsCommittee,
           });
           if (error) {
             skipped++;
@@ -903,6 +927,7 @@ function UploadPage() {
         guest_email: quick.email.trim() || null,
         guest_phone: quick.phone.trim() || null,
         notes: null,
+        is_committee: importAsCommittee,
       });
       if (error) throw error;
       setQuickAdded((n) => n + 1);
@@ -1093,7 +1118,14 @@ function UploadPage() {
                 </Badge>
               )}
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="inline-flex items-center gap-2 h-9 px-3 rounded-md border border-input text-xs cursor-pointer hover:bg-accent">
+                <Checkbox
+                  checked={importAsCommittee}
+                  onCheckedChange={(v) => setImportAsCommittee(v === true)}
+                />
+                <span>Tag these as Committee</span>
+              </label>
               <Button
                 variant="outline"
                 disabled={busy || dupCount === 0}
@@ -1250,8 +1282,25 @@ function UploadPage() {
                 {duplicateCount} possible duplicate{duplicateCount === 1 ? "" : "s"}
               </Badge>
             )}
+            {(() => {
+              const committeeCount = savedGuests.filter((g) => g.is_committee).length;
+              return committeeCount > 0 ? (
+                <Badge variant="outline" className="border-terracotta text-terracotta gap-1">
+                  {committeeCount} committee
+                </Badge>
+              ) : null;
+            })()}
           </div>
-          {savedLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+          <div className="flex items-center gap-2">
+            <label className="inline-flex items-center gap-2 h-8 px-2 rounded-md border border-input text-xs cursor-pointer hover:bg-accent">
+              <Checkbox
+                checked={committeeFilter}
+                onCheckedChange={(v) => setCommitteeFilter(v === true)}
+              />
+              <span>Committee only</span>
+            </label>
+            {savedLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+          </div>
         </div>
         {savedGuests.length === 0 ? (
           <div className="p-4 text-sm text-muted-foreground">
@@ -1263,7 +1312,7 @@ function UploadPage() {
           </div>
         ) : (
           <div className="divide-y divide-border max-h-[480px] overflow-auto">
-            {savedGuests.map((g) => {
+            {savedGuests.filter((g) => !committeeFilter || g.is_committee).map((g) => {
               const isDup = duplicateGroups.dupIds.has(g.id);
               return (<div
                 key={g.id}
@@ -1299,6 +1348,11 @@ function UploadPage() {
                   <Badge variant="destructive" className="gap-1 h-5">
                     <AlertTriangle className="w-3 h-3" />
                     Duplicate
+                  </Badge>
+                )}
+                {g.is_committee && (
+                  <Badge className="gap-1 h-5 bg-terracotta text-cream hover:bg-terracotta">
+                    Committee
                   </Badge>
                 )}
                 {(() => {
@@ -1342,6 +1396,14 @@ function UploadPage() {
                        <Trash2 className="w-4 h-4" />
                      )}
                    </Button>
+                  <label className="inline-flex items-center gap-2 h-8 px-2 rounded-md border border-input text-xs cursor-pointer hover:bg-accent">
+                    <Checkbox
+                      checked={g.is_committee}
+                      disabled={togglingCommitteeId === g.id}
+                      onCheckedChange={(v) => void toggleCommittee(g, v === true)}
+                    />
+                    <span>{togglingCommitteeId === g.id ? "Saving…" : "Committee"}</span>
+                  </label>
                   <label className="inline-flex items-center gap-2 h-8 px-2 rounded-md border border-input text-xs cursor-pointer hover:bg-accent">
                     <Checkbox
                       checked={!!g.invite_sent_at}

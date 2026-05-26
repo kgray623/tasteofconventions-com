@@ -1,0 +1,2 @@
+ALTER TABLE public.invitations ADD COLUMN IF NOT EXISTS is_committee boolean NOT NULL DEFAULT false;
+CREATE INDEX IF NOT EXISTS idx_invitations_is_committee ON public.invitations(is_committee) WHERE is_committee = true;

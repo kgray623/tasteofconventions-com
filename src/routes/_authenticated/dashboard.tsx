@@ -20,6 +20,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 type Invite = {
   id: string; event_id: string; guest_name: string; guest_email: string | null;
   guest_phone: string | null; rsvp_token: string; created_at: string; host_id: string;
+  is_committee: boolean;
   rsvps?: { status: string; party_size: number } | null;
 };
 type Flag = { id: string; invitation_a: string; invitation_b: string; match_type: string };
@@ -34,7 +35,7 @@ function Dashboard() {
   const load = async () => {
     const [{ data: e }, { data: i }, { data: f }] = await Promise.all([
       supabase.from("events").select("id,title,starts_at,location").order("starts_at"),
-      supabase.from("invitations").select("id,event_id,guest_name,guest_email,guest_phone,rsvp_token,created_at,host_id,rsvps(status,party_size)").order("created_at", { ascending: false }),
+      supabase.from("invitations").select("id,event_id,guest_name,guest_email,guest_phone,rsvp_token,created_at,host_id,is_committee,rsvps(status,party_size)").order("created_at", { ascending: false }),
       supabase.from("duplicate_flags").select("*"),
     ]);
     setEvents(e ?? []);
@@ -98,6 +99,7 @@ function Dashboard() {
     { label: "Your invitations", value: myInvites.length },
     { label: "Total guest list", value: invites.length },
     { label: "Confirmed yes", value: invites.filter((i) => i.rsvps?.status === "yes").length },
+    { label: "Committee RSVP'd", value: invites.filter((i) => i.is_committee && i.rsvps?.status === "yes").length },
     { label: "Duplicate flags", value: flags.length },
   ];
 
@@ -189,6 +191,7 @@ function Dashboard() {
                   <div className="flex-1 min-w-[200px]">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{i.guest_name}</span>
+                      {i.is_committee && <Badge className="bg-terracotta text-cream hover:bg-terracotta text-[10px]">Committee</Badge>}
                       {isDupe && <Badge variant="outline" className="border-terracotta text-terracotta text-[10px]">duplicate</Badge>}
                       {i.host_id === user?.id && <Badge variant="secondary" className="text-[10px]">yours</Badge>}
                     </div>
