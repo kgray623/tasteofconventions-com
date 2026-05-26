@@ -1169,26 +1169,14 @@ function UploadPage() {
       )}
 
       {(() => {
-        const now = Date.now();
         const sentCount = savedGuests.filter((g) => g.invite_sent_at).length;
         const pendingCount = savedGuests.filter((g) => !g.invite_sent_at).length;
-        const expiredCount = savedGuests.filter(
-          (g) =>
-            g.invite_sent_at &&
-            g.rsvp_expires_at &&
-            new Date(g.rsvp_expires_at).getTime() < now &&
-            g.rsvp_status !== "yes",
-        ).length;
         const activeCount = savedGuests.filter(
-          (g) =>
-            g.rsvp_status === "yes" ||
-            (g.invite_sent_at &&
-              g.rsvp_expires_at &&
-              new Date(g.rsvp_expires_at).getTime() >= now),
+          (g) => g.rsvp_status === "yes" || g.invite_sent_at,
         ).length;
         const left = myQuota !== null ? Math.max(0, myQuota - activeCount) : null;
         return (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <Card className="p-4">
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
                 Invites sent
@@ -1206,13 +1194,6 @@ function UploadPage() {
               </p>
               <p className="font-display text-2xl mt-1">{myRsvpCount}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">{myRsvpSeats} seats</p>
-            </Card>
-            <Card className="p-4">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                Expired
-              </p>
-              <p className="font-display text-2xl mt-1">{expiredCount}</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">returned to pool</p>
             </Card>
             <Card className="p-4">
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
