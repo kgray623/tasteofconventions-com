@@ -1383,16 +1383,17 @@ function UploadPage() {
                   <Button
                     type="button"
                     variant="ghost"
-                    size="sm"
+                    size="icon"
                     disabled={removingId === g.id}
                     aria-label={`Remove ${g.guest_name}`}
+                    title="Remove this guest"
                     onClick={() => removeSavedGuest(g.id, g.guest_name)}
-                    className="text-muted-foreground hover:text-destructive"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
                   >
                     {removingId === g.id ? (
-                      <Loader2 className="w-4 h-4" />
+                      <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
-                      <X className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4" />
                     )}
                   </Button>
                 </div>
