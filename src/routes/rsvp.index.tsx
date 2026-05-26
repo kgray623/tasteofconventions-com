@@ -200,6 +200,9 @@ function PreviewPage() {
           <Card className="p-7 space-y-5">
             <div>
               <h2 className="font-display text-2xl">Pre-order from your cultural choice restaurant</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Meals run about $20–$25. Pick any combination — one cuisine, two, or all three. We're just gathering a headcount per restaurant for now.
+              </p>
             </div>
             <div className="space-y-1.5">
               <Label>Will you be ordering?</Label>
@@ -220,7 +223,33 @@ function PreviewPage() {
                 ))}
               </div>
             </div>
-            <p className="text-sm text-muted-foreground italic">More details coming soon.</p>
+            {orderingFood === "yes" && (
+              <div className="space-y-2">
+                <Label>How many meals from each cuisine?</Label>
+                <div className="divide-y divide-border rounded-md border border-border">
+                  {["Myanmar / Burmese", "African", "Indonesian"].map((cuisine) => {
+                    const qty = cuisineCounts[cuisine] ?? 0;
+                    const setQty = (n: number) =>
+                      setCuisineCounts({ ...cuisineCounts, [cuisine]: Math.max(0, Math.min(20, n)) });
+                    return (
+                      <div key={cuisine} className="flex items-center justify-between gap-3 p-3">
+                        <span className="font-medium">{cuisine}</span>
+                        <div className="flex items-center gap-2">
+                          <Button size="icon" variant="outline" onClick={() => setQty(qty - 1)} aria-label={`Fewer ${cuisine}`}>
+                            <Minus className="w-3 h-3" />
+                          </Button>
+                          <span className="w-8 text-center font-display text-lg">{qty}</span>
+                          <Button size="icon" variant="outline" onClick={() => setQty(qty + 1)} aria-label={`More ${cuisine}`}>
+                            <Plus className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-muted-foreground italic">Menu details will follow once we negotiate with each restaurant.</p>
+              </div>
+            )}
           </Card>
         )}
       </div>
