@@ -481,9 +481,6 @@ function UploadPage() {
   const toggleSent = async (g: (typeof savedGuests)[number], checked: boolean) => {
     setMarkingSentId(g.id);
     const sentAt = checked ? new Date().toISOString() : null;
-    const expiresAt = checked
-      ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-      : null;
     const { error } = await supabase
       .from("invitations")
       .update({ invite_sent_at: sentAt })
@@ -496,11 +493,11 @@ function UploadPage() {
     setSavedGuests((prev) =>
       prev.map((row) =>
         row.id === g.id
-          ? { ...row, invite_sent_at: sentAt, rsvp_expires_at: expiresAt }
+          ? { ...row, invite_sent_at: sentAt }
           : row,
       ),
     );
-    toast.success(checked ? "Marked as sent — RSVP window started." : "Marked as not sent.");
+    toast.success(checked ? "Marked as sent." : "Marked as not sent.");
   };
 
   const toggleCommittee = async (g: (typeof savedGuests)[number], checked: boolean) => {
@@ -520,36 +517,6 @@ function UploadPage() {
     toast.success(checked ? `Tagged ${g.guest_name} as committee` : `Removed committee tag from ${g.guest_name}`);
   };
 
-  const resendReset = async (g: (typeof savedGuests)[number]) => {
-    if (
-      typeof window !== "undefined" &&
-      !window.confirm(
-        `Reset the 7-day window for ${g.guest_name}? Use this only if you're re-sending the invite.`,
-      )
-    )
-      return;
-    const sentAt = new Date().toISOString();
-    const { error } = await supabase
-      .from("invitations")
-      .update({ invite_sent_at: sentAt })
-      .eq("id", g.id);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    setSavedGuests((prev) =>
-      prev.map((row) =>
-        row.id === g.id
-          ? {
-              ...row,
-              invite_sent_at: sentAt,
-              rsvp_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-            }
-          : row,
-      ),
-    );
-    toast.success("Reset. Now expires in 7 days.");
-  };
 
   useEffect(() => {
     let alive = true;
