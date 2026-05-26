@@ -83,7 +83,9 @@ const defaultContent: Content = {
 export function InvitationPage() {
   const [content, setContent] = useState<Content>(defaultContent);
   const [openItems, setOpenItems] = useState<string[]>([]);
+  const [assignments, setAssignments] = useState<string[]>([]);
   const { isAdmin } = useRoles();
+
 
   useEffect(() => {
     supabase.from("invitation_content").select("*").limit(1).maybeSingle()
@@ -96,7 +98,16 @@ export function InvitationPage() {
           });
         }
       });
+    supabase
+      .from("categories")
+      .select("name")
+      .order("sort_order", { ascending: true })
+      .order("name", { ascending: true })
+      .then(({ data }) => {
+        if (data) setAssignments(data.map((c: { name: string }) => c.name));
+      });
   }, []);
+
 
 
   // Open accordion panel matching the URL hash, and re-open whenever hash changes.
@@ -384,20 +395,19 @@ export function InvitationPage() {
                 pick whatever speaks to you, then once you RSVP, send a text to
                 Kari Gray 808.278.7562 to sign up.
               </p>
-              <ul className="list-disc pl-5 space-y-1">
-                <li>Set-up crew (tables, chairs, décor) — morning of event</li>
-                <li>Welcome & check-in table (greet guests, name tags)</li>
-                <li>Food station hosts (serving, restocking snacks)</li>
-                <li>Catering & restaurant coordination on-site</li>
-                <li>Beverage station (non-alcoholic & adult beverages)</li>
-                <li>Kitchen helpers (prep, plating, dishes)</li>
-                <li>Program & emcee support</li>
-                <li>Photography / videography</li>
-                <li>Activities & games coordinator</li>
-                <li>Parking & guest directions</li>
-                <li>Clean-up crew — end of event</li>
-                <li>Donations & raffle table</li>
-              </ul>
+              {assignments.length > 0 ? (
+                <ul className="list-disc pl-5 space-y-1">
+                  {assignments.map((name) => (
+                    <li key={name}>{name}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="italic">Assignment list loading…</p>
+              )}
+              <p className="text-sm">
+                You'll be able to sign up for an assignment after you RSVP.
+              </p>
+
 
               {isAdmin && (
                 <Link to="/admin/invitation">

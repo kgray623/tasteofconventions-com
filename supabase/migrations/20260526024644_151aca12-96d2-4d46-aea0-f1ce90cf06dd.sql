@@ -1,0 +1,1 @@
+CREATE POLICY "categories readable by all" ON public.categories FOR SELECT TO anon, authenticated USING (true);
