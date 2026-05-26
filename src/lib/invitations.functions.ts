@@ -119,17 +119,11 @@ export const submitRsvp = createServerFn({ method: "POST" })
   .inputValidator((d) => RsvpInput.parse(d))
   .handler(async ({ data }) => {
     const { data: inv } = await supabaseAdmin
-      .from("invitations").select("id,rsvp_expires_at").in("rsvp_token", rsvpTokenCandidates(data.token)).maybeSingle();
+      .from("invitations").select("id").in("rsvp_token", rsvpTokenCandidates(data.token)).maybeSingle();
     if (!inv) throw new Error("Invitation not found");
     const { data: existingRsvp } = await supabaseAdmin
       .from("rsvps").select("status").eq("invitation_id", inv.id).maybeSingle();
-    if (
-      (inv as any).rsvp_expires_at &&
-      new Date((inv as any).rsvp_expires_at).getTime() < Date.now() &&
-      existingRsvp?.status !== "yes"
-    ) {
-      throw new Error("This invitation has expired. Please ask the person who invited you to send a new link.");
-    }
+    void existingRsvp;
     const mode = data.attendance_mode ?? "in_person";
     const effectivePartySize = mode === "zoom" ? 1 : data.party_size;
     const orderingFood = mode === "in_person" ? (data.ordering_food ?? null) : null;
