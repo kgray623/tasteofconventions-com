@@ -33,6 +33,7 @@ function PreviewPage() {
   const [phone, setPhone] = useDraftState(draftScope, "phone", "");
   const [invitedBy, setInvitedBy] = useDraftState(draftScope, "invitedBy", "");
   const [invitedByOther, setInvitedByOther] = useDraftState(draftScope, "invitedByOther", "");
+  const [cuisineCounts, setCuisineCounts] = useDraftState<Record<string, number>>(draftScope, "cuisineCounts", {});
   const [inviters, setInviters] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
