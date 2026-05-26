@@ -1305,11 +1305,9 @@ function UploadPage() {
                       ? "bg-emerald-100 text-emerald-800 border-emerald-200"
                       : s.tone === "no"
                         ? "bg-muted text-muted-foreground"
-                        : s.tone === "expired"
-                          ? "bg-destructive/10 text-destructive border-destructive/30"
-                          : s.tone === "pending"
-                            ? "bg-amber-100 text-amber-800 border-amber-200"
-                            : "bg-sky-100 text-sky-800 border-sky-200";
+                        : s.tone === "pending"
+                          ? "bg-amber-100 text-amber-800 border-amber-200"
+                          : "bg-sky-100 text-sky-800 border-sky-200";
                   return (
                     <span
                       className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border ${cls}`}
