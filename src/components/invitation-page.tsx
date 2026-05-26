@@ -408,14 +408,6 @@ export function InvitationPage() {
                 You'll be able to sign up for an assignment after you RSVP.
               </p>
 
-
-              {isAdmin && (
-                <Link to="/admin/invitation">
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Plus className="w-4 h-4" /> Add content
-                  </Button>
-                </Link>
-              )}
             </AccordionContent>
           </AccordionItem>
 
