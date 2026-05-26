@@ -1398,6 +1398,14 @@ function UploadPage() {
                    </Button>
                   <label className="inline-flex items-center gap-2 h-8 px-2 rounded-md border border-input text-xs cursor-pointer hover:bg-accent">
                     <Checkbox
+                      checked={g.is_committee}
+                      disabled={togglingCommitteeId === g.id}
+                      onCheckedChange={(v) => void toggleCommittee(g, v === true)}
+                    />
+                    <span>{togglingCommitteeId === g.id ? "Saving…" : "Committee"}</span>
+                  </label>
+                  <label className="inline-flex items-center gap-2 h-8 px-2 rounded-md border border-input text-xs cursor-pointer hover:bg-accent">
+                    <Checkbox
                       checked={!!g.invite_sent_at}
                       disabled={markingSentId === g.id}
                       onCheckedChange={(v) => void toggleSent(g, v === true)}
