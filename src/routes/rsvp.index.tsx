@@ -297,12 +297,6 @@ function PreviewPage() {
         )}
 
         <Card className="p-5 space-y-4 border-terracotta/30 bg-card">
-          <div className="space-y-1">
-            <h2 className="font-display text-2xl">Submit your RSVP</h2>
-            <p className="text-sm text-muted-foreground">
-              This saves your attendance and any Myanmar, African, or Indonesian dish counts.
-            </p>
-          </div>
           <Button onClick={handleSave} disabled={saving} className="bg-ink text-cream hover:bg-ink/90 w-full h-12 text-base">
             {saving ? "Submitting…" : "Submit RSVP"}
           </Button>
@@ -319,6 +313,7 @@ function PreviewPage() {
             </div>
           )}
         </Card>
+
       </div>
     </div>
   );
