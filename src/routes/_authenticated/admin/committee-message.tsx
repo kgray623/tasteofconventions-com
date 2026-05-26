@@ -218,11 +218,11 @@ function CommitteeMessagePage() {
           <p className="font-display text-2xl mt-1">{totalCommittee}</p>
         </Card>
         <Card className="p-4">
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Not sent yet</p>
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Not delivered</p>
           <p className="font-display text-2xl mt-1">{pendingCount}</p>
         </Card>
         <Card className="p-4">
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Texts sent</p>
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Delivered</p>
           <p className="font-display text-2xl mt-1">{sentCount}</p>
         </Card>
         <Card className="p-4">
