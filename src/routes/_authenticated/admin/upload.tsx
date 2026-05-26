@@ -226,8 +226,12 @@ function UploadPage() {
       invite_sent_at: string | null;
       rsvp_expires_at: string | null;
       rsvp_status: string | null;
+      is_committee: boolean;
     }[]
   >([]);
+  const [importAsCommittee, setImportAsCommittee] = useState(false);
+  const [committeeFilter, setCommitteeFilter] = useState(false);
+  const [togglingCommitteeId, setTogglingCommitteeId] = useState<string | null>(null);
   const [savedLoading, setSavedLoading] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [editingRowIdx, setEditingRowIdx] = useState<number | null>(null);
