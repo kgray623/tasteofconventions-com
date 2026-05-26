@@ -1169,8 +1169,9 @@ function UploadPage() {
                 <Button
                   type="button"
                   variant="ghost"
-                  size="sm"
+                  size="icon"
                   aria-label={`Remove ${r.guest_name}`}
+                  title="Remove this guest"
                   onClick={() => {
                     setRows((prev) =>
                       prev
@@ -1178,9 +1179,9 @@ function UploadPage() {
                         .map((row, i) => ({ ...row, _row: i + 1, _dupReason: undefined })),
                     );
                   }}
-                  className="text-muted-foreground hover:text-destructive"
+                  className="ml-auto text-destructive hover:text-destructive hover:bg-destructive/10"
                 >
-                  <X className="w-4 h-4 mr-1" /> Remove
+                  <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
             ))}
