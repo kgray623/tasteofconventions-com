@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRoles } from "@/hooks/use-roles";
-import { CalendarCog, ListChecks, MessageSquare, Play, Upload, UserPlus, Video } from "lucide-react";
+import { CalendarCog, ListChecks, MessageSquare, Play, Upload, UserPlus, Utensils, Video } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: AdminOverview,
@@ -18,12 +18,13 @@ function AdminOverview() {
     categories: 0,
     team: 0,
     pending: 0,
+    preorders: 0,
   });
 
   useEffect(() => {
     if (rolesLoading || !isAdmin) return;
     (async () => {
-      const [i, f, c, t, p] = await Promise.all([
+      const [i, f, c, t, p, pre] = await Promise.all([
         supabase.from("invitations").select("id", { count: "exact", head: true }),
         supabase.from("duplicate_flags").select("id", { count: "exact", head: true }),
         supabase.from("categories").select("id", { count: "exact", head: true }),
@@ -35,6 +36,7 @@ function AdminOverview() {
           .from("team_invites")
           .select("id", { count: "exact", head: true })
           .is("accepted_at", null),
+        supabase.from("cuisine_preorders").select("id", { count: "exact", head: true }),
       ]);
       setCounts({
         invites: i.count ?? 0,
@@ -42,6 +44,7 @@ function AdminOverview() {
         categories: c.count ?? 0,
         team: t.count ?? 0,
         pending: p.count ?? 0,
+        preorders: pre.count ?? 0,
       });
     })();
   }, [rolesLoading, isAdmin]);
@@ -52,6 +55,7 @@ function AdminOverview() {
     { label: "Categories", value: counts.categories, to: "/admin/categories" },
     { label: "Committee members", value: counts.team, to: "/admin/team" },
     { label: "Pending invites", value: counts.pending, to: "/admin/team" },
+    { label: "Food preorders", value: counts.preorders, to: "/admin/preorders" },
   ] as const;
 
   if (rolesLoading) return <p className="text-muted-foreground">Loading workspace…</p>;
@@ -102,6 +106,11 @@ function AdminOverview() {
               <CalendarCog className="w-4 h-4" /> Event details
             </Link>
           </Button>
+          <Button asChild variant="outline" className="justify-start h-14">
+            <Link to="/admin/preorders">
+              <Utensils className="w-4 h-4" /> Food report
+            </Link>
+          </Button>
         </div>
       </div>
     );
@@ -140,9 +149,14 @@ function AdminOverview() {
               <MessageSquare className="w-4 h-4" /> Committee chat
             </Link>
           </Button>
+          <Button asChild variant="outline" className="justify-start">
+            <Link to="/admin/preorders">
+              <Utensils className="w-4 h-4" /> Food report
+            </Link>
+          </Button>
         </div>
       </Card>
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {stats.map((s) => (
           <Link key={s.label} to={s.to}>
             <Card className="p-5 hover:border-terracotta transition">
