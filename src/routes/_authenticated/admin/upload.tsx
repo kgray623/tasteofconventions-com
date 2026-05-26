@@ -1118,7 +1118,14 @@ function UploadPage() {
                 </Badge>
               )}
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="inline-flex items-center gap-2 h-9 px-3 rounded-md border border-input text-xs cursor-pointer hover:bg-accent">
+                <Checkbox
+                  checked={importAsCommittee}
+                  onCheckedChange={(v) => setImportAsCommittee(v === true)}
+                />
+                <span>Tag these as Committee</span>
+              </label>
               <Button
                 variant="outline"
                 disabled={busy || dupCount === 0}
