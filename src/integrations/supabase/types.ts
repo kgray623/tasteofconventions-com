@@ -70,6 +70,30 @@ export type Database = {
           },
         ]
       }
+      cuisine_preorders: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          phone: string
+          selections: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          phone: string
+          selections?: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          phone?: string
+          selections?: Json
+        }
+        Relationships: []
+      }
       donations_summary: {
         Row: {
           id: boolean

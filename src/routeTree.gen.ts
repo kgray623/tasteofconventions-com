@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as Char91indexChar93RouteImport } from './routes/[index]'
 import { Route as RestaurantsRouteImport } from './routes/restaurants'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as PreorderRouteImport } from './routes/preorder'
 import { Route as MyRsvpRouteImport } from './routes/my-rsvp'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -53,6 +54,11 @@ const RestaurantsRoute = RestaurantsRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PreorderRoute = PreorderRouteImport.update({
+  id: '/preorder',
+  path: '/preorder',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MyRsvpRoute = MyRsvpRouteImport.update({
@@ -206,6 +212,7 @@ export interface FileRoutesByFullPath {
   '/index': typeof Char91indexChar93Route
   '/login': typeof LoginRoute
   '/my-rsvp': typeof MyRsvpRoute
+  '/preorder': typeof PreorderRoute
   '/reset-password': typeof ResetPasswordRoute
   '/restaurants': typeof RestaurantsRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
@@ -237,6 +244,7 @@ export interface FileRoutesByTo {
   '/index': typeof Char91indexChar93Route
   '/login': typeof LoginRoute
   '/my-rsvp': typeof MyRsvpRoute
+  '/preorder': typeof PreorderRoute
   '/reset-password': typeof ResetPasswordRoute
   '/restaurants': typeof RestaurantsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -269,6 +277,7 @@ export interface FileRoutesById {
   '/index': typeof Char91indexChar93Route
   '/login': typeof LoginRoute
   '/my-rsvp': typeof MyRsvpRoute
+  '/preorder': typeof PreorderRoute
   '/reset-password': typeof ResetPasswordRoute
   '/restaurants': typeof RestaurantsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
@@ -302,6 +311,7 @@ export interface FileRouteTypes {
     | '/index'
     | '/login'
     | '/my-rsvp'
+    | '/preorder'
     | '/reset-password'
     | '/restaurants'
     | '/admin'
@@ -333,6 +343,7 @@ export interface FileRouteTypes {
     | '/index'
     | '/login'
     | '/my-rsvp'
+    | '/preorder'
     | '/reset-password'
     | '/restaurants'
     | '/dashboard'
@@ -364,6 +375,7 @@ export interface FileRouteTypes {
     | '/index'
     | '/login'
     | '/my-rsvp'
+    | '/preorder'
     | '/reset-password'
     | '/restaurants'
     | '/_authenticated/admin'
@@ -397,6 +409,7 @@ export interface RootRouteChildren {
   Char91indexChar93Route: typeof Char91indexChar93Route
   LoginRoute: typeof LoginRoute
   MyRsvpRoute: typeof MyRsvpRoute
+  PreorderRoute: typeof PreorderRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   RestaurantsRoute: typeof RestaurantsRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
@@ -431,6 +444,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/preorder': {
+      id: '/preorder'
+      path: '/preorder'
+      fullPath: '/preorder'
+      preLoaderRoute: typeof PreorderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/my-rsvp': {
@@ -677,6 +697,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91indexChar93Route: Char91indexChar93Route,
   LoginRoute: LoginRoute,
   MyRsvpRoute: MyRsvpRoute,
+  PreorderRoute: PreorderRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   RestaurantsRoute: RestaurantsRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
