@@ -225,6 +225,62 @@ const PublicRsvpInput = z.object({
   })).max(10).optional().nullable(),
 });
 
+const PublicRsvpLookupInput = z.object({
+  phone: z.string().min(7).max(40),
+});
+
+export const getPublicRsvpByPhone = createServerFn({ method: "GET" })
+  .inputValidator((d) => PublicRsvpLookupInput.parse(d))
+  .handler(async ({ data }) => {
+    const phoneNorm = data.phone.replace(/\D/g, "");
+    if (phoneNorm.length < 7) throw new Error("Enter a valid mobile number");
+
+    const { data: ev } = await supabaseAdmin
+      .from("events").select("id").order("starts_at", { ascending: true }).limit(1).maybeSingle();
+    if (!ev) return { invitation: null, rsvp: null, preorder: null };
+
+    const { data: invitation, error: invErr } = await supabaseAdmin
+      .from("invitations")
+      .select("id,guest_name,guest_phone")
+      .eq("event_id", ev.id)
+      .eq("guest_phone_normalized", phoneNorm)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (invErr) throw new Error(invErr.message);
+    if (!invitation) return { invitation: null, rsvp: null, preorder: null };
+
+    const [{ data: rsvp, error: rsvpErr }, { data: preorderByInvitation, error: preorderErr }] = await Promise.all([
+      supabaseAdmin
+        .from("rsvps")
+        .select("status,party_size,attendance_mode,ordering_food,invited_by,responded_at")
+        .eq("invitation_id", invitation.id)
+        .maybeSingle(),
+      supabaseAdmin
+        .from("cuisine_preorders")
+        .select("selections,updated_at")
+        .eq("invitation_id", invitation.id)
+        .maybeSingle(),
+    ]);
+    if (rsvpErr) throw new Error(rsvpErr.message);
+    if (preorderErr) throw new Error(preorderErr.message);
+
+    let preorder = preorderByInvitation;
+    if (!preorder) {
+      const { data: preorderByPhone, error } = await supabaseAdmin
+        .from("cuisine_preorders")
+        .select("selections,updated_at")
+        .eq("phone", invitation.guest_phone ?? data.phone)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      preorder = preorderByPhone;
+    }
+
+    return { invitation, rsvp, preorder };
+  });
+
 
 export const submitPublicRsvp = createServerFn({ method: "POST" })
   .inputValidator((d) => PublicRsvpInput.parse(d))
