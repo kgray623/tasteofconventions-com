@@ -219,6 +219,10 @@ const PublicRsvpInput = z.object({
   attendance_mode: z.enum(["in_person", "zoom"]).optional(),
   ordering_food: z.boolean().optional().nullable(),
   invited_by: z.string().max(200).optional().nullable(),
+  cuisine_selections: z.array(z.object({
+    cuisine: z.string().min(1).max(80),
+    qty: z.number().int().min(1).max(50),
+  })).max(10).optional().nullable(),
 });
 
 
