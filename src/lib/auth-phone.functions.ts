@@ -15,9 +15,14 @@ function normalizeAuthPhone(value: string) {
   return "";
 }
 
+function syntheticEmail(phoneNorm: string) {
+  // Synthetic email used purely as an auth credential. The phone provider
+  // is intentionally disabled in Supabase, so we use email/password under
+  // the hood and key the account by the normalized phone number.
+  return `phone-${phoneNorm}@tasteofconventions.local`;
+}
+
 function randomPassword() {
-  // 32 chars of base64 — enough entropy that no one will ever guess it.
-  // We rotate this on every login; only the server ever knows it.
   const bytes = new Uint8Array(24);
   crypto.getRandomValues(bytes);
   return Buffer.from(bytes).toString("base64").replace(/[+/=]/g, "x") + "Aa1!";
@@ -25,13 +30,10 @@ function randomPassword() {
 
 /**
  * Phone-only sign-in. The user enters a mobile number, and if the number
- * matches an invitation we issue them a Supabase session. Identity (guest,
- * committee, admin/team) is determined downstream by user_roles and the
- * invitations.is_committee flag.
+ * matches an invitation we issue them a Supabase session.
  *
- * SECURITY: This flow has no verification factor (no OTP, no password).
- * Anyone who knows a guest's mobile number can sign in as them. This is
- * an explicit product decision for this private event RSVP app.
+ * Implementation note: Supabase phone provider is disabled. We use a
+ * synthetic email derived from the phone number as the auth credential.
  */
 export const signInWithPhoneOnly = createServerFn({ method: "POST" })
   .inputValidator((d) => PhoneLoginInput.parse(d))
@@ -41,18 +43,24 @@ export const signInWithPhoneOnly = createServerFn({ method: "POST" })
     if (!phoneE164 || phoneNorm.length < 7) {
       throw new Error("Enter a valid mobile phone number");
     }
+    const email = syntheticEmail(phoneNorm);
 
-    // 1) Look up an existing auth user by phone.
-    const { data: existingId, error: rpcErr } = await supabaseAdmin.rpc(
+    // 1) Find an existing auth user — by phone (legacy) or by synthetic email.
+    let userId: string | null = null;
+    const { data: existingByPhone } = await supabaseAdmin.rpc(
       "get_auth_user_id_by_phone",
       { _phone: phoneE164 },
     );
-    if (rpcErr) throw new Error(rpcErr.message);
-    let userId = (existingId as string | null) ?? null;
+    userId = (existingByPhone as string | null) ?? null;
 
-    // 2) If no auth user exists, require that the phone be tied to either
-    //    an invitation, an inviter (team), or a known team-invite. Otherwise
-    //    we'd be creating an account for any random number typed in.
+    if (!userId) {
+      const { data: list, error: listErr } =
+        await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
+      if (listErr) throw new Error(listErr.message);
+      userId = list.users.find((u) => u.email === email)?.id ?? null;
+    }
+
+    // 2) If no auth user, require the phone be tied to a known person.
     if (!userId) {
       const [{ data: inv }, { data: inviter }, { data: teamInvite }] = await Promise.all([
         supabaseAdmin
@@ -87,9 +95,9 @@ export const signInWithPhoneOnly = createServerFn({ method: "POST" })
 
       const tempPassword = randomPassword();
       const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
-        phone: phoneE164,
+        email,
         password: tempPassword,
-        phone_confirm: true,
+        email_confirm: true,
         user_metadata: { display_name: displayName, phone: data.phone },
       });
       if (createErr) throw new Error(createErr.message);
@@ -97,10 +105,12 @@ export const signInWithPhoneOnly = createServerFn({ method: "POST" })
       if (!userId) throw new Error("Could not create account");
     }
 
-    // 3) Rotate the password to a fresh random value the server controls,
-    //    then sign in with it so we get a real session back.
+    // 3) Ensure the account has our synthetic email + a fresh password,
+    //    then sign in with email/password to get a real session.
     const sessionPassword = randomPassword();
     const { error: updErr } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+      email,
+      email_confirm: true,
       password: sessionPassword,
     });
     if (updErr) throw new Error(updErr.message);
@@ -109,7 +119,7 @@ export const signInWithPhoneOnly = createServerFn({ method: "POST" })
     const anonKey = process.env.SUPABASE_PUBLISHABLE_KEY!;
     const anon = createClient(url, anonKey, { auth: { persistSession: false } });
     const { data: signIn, error: signInErr } = await anon.auth.signInWithPassword({
-      phone: phoneE164,
+      email,
       password: sessionPassword,
     });
     if (signInErr || !signIn.session) {
