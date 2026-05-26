@@ -45,19 +45,25 @@ export const signInWithPhoneOnly = createServerFn({ method: "POST" })
     }
     const email = syntheticEmail(phoneNorm);
 
-    // 1) Find an existing auth user — by phone (legacy) or by synthetic email.
+    // 1) Find an existing auth user — by phone (any stored format) or by synthetic email.
     let userId: string | null = null;
-    const { data: existingByPhone } = await supabaseAdmin.rpc(
-      "get_auth_user_id_by_phone",
-      { _phone: phoneE164 },
-    );
-    userId = (existingByPhone as string | null) ?? null;
+    for (const candidate of [phoneE164, phoneNorm, `+${phoneNorm}`]) {
+      if (userId) break;
+      const { data: id } = await supabaseAdmin.rpc(
+        "get_auth_user_id_by_phone",
+        { _phone: candidate },
+      );
+      userId = (id as string | null) ?? null;
+    }
 
     if (!userId) {
       const { data: list, error: listErr } =
-        await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
+        await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
       if (listErr) throw new Error(listErr.message);
-      userId = list.users.find((u) => u.email === email)?.id ?? null;
+      userId =
+        list.users.find(
+          (u) => u.email === email || (u.phone && u.phone.replace(/\D/g, "") === phoneNorm),
+        )?.id ?? null;
     }
 
     // 2) If no auth user, require the phone be tied to a known person.
