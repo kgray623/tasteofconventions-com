@@ -180,41 +180,10 @@ export function InvitationPage() {
 
 
 
-      {/* RSVP — primary call to action right under the video */}
-      <section id="rsvp-cta" className="mx-auto max-w-3xl px-6 pt-16">
-        <div className="rounded-3xl border border-border bg-card shadow-elegant p-8 sm:p-10 text-center relative overflow-hidden">
-          <div className="absolute -top-24 -right-20 w-72 h-72 rounded-full bg-amber-glow/30 blur-3xl" />
-          <div className="absolute -bottom-24 -left-20 w-72 h-72 rounded-full bg-iris/30 blur-3xl" />
-          <div className="relative">
-            <p className="text-xs uppercase tracking-[0.4em] text-magenta mb-3">Step One</p>
-            <h2 className="font-display text-4xl sm:text-5xl text-ink mb-4">RSVP</h2>
-            <p className="text-muted-foreground max-w-md mx-auto mb-3">
-              RSVP if you want to join us in person or virtually including your party size. In person space is limited. RSVP is first reserved. Once the in person space is spoken for, a waiting list will be made in case of cancellations. Virtual attendance is unlimited.
-            </p>
-            <p className="text-xs uppercase tracking-[0.25em] text-magenta mb-7">
-              Space is limited
-            </p>
-
-            <LoggedInRsvpCta />
-            <Link to="/rsvp">
-              <Button
-                size="lg"
-                className="bg-gradient-sunset text-white hover:opacity-90 px-8 shadow-glow border-0"
-              >
-                Click here to RSVP
-                <ArrowRight className="ml-2 w-4 h-4" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-
-
       {/* Conventions & Countries — prominent, always-visible section */}
       <section id="itinerary" className="mx-auto max-w-3xl px-6 pt-16">
         <div className="text-center mb-10">
-          <p className="text-xs uppercase tracking-[0.4em] text-magenta mb-3">Step Two</p>
+          <p className="text-xs uppercase tracking-[0.4em] text-magenta mb-3">Step One</p>
           <p className="text-xs uppercase tracking-[0.35em] text-magenta mb-3 flex items-center justify-center gap-2">
             <Globe2 className="w-4 h-4" /> Conventions & Countries
           </p>
@@ -256,6 +225,35 @@ export function InvitationPage() {
             ))}
 
           </ol>
+        </div>
+      </section>
+
+      {/* RSVP — primary call to action */}
+      <section id="rsvp-cta" className="mx-auto max-w-3xl px-6 pt-16">
+        <div className="rounded-3xl border border-border bg-card shadow-elegant p-8 sm:p-10 text-center relative overflow-hidden">
+          <div className="absolute -top-24 -right-20 w-72 h-72 rounded-full bg-amber-glow/30 blur-3xl" />
+          <div className="absolute -bottom-24 -left-20 w-72 h-72 rounded-full bg-iris/30 blur-3xl" />
+          <div className="relative">
+            <p className="text-xs uppercase tracking-[0.4em] text-magenta mb-3">Step Two</p>
+            <h2 className="font-display text-4xl sm:text-5xl text-ink mb-4">RSVP</h2>
+            <p className="text-muted-foreground max-w-md mx-auto mb-3">
+              RSVP if you want to join us in person or virtually including your party size. In person space is limited. RSVP is first reserved. Once the in person space is spoken for, a waiting list will be made in case of cancellations. Virtual attendance is unlimited.
+            </p>
+            <p className="text-xs uppercase tracking-[0.25em] text-magenta mb-7">
+              Space is limited
+            </p>
+
+            <LoggedInRsvpCta />
+            <Link to="/rsvp">
+              <Button
+                size="lg"
+                className="bg-gradient-sunset text-white hover:opacity-90 px-8 shadow-glow border-0"
+              >
+                Click here to RSVP
+                <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
 
