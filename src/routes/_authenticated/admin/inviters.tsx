@@ -804,16 +804,12 @@ function InvitersPage() {
                                     <th className="px-2 py-1">Guest</th>
                                     <th className="px-2 py-1">Contact</th>
                                     <th className="px-2 py-1">RSVP</th>
-                                    <th className="px-2 py-1">Expires</th>
                                     <th className="px-2 py-1 text-right">Actions</th>
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {guests.map((g) => {
                                     const status = g.rsvp_status ?? "no response";
-                                    const expired =
-                                      g.rsvp_expires_at &&
-                                      new Date(g.rsvp_expires_at) < new Date();
                                     const busy = rowBusy === g.id;
                                     return (
                                       <tr key={g.id} className="border-t border-border/60">
