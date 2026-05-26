@@ -66,7 +66,7 @@ const defaultContent: Content = {
   hero_title_suffix: "Conventions",
   hero_tagline: "An event and an evening to remember.",
   hero_intro:
-    "You are cordially invited to join us for a very special evening of association, cultural enrichment, gift exchanges, meeting new friends, and making wonderful memories — this side of paradise. See the video below for details.",
+    "You are cordially invited to join us for a very special evening of association, cultural enrichment, gift exchanges, meeting new friends, and making wonderful memories — this side of paradise. See the video for details.",
   video_url: null,
   itinerary: [],
   datetime_heading: "Sunday, August 30, 2026 · 4:00 PM – 9:30 PM",
