@@ -95,19 +95,14 @@ export const getInvitationByToken = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const { data: inv, error } = await supabaseAdmin
       .from("invitations")
-      .select("id,event_id,guest_name,guest_email,guest_phone,notes,invite_sent_at,rsvp_expires_at,events(title,description,starts_at,ends_at,location,virtual_link)")
+      .select("id,event_id,guest_name,guest_email,guest_phone,notes,invite_sent_at,events(title,description,starts_at,ends_at,location,virtual_link)")
       .in("rsvp_token", rsvpTokenCandidates(data.token))
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!inv) return { invitation: null, rsvp: null, order: null, expired: false };
     const { data: rsvp } = await supabaseAdmin.from("rsvps").select("*").eq("invitation_id", inv.id).maybeSingle();
     const { data: order } = await supabaseAdmin.from("orders").select("*").eq("invitation_id", inv.id).maybeSingle();
-    const expired = Boolean(
-      (inv as any).rsvp_expires_at &&
-        new Date((inv as any).rsvp_expires_at).getTime() < Date.now() &&
-        rsvp?.status !== "yes",
-    );
-    return { invitation: inv, rsvp, order, expired };
+    return { invitation: inv, rsvp, order, expired: false };
   });
 
 const RsvpInput = z.object({
