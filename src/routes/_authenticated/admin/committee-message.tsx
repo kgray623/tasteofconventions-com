@@ -143,7 +143,7 @@ function CommitteeMessagePage() {
     return guests.filter((g) => !g.invite_sent_at && g.rsvp_status !== "yes");
   }, [guests, pendingOnly]);
 
-  const withPhone = useMemo(() => visible, [visible]);
+  
 
   const messageFor = (g: Guest) =>
     renderTemplate(template, {
