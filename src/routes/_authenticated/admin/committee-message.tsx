@@ -163,9 +163,6 @@ function CommitteeMessagePage() {
   const markSent = async (g: Guest, checked: boolean) => {
     setMarkingId(g.id);
     const sentAt = checked ? new Date().toISOString() : null;
-    const expiresAt = checked
-      ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-      : null;
     const { error } = await supabase
       .from("invitations")
       .update({ invite_sent_at: sentAt })
@@ -178,11 +175,11 @@ function CommitteeMessagePage() {
     setGuests((prev) =>
       prev.map((row) =>
         row.id === g.id
-          ? { ...row, invite_sent_at: sentAt, rsvp_expires_at: expiresAt }
+          ? { ...row, invite_sent_at: sentAt }
           : row,
       ),
     );
-    toast.success(checked ? "Marked as sent — 7-day window started." : "Marked as not sent.");
+    toast.success(checked ? "Marked as delivered." : "Marked as not delivered.");
   };
 
   if (rolesLoading) {
