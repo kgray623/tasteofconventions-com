@@ -465,19 +465,16 @@ function UploadPage() {
     if (!g.invite_sent_at) return { label: "Not sent", tone: "pending" as const };
     if (g.rsvp_expires_at && new Date(g.rsvp_expires_at) < new Date())
       return { label: "Expired", tone: "expired" as const };
-    if (g.rsvp_expires_at) {
-      const days = Math.max(
-        0,
-        Math.ceil(
-          (new Date(g.rsvp_expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
-        ),
-      );
-      return {
-        label: `Sent · ${days} day${days === 1 ? "" : "s"} left`,
-        tone: "sent" as const,
-      };
-    }
-    return { label: "Sent", tone: "sent" as const };
+    const daysAgo = Math.max(
+      0,
+      Math.floor((Date.now() - new Date(g.invite_sent_at).getTime()) / (1000 * 60 * 60 * 24)),
+    );
+    const agoLabel =
+      daysAgo === 0 ? "today" : daysAgo === 1 ? "yesterday" : `${daysAgo} days ago`;
+    return {
+      label: `Sent message ${agoLabel}`,
+      tone: "sent" as const,
+    };
   };
 
   const copyAndMarkSent = async (g: (typeof savedGuests)[number]) => {
