@@ -45,6 +45,7 @@ function PreviewPage() {
   const [invitedBy, setInvitedBy] = useDraftState(draftScope, "invitedBy", "");
   const [invitedByOther, setInvitedByOther] = useDraftState(draftScope, "invitedByOther", "");
   const [cuisineCounts, setCuisineCounts] = useDraftState<Record<string, number>>(draftScope, "cuisineCounts", {});
+  const [wantsCuisine, setWantsCuisine] = useDraftState<"yes" | "no" | "">(draftScope, "wantsCuisine", "");
   const [submittedAt, setSubmittedAt] = useDraftState<string | null>(draftScope, "submittedAt", null);
   const [inviters, setInviters] = useState<{ id: string; name: string }[]>([]);
   const cuisines = ["Myanmar", "African", "Indonesian"];
