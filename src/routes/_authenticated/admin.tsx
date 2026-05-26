@@ -16,6 +16,7 @@ const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boole
   { to: "/admin/event", label: "Event details", icon: CalendarCog, team: true },
   { to: "/admin/invitation", label: "Invitation page", icon: Mail },
   { to: "/admin/upload", label: "Add guests", icon: Upload, team: true },
+  { to: "/admin/committee-message", label: "Committee message", icon: MessageSquare, team: true },
   { to: "/admin/inviters", label: "Inviters", icon: UserPlus },
   { to: "/admin/restaurants", label: "Restaurants", icon: UtensilsCrossed },
   { to: "/admin/categories", label: "Assignments", icon: ListChecks, team: true },
@@ -24,7 +25,7 @@ const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boole
   { to: "/admin/chat", label: "Committee chat", icon: MessagesSquare, team: true },
 ];
 
-const teamAllowedPaths = new Set(["/admin", "/admin/event", "/admin/upload", "/admin/categories", "/admin/chat"]);
+const teamAllowedPaths = new Set(["/admin", "/admin/event", "/admin/upload", "/admin/committee-message", "/admin/categories", "/admin/chat"]);
 
 function AdminLayout() {
   const { isAdmin, isTeam, loading } = useRoles();
