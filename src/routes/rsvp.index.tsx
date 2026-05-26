@@ -1,10 +1,9 @@
-import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { getPublicRsvpByPhone, submitPublicRsvp } from "@/lib/invitations.functions";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +36,6 @@ function isSelection(value: unknown): value is CuisineSelection {
 }
 
 function PreviewPage() {
-  const { user, loading: authLoading } = useAuth();
   const draftScope = "rsvp-public";
   const [status, setStatus] = useDraftState<"yes" | "no">(draftScope, "status", "yes");
   const [attendanceMode, setAttendanceMode] = useDraftState<"in_person" | "zoom">(draftScope, "attendanceMode", "in_person");
@@ -131,13 +129,6 @@ function PreviewPage() {
       setSaving(false);
     }
   };
-
-  if (authLoading) {
-    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
-  }
-  if (user) {
-    return <Navigate to="/my-rsvp" replace />;
-  }
 
   return (
     <div className="min-h-screen bg-gradient-warm">
