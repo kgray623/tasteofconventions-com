@@ -380,9 +380,25 @@ export function InvitationPage() {
             <AccordionContent className="pb-6 text-muted-foreground space-y-3">
               <p>
                 Would you like to be an event volunteer? We have many needs for
-                this very special event. Once you RSVP, send a text to Kari Gray
-                808.278.7562 to be part of the committee.
+                this very special event. Below are the duties we need help with —
+                pick whatever speaks to you, then once you RSVP, send a text to
+                Kari Gray 808.278.7562 to sign up.
               </p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Set-up crew (tables, chairs, décor) — morning of event</li>
+                <li>Welcome & check-in table (greet guests, name tags)</li>
+                <li>Food station hosts (serving, restocking snacks)</li>
+                <li>Catering & restaurant coordination on-site</li>
+                <li>Beverage station (non-alcoholic & adult beverages)</li>
+                <li>Kitchen helpers (prep, plating, dishes)</li>
+                <li>Program & emcee support</li>
+                <li>Photography / videography</li>
+                <li>Activities & games coordinator</li>
+                <li>Parking & guest directions</li>
+                <li>Clean-up crew — end of event</li>
+                <li>Donations & raffle table</li>
+              </ul>
+
               {isAdmin && (
                 <Link to="/admin/invitation">
                   <Button variant="outline" size="sm" className="gap-2">
