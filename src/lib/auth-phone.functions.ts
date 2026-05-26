@@ -38,21 +38,19 @@ export const signInWithPhoneOnly = createServerFn({ method: "POST" })
     let userId: string | null = null;
     for (const candidate of [phoneE164, phoneNorm, `+${phoneNorm}`]) {
       if (userId) break;
-      const { data: id } = await supabaseAdmin.rpc(
-        "get_auth_user_id_by_phone",
-        { _phone: candidate },
-      );
+      const { data: id } = await supabaseAdmin.rpc("get_auth_user_id_by_phone", {
+        _phone: candidate,
+      });
       userId = (id as string | null) ?? null;
     }
 
     if (!userId) {
-      const { data: list, error: listErr } =
-        await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      const { data: list, error: listErr } = await supabaseAdmin.auth.admin.listUsers({
+        page: 1,
+        perPage: 1000,
+      });
       if (listErr) throw new Error(listErr.message);
-      userId =
-        list.users.find(
-          (u) => u.phone && u.phone.replace(/\D/g, "") === phoneNorm,
-        )?.id ?? null;
+      userId = list.users.find((u) => u.phone && u.phone.replace(/\D/g, "") === phoneNorm)?.id ?? null;
     }
 
     // 2) If no auth user, require the phone be tied to a known person.
@@ -82,11 +80,7 @@ export const signInWithPhoneOnly = createServerFn({ method: "POST" })
         throw new Error("We don't have this mobile number on the guest list yet.");
       }
 
-      const displayName =
-        (inv as any)?.guest_name ||
-        (inviter as any)?.name ||
-        (teamInvite as any)?.name ||
-        null;
+      const displayName = inv?.guest_name || inviter?.name || teamInvite?.name || null;
 
       const tempPassword = randomPassword();
       const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
