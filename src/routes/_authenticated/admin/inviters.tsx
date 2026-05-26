@@ -62,7 +62,7 @@ type GuestRow = {
   guest_email: string | null;
   guest_phone: string | null;
   invite_sent_at: string | null;
-  rsvp_expires_at: string | null;
+  
   rsvp_status: string | null;
   rsvp_party_size: number | null;
   rsvp_id: string | null;
@@ -165,7 +165,7 @@ function InvitersPage() {
           supabase.from("events").select("id,title").order("starts_at", { ascending: true }),
           supabase
             .from("invitations")
-            .select("id,host_id,guest_name,guest_email,guest_phone,invite_sent_at,rsvp_expires_at")
+            .select("id,host_id,guest_name,guest_email,guest_phone,invite_sent_at")
             .order("guest_name"),
           supabase.from("rsvps").select("id,invitation_id,status,party_size"),
         ]),
@@ -804,16 +804,12 @@ function InvitersPage() {
                                     <th className="px-2 py-1">Guest</th>
                                     <th className="px-2 py-1">Contact</th>
                                     <th className="px-2 py-1">RSVP</th>
-                                    <th className="px-2 py-1">Expires</th>
                                     <th className="px-2 py-1 text-right">Actions</th>
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {guests.map((g) => {
                                     const status = g.rsvp_status ?? "no response";
-                                    const expired =
-                                      g.rsvp_expires_at &&
-                                      new Date(g.rsvp_expires_at) < new Date();
                                     const busy = rowBusy === g.id;
                                     return (
                                       <tr key={g.id} className="border-t border-border/60">
@@ -852,11 +848,6 @@ function InvitersPage() {
                                             {g.rsvp_party_size ? ` · ${g.rsvp_party_size}` : ""}
                                           </span>
                                         </td>
-                                        <td className="px-2 py-2 text-muted-foreground">
-                                          {g.rsvp_expires_at
-                                            ? `${new Date(g.rsvp_expires_at).toLocaleDateString()}${expired ? " (expired)" : ""}`
-                                            : "—"}
-                                        </td>
                                         <td className="px-2 py-2">
                                           <div className="flex items-center gap-1 justify-end">
                                             <Button
@@ -867,15 +858,6 @@ function InvitersPage() {
                                               className="h-7 gap-1"
                                             >
                                               <XCircle className="w-3 h-3" /> Decline
-                                            </Button>
-                                            <Button
-                                              variant="outline"
-                                              size="sm"
-                                              disabled={busy || !!expired}
-                                              onClick={() => expireGuest(g)}
-                                              className="h-7 gap-1"
-                                            >
-                                              <Clock className="w-3 h-3" /> Expire
                                             </Button>
                                           </div>
                                         </td>

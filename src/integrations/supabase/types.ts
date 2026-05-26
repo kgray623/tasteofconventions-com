@@ -447,7 +447,6 @@ export type Database = {
           invite_sent_at: string | null
           is_committee: boolean
           notes: string | null
-          rsvp_expires_at: string | null
           rsvp_token: string
         }
         Insert: {
@@ -463,7 +462,6 @@ export type Database = {
           invite_sent_at?: string | null
           is_committee?: boolean
           notes?: string | null
-          rsvp_expires_at?: string | null
           rsvp_token?: string
         }
         Update: {
@@ -479,7 +477,6 @@ export type Database = {
           invite_sent_at?: string | null
           is_committee?: boolean
           notes?: string | null
-          rsvp_expires_at?: string | null
           rsvp_token?: string
         }
         Relationships: [

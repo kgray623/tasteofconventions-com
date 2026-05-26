@@ -224,7 +224,6 @@ function UploadPage() {
       guest_phone: string | null;
       rsvp_token: string;
       invite_sent_at: string | null;
-      rsvp_expires_at: string | null;
       rsvp_status: string | null;
       is_committee: boolean;
     }[]
@@ -255,7 +254,7 @@ function UploadPage() {
       const { data, error } = await supabase
         .from("invitations")
         .select(
-          "id,guest_name,guest_email,guest_phone,rsvp_token,invite_sent_at,rsvp_expires_at,is_committee,rsvps(status)",
+          "id,guest_name,guest_email,guest_phone,rsvp_token,invite_sent_at,is_committee,rsvps(status)",
         )
         .eq("event_id", evId)
         .order("created_at", { ascending: false });
@@ -267,12 +266,11 @@ function UploadPage() {
         guest_phone: string | null;
         rsvp_token: string;
         invite_sent_at: string | null;
-        rsvp_expires_at: string | null;
         is_committee: boolean | null;
         rsvps: { status: string }[] | { status: string } | null;
       };
       setSavedGuests(
-        ((data ?? []) as Row[]).map((r) => {
+        ((data ?? []) as unknown as Row[]).map((r) => {
           const rsvp = Array.isArray(r.rsvps) ? r.rsvps[0] : r.rsvps;
           return {
             id: r.id,
@@ -281,7 +279,6 @@ function UploadPage() {
             guest_phone: r.guest_phone,
             rsvp_token: r.rsvp_token,
             invite_sent_at: r.invite_sent_at,
-            rsvp_expires_at: r.rsvp_expires_at,
             rsvp_status: rsvp?.status ?? null,
             is_committee: !!r.is_committee,
           };
@@ -462,15 +459,13 @@ function UploadPage() {
     const firstName = (guestName || "Friend").split(/\s+/)[0];
     const sender = inviterName || "your friend";
     const link = `${SITE_URL}/rsvp/${rsvpLinkToken(token)}`;
-    return `Hi ${firstName}, it's ${sender}. You're invited to A Taste of Special Conventions on Sunday, August 30, 2026. Please RSVP here (link expires in 7 days): ${link}`;
+    return `Hi ${firstName}, it's ${sender}. You're invited to A Taste of Special Conventions on Sunday, August 30, 2026. Please RSVP here: ${link}`;
   };
 
   const guestStatus = (g: (typeof savedGuests)[number]) => {
     if (g.rsvp_status === "yes") return { label: "RSVP'd yes", tone: "yes" as const };
     if (g.rsvp_status === "no") return { label: "RSVP'd no", tone: "no" as const };
     if (!g.invite_sent_at) return { label: "Not sent", tone: "pending" as const };
-    if (g.rsvp_expires_at && new Date(g.rsvp_expires_at) < new Date())
-      return { label: "Expired", tone: "expired" as const };
     const daysAgo = Math.max(
       0,
       Math.floor((Date.now() - new Date(g.invite_sent_at).getTime()) / (1000 * 60 * 60 * 24)),
@@ -486,9 +481,6 @@ function UploadPage() {
   const toggleSent = async (g: (typeof savedGuests)[number], checked: boolean) => {
     setMarkingSentId(g.id);
     const sentAt = checked ? new Date().toISOString() : null;
-    const expiresAt = checked
-      ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-      : null;
     const { error } = await supabase
       .from("invitations")
       .update({ invite_sent_at: sentAt })
@@ -501,11 +493,11 @@ function UploadPage() {
     setSavedGuests((prev) =>
       prev.map((row) =>
         row.id === g.id
-          ? { ...row, invite_sent_at: sentAt, rsvp_expires_at: expiresAt }
+          ? { ...row, invite_sent_at: sentAt }
           : row,
       ),
     );
-    toast.success(checked ? "Marked as sent — RSVP window started." : "Marked as not sent.");
+    toast.success(checked ? "Marked as sent." : "Marked as not sent.");
   };
 
   const toggleCommittee = async (g: (typeof savedGuests)[number], checked: boolean) => {
@@ -525,36 +517,6 @@ function UploadPage() {
     toast.success(checked ? `Tagged ${g.guest_name} as committee` : `Removed committee tag from ${g.guest_name}`);
   };
 
-  const resendReset = async (g: (typeof savedGuests)[number]) => {
-    if (
-      typeof window !== "undefined" &&
-      !window.confirm(
-        `Reset the 7-day window for ${g.guest_name}? Use this only if you're re-sending the invite.`,
-      )
-    )
-      return;
-    const sentAt = new Date().toISOString();
-    const { error } = await supabase
-      .from("invitations")
-      .update({ invite_sent_at: sentAt })
-      .eq("id", g.id);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    setSavedGuests((prev) =>
-      prev.map((row) =>
-        row.id === g.id
-          ? {
-              ...row,
-              invite_sent_at: sentAt,
-              rsvp_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-            }
-          : row,
-      ),
-    );
-    toast.success("Reset. Now expires in 7 days.");
-  };
 
   useEffect(() => {
     let alive = true;
@@ -1207,26 +1169,14 @@ function UploadPage() {
       )}
 
       {(() => {
-        const now = Date.now();
         const sentCount = savedGuests.filter((g) => g.invite_sent_at).length;
         const pendingCount = savedGuests.filter((g) => !g.invite_sent_at).length;
-        const expiredCount = savedGuests.filter(
-          (g) =>
-            g.invite_sent_at &&
-            g.rsvp_expires_at &&
-            new Date(g.rsvp_expires_at).getTime() < now &&
-            g.rsvp_status !== "yes",
-        ).length;
         const activeCount = savedGuests.filter(
-          (g) =>
-            g.rsvp_status === "yes" ||
-            (g.invite_sent_at &&
-              g.rsvp_expires_at &&
-              new Date(g.rsvp_expires_at).getTime() >= now),
+          (g) => g.rsvp_status === "yes" || g.invite_sent_at,
         ).length;
         const left = myQuota !== null ? Math.max(0, myQuota - activeCount) : null;
         return (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <Card className="p-4">
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
                 Invites sent
@@ -1244,13 +1194,6 @@ function UploadPage() {
               </p>
               <p className="font-display text-2xl mt-1">{myRsvpCount}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">{myRsvpSeats} seats</p>
-            </Card>
-            <Card className="p-4">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                Expired
-              </p>
-              <p className="font-display text-2xl mt-1">{expiredCount}</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">returned to pool</p>
             </Card>
             <Card className="p-4">
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -1362,11 +1305,9 @@ function UploadPage() {
                       ? "bg-emerald-100 text-emerald-800 border-emerald-200"
                       : s.tone === "no"
                         ? "bg-muted text-muted-foreground"
-                        : s.tone === "expired"
-                          ? "bg-destructive/10 text-destructive border-destructive/30"
-                          : s.tone === "pending"
-                            ? "bg-amber-100 text-amber-800 border-amber-200"
-                            : "bg-sky-100 text-sky-800 border-sky-200";
+                        : s.tone === "pending"
+                          ? "bg-amber-100 text-amber-800 border-amber-200"
+                          : "bg-sky-100 text-sky-800 border-sky-200";
                   return (
                     <span
                       className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border ${cls}`}
@@ -1418,19 +1359,8 @@ function UploadPage() {
                           : "I sent the text"}
                     </span>
                   </label>
-                  {g.invite_sent_at && g.rsvp_status !== "yes" && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => resendReset(g)}
-                      className="h-8 text-xs"
-                      title="Reset the 7-day RSVP window"
-                    >
-                      Reset 7 days
-                    </Button>
-                  )}
                 </div>
+
 
               </div>
               );

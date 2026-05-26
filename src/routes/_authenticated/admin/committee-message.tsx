@@ -29,12 +29,12 @@ type Guest = {
   guest_phone: string | null;
   rsvp_token: string;
   invite_sent_at: string | null;
-  rsvp_expires_at: string | null;
+  
   rsvp_status: string | null;
 };
 
 const DEFAULT_TEMPLATE =
-  "Hi {{first}}, it's {{sender}}. You're on the Steering Committee for A Taste of Special Conventions on Sunday, August 30, 2026. Please RSVP here (link expires in 7 days): {{link}}";
+  "Hi {{first}}, it's {{sender}}. You're on the Steering Committee for A Taste of Special Conventions on Sunday, August 30, 2026. Please RSVP here: {{link}}";
 
 const templateKey = (uid?: string) => `committee-sms-template:${uid ?? "unknown"}`;
 
@@ -104,7 +104,7 @@ function CommitteeMessagePage() {
       const { data, error } = await supabase
         .from("invitations")
         .select(
-          "id,guest_name,guest_phone,rsvp_token,invite_sent_at,rsvp_expires_at,is_committee,rsvps(status)",
+          "id,guest_name,guest_phone,rsvp_token,invite_sent_at,is_committee,rsvps(status)",
         )
         .eq("is_committee", true)
         .order("guest_name", { ascending: true });
@@ -121,7 +121,6 @@ function CommitteeMessagePage() {
             guest_phone: r.guest_phone,
             rsvp_token: r.rsvp_token,
             invite_sent_at: r.invite_sent_at,
-            rsvp_expires_at: r.rsvp_expires_at,
             rsvp_status: rsvp?.status ?? null,
           };
         }),
@@ -164,9 +163,6 @@ function CommitteeMessagePage() {
   const markSent = async (g: Guest, checked: boolean) => {
     setMarkingId(g.id);
     const sentAt = checked ? new Date().toISOString() : null;
-    const expiresAt = checked
-      ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-      : null;
     const { error } = await supabase
       .from("invitations")
       .update({ invite_sent_at: sentAt })
@@ -179,11 +175,11 @@ function CommitteeMessagePage() {
     setGuests((prev) =>
       prev.map((row) =>
         row.id === g.id
-          ? { ...row, invite_sent_at: sentAt, rsvp_expires_at: expiresAt }
+          ? { ...row, invite_sent_at: sentAt }
           : row,
       ),
     );
-    toast.success(checked ? "Marked as sent — 7-day window started." : "Marked as not sent.");
+    toast.success(checked ? "Marked as delivered." : "Marked as not delivered.");
   };
 
   if (rolesLoading) {
@@ -207,8 +203,7 @@ function CommitteeMessagePage() {
         </div>
         <p className="text-sm text-muted-foreground">
           A dedicated in-app message just for committee-tagged guests. Edit the template below,
-          then copy each personalized message to share however you like. Tap{" "}
-          <em>Mark as delivered</em> to start the 7-day RSVP window.
+          then copy each personalized message to share however you like.
         </p>
       </Card>
 
