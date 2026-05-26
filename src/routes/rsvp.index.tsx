@@ -193,35 +193,44 @@ function PreviewPage() {
             <div>
               <h2 className="font-display text-2xl">Pre-order from your cultural choice restaurant</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Meals run about $20–$25. Choose yes or no for each cuisine and enter the number of dishes you may want.
+                Meals run about $20–$25. Enter your full name and mobile number above, then choose yes or no for each cuisine and enter the number of dishes you may want.
               </p>
+              {!canChooseMeals && (
+                <p className="text-sm text-terracotta mt-2">
+                  Meal choices stay locked until we know who to contact: full name and mobile number are required.
+                </p>
+              )}
             </div>
             <div className="space-y-3">
               {cuisines.map((cuisine) => {
                 const qty = cuisineCounts[cuisine] ?? 0;
                 const selected = qty > 0;
                 const setQty = (n: number) =>
-                  setCuisineCounts({ ...cuisineCounts, [cuisine]: Math.max(0, Math.min(20, n)) });
+                  canChooseMeals
+                    ? setCuisineCounts({ ...cuisineCounts, [cuisine]: Math.max(0, Math.min(20, n)) })
+                    : toast.error("Please enter your full name and mobile number before choosing meals");
                 return (
-                  <div key={cuisine} className="rounded-md border border-border bg-card p-4 space-y-3">
+                  <div key={cuisine} className={`rounded-md border border-border bg-card p-4 space-y-3 ${canChooseMeals ? "" : "opacity-60"}`}>
                     <div className="flex items-center justify-between gap-3">
                       <Label className="text-base font-display text-ink">{cuisine}</Label>
                       <div className="grid grid-cols-2 gap-2 w-36">
                         <button
                           type="button"
+                          disabled={!canChooseMeals}
                           onClick={() => setQty(qty > 0 ? qty : 1)}
                           className={`rounded-md border-2 px-3 py-2 text-sm font-medium transition ${
                             selected ? "border-terracotta bg-terracotta text-cream" : "border-border bg-card hover:border-terracotta/40"
-                          }`}
+                          } disabled:cursor-not-allowed`}
                         >
                           Yes
                         </button>
                         <button
                           type="button"
+                          disabled={!canChooseMeals}
                           onClick={() => setQty(0)}
                           className={`rounded-md border-2 px-3 py-2 text-sm font-medium transition ${
                             !selected ? "border-ink bg-ink text-cream" : "border-border bg-card hover:border-ink/40"
-                          }`}
+                          } disabled:cursor-not-allowed`}
                         >
                           No
                         </button>
@@ -230,11 +239,11 @@ function PreviewPage() {
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-sm text-muted-foreground">Number of dishes</span>
                       <div className="flex items-center gap-2">
-                        <Button size="icon" variant="outline" onClick={() => setQty(qty - 1)} aria-label={`Fewer ${cuisine} dishes`}>
+                        <Button size="icon" variant="outline" disabled={!canChooseMeals} onClick={() => setQty(qty - 1)} aria-label={`Fewer ${cuisine} dishes`}>
                           <Minus className="w-3 h-3" />
                         </Button>
                         <span className="w-10 text-center font-display text-2xl text-ink">{qty}</span>
-                        <Button size="icon" variant="outline" onClick={() => setQty(qty + 1)} aria-label={`More ${cuisine} dishes`}>
+                        <Button size="icon" variant="outline" disabled={!canChooseMeals} onClick={() => setQty(qty + 1)} aria-label={`More ${cuisine} dishes`}>
                           <Plus className="w-3 h-3" />
                         </Button>
                       </div>
@@ -260,7 +269,13 @@ function PreviewPage() {
           {saved && (
             <div className="rounded-md border border-border bg-cream/40 p-4 text-sm text-ink space-y-2">
               <p className="font-medium">Your RSVP is saved.</p>
-              <p className="text-muted-foreground">We'll be in touch with more details soon.</p>
+              <p className="text-muted-foreground">Your details will remain on this device if the page refreshes, so you can come back and update meal counts.</p>
+            </div>
+          )}
+          {!saved && hasSubmitted && (
+            <div className="rounded-md border border-border bg-cream/40 p-4 text-sm text-ink space-y-2">
+              <p className="font-medium">Your previous RSVP is still here.</p>
+              <p className="text-muted-foreground">Review or update your details and submit again if anything changed.</p>
             </div>
           )}
         </Card>
