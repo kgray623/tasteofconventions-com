@@ -378,7 +378,11 @@ export function InvitationPage() {
               </span>
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-3">
-              <p>Volunteer opportunities and sign-up details will be shared here soon.</p>
+              <p>
+                Would you like to be an event volunteer? We have many needs for
+                this very special event. Once you RSVP, send a text to Kari Gray
+                808.278.7562 to be part of the committee.
+              </p>
               {isAdmin && (
                 <Link to="/admin/invitation">
                   <Button variant="outline" size="sm" className="gap-2">
