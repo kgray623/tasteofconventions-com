@@ -165,7 +165,7 @@ function InvitersPage() {
           supabase.from("events").select("id,title").order("starts_at", { ascending: true }),
           supabase
             .from("invitations")
-            .select("id,host_id,guest_name,guest_email,guest_phone,invite_sent_at,rsvp_expires_at")
+            .select("id,host_id,guest_name,guest_email,guest_phone,invite_sent_at")
             .order("guest_name"),
           supabase.from("rsvps").select("id,invitation_id,status,party_size"),
         ]),
