@@ -21,6 +21,10 @@ function randomPassword() {
   return Buffer.from(bytes).toString("base64").replace(/[+/=]/g, "x") + "Aa1!";
 }
 
+function internalPhoneLoginAddress(phoneNorm: string) {
+  return `phone-${phoneNorm}@tasteofconventions.local`;
+}
+
 /**
  * Phone-only sign-in. The user enters a mobile number, and if the number
  * matches an invitation we issue them a session for that phone-number account.
@@ -33,6 +37,8 @@ export const signInWithPhoneOnly = createServerFn({ method: "POST" })
     if (!phoneE164 || phoneNorm.length < 7) {
       throw new Error("Enter a valid mobile phone number");
     }
+
+    const loginAddress = internalPhoneLoginAddress(phoneNorm);
 
     // 1) Find an existing auth user by phone in any stored format.
     let userId: string | null = null;
@@ -51,7 +57,11 @@ export const signInWithPhoneOnly = createServerFn({ method: "POST" })
       });
       if (listErr) throw new Error(listErr.message);
       userId =
-        list.users.find((u) => u.phone && u.phone.replace(/\D/g, "") === phoneNorm)?.id ?? null;
+        list.users.find(
+          (u) =>
+            (u.phone && u.phone.replace(/\D/g, "") === phoneNorm) ||
+            u.email?.toLowerCase() === loginAddress,
+        )?.id ?? null;
     }
 
     // 2) If no auth user, require the phone be tied to a known person.
@@ -85,8 +95,10 @@ export const signInWithPhoneOnly = createServerFn({ method: "POST" })
 
       const tempPassword = randomPassword();
       const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
+        email: loginAddress,
         phone: phoneE164,
         password: tempPassword,
+        email_confirm: true,
         phone_confirm: true,
         user_metadata: { display_name: displayName, phone: data.phone },
       });
@@ -95,13 +107,16 @@ export const signInWithPhoneOnly = createServerFn({ method: "POST" })
       if (!userId) throw new Error("Could not create account");
     }
 
-    // 3) Ensure the account has this phone + a fresh internal password,
-    //    then sign in with phone/password to get a real session.
+    // 3) Ensure the account has this phone-number login identity + a fresh
+    //    internal password, then sign in without calling the disabled phone provider.
     const sessionPassword = randomPassword();
     const { error: updErr } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+      email: loginAddress,
       phone: phoneE164,
+      email_confirm: true,
       phone_confirm: true,
       password: sessionPassword,
+      user_metadata: { phone: data.phone },
     });
     if (updErr) throw new Error(updErr.message);
 
@@ -109,7 +124,7 @@ export const signInWithPhoneOnly = createServerFn({ method: "POST" })
     const anonKey = process.env.SUPABASE_PUBLISHABLE_KEY!;
     const anon = createClient(url, anonKey, { auth: { persistSession: false } });
     const { data: signIn, error: signInErr } = await anon.auth.signInWithPassword({
-      phone: phoneE164,
+      email: loginAddress,
       password: sessionPassword,
     });
     if (signInErr || !signIn.session) {
