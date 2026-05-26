@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/accordion";
 
 import { supabase } from "@/integrations/supabase/client";
+import eaglesLandingImg from "@/assets/eagles-landing.jpg";
 import { useAuth } from "@/hooks/use-auth";
 import { useRoles } from "@/hooks/use-roles";
 import {
@@ -290,8 +291,15 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-3">
               <p><strong className="text-ink">{content.location_name}</strong> · {content.location_subtitle}</p>
-              <div className="relative aspect-[16/8] rounded-xl overflow-hidden border border-border bg-gradient-to-br from-amber-glow/20 via-magenta/15 to-iris/20 flex items-center justify-center">
-                <MapPin className="w-8 h-8 text-sunset" />
+              <div className="relative aspect-[16/8] rounded-xl overflow-hidden border border-border">
+                <img
+                  src={eaglesLandingImg}
+                  alt="Eagle's Landing venue in La Platte, Nebraska"
+                  loading="lazy"
+                  width={1280}
+                  height={640}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <p className="text-sm whitespace-pre-line">{content.location_body}</p>
             </AccordionContent>
