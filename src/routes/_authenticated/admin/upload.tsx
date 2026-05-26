@@ -266,12 +266,11 @@ function UploadPage() {
         guest_phone: string | null;
         rsvp_token: string;
         invite_sent_at: string | null;
-        rsvp_expires_at: string | null;
         is_committee: boolean | null;
         rsvps: { status: string }[] | { status: string } | null;
       };
       setSavedGuests(
-        ((data ?? []) as Row[]).map((r) => {
+        ((data ?? []) as unknown as Row[]).map((r) => {
           const rsvp = Array.isArray(r.rsvps) ? r.rsvps[0] : r.rsvps;
           return {
             id: r.id,
@@ -280,7 +279,6 @@ function UploadPage() {
             guest_phone: r.guest_phone,
             rsvp_token: r.rsvp_token,
             invite_sent_at: r.invite_sent_at,
-            rsvp_expires_at: r.rsvp_expires_at,
             rsvp_status: rsvp?.status ?? null,
             is_committee: !!r.is_committee,
           };
