@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { getPublicRsvpByPhone, submitPublicRsvp } from "@/lib/invitations.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
+import { SiteHeader } from "@/components/site-header";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -134,7 +136,9 @@ function PreviewPage() {
 
   return (
     <div className="min-h-screen bg-gradient-warm">
+      <SiteHeader />
       <div className="mx-auto max-w-3xl px-6 py-12 space-y-6">
+
         <Link to="/" className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-ink">
           <ArrowLeft className="w-3.5 h-3.5" /> Back to invitation
         </Link>
@@ -300,18 +304,15 @@ function PreviewPage() {
           <Button onClick={handleSave} disabled={saving} className="bg-ink text-cream hover:bg-ink/90 w-full h-12 text-base">
             {saving ? "Submitting…" : "Submit RSVP"}
           </Button>
-          {saved && (
-            <div className="rounded-md border border-border bg-cream/40 p-4 text-sm text-ink space-y-2">
-              <p className="font-medium">Your RSVP is saved.</p>
-              <p className="text-muted-foreground">Your details will remain on this device if the page refreshes, so you can come back and update meal counts.</p>
+          {hasSubmitted && (
+            <div className="rounded-md border border-border bg-cream/40 p-4 text-sm text-ink space-y-3">
+              <p className="font-medium">Once you have RSVP'd, please log in to make any changes to your reservation.</p>
+              <Link to="/login">
+                <Button variant="outline" className="w-full">Log in</Button>
+              </Link>
             </div>
           )}
-          {!saved && hasSubmitted && (
-            <div className="rounded-md border border-border bg-cream/40 p-4 text-sm text-ink space-y-2">
-              <p className="font-medium">Your previous RSVP is still here.</p>
-              <p className="text-muted-foreground">Review or update your details and submit again if anything changed.</p>
-            </div>
-          )}
+
         </Card>
 
       </div>
