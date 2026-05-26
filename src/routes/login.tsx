@@ -21,6 +21,14 @@ function safeRedirect(value: string | undefined) {
   return value && allowedRedirects.has(value) ? value : undefined;
 }
 
+function normalizeMobilePhone(value: string) {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  if (value.trim().startsWith("+") && digits.length >= 10) return `+${digits}`;
+  return "";
+}
+
 async function routeForUser(userId: string): Promise<RouteDestination> {
   const { data } = await withTimeout(
     supabase.from("user_roles").select("role").eq("user_id", userId),
