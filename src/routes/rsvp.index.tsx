@@ -247,68 +247,66 @@ function PreviewPage() {
         {status === "yes" && attendanceMode === "in_person" && (
           <Card className="p-7 space-y-5">
             <div>
-              <h2 className="font-display text-2xl">Pre-order from your cultural choice restaurant</h2>
+              <h2 className="font-display text-2xl">Do you want to pre-order a catered meal?</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Meals run about $20–$25. Enter your full name and mobile number above, then choose yes or no for each cuisine and enter the number of dishes you may want.
+                Catered plates run about <strong>$20–$30 per plate</strong>. Tell us if you'd like to pre-order so we can give the restaurants an accurate headcount.
               </p>
-              {!canChooseMeals && (
-                <p className="text-sm text-terracotta mt-2">
-                  Meal choices stay locked until we know who to contact: full name and mobile number are required.
-                </p>
-              )}
             </div>
-            <div className="space-y-3">
-              {cuisines.map((cuisine) => {
-                const qty = cuisineCounts[cuisine] ?? 0;
-                const selected = qty > 0;
-                const setQty = (n: number) =>
-                  canChooseMeals
-                    ? setCuisineCounts({ ...cuisineCounts, [cuisine]: Math.max(0, Math.min(20, n)) })
-                    : toast.error("Please enter your full name and mobile number before choosing meals");
-                return (
-                  <div key={cuisine} className={`rounded-md border border-border bg-card p-4 space-y-3 ${canChooseMeals ? "" : "opacity-60"}`}>
-                    <div className="flex items-center justify-between gap-3">
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { v: "yes", icon: Check, label: "Yes, pre-order" },
+                { v: "no", icon: X, label: "No, thanks" },
+              ].map((o) => (
+                <button
+                  key={o.v}
+                  type="button"
+                  onClick={() => {
+                    setWantsCuisine(o.v as "yes" | "no");
+                    if (o.v === "no") setCuisineCounts({});
+                  }}
+                  className={`p-4 rounded-md border-2 transition flex flex-col items-center gap-2 ${
+                    wantsCuisine === o.v ? "border-ink bg-ink text-cream" : "border-border bg-card hover:border-ink/40"
+                  }`}
+                >
+                  <o.icon className="w-5 h-5" />
+                  <span className="text-sm font-medium">{o.label}</span>
+                </button>
+              ))}
+            </div>
+            {wantsCuisine === "yes" && (
+              <div className="space-y-3 pt-2 border-t border-border">
+                <p className="text-sm text-muted-foreground pt-3">
+                  How many meals would you like from each cuisine? Choose any combination — leave a cuisine at 0 if you don't want it.
+                </p>
+                {!canChooseMeals && (
+                  <p className="text-sm text-terracotta">
+                    Enter your full name and mobile number above before choosing meals.
+                  </p>
+                )}
+                {cuisines.map((cuisine) => {
+                  const qty = cuisineCounts[cuisine] ?? 0;
+                  const setQty = (n: number) =>
+                    canChooseMeals
+                      ? setCuisineCounts({ ...cuisineCounts, [cuisine]: Math.max(0, Math.min(20, n)) })
+                      : toast.error("Please enter your full name and mobile number before choosing meals");
+                  return (
+                    <div key={cuisine} className={`rounded-md border border-border bg-card p-4 flex items-center justify-between gap-3 ${canChooseMeals ? "" : "opacity-60"}`}>
                       <Label className="text-base font-display text-ink">{cuisine}</Label>
-                      <div className="grid grid-cols-2 gap-2 w-36">
-                        <button
-                          type="button"
-                          disabled={!canChooseMeals}
-                          onClick={() => setQty(qty > 0 ? qty : 1)}
-                          className={`rounded-md border-2 px-3 py-2 text-sm font-medium transition ${
-                            selected ? "border-terracotta bg-terracotta text-cream" : "border-border bg-card hover:border-terracotta/40"
-                          } disabled:cursor-not-allowed`}
-                        >
-                          Yes
-                        </button>
-                        <button
-                          type="button"
-                          disabled={!canChooseMeals}
-                          onClick={() => setQty(0)}
-                          className={`rounded-md border-2 px-3 py-2 text-sm font-medium transition ${
-                            !selected ? "border-ink bg-ink text-cream" : "border-border bg-card hover:border-ink/40"
-                          } disabled:cursor-not-allowed`}
-                        >
-                          No
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-sm text-muted-foreground">Number of dishes</span>
                       <div className="flex items-center gap-2">
-                        <Button size="icon" variant="outline" disabled={!canChooseMeals} onClick={() => setQty(qty - 1)} aria-label={`Fewer ${cuisine} dishes`}>
+                        <Button size="icon" variant="outline" disabled={!canChooseMeals} onClick={() => setQty(qty - 1)} aria-label={`Fewer ${cuisine} meals`}>
                           <Minus className="w-3 h-3" />
                         </Button>
                         <span className="w-10 text-center font-display text-2xl text-ink">{qty}</span>
-                        <Button size="icon" variant="outline" disabled={!canChooseMeals} onClick={() => setQty(qty + 1)} aria-label={`More ${cuisine} dishes`}>
+                        <Button size="icon" variant="outline" disabled={!canChooseMeals} onClick={() => setQty(qty + 1)} aria-label={`More ${cuisine} meals`}>
                           <Plus className="w-3 h-3" />
                         </Button>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-              <p className="text-xs text-muted-foreground italic">More details coming soon.</p>
-            </div>
+                  );
+                })}
+                <p className="text-xs text-muted-foreground italic">Menu details coming soon.</p>
+              </div>
+            )}
           </Card>
         )}
 
