@@ -243,7 +243,7 @@ export function InvitationPage() {
                 <h4 className="font-display text-2xl text-ink">{stop.country}</h4>
                 <p className="text-sm text-muted-foreground mt-1">{stop.note}</p>
                 {stop.restaurant ? (
-                  <Link to="/rsvp" className="inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full bg-gradient-sunset text-white text-[10px] uppercase tracking-widest shadow-glow hover:opacity-90 transition">
+                  <Link to="/preorder" className="inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full bg-gradient-sunset text-white text-[10px] uppercase tracking-widest shadow-glow hover:opacity-90 transition">
                     <UtensilsCrossed className="w-3 h-3" />
                     Pre-order the cuisine
                   </Link>
