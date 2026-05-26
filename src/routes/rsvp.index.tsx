@@ -150,6 +150,21 @@ function PreviewPage() {
           <h1 className="font-display text-5xl mt-3 text-ink">{ev.title}</h1>
         </div>
 
+        <Card className="p-5 space-y-3 border-terracotta/30 bg-card">
+          <div>
+            <h2 className="font-display text-2xl">Already RSVP'd?</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Enter your mobile number below, then restore your RSVP before updating meal counts.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Mobile number" />
+            <Button type="button" variant="outline" onClick={restoreByPhone} disabled={restoring || phoneDigits.length < 7} className="sm:w-44">
+              {restoring ? "Restoring…" : "Restore RSVP"}
+            </Button>
+          </div>
+        </Card>
+
         <Card className="p-7 space-y-5">
           <h2 className="font-display text-2xl">Will you be joining us?</h2>
           <div className="grid grid-cols-2 gap-2">
