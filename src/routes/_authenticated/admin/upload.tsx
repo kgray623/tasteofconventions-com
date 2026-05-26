@@ -477,42 +477,29 @@ function UploadPage() {
     };
   };
 
-  const copyAndMarkSent = async (g: (typeof savedGuests)[number]) => {
-    const body = buildSmsBody(g.guest_name, g.rsvp_token);
-    try {
-      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(body);
-      }
-    } catch {
-      // clipboard may be blocked; sms: link still works as fallback
+  const toggleSent = async (g: (typeof savedGuests)[number], checked: boolean) => {
+    setMarkingSentId(g.id);
+    const sentAt = checked ? new Date().toISOString() : null;
+    const expiresAt = checked
+      ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+      : null;
+    const { error } = await supabase
+      .from("invitations")
+      .update({ invite_sent_at: sentAt })
+      .eq("id", g.id);
+    setMarkingSentId(null);
+    if (error) {
+      toast.error("Couldn't update", { description: error.message });
+      return;
     }
-    if (!g.invite_sent_at) {
-      setMarkingSentId(g.id);
-      const sentAt = new Date().toISOString();
-      const { error } = await supabase
-        .from("invitations")
-        .update({ invite_sent_at: sentAt })
-        .eq("id", g.id);
-      setMarkingSentId(null);
-      if (error) {
-        toast.error("Couldn't mark as sent", { description: error.message });
-        return;
-      }
-      setSavedGuests((prev) =>
-        prev.map((row) =>
-          row.id === g.id
-            ? {
-                ...row,
-                invite_sent_at: sentAt,
-                rsvp_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-              }
-            : row,
-        ),
-      );
-      toast.success(`Copied. Marked sent — expires in 7 days.`);
-    } else {
-      toast.success("Message copied to clipboard.");
-    }
+    setSavedGuests((prev) =>
+      prev.map((row) =>
+        row.id === g.id
+          ? { ...row, invite_sent_at: sentAt, rsvp_expires_at: expiresAt }
+          : row,
+      ),
+    );
+    toast.success(checked ? "Marked as sent — RSVP window started." : "Marked as not sent.");
   };
 
   const resendReset = async (g: (typeof savedGuests)[number]) => {
