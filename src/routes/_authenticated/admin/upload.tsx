@@ -1349,6 +1349,10 @@ function UploadPage() {
                     <AlertTriangle className="w-3 h-3" />
                     Duplicate
                   </Badge>
+                {g.is_committee && (
+                  <Badge className="gap-1 h-5 bg-terracotta text-cream hover:bg-terracotta">
+                    Committee
+                  </Badge>
                 )}
                 {(() => {
                   const s = guestStatus(g);
