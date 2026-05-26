@@ -831,6 +831,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      get_auth_user_id_by_phone: { Args: { _phone: string }; Returns: string }
       get_public_inviters: {
         Args: never
         Returns: {
