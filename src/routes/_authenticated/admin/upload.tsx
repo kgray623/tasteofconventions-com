@@ -927,6 +927,7 @@ function UploadPage() {
         guest_email: quick.email.trim() || null,
         guest_phone: quick.phone.trim() || null,
         notes: null,
+        is_committee: importAsCommittee,
       });
       if (error) throw error;
       setQuickAdded((n) => n + 1);
