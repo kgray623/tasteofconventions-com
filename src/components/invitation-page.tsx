@@ -412,7 +412,7 @@ export function InvitationPage() {
                 <p className="italic">Assignment list loading…</p>
               )}
               <p className="text-sm">
-                You'll be able to sign up for an assignment after you RSVP.
+                You can sign up by texting your name to 808.278.7562 with the word VOUNTEER.
               </p>
 
             </AccordionContent>
