@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Download, RefreshCw, Utensils } from "lucide-react";
+import { Download, RefreshCw, Utensils, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database, Json } from "@/integrations/supabase/types";
