@@ -143,7 +143,7 @@ function CommitteeMessagePage() {
     return guests.filter((g) => !g.invite_sent_at && g.rsvp_status !== "yes");
   }, [guests, pendingOnly]);
 
-  const withPhone = useMemo(() => visible.filter((g) => (g.guest_phone ?? "").trim()), [visible]);
+  const withPhone = useMemo(() => visible, [visible]);
 
   const messageFor = (g: Guest) =>
     renderTemplate(template, {
@@ -151,9 +151,6 @@ function CommitteeMessagePage() {
       sender: senderName || "your friend",
       link: linkFor(g.rsvp_token),
     });
-
-  const smsLink = (phone: string, body: string) =>
-    `sms:${phone.replace(/\s+/g, "")}?&body=${encodeURIComponent(body)}`;
 
   const copy = async (text: string, label = "Message copied") => {
     try {
