@@ -327,7 +327,6 @@ function CommitteeMessagePage() {
         ) : (
           <div className="divide-y divide-border">
             {visible.map((g) => {
-              const phone = (g.guest_phone ?? "").trim();
               const body = messageFor(g);
               return (
                 <div key={g.id} className="p-4 space-y-2">
@@ -343,7 +342,7 @@ function CommitteeMessagePage() {
                     )}
                     {g.invite_sent_at && g.rsvp_status !== "yes" && (
                       <Badge variant="outline" className="text-[10px]">
-                        text sent
+                        delivered
                       </Badge>
                     )}
                     {!g.invite_sent_at && g.rsvp_status !== "yes" && (
@@ -351,7 +350,7 @@ function CommitteeMessagePage() {
                         variant="outline"
                         className="border-amber-400 text-amber-700 text-[10px]"
                       >
-                        not sent
+                        not delivered
                       </Badge>
                     )}
                     <span className="text-xs text-muted-foreground ml-auto">
