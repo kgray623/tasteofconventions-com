@@ -203,8 +203,7 @@ function CommitteeMessagePage() {
         </div>
         <p className="text-sm text-muted-foreground">
           A dedicated in-app message just for committee-tagged guests. Edit the template below,
-          then copy each personalized message to share however you like. Tap{" "}
-          <em>Mark as delivered</em> to start the 7-day RSVP window.
+          then copy each personalized message to share however you like.
         </p>
       </Card>
 
