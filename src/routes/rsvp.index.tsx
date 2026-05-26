@@ -28,13 +28,13 @@ function PreviewPage() {
   const [status, setStatus] = useDraftState<"yes" | "no">(draftScope, "status", "yes");
   const [attendanceMode, setAttendanceMode] = useDraftState<"in_person" | "zoom">(draftScope, "attendanceMode", "in_person");
   const [partySize, setPartySize] = useDraftState(draftScope, "partySize", 2);
-  const [orderingFood, setOrderingFood] = useDraftState<"yes" | "no" | "">(draftScope, "orderingFood", "");
   const [name, setName] = useDraftState(draftScope, "name", "");
   const [phone, setPhone] = useDraftState(draftScope, "phone", "");
   const [invitedBy, setInvitedBy] = useDraftState(draftScope, "invitedBy", "");
   const [invitedByOther, setInvitedByOther] = useDraftState(draftScope, "invitedByOther", "");
   const [cuisineCounts, setCuisineCounts] = useDraftState<Record<string, number>>(draftScope, "cuisineCounts", {});
   const [inviters, setInviters] = useState<{ id: string; name: string }[]>([]);
+  const cuisines = ["Myanmar", "African", "Indonesian"];
 
   useEffect(() => {
     supabase.rpc("get_public_inviters")
@@ -48,21 +48,14 @@ function PreviewPage() {
     if (status !== "no" && !name.trim()) return toast.error("Please enter your full name");
     const phoneDigits = phone.replace(/\D/g, "");
     if (phoneDigits.length < 7) return toast.error("Please enter your mobile number");
-    if (status === "yes" && attendanceMode === "in_person" && orderingFood === "") {
-      return toast.error("Please tell us whether you'll be ordering food");
-    }
     setSaving(true);
     try {
-      const orderingFoodBool = status === "yes" && attendanceMode === "in_person" ? orderingFood === "yes" : null;
-      const selections = orderingFoodBool
+      const selections = status === "yes" && attendanceMode === "in_person"
         ? Object.entries(cuisineCounts)
             .filter(([, qty]) => qty > 0)
             .map(([cuisine, qty]) => ({ cuisine, qty }))
         : [];
-      if (orderingFoodBool && selections.length === 0) {
-        setSaving(false);
-        return toast.error("Please pick at least one cuisine and meal count.");
-      }
+      const orderingFoodBool = status === "yes" && attendanceMode === "in_person" ? selections.length > 0 : null;
       await save({ data: {
         guest_name: name.trim() || "Guest",
         guest_email: null,
@@ -201,59 +194,57 @@ function PreviewPage() {
             <div>
               <h2 className="font-display text-2xl">Pre-order from your cultural choice restaurant</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Meals run about $20–$25. Pick any combination — one cuisine, two, or all three. We're just gathering a headcount per restaurant for now.
+                Meals run about $20–$25. Choose yes or no for each cuisine and enter the number of dishes you may want.
               </p>
             </div>
-            <div className="space-y-1.5">
-              <Label>Will you be ordering?</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { v: "yes", label: "Ordering food" },
-                  { v: "no", label: "Not ordering food" },
-                ].map((o) => (
-                  <button
-                    key={o.v}
-                    onClick={() => setOrderingFood(o.v as "yes" | "no")}
-                    className={`p-3 rounded-md border-2 transition text-sm font-medium ${
-                      orderingFood === o.v ? "border-terracotta bg-terracotta text-cream" : "border-border bg-card hover:border-terracotta/40"
-                    }`}
-                  >
-                    {o.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {orderingFood === "yes" && (
-              <div className="space-y-2">
-                <Label>How many meals from each cuisine?</Label>
-                <p className="text-xs text-muted-foreground">Pick any combination — one cuisine, two, or all three. Quantities are total meals per cuisine.</p>
-                <div className="divide-y divide-border rounded-md border border-border">
-                  {["Myanmar / Burmese", "African", "Indonesian"].map((cuisine) => {
-                    const qty = cuisineCounts[cuisine] ?? 0;
-                    const setQty = (n: number) =>
-                      setCuisineCounts({ ...cuisineCounts, [cuisine]: Math.max(0, Math.min(20, n)) });
-                    return (
-                      <div key={cuisine} className="flex items-center justify-between gap-3 p-3">
-                        <span className="font-medium">{cuisine}</span>
-                        <div className="flex items-center gap-2">
-                          <Button size="icon" variant="outline" onClick={() => setQty(qty - 1)} aria-label={`Fewer ${cuisine}`}>
-                            <Minus className="w-3 h-3" />
-                          </Button>
-                          <span className="w-8 text-center font-display text-lg">{qty}</span>
-                          <Button size="icon" variant="outline" onClick={() => setQty(qty + 1)} aria-label={`More ${cuisine}`}>
-                            <Plus className="w-3 h-3" />
-                          </Button>
-                        </div>
+            <div className="space-y-3">
+              {cuisines.map((cuisine) => {
+                const qty = cuisineCounts[cuisine] ?? 0;
+                const selected = qty > 0;
+                const setQty = (n: number) =>
+                  setCuisineCounts({ ...cuisineCounts, [cuisine]: Math.max(0, Math.min(20, n)) });
+                return (
+                  <div key={cuisine} className="rounded-md border border-border bg-card p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <Label className="text-base font-display text-ink">{cuisine}</Label>
+                      <div className="grid grid-cols-2 gap-2 w-36">
+                        <button
+                          type="button"
+                          onClick={() => setQty(qty > 0 ? qty : 1)}
+                          className={`rounded-md border-2 px-3 py-2 text-sm font-medium transition ${
+                            selected ? "border-terracotta bg-terracotta text-cream" : "border-border bg-card hover:border-terracotta/40"
+                          }`}
+                        >
+                          Yes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setQty(0)}
+                          className={`rounded-md border-2 px-3 py-2 text-sm font-medium transition ${
+                            !selected ? "border-ink bg-ink text-cream" : "border-border bg-card hover:border-ink/40"
+                          }`}
+                        >
+                          No
+                        </button>
                       </div>
-                    );
-                  })}
-                </div>
-                <p className="text-xs text-muted-foreground italic">Menu details will follow once we negotiate with each restaurant.</p>
-              </div>
-            )}
-            {orderingFood === "" && (
-              <p className="text-xs text-muted-foreground italic">Tap "Ordering food" above to pick how many meals from Myanmar/Burmese, African, or Indonesian.</p>
-            )}
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm text-muted-foreground">Number of dishes</span>
+                      <div className="flex items-center gap-2">
+                        <Button size="icon" variant="outline" onClick={() => setQty(qty - 1)} aria-label={`Fewer ${cuisine} dishes`}>
+                          <Minus className="w-3 h-3" />
+                        </Button>
+                        <span className="w-10 text-center font-display text-2xl text-ink">{qty}</span>
+                        <Button size="icon" variant="outline" onClick={() => setQty(qty + 1)} aria-label={`More ${cuisine} dishes`}>
+                          <Plus className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              <p className="text-xs text-muted-foreground italic">More details coming soon.</p>
+            </div>
           </Card>
         )}
       </div>
