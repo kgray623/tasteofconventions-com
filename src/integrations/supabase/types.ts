@@ -445,6 +445,7 @@ export type Database = {
           host_id: string
           id: string
           invite_sent_at: string | null
+          is_committee: boolean
           notes: string | null
           rsvp_expires_at: string | null
           rsvp_token: string
@@ -460,6 +461,7 @@ export type Database = {
           host_id: string
           id?: string
           invite_sent_at?: string | null
+          is_committee?: boolean
           notes?: string | null
           rsvp_expires_at?: string | null
           rsvp_token?: string
@@ -475,6 +477,7 @@ export type Database = {
           host_id?: string
           id?: string
           invite_sent_at?: string | null
+          is_committee?: boolean
           notes?: string | null
           rsvp_expires_at?: string | null
           rsvp_token?: string
