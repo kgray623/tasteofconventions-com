@@ -24,6 +24,7 @@ import {
   Camera,
   Loader2,
   X,
+  Trash2,
   Pencil,
   AlertTriangle,
   MessageSquare,
