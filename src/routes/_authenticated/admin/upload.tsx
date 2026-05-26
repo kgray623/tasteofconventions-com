@@ -224,7 +224,6 @@ function UploadPage() {
       guest_phone: string | null;
       rsvp_token: string;
       invite_sent_at: string | null;
-      rsvp_expires_at: string | null;
       rsvp_status: string | null;
       is_committee: boolean;
     }[]
