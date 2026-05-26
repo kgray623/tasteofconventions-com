@@ -1,16 +1,15 @@
-import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { submitPublicRsvp } from "@/lib/invitations.functions";
+import { getPublicRsvpByPhone, submitPublicRsvp } from "@/lib/invitations.functions";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { clearDraftScope, useDraftState } from "@/hooks/use-draft-state";
+import { useDraftState } from "@/hooks/use-draft-state";
 import { Check, X, Minus, Plus, ArrowLeft, Users, Video } from "lucide-react";
 
 export const Route = createFileRoute("/rsvp/")({
@@ -22,8 +21,21 @@ const ev = {
   title: "A Taste of Special Conventions",
 };
 
+type CuisineSelection = { cuisine: string; qty: number };
+
+function isSelection(value: unknown): value is CuisineSelection {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      "cuisine" in value &&
+      "qty" in value &&
+      typeof (value as CuisineSelection).cuisine === "string" &&
+      typeof (value as CuisineSelection).qty === "number",
+  );
+}
+
 function PreviewPage() {
-  const { user, loading: authLoading } = useAuth();
   const draftScope = "rsvp-public";
   const [status, setStatus] = useDraftState<"yes" | "no">(draftScope, "status", "yes");
   const [attendanceMode, setAttendanceMode] = useDraftState<"in_person" | "zoom">(draftScope, "attendanceMode", "in_person");
@@ -33,8 +45,11 @@ function PreviewPage() {
   const [invitedBy, setInvitedBy] = useDraftState(draftScope, "invitedBy", "");
   const [invitedByOther, setInvitedByOther] = useDraftState(draftScope, "invitedByOther", "");
   const [cuisineCounts, setCuisineCounts] = useDraftState<Record<string, number>>(draftScope, "cuisineCounts", {});
+  const [submittedAt, setSubmittedAt] = useDraftState<string | null>(draftScope, "submittedAt", null);
   const [inviters, setInviters] = useState<{ id: string; name: string }[]>([]);
   const cuisines = ["Myanmar", "African", "Indonesian"];
+  const phoneDigits = phone.replace(/\D/g, "");
+  const canChooseMeals = name.trim().length > 0 && phoneDigits.length >= 7;
 
   useEffect(() => {
     supabase.rpc("get_public_inviters")
@@ -42,11 +57,45 @@ function PreviewPage() {
   }, []);
 
   const save = useServerFn(submitPublicRsvp);
+  const lookupRsvp = useServerFn(getPublicRsvpByPhone);
   const [saving, setSaving] = useState(false);
+  const [restoring, setRestoring] = useState(false);
   const [saved, setSaved] = useState(false);
+  const hasSubmitted = saved || Boolean(submittedAt);
+
+  const restoreByPhone = async () => {
+    if (phoneDigits.length < 7) return toast.error("Enter your mobile number first");
+    setRestoring(true);
+    try {
+      const result = await lookupRsvp({ data: { phone } });
+      if (!result.invitation || !result.rsvp) {
+        return toast.error("No RSVP was found for that mobile number");
+      }
+      setName(result.invitation.guest_name ?? name);
+      setPhone(result.invitation.guest_phone ?? phone);
+      setStatus(result.rsvp.status === "no" ? "no" : "yes");
+      setAttendanceMode(result.rsvp.attendance_mode === "zoom" ? "zoom" : "in_person");
+      setPartySize(result.rsvp.party_size ?? 1);
+      setInvitedBy(result.rsvp.invited_by ?? "");
+      const restoredCounts = Array.isArray(result.preorder?.selections)
+        ? result.preorder.selections.filter(isSelection).reduce<Record<string, number>>((acc, item) => {
+            acc[item.cuisine] = item.qty;
+            return acc;
+          }, {})
+        : {};
+      setCuisineCounts(restoredCounts);
+      setSubmittedAt(result.rsvp.responded_at ?? new Date().toISOString());
+      setSaved(false);
+      toast.success("Your RSVP was restored.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not restore RSVP");
+    } finally {
+      setRestoring(false);
+    }
+  };
+
   const handleSave = async () => {
     if (status !== "no" && !name.trim()) return toast.error("Please enter your full name");
-    const phoneDigits = phone.replace(/\D/g, "");
     if (phoneDigits.length < 7) return toast.error("Please enter your mobile number");
     setSaving(true);
     try {
@@ -55,6 +104,9 @@ function PreviewPage() {
             .filter(([, qty]) => qty > 0)
             .map(([cuisine, qty]) => ({ cuisine, qty }))
         : [];
+      if (selections.length > 0 && !canChooseMeals) {
+        return toast.error("Please enter your full name and mobile number before choosing meals");
+      }
       const orderingFoodBool = status === "yes" && attendanceMode === "in_person" ? selections.length > 0 : null;
       await save({ data: {
         guest_name: name.trim() || "Guest",
@@ -69,7 +121,7 @@ function PreviewPage() {
         cuisine_selections: selections,
       }});
       setSaved(true);
-      clearDraftScope(draftScope);
+      setSubmittedAt(new Date().toISOString());
       toast.success("RSVP saved — thank you!");
     } catch (e: any) {
       toast.error(e?.message ?? "Could not save RSVP");
@@ -77,13 +129,6 @@ function PreviewPage() {
       setSaving(false);
     }
   };
-
-  if (authLoading) {
-    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
-  }
-  if (user) {
-    return <Navigate to="/my-rsvp" replace />;
-  }
 
   return (
     <div className="min-h-screen bg-gradient-warm">
@@ -95,6 +140,21 @@ function PreviewPage() {
           <p className="text-xs uppercase tracking-[0.3em] text-terracotta">You're invited</p>
           <h1 className="font-display text-5xl mt-3 text-ink">{ev.title}</h1>
         </div>
+
+        <Card className="p-5 space-y-3 border-terracotta/30 bg-card">
+          <div>
+            <h2 className="font-display text-2xl">Already RSVP'd?</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Enter your mobile number below, then restore your RSVP before updating meal counts.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Mobile number" />
+            <Button type="button" variant="outline" onClick={restoreByPhone} disabled={restoring || phoneDigits.length < 7} className="sm:w-44">
+              {restoring ? "Restoring…" : "Restore RSVP"}
+            </Button>
+          </div>
+        </Card>
 
         <Card className="p-7 space-y-5">
           <h2 className="font-display text-2xl">Will you be joining us?</h2>
@@ -187,35 +247,44 @@ function PreviewPage() {
             <div>
               <h2 className="font-display text-2xl">Pre-order from your cultural choice restaurant</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Meals run about $20–$25. Choose yes or no for each cuisine and enter the number of dishes you may want.
+                Meals run about $20–$25. Enter your full name and mobile number above, then choose yes or no for each cuisine and enter the number of dishes you may want.
               </p>
+              {!canChooseMeals && (
+                <p className="text-sm text-terracotta mt-2">
+                  Meal choices stay locked until we know who to contact: full name and mobile number are required.
+                </p>
+              )}
             </div>
             <div className="space-y-3">
               {cuisines.map((cuisine) => {
                 const qty = cuisineCounts[cuisine] ?? 0;
                 const selected = qty > 0;
                 const setQty = (n: number) =>
-                  setCuisineCounts({ ...cuisineCounts, [cuisine]: Math.max(0, Math.min(20, n)) });
+                  canChooseMeals
+                    ? setCuisineCounts({ ...cuisineCounts, [cuisine]: Math.max(0, Math.min(20, n)) })
+                    : toast.error("Please enter your full name and mobile number before choosing meals");
                 return (
-                  <div key={cuisine} className="rounded-md border border-border bg-card p-4 space-y-3">
+                  <div key={cuisine} className={`rounded-md border border-border bg-card p-4 space-y-3 ${canChooseMeals ? "" : "opacity-60"}`}>
                     <div className="flex items-center justify-between gap-3">
                       <Label className="text-base font-display text-ink">{cuisine}</Label>
                       <div className="grid grid-cols-2 gap-2 w-36">
                         <button
                           type="button"
+                          disabled={!canChooseMeals}
                           onClick={() => setQty(qty > 0 ? qty : 1)}
                           className={`rounded-md border-2 px-3 py-2 text-sm font-medium transition ${
                             selected ? "border-terracotta bg-terracotta text-cream" : "border-border bg-card hover:border-terracotta/40"
-                          }`}
+                          } disabled:cursor-not-allowed`}
                         >
                           Yes
                         </button>
                         <button
                           type="button"
+                          disabled={!canChooseMeals}
                           onClick={() => setQty(0)}
                           className={`rounded-md border-2 px-3 py-2 text-sm font-medium transition ${
                             !selected ? "border-ink bg-ink text-cream" : "border-border bg-card hover:border-ink/40"
-                          }`}
+                          } disabled:cursor-not-allowed`}
                         >
                           No
                         </button>
@@ -224,11 +293,11 @@ function PreviewPage() {
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-sm text-muted-foreground">Number of dishes</span>
                       <div className="flex items-center gap-2">
-                        <Button size="icon" variant="outline" onClick={() => setQty(qty - 1)} aria-label={`Fewer ${cuisine} dishes`}>
+                        <Button size="icon" variant="outline" disabled={!canChooseMeals} onClick={() => setQty(qty - 1)} aria-label={`Fewer ${cuisine} dishes`}>
                           <Minus className="w-3 h-3" />
                         </Button>
                         <span className="w-10 text-center font-display text-2xl text-ink">{qty}</span>
-                        <Button size="icon" variant="outline" onClick={() => setQty(qty + 1)} aria-label={`More ${cuisine} dishes`}>
+                        <Button size="icon" variant="outline" disabled={!canChooseMeals} onClick={() => setQty(qty + 1)} aria-label={`More ${cuisine} dishes`}>
                           <Plus className="w-3 h-3" />
                         </Button>
                       </div>
@@ -254,7 +323,13 @@ function PreviewPage() {
           {saved && (
             <div className="rounded-md border border-border bg-cream/40 p-4 text-sm text-ink space-y-2">
               <p className="font-medium">Your RSVP is saved.</p>
-              <p className="text-muted-foreground">We'll be in touch with more details soon.</p>
+              <p className="text-muted-foreground">Your details will remain on this device if the page refreshes, so you can come back and update meal counts.</p>
+            </div>
+          )}
+          {!saved && hasSubmitted && (
+            <div className="rounded-md border border-border bg-cream/40 p-4 text-sm text-ink space-y-2">
+              <p className="font-medium">Your previous RSVP is still here.</p>
+              <p className="text-muted-foreground">Review or update your details and submit again if anything changed.</p>
             </div>
           )}
         </Card>
