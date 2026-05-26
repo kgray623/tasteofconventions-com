@@ -28,13 +28,13 @@ function PreviewPage() {
   const [status, setStatus] = useDraftState<"yes" | "no">(draftScope, "status", "yes");
   const [attendanceMode, setAttendanceMode] = useDraftState<"in_person" | "zoom">(draftScope, "attendanceMode", "in_person");
   const [partySize, setPartySize] = useDraftState(draftScope, "partySize", 2);
-  const [orderingFood, setOrderingFood] = useDraftState<"yes" | "no" | "">(draftScope, "orderingFood", "");
   const [name, setName] = useDraftState(draftScope, "name", "");
   const [phone, setPhone] = useDraftState(draftScope, "phone", "");
   const [invitedBy, setInvitedBy] = useDraftState(draftScope, "invitedBy", "");
   const [invitedByOther, setInvitedByOther] = useDraftState(draftScope, "invitedByOther", "");
   const [cuisineCounts, setCuisineCounts] = useDraftState<Record<string, number>>(draftScope, "cuisineCounts", {});
   const [inviters, setInviters] = useState<{ id: string; name: string }[]>([]);
+  const cuisines = ["Myanmar", "African", "Indonesian"];
 
   useEffect(() => {
     supabase.rpc("get_public_inviters")
@@ -48,21 +48,14 @@ function PreviewPage() {
     if (status !== "no" && !name.trim()) return toast.error("Please enter your full name");
     const phoneDigits = phone.replace(/\D/g, "");
     if (phoneDigits.length < 7) return toast.error("Please enter your mobile number");
-    if (status === "yes" && attendanceMode === "in_person" && orderingFood === "") {
-      return toast.error("Please tell us whether you'll be ordering food");
-    }
     setSaving(true);
     try {
-      const orderingFoodBool = status === "yes" && attendanceMode === "in_person" ? orderingFood === "yes" : null;
-      const selections = orderingFoodBool
+      const selections = status === "yes" && attendanceMode === "in_person"
         ? Object.entries(cuisineCounts)
             .filter(([, qty]) => qty > 0)
             .map(([cuisine, qty]) => ({ cuisine, qty }))
         : [];
-      if (orderingFoodBool && selections.length === 0) {
-        setSaving(false);
-        return toast.error("Please pick at least one cuisine and meal count.");
-      }
+      const orderingFoodBool = status === "yes" && attendanceMode === "in_person" ? selections.length > 0 : null;
       await save({ data: {
         guest_name: name.trim() || "Guest",
         guest_email: null,
