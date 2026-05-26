@@ -58,6 +58,17 @@ function PreorderReportPage() {
     setLoading(false);
   };
 
+  const deleteRow = async (id: string, name: string) => {
+    if (!window.confirm(`Delete preorder entry for ${name}? This removes all their cuisine selections.`)) return;
+    const { error } = await supabase.from("cuisine_preorders").delete().eq("id", id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setRows((prev) => prev.filter((r) => r.id !== id));
+    toast.success("Preorder entry deleted");
+  };
+
   useEffect(() => {
     if (!rolesLoading && isTeam) void load();
   }, [rolesLoading, isTeam]);
