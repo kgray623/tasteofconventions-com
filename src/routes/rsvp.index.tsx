@@ -304,18 +304,15 @@ function PreviewPage() {
           <Button onClick={handleSave} disabled={saving} className="bg-ink text-cream hover:bg-ink/90 w-full h-12 text-base">
             {saving ? "Submitting…" : "Submit RSVP"}
           </Button>
-          {saved && (
-            <div className="rounded-md border border-border bg-cream/40 p-4 text-sm text-ink space-y-2">
-              <p className="font-medium">Your RSVP is saved.</p>
-              <p className="text-muted-foreground">Your details will remain on this device if the page refreshes, so you can come back and update meal counts.</p>
+          {hasSubmitted && (
+            <div className="rounded-md border border-border bg-cream/40 p-4 text-sm text-ink space-y-3">
+              <p className="font-medium">Once you have RSVP'd, please log in to make any changes to your reservation.</p>
+              <Link to="/login">
+                <Button variant="outline" className="w-full">Log in</Button>
+              </Link>
             </div>
           )}
-          {!saved && hasSubmitted && (
-            <div className="rounded-md border border-border bg-cream/40 p-4 text-sm text-ink space-y-2">
-              <p className="font-medium">Your previous RSVP is still here.</p>
-              <p className="text-muted-foreground">Review or update your details and submit again if anything changed.</p>
-            </div>
-          )}
+
         </Card>
 
       </div>
