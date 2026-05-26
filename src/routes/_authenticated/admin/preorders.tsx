@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Download, RefreshCw, Utensils } from "lucide-react";
+import { Download, RefreshCw, Utensils, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database, Json } from "@/integrations/supabase/types";
@@ -56,6 +56,17 @@ function PreorderReportPage() {
     if (error) toast.error(error.message);
     setRows((data as PreorderRow[]) ?? []);
     setLoading(false);
+  };
+
+  const deleteRow = async (id: string, name: string) => {
+    if (!window.confirm(`Delete preorder entry for ${name}? This removes all their cuisine selections.`)) return;
+    const { error } = await supabase.from("cuisine_preorders").delete().eq("id", id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setRows((prev) => prev.filter((r) => r.id !== id));
+    toast.success("Preorder entry deleted");
   };
 
   useEffect(() => {
@@ -163,6 +174,7 @@ function PreorderReportPage() {
                   <th className="px-4 py-3 font-medium">Cuisine</th>
                   <th className="px-4 py-3 font-medium text-right">Dishes</th>
                   <th className="px-4 py-3 font-medium">Updated</th>
+                  <th className="px-4 py-3 font-medium text-right w-16">Remove</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -173,6 +185,18 @@ function PreorderReportPage() {
                     <td className="px-4 py-3">{row.cuisine}</td>
                     <td className="px-4 py-3 text-right font-display text-xl">{row.qty}</td>
                     <td className="px-4 py-3 text-muted-foreground">{new Date(row.updatedAt).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 text-right">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Delete preorder for ${row.name}`}
+                        onClick={() => deleteRow(row.id, row.name)}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
