@@ -1359,19 +1359,8 @@ function UploadPage() {
                           : "I sent the text"}
                     </span>
                   </label>
-                  {g.invite_sent_at && g.rsvp_status !== "yes" && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => resendReset(g)}
-                      className="h-8 text-xs"
-                      title="Reset the 7-day RSVP window"
-                    >
-                      Reset 7 days
-                    </Button>
-                  )}
                 </div>
+
 
               </div>
               );
