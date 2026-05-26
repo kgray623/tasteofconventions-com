@@ -136,7 +136,9 @@ function PreviewPage() {
 
   return (
     <div className="min-h-screen bg-gradient-warm">
+      <SiteHeader />
       <div className="mx-auto max-w-3xl px-6 py-12 space-y-6">
+
         <Link to="/" className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-ink">
           <ArrowLeft className="w-3.5 h-3.5" /> Back to invitation
         </Link>
