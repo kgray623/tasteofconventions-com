@@ -74,25 +74,39 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          invitation_id: string | null
           name: string
           phone: string
           selections: Json
+          updated_at: string
         }
         Insert: {
           created_at?: string
           id?: string
+          invitation_id?: string | null
           name: string
           phone: string
           selections?: Json
+          updated_at?: string
         }
         Update: {
           created_at?: string
           id?: string
+          invitation_id?: string | null
           name?: string
           phone?: string
           selections?: Json
+          updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cuisine_preorders_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: true
+            referencedRelation: "invitations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       donations_summary: {
         Row: {

@@ -29,6 +29,7 @@ import { Route as AuthenticatedInvitationsNewRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminUploadRouteImport } from './routes/_authenticated/admin/upload'
 import { Route as AuthenticatedAdminTeamRouteImport } from './routes/_authenticated/admin/team'
 import { Route as AuthenticatedAdminRestaurantsRouteImport } from './routes/_authenticated/admin/restaurants'
+import { Route as AuthenticatedAdminPreordersRouteImport } from './routes/_authenticated/admin/preorders'
 import { Route as AuthenticatedAdminInvitersRouteImport } from './routes/_authenticated/admin/inviters'
 import { Route as AuthenticatedAdminInvitationRouteImport } from './routes/_authenticated/admin/invitation'
 import { Route as AuthenticatedAdminEventRouteImport } from './routes/_authenticated/admin/event'
@@ -143,6 +144,12 @@ const AuthenticatedAdminRestaurantsRoute =
     path: '/restaurants',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminPreordersRoute =
+  AuthenticatedAdminPreordersRouteImport.update({
+    id: '/preorders',
+    path: '/preorders',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminInvitersRoute =
   AuthenticatedAdminInvitersRouteImport.update({
     id: '/inviters',
@@ -226,6 +233,7 @@ export interface FileRoutesByFullPath {
   '/admin/event': typeof AuthenticatedAdminEventRoute
   '/admin/invitation': typeof AuthenticatedAdminInvitationRoute
   '/admin/inviters': typeof AuthenticatedAdminInvitersRoute
+  '/admin/preorders': typeof AuthenticatedAdminPreordersRoute
   '/admin/restaurants': typeof AuthenticatedAdminRestaurantsRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
   '/admin/upload': typeof AuthenticatedAdminUploadRoute
@@ -257,6 +265,7 @@ export interface FileRoutesByTo {
   '/admin/event': typeof AuthenticatedAdminEventRoute
   '/admin/invitation': typeof AuthenticatedAdminInvitationRoute
   '/admin/inviters': typeof AuthenticatedAdminInvitersRoute
+  '/admin/preorders': typeof AuthenticatedAdminPreordersRoute
   '/admin/restaurants': typeof AuthenticatedAdminRestaurantsRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
   '/admin/upload': typeof AuthenticatedAdminUploadRoute
@@ -291,6 +300,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/event': typeof AuthenticatedAdminEventRoute
   '/_authenticated/admin/invitation': typeof AuthenticatedAdminInvitationRoute
   '/_authenticated/admin/inviters': typeof AuthenticatedAdminInvitersRoute
+  '/_authenticated/admin/preorders': typeof AuthenticatedAdminPreordersRoute
   '/_authenticated/admin/restaurants': typeof AuthenticatedAdminRestaurantsRoute
   '/_authenticated/admin/team': typeof AuthenticatedAdminTeamRoute
   '/_authenticated/admin/upload': typeof AuthenticatedAdminUploadRoute
@@ -325,6 +335,7 @@ export interface FileRouteTypes {
     | '/admin/event'
     | '/admin/invitation'
     | '/admin/inviters'
+    | '/admin/preorders'
     | '/admin/restaurants'
     | '/admin/team'
     | '/admin/upload'
@@ -356,6 +367,7 @@ export interface FileRouteTypes {
     | '/admin/event'
     | '/admin/invitation'
     | '/admin/inviters'
+    | '/admin/preorders'
     | '/admin/restaurants'
     | '/admin/team'
     | '/admin/upload'
@@ -389,6 +401,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/event'
     | '/_authenticated/admin/invitation'
     | '/_authenticated/admin/inviters'
+    | '/_authenticated/admin/preorders'
     | '/_authenticated/admin/restaurants'
     | '/_authenticated/admin/team'
     | '/_authenticated/admin/upload'
@@ -565,6 +578,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRestaurantsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/preorders': {
+      id: '/_authenticated/admin/preorders'
+      path: '/preorders'
+      fullPath: '/admin/preorders'
+      preLoaderRoute: typeof AuthenticatedAdminPreordersRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/inviters': {
       id: '/_authenticated/admin/inviters'
       path: '/inviters'
@@ -652,6 +672,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminEventRoute: typeof AuthenticatedAdminEventRoute
   AuthenticatedAdminInvitationRoute: typeof AuthenticatedAdminInvitationRoute
   AuthenticatedAdminInvitersRoute: typeof AuthenticatedAdminInvitersRoute
+  AuthenticatedAdminPreordersRoute: typeof AuthenticatedAdminPreordersRoute
   AuthenticatedAdminRestaurantsRoute: typeof AuthenticatedAdminRestaurantsRoute
   AuthenticatedAdminTeamRoute: typeof AuthenticatedAdminTeamRoute
   AuthenticatedAdminUploadRoute: typeof AuthenticatedAdminUploadRoute
@@ -665,6 +686,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminEventRoute: AuthenticatedAdminEventRoute,
   AuthenticatedAdminInvitationRoute: AuthenticatedAdminInvitationRoute,
   AuthenticatedAdminInvitersRoute: AuthenticatedAdminInvitersRoute,
+  AuthenticatedAdminPreordersRoute: AuthenticatedAdminPreordersRoute,
   AuthenticatedAdminRestaurantsRoute: AuthenticatedAdminRestaurantsRoute,
   AuthenticatedAdminTeamRoute: AuthenticatedAdminTeamRoute,
   AuthenticatedAdminUploadRoute: AuthenticatedAdminUploadRoute,
@@ -713,3 +735,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

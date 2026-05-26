@@ -324,11 +324,14 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
     // Capture cuisine pre-order interest (separate table, no restaurant binding yet)
     const selections = (data.cuisine_selections ?? []).filter((s) => s.qty > 0);
     if (selections.length > 0 && (data.guest_name || phone)) {
-      await supabaseAdmin.from("cuisine_preorders").insert({
+      await supabaseAdmin.from("cuisine_preorders").upsert({
+        invitation_id: invitationId,
         name: data.guest_name.slice(0, 120),
         phone: (phone ?? "").slice(0, 40) || "—",
         selections,
-      });
+      }, { onConflict: "invitation_id" });
+    } else if (invitationId) {
+      await supabaseAdmin.from("cuisine_preorders").delete().eq("invitation_id", invitationId);
     }
 
     await sendRsvpConfirmation(invitationId, data.status, effectivePartySize);

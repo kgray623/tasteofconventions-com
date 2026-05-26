@@ -180,13 +180,6 @@ function PreviewPage() {
               />
             )}
           </div>
-          <Button onClick={handleSave} disabled={saving} className="bg-ink text-cream hover:bg-ink/90 w-full">{saving ? "Saving…" : "Save RSVP"}</Button>
-          {saved && (
-            <div className="rounded-md border border-border bg-cream/40 p-4 text-sm text-ink space-y-2">
-              <p className="font-medium">Your RSVP is saved.</p>
-              <p className="text-muted-foreground">We'll be in touch with more details soon.</p>
-            </div>
-          )}
         </Card>
 
         {status === "yes" && attendanceMode === "in_person" && (
@@ -247,6 +240,24 @@ function PreviewPage() {
             </div>
           </Card>
         )}
+
+        <Card className="p-5 space-y-4 border-terracotta/30 bg-card">
+          <div className="space-y-1">
+            <h2 className="font-display text-2xl">Submit your RSVP</h2>
+            <p className="text-sm text-muted-foreground">
+              This saves your attendance and any Myanmar, African, or Indonesian dish counts.
+            </p>
+          </div>
+          <Button onClick={handleSave} disabled={saving} className="bg-ink text-cream hover:bg-ink/90 w-full h-12 text-base">
+            {saving ? "Submitting…" : "Submit RSVP"}
+          </Button>
+          {saved && (
+            <div className="rounded-md border border-border bg-cream/40 p-4 text-sm text-ink space-y-2">
+              <p className="font-medium">Your RSVP is saved.</p>
+              <p className="text-muted-foreground">We'll be in touch with more details soon.</p>
+            </div>
+          )}
+        </Card>
       </div>
     </div>
   );
