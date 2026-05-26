@@ -218,6 +218,15 @@ const PublicRsvpLookupInput = z.object({
   phone: z.string().min(7).max(40),
 });
 
+function normalizeAuthPhone(value: string | null) {
+  if (!value) return "";
+  const digits = value.replace(/\D/g, "");
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  if (value.trim().startsWith("+") && digits.length >= 10) return `+${digits}`;
+  return "";
+}
+
 export const getPublicRsvpByPhone = createServerFn({ method: "GET" })
   .inputValidator((d) => PublicRsvpLookupInput.parse(d))
   .handler(async ({ data }) => {
@@ -287,17 +296,18 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
     const phone = data.guest_phone?.trim() || null;
     const password = data.password?.trim() || null;
     const selections = (data.cuisine_selections ?? []).filter((s) => s.qty > 0);
+    const authPhone = normalizeAuthPhone(phone);
 
     if (selections.length > 0 && !phone) {
       throw new Error("A mobile number is required before meal choices can be saved.");
     }
 
-    if (email && password) {
+    if (authPhone && password) {
       const { data: createdUser, error: createUserErr } = await supabaseAdmin.auth.admin.createUser({
-        email,
+        phone: authPhone,
         password,
-        email_confirm: true,
-        user_metadata: { display_name: data.guest_name },
+        phone_confirm: true,
+        user_metadata: { display_name: data.guest_name, phone },
       });
 
       if (createUserErr && !/already|registered|exists/i.test(createUserErr.message)) {
@@ -307,7 +317,7 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
       // SECURITY: Only seed profile for newly created users. NEVER call
       // updateUserById here — that would let an anonymous RSVP submission
       // overwrite the password of any existing account (account takeover).
-      // If the email is already registered, silently skip account setup;
+      // If the phone is already registered, silently skip account setup;
       // the user can sign in with their existing credentials.
       const userId = createdUser?.user?.id ?? null;
       if (userId) {
