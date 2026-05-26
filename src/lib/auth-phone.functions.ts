@@ -50,7 +50,8 @@ export const signInWithPhoneOnly = createServerFn({ method: "POST" })
         perPage: 1000,
       });
       if (listErr) throw new Error(listErr.message);
-      userId = list.users.find((u) => u.phone && u.phone.replace(/\D/g, "") === phoneNorm)?.id ?? null;
+      userId =
+        list.users.find((u) => u.phone && u.phone.replace(/\D/g, "") === phoneNorm)?.id ?? null;
     }
 
     // 2) If no auth user, require the phone be tied to a known person.
