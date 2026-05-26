@@ -11,9 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import {
   MessageSquare,
-  Send,
   Copy,
-  Phone,
   Users,
   Loader2,
   RotateCcw,
