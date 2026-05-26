@@ -220,7 +220,12 @@ export function InvitationPage() {
           </p>
           <h2 className="font-display text-5xl sm:text-6xl text-ink">A Journey Together</h2>
           <p className="mt-4 text-muted-foreground">
-            Join us as we journey through the following special conventions. While we do, tasting the culture's cuisine from a local restaurant is an option to have the full experience. Pre-ordering resturaunt cuisine will be availble.
+            Join us as we journey through the following special conventions.
+            While we do, tasting the culture's cuisine from a local restaurant is
+            an option to have the full experience. Cultural meals will be in the
+            20-25.00 range. Click below to be added to the pre-order list. We
+            will negotiate with the restaurants once we have a count. You will be
+            updated with the menu to confirm in the coming weeks.
           </p>
         </div>
 
