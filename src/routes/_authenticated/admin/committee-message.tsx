@@ -355,35 +355,16 @@ function CommitteeMessagePage() {
                       </Badge>
                     )}
                     <span className="text-xs text-muted-foreground ml-auto">
-                      {phone || <em className="text-destructive/70">no phone</em>}
+                      {g.invite_sent_at ? "delivered" : "not delivered"}
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap bg-muted/40 rounded-md p-2 border border-border">
                     {body}
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      disabled={!phone}
-                      onClick={() => {
-                        window.location.href = smsLink(phone, body);
-                      }}
-                      className="bg-ink text-cream hover:bg-ink/90"
-                    >
-                      <Send className="w-3.5 h-3.5 mr-1.5" /> Send text
-                    </Button>
                     <Button size="sm" variant="outline" onClick={() => void copy(body)}>
                       <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy message
                     </Button>
-                    {phone && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => void copy(phone, "Phone copied")}
-                      >
-                        <Phone className="w-3.5 h-3.5 mr-1.5" /> Copy number
-                      </Button>
-                    )}
                     <label className="inline-flex items-center gap-2 h-8 px-2 rounded-md border border-input text-xs cursor-pointer hover:bg-accent ml-auto">
                       <Checkbox
                         checked={!!g.invite_sent_at}
@@ -394,8 +375,8 @@ function CommitteeMessagePage() {
                         {markingId === g.id
                           ? "Saving…"
                           : g.invite_sent_at
-                            ? "Text sent"
-                            : "I sent the text"}
+                            ? "Delivered"
+                            : "Mark as delivered"}
                       </span>
                     </label>
                   </div>
