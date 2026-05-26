@@ -8,6 +8,7 @@ import { useRoles } from "@/hooks/use-roles";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -464,57 +465,41 @@ function UploadPage() {
     if (!g.invite_sent_at) return { label: "Not sent", tone: "pending" as const };
     if (g.rsvp_expires_at && new Date(g.rsvp_expires_at) < new Date())
       return { label: "Expired", tone: "expired" as const };
-    if (g.rsvp_expires_at) {
-      const days = Math.max(
-        0,
-        Math.ceil(
-          (new Date(g.rsvp_expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
-        ),
-      );
-      return {
-        label: `Sent · ${days} day${days === 1 ? "" : "s"} left`,
-        tone: "sent" as const,
-      };
-    }
-    return { label: "Sent", tone: "sent" as const };
+    const daysAgo = Math.max(
+      0,
+      Math.floor((Date.now() - new Date(g.invite_sent_at).getTime()) / (1000 * 60 * 60 * 24)),
+    );
+    const agoLabel =
+      daysAgo === 0 ? "today" : daysAgo === 1 ? "yesterday" : `${daysAgo} days ago`;
+    return {
+      label: `Sent message ${agoLabel}`,
+      tone: "sent" as const,
+    };
   };
 
-  const copyAndMarkSent = async (g: (typeof savedGuests)[number]) => {
-    const body = buildSmsBody(g.guest_name, g.rsvp_token);
-    try {
-      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(body);
-      }
-    } catch {
-      // clipboard may be blocked; sms: link still works as fallback
+  const toggleSent = async (g: (typeof savedGuests)[number], checked: boolean) => {
+    setMarkingSentId(g.id);
+    const sentAt = checked ? new Date().toISOString() : null;
+    const expiresAt = checked
+      ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+      : null;
+    const { error } = await supabase
+      .from("invitations")
+      .update({ invite_sent_at: sentAt })
+      .eq("id", g.id);
+    setMarkingSentId(null);
+    if (error) {
+      toast.error("Couldn't update", { description: error.message });
+      return;
     }
-    if (!g.invite_sent_at) {
-      setMarkingSentId(g.id);
-      const sentAt = new Date().toISOString();
-      const { error } = await supabase
-        .from("invitations")
-        .update({ invite_sent_at: sentAt })
-        .eq("id", g.id);
-      setMarkingSentId(null);
-      if (error) {
-        toast.error("Couldn't mark as sent", { description: error.message });
-        return;
-      }
-      setSavedGuests((prev) =>
-        prev.map((row) =>
-          row.id === g.id
-            ? {
-                ...row,
-                invite_sent_at: sentAt,
-                rsvp_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-              }
-            : row,
-        ),
-      );
-      toast.success(`Copied. Marked sent — expires in 7 days.`);
-    } else {
-      toast.success("Message copied to clipboard.");
-    }
+    setSavedGuests((prev) =>
+      prev.map((row) =>
+        row.id === g.id
+          ? { ...row, invite_sent_at: sentAt, rsvp_expires_at: expiresAt }
+          : row,
+      ),
+    );
+    toast.success(checked ? "Marked as sent — RSVP window started." : "Marked as not sent.");
   };
 
   const resendReset = async (g: (typeof savedGuests)[number]) => {
@@ -1357,33 +1342,20 @@ function UploadPage() {
                        <Trash2 className="w-4 h-4" />
                      )}
                    </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={markingSentId === g.id}
-                    onClick={() => copyAndMarkSent(g)}
-                    className="gap-1 h-8"
-                    title="Copies a ready-to-send SMS and starts the 7-day RSVP window"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    {markingSentId === g.id
-                      ? "Saving…"
-                      : g.invite_sent_at
-                        ? "Copy again"
-                        : "Copy text & mark sent"}
-                  </Button>
-                  {g.guest_phone && (
-                    <a
-                      href={`sms:${g.guest_phone}?&body=${encodeURIComponent(buildSmsBody(g.guest_name, g.rsvp_token))}`}
-                      className="inline-flex items-center justify-center h-8 px-2 rounded-md border border-input text-xs hover:bg-accent"
-                      onClick={() => {
-                        if (!g.invite_sent_at) void copyAndMarkSent(g);
-                      }}
-                    >
-                      <Send className="w-3.5 h-3.5 mr-1" /> Open Messages
-                    </a>
-                  )}
+                  <label className="inline-flex items-center gap-2 h-8 px-2 rounded-md border border-input text-xs cursor-pointer hover:bg-accent">
+                    <Checkbox
+                      checked={!!g.invite_sent_at}
+                      disabled={markingSentId === g.id}
+                      onCheckedChange={(v) => void toggleSent(g, v === true)}
+                    />
+                    <span>
+                      {markingSentId === g.id
+                        ? "Saving…"
+                        : g.invite_sent_at
+                          ? "Text sent"
+                          : "I sent the text"}
+                    </span>
+                  </label>
                   {g.invite_sent_at && g.rsvp_status !== "yes" && (
                     <Button
                       type="button"
