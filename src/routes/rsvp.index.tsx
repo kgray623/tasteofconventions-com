@@ -85,6 +85,7 @@ function PreviewPage() {
           }, {})
         : {};
       setCuisineCounts(restoredCounts);
+      setWantsCuisine(Object.values(restoredCounts).some((n) => n > 0) ? "yes" : "no");
       setSubmittedAt(result.rsvp.responded_at ?? new Date().toISOString());
       setSaved(false);
       toast.success("Your RSVP was restored.");
