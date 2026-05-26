@@ -508,6 +508,23 @@ function UploadPage() {
     toast.success(checked ? "Marked as sent — RSVP window started." : "Marked as not sent.");
   };
 
+  const toggleCommittee = async (g: (typeof savedGuests)[number], checked: boolean) => {
+    setTogglingCommitteeId(g.id);
+    const { error } = await supabase
+      .from("invitations")
+      .update({ is_committee: checked })
+      .eq("id", g.id);
+    setTogglingCommitteeId(null);
+    if (error) {
+      toast.error("Couldn't update committee tag", { description: error.message });
+      return;
+    }
+    setSavedGuests((prev) =>
+      prev.map((row) => (row.id === g.id ? { ...row, is_committee: checked } : row)),
+    );
+    toast.success(checked ? `Tagged ${g.guest_name} as committee` : `Removed committee tag from ${g.guest_name}`);
+  };
+
   const resendReset = async (g: (typeof savedGuests)[number]) => {
     if (
       typeof window !== "undefined" &&
