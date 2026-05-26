@@ -35,10 +35,9 @@ function HelperLogin() {
   const { user, loading } = useAuth();
   const search = useSearch({ strict: false }) as { redirect?: string };
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
-  const [forgotBusy, setForgotBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
@@ -60,11 +59,13 @@ function HelperLogin() {
 
   const signIn = async (event?: FormEvent) => {
     event?.preventDefault();
+    const normalizedPhone = normalizeMobilePhone(phone);
+    if (!normalizedPhone) return toast.error("Enter a valid mobile phone number");
     setBusy(true);
     try {
       const { data, error } = await withTimeout(
         supabase.auth.signInWithPassword({
-          email: email.trim(),
+          phone: normalizedPhone,
           password,
         }),
         10000,
@@ -91,27 +92,6 @@ function HelperLogin() {
     }
   };
 
-  const forgot = async () => {
-    if (forgotBusy) return;
-    const normalizedEmail = email.trim();
-    if (!normalizedEmail) return toast.error("Enter your email first");
-    setForgotBusy(true);
-    try {
-      const { error } = await withTimeout(
-        supabase.auth.resetPasswordForEmail(normalizedEmail, {
-          redirectTo: window.location.origin + "/reset-password",
-        }),
-        10000,
-      );
-      if (error) return toast.error(error.message);
-      toast.success("Password reset email sent.");
-    } catch (error) {
-      toast.error(getErrorMessage(error));
-    } finally {
-      setForgotBusy(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-warm flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-md">
@@ -133,13 +113,15 @@ function HelperLogin() {
           </div>
           <form onSubmit={signIn} className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Email</Label>
+              <Label>Mobile phone number</Label>
               <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
                 required
-                autoComplete="email"
+                autoComplete="tel"
+                inputMode="tel"
+                placeholder="(555) 123-4567"
               />
             </div>
             <div className="space-y-1.5">
@@ -172,13 +154,6 @@ function HelperLogin() {
               {busy ? "Signing in…" : "Sign in"}
             </Button>
           </form>
-          <button
-            onClick={forgot}
-            disabled={forgotBusy}
-            className="text-xs text-muted-foreground hover:text-ink underline w-full text-center disabled:opacity-60"
-          >
-            {forgotBusy ? "Sending reset email…" : "Forgot password?"}
-          </button>
           <p className="text-xs text-center text-muted-foreground pt-2">
             Accounts are created automatically when you RSVP.
           </p>
