@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { getPublicRsvpByPhone, submitPublicRsvp } from "@/lib/invitations.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
+import { SiteHeader } from "@/components/site-header";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
