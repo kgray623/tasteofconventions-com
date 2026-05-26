@@ -254,7 +254,7 @@ function UploadPage() {
       const { data, error } = await supabase
         .from("invitations")
         .select(
-          "id,guest_name,guest_email,guest_phone,rsvp_token,invite_sent_at,rsvp_expires_at,is_committee,rsvps(status)",
+          "id,guest_name,guest_email,guest_phone,rsvp_token,invite_sent_at,is_committee,rsvps(status)",
         )
         .eq("event_id", evId)
         .order("created_at", { ascending: false });
