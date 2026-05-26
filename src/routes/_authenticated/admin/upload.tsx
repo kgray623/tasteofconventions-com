@@ -1340,7 +1340,23 @@ function UploadPage() {
                 <span className="text-muted-foreground min-w-[110px]">
                   {g.guest_phone ?? <span className="italic text-destructive/70">no phone</span>}
                 </span>
-                <div className="flex items-center gap-1 ml-auto">
+                  <div className="flex items-center gap-1 ml-auto">
+                   <Button
+                     type="button"
+                     variant="ghost"
+                     size="icon"
+                     disabled={removingId === g.id}
+                     aria-label={`Remove ${g.guest_name}`}
+                     title="Remove this guest"
+                     onClick={() => removeSavedGuest(g.id, g.guest_name)}
+                     className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                   >
+                     {removingId === g.id ? (
+                       <Loader2 className="w-4 h-4 animate-spin" />
+                     ) : (
+                       <Trash2 className="w-4 h-4" />
+                     )}
+                   </Button>
                   <Button
                     type="button"
                     variant="outline"
@@ -1380,22 +1396,6 @@ function UploadPage() {
                       Reset 7 days
                     </Button>
                   )}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    disabled={removingId === g.id}
-                    aria-label={`Remove ${g.guest_name}`}
-                    title="Remove this guest"
-                    onClick={() => removeSavedGuest(g.id, g.guest_name)}
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                  >
-                    {removingId === g.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-4 h-4" />
-                    )}
-                  </Button>
                 </div>
 
               </div>

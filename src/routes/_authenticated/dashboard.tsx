@@ -48,6 +48,52 @@ function Dashboard() {
   const flaggedIds = new Set<string>();
   flags.forEach((f) => { flaggedIds.add(f.invitation_a); flaggedIds.add(f.invitation_b); });
 
+  const deleteInvitation = async (invite: Invite) => {
+    const { error } = await supabase.from("invitations").delete().eq("id", invite.id);
+    if (error) {
+      toast.error(`Couldn't delete: ${error.message}`);
+      return;
+    }
+    toast.success(`Deleted ${invite.guest_name}`);
+    await load();
+  };
+
+  const duplicateGuestButton = (invite: Invite) => (
+    <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1">
+      <span className="font-medium">{invite.guest_name}</span>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+            aria-label={`Delete duplicate invitation for ${invite.guest_name}`}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this guest?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <strong>{invite.guest_name}</strong>
+              {invite.guest_email ? ` (${invite.guest_email})` : ""} and their RSVP. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteInvitation(invite)}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </span>
+  );
+
   const stats = [
     { label: "Your invitations", value: myInvites.length },
     { label: "Total guest list", value: invites.length },
@@ -97,9 +143,9 @@ function Dashboard() {
                       <Badge variant="outline" className="border-terracotta text-terracotta">
                         {f.match_type} match
                       </Badge>
-                      <span className="font-medium">{a.guest_name}</span>
+                      {duplicateGuestButton(a)}
                       <span className="text-muted-foreground">↔</span>
-                      <span className="font-medium">{b.guest_name}</span>
+                      {duplicateGuestButton(b)}
                     </div>
                   );
                 })}
@@ -179,13 +225,7 @@ function Dashboard() {
                         <AlertDialogAction
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                           onClick={async () => {
-                            const { error } = await supabase.from("invitations").delete().eq("id", i.id);
-                            if (error) {
-                              toast.error(`Couldn't delete: ${error.message}`);
-                              return;
-                            }
-                            toast.success(`Deleted ${i.guest_name}`);
-                            await load();
+                            await deleteInvitation(i);
                           }}
                         >
                           Delete
