@@ -877,6 +877,7 @@ function UploadPage() {
             guest_email: r.guest_email || null,
             guest_phone: r.guest_phone || null,
             notes: r.notes || null,
+            is_committee: importAsCommittee,
           });
           if (error) {
             skipped++;
