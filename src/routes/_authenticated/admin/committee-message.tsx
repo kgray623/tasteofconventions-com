@@ -11,9 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import {
   MessageSquare,
-  Send,
   Copy,
-  Phone,
   Users,
   Loader2,
   RotateCcw,
@@ -145,7 +143,7 @@ function CommitteeMessagePage() {
     return guests.filter((g) => !g.invite_sent_at && g.rsvp_status !== "yes");
   }, [guests, pendingOnly]);
 
-  const withPhone = useMemo(() => visible.filter((g) => (g.guest_phone ?? "").trim()), [visible]);
+  
 
   const messageFor = (g: Guest) =>
     renderTemplate(template, {
@@ -153,9 +151,6 @@ function CommitteeMessagePage() {
       sender: senderName || "your friend",
       link: linkFor(g.rsvp_token),
     });
-
-  const smsLink = (phone: string, body: string) =>
-    `sms:${phone.replace(/\s+/g, "")}?&body=${encodeURIComponent(body)}`;
 
   const copy = async (text: string, label = "Message copied") => {
     try {
@@ -211,9 +206,9 @@ function CommitteeMessagePage() {
           <h2 className="font-display text-2xl">Committee invitation message</h2>
         </div>
         <p className="text-sm text-muted-foreground">
-          A dedicated message just for committee-tagged guests. Edit the template below, then send
-          each text from your own phone or copy it to paste anywhere. Tap{" "}
-          <em>I sent the text</em> to start the 7-day RSVP window.
+          A dedicated in-app message just for committee-tagged guests. Edit the template below,
+          then copy each personalized message to share however you like. Tap{" "}
+          <em>Mark as delivered</em> to start the 7-day RSVP window.
         </p>
       </Card>
 
@@ -223,11 +218,11 @@ function CommitteeMessagePage() {
           <p className="font-display text-2xl mt-1">{totalCommittee}</p>
         </Card>
         <Card className="p-4">
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Not sent yet</p>
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Not delivered</p>
           <p className="font-display text-2xl mt-1">{pendingCount}</p>
         </Card>
         <Card className="p-4">
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Texts sent</p>
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Delivered</p>
           <p className="font-display text-2xl mt-1">{sentCount}</p>
         </Card>
         <Card className="p-4">
@@ -279,7 +274,7 @@ function CommitteeMessagePage() {
       <Card className="p-6 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Send className="w-4 h-4 text-terracotta" />
+            <Copy className="w-4 h-4 text-terracotta" />
             <p className="font-medium">Bulk actions</p>
           </div>
           <label className="inline-flex items-center gap-2 h-8 px-2 rounded-md border border-input text-xs cursor-pointer hover:bg-accent">
@@ -287,57 +282,16 @@ function CommitteeMessagePage() {
               checked={pendingOnly}
               onCheckedChange={(v) => setPendingOnly(v === true)}
             />
-            <span>Show only "not sent" committee guests</span>
+            <span>Show only "not delivered" committee guests</span>
           </label>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Group SMS can't personalize each name, so the bulk action sends a generic version (uses{" "}
-          <em>"Hi committee,"</em> instead of <code>{"{{first}}"}</code>) to everyone visible
-          below. For personalized texts, use each row's Send button.
-        </p>
         <div className="flex flex-wrap gap-2">
-          <Button
-            disabled={withPhone.length === 0}
-            onClick={() => {
-              const phones = withPhone
-                .map((g) => (g.guest_phone ?? "").replace(/\s+/g, ""))
-                .filter(Boolean)
-                .join(",");
-              const body =
-                renderTemplate(template, {
-                  first: "committee",
-                  sender: senderName || "your friend",
-                  link: `${SITE_URL}/rsvp/YOUR_PERSONAL_LINK`,
-                }) +
-                "\n\n(Heads up: your personal RSVP link was sent in an earlier text or email — use that one.)";
-              window.location.href = `sms:${phones}?&body=${encodeURIComponent(body)}`;
-            }}
-            className="bg-ink text-cream hover:bg-ink/90"
-          >
-            <Send className="w-4 h-4 mr-2" /> Open group SMS ({withPhone.length})
-          </Button>
-          <Button
-            variant="outline"
-            disabled={withPhone.length === 0}
-            onClick={() =>
-              copy(
-                withPhone
-                  .map((g) => (g.guest_phone ?? "").trim())
-                  .filter(Boolean)
-                  .join(", "),
-                "Phone numbers copied",
-              )
-            }
-          >
-            <Phone className="w-4 h-4 mr-2" /> Copy all phone numbers
-          </Button>
           <Button
             variant="outline"
             disabled={visible.length === 0}
             onClick={() => {
               const lines = visible.map(
-                (g) =>
-                  `${g.guest_name}${g.guest_phone ? ` (${g.guest_phone})` : ""}:\n${messageFor(g)}`,
+                (g) => `${g.guest_name}:\n${messageFor(g)}`,
               );
               void copy(lines.join("\n\n---\n\n"), "All personalized messages copied");
             }}
@@ -373,7 +327,6 @@ function CommitteeMessagePage() {
         ) : (
           <div className="divide-y divide-border">
             {visible.map((g) => {
-              const phone = (g.guest_phone ?? "").trim();
               const body = messageFor(g);
               return (
                 <div key={g.id} className="p-4 space-y-2">
@@ -389,7 +342,7 @@ function CommitteeMessagePage() {
                     )}
                     {g.invite_sent_at && g.rsvp_status !== "yes" && (
                       <Badge variant="outline" className="text-[10px]">
-                        text sent
+                        delivered
                       </Badge>
                     )}
                     {!g.invite_sent_at && g.rsvp_status !== "yes" && (
@@ -397,39 +350,20 @@ function CommitteeMessagePage() {
                         variant="outline"
                         className="border-amber-400 text-amber-700 text-[10px]"
                       >
-                        not sent
+                        not delivered
                       </Badge>
                     )}
                     <span className="text-xs text-muted-foreground ml-auto">
-                      {phone || <em className="text-destructive/70">no phone</em>}
+                      {g.invite_sent_at ? "delivered" : "not delivered"}
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap bg-muted/40 rounded-md p-2 border border-border">
                     {body}
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      disabled={!phone}
-                      onClick={() => {
-                        window.location.href = smsLink(phone, body);
-                      }}
-                      className="bg-ink text-cream hover:bg-ink/90"
-                    >
-                      <Send className="w-3.5 h-3.5 mr-1.5" /> Send text
-                    </Button>
                     <Button size="sm" variant="outline" onClick={() => void copy(body)}>
                       <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy message
                     </Button>
-                    {phone && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => void copy(phone, "Phone copied")}
-                      >
-                        <Phone className="w-3.5 h-3.5 mr-1.5" /> Copy number
-                      </Button>
-                    )}
                     <label className="inline-flex items-center gap-2 h-8 px-2 rounded-md border border-input text-xs cursor-pointer hover:bg-accent ml-auto">
                       <Checkbox
                         checked={!!g.invite_sent_at}
@@ -440,8 +374,8 @@ function CommitteeMessagePage() {
                         {markingId === g.id
                           ? "Saving…"
                           : g.invite_sent_at
-                            ? "Text sent"
-                            : "I sent the text"}
+                            ? "Delivered"
+                            : "Mark as delivered"}
                       </span>
                     </label>
                   </div>
