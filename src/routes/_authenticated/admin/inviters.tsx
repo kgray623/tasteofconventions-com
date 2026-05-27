@@ -583,8 +583,13 @@ function InvitersPage() {
                         <p className="font-medium">{cat.name}</p>
                         <Badge variant="secondary">{items.length}</Badge>
                       </div>
+                      {cat.description && (
+                        <p className="mt-1 text-xs text-muted-foreground italic leading-relaxed">
+                          {cat.description}
+                        </p>
+                      )}
                       <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                        <span className="text-xs text-muted-foreground">Needs a volunteer</span>
+                        {!isAdmin && <span className="text-xs text-muted-foreground">Needs a volunteer</span>}
                         {items.map((item) => (
                           <Badge key={item.id} variant={item.user_id ? "default" : "outline"}>
                             {assignmentLabel(item)}
