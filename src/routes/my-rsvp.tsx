@@ -1,11 +1,11 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { getMyInvitation } from "@/lib/invitations.functions";
+import { getMyInvitation, submitCuisinePreorder } from "@/lib/invitations.functions";
 import { useAuth } from "@/hooks/use-auth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Users, Check, X, UtensilsCrossed } from "lucide-react";
+import { Calendar, MapPin, Users, Check, X, UtensilsCrossed, Minus, Plus } from "lucide-react";
 import { withTimeout } from "@/lib/async-safety";
 
 export const Route = createFileRoute("/my-rsvp")({
@@ -16,8 +16,11 @@ export const Route = createFileRoute("/my-rsvp")({
 function MyRsvpPage() {
   const { user, loading } = useAuth();
   const fetchMine = useServerFn(getMyInvitation);
+  const saveCuisinePreorder = useServerFn(submitCuisinePreorder);
   const [state, setState] = useState<"loading" | "none" | "ready">("loading");
   const [data, setData] = useState<any>(null);
+  const [cuisineCounts, setCuisineCounts] = useState<Record<string, number>>({});
+  const [savingMeals, setSavingMeals] = useState(false);
 
   useEffect(() => {
     if (loading) return;
@@ -32,6 +35,15 @@ function MyRsvpPage() {
         if (cancelled) return;
         if (r?.invitation) {
           setData(r);
+          const restoredCounts = Array.isArray(r.preorder?.selections)
+            ? r.preorder.selections.reduce((acc: Record<string, number>, item: any) => {
+                const cuisine = typeof item?.cuisine === "string" ? item.cuisine : "";
+                const qty = Number(item?.qty ?? 0);
+                if (cuisine && Number.isFinite(qty) && qty > 0) acc[cuisine] = qty;
+                return acc;
+              }, {})
+            : {};
+          setCuisineCounts(restoredCounts);
           setState("ready");
         } else {
           setState("none");
@@ -62,6 +74,23 @@ function MyRsvpPage() {
     const rsvpYes = rsvp?.status === "yes";
     const orderItems: Array<{ name?: string; quantity?: number; price?: number }> = Array.isArray(order?.items) ? order.items : [];
     const orderDone = orderItems.length > 0;
+    const cuisines = ["Myanmar", "African", "Indonesian"];
+    const preorderTotal = Object.values(cuisineCounts).reduce((sum, qty) => sum + (Number(qty) || 0), 0);
+    const setCuisineQty = (cuisine: string, qty: number) => {
+      setCuisineCounts((current) => ({ ...current, [cuisine]: Math.max(0, Math.min(20, qty || 0)) }));
+    };
+    const saveMeals = async () => {
+      setSavingMeals(true);
+      try {
+        const selections = Object.entries(cuisineCounts)
+          .filter(([, qty]) => qty > 0)
+          .map(([cuisine, qty]) => ({ cuisine, qty }));
+        await saveCuisinePreorder({ data: { token: invitation.rsvp_token, selections } });
+        setData((current: any) => ({ ...current, preorder: { ...(current?.preorder ?? {}), selections } }));
+      } finally {
+        setSavingMeals(false);
+      }
+    };
 
     return (
       <div className="min-h-screen bg-gradient-warm px-6 py-10">
@@ -127,6 +156,68 @@ function MyRsvpPage() {
               {order?.notes && (
                 <p className="text-xs text-muted-foreground italic pt-2 border-t border-border">Note: {order.notes}</p>
               )}
+            </Card>
+          )}
+
+          {rsvpYes && rsvp?.attendance_mode !== "zoom" && (
+            <Card className="p-7 space-y-5">
+              <div>
+                <h2 className="font-display text-2xl">Restaurant meal pre-order</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Tell us how many meals you want from each cultural restaurant so the counts stay on your RSVP.
+                </p>
+              </div>
+              <div className="space-y-3">
+                {cuisines.map((cuisine) => {
+                  const qty = cuisineCounts[cuisine] ?? 0;
+                  const selected = qty > 0;
+                  return (
+                    <div key={cuisine} className="rounded-md border border-border bg-card p-4 space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-base font-display text-ink">{cuisine}</span>
+                        <div className="grid grid-cols-2 gap-2 w-36">
+                          <button
+                            type="button"
+                            onClick={() => setCuisineQty(cuisine, qty > 0 ? qty : 1)}
+                            className={`rounded-md border-2 px-3 py-2 text-sm font-medium transition ${
+                              selected ? "border-terracotta bg-terracotta text-cream" : "border-border bg-card hover:border-terracotta/40"
+                            }`}
+                          >
+                            Yes
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCuisineQty(cuisine, 0)}
+                            className={`rounded-md border-2 px-3 py-2 text-sm font-medium transition ${
+                              !selected ? "border-ink bg-ink text-cream" : "border-border bg-card hover:border-ink/40"
+                            }`}
+                          >
+                            No
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-sm text-muted-foreground">Number of dishes</span>
+                        <div className="flex items-center gap-2">
+                          <Button size="icon" variant="outline" onClick={() => setCuisineQty(cuisine, qty - 1)} aria-label={`Fewer ${cuisine} dishes`}>
+                            <Minus className="w-3 h-3" />
+                          </Button>
+                          <span className="w-10 text-center font-display text-2xl text-ink">{qty}</span>
+                          <Button size="icon" variant="outline" onClick={() => setCuisineQty(cuisine, qty + 1)} aria-label={`More ${cuisine} dishes`}>
+                            <Plus className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-muted-foreground">Total meals: <span className="font-semibold text-ink">{preorderTotal}</span></p>
+                <Button onClick={saveMeals} disabled={savingMeals} className="bg-terracotta text-cream hover:bg-terracotta/90">
+                  {savingMeals ? "Saving…" : "Save meal order"}
+                </Button>
+              </div>
             </Card>
           )}
 
