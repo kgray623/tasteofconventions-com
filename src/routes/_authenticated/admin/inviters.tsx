@@ -152,9 +152,11 @@ function InvitersPage() {
   const [adding, setAdding] = useState(false);
   const [resendingId, setResendingId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const vcardRef = useRef<HTMLInputElement>(null);
+  const screenshotRef = useRef<HTMLInputElement>(null);
+  const [screenshotBusy, setScreenshotBusy] = useState(false);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const inviteTeamMemberFn = useServerFn(inviteTeamMember);
+  const extractContactsFn = useServerFn(extractContactsFromImages);
 
 
   const load = async () => {
