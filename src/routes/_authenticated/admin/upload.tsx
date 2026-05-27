@@ -308,11 +308,21 @@ function UploadPage() {
     let alive = true;
     void (async () => {
       const [{ data: inv }, { data: profile }] = await Promise.all([
-        supabase.from("inviters").select("quota,name").eq("host_id", user.id).maybeSingle(),
+        supabase
+          .from("inviters")
+          .select("id,quota,name,requested_quota,quota_request_note,quota_requested_at")
+          .eq("host_id", user.id)
+          .maybeSingle(),
         supabase.from("profiles").select("display_name,email").eq("id", user.id).maybeSingle(),
       ]);
       if (!alive) return;
       setMyQuota(inv?.quota ?? null);
+      setInviterId(inv?.id ?? null);
+      setRequestedQuota(
+        inv?.requested_quota != null ? String(inv.requested_quota) : "",
+      );
+      setQuotaNote(inv?.quota_request_note ?? "");
+      setQuotaRequestedAt(inv?.quota_requested_at ?? null);
       setInviterName(
         inv?.name ||
           profile?.display_name ||
