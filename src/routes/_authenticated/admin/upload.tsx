@@ -1118,7 +1118,7 @@ function UploadPage() {
         </Card>
       )}
 
-      <Card className="p-4 space-y-3">
+      <Card className="p-4 space-y-3 max-w-xl">
         <div className="flex items-center gap-2">
           <Target className="w-4 h-4 text-terracotta" />
           <p className="font-medium">How many RSVPs do you want to request?</p>
@@ -1137,7 +1137,7 @@ function UploadPage() {
           />
           <Button
             onClick={submitQuotaRequest}
-            disabled={savingQuotaReq || !requestedQuota.trim()}
+            disabled={savingQuotaReq || !requestedQuota.trim() || availableRsvps <= 0}
             className="bg-ink text-cream hover:bg-ink/90"
           >
             {savingQuotaReq ? (
