@@ -62,7 +62,7 @@ function AdminOverview() {
 
   if (rolesLoading) return <p className="text-muted-foreground">Loading workspace…</p>;
 
-  if (!isAdmin) {
+  if (!isAdmin || view === "committee") {
     return (
       <div className="space-y-6">
         <Card className="overflow-hidden border-ink/10">
