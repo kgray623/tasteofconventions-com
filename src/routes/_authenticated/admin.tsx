@@ -9,6 +9,7 @@ import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlu
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — A Taste of Special Conventions" }] }),
+  validateSearch: (s) => z.object({ view: z.enum(["committee"]).optional() }).parse(s),
   component: AdminLayout,
 });
 
