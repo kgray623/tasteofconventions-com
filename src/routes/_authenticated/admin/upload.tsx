@@ -1095,7 +1095,7 @@ function UploadPage() {
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <ImageIcon className="w-4 h-4 text-terracotta" />
-              <p className="text-sm font-medium">Option 1 — Upload screenshots</p>
+              <p className="text-sm font-medium">Upload Your Guest List (Only those in good standing in the congregation).</p>
             </div>
             <Button
               type="button"
