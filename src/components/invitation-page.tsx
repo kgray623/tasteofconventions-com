@@ -265,7 +265,7 @@ export function InvitationPage() {
           <p className="text-xs uppercase tracking-[0.35em] text-magenta mb-3">For more details, see the following</p>
           <h2 className="font-display text-5xl sm:text-6xl text-ink">Tap to open</h2>
           <p className="mt-4 text-muted-foreground">
-            Date & time, location, dress code, gift exchanges, entertainment, donations, adult beverages.
+            See the drop down information for FAQ of date, time, location, dress code, gift exchanges, entertainment, donations, adult beverages, volunteering, etc.
           </p>
         </div>
 
