@@ -192,38 +192,45 @@ function CategoriesPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  {isAdmin && items.length === 0 && (
-                    <p className="text-xs text-muted-foreground italic">No one assigned yet.</p>
+                  {items.length === 0 && (
+                    <p className="text-xs text-muted-foreground italic">No one has volunteered yet.</p>
                   )}
-                  {isAdmin && items.map((a) => (
-                    <div key={a.id} className="flex items-center justify-between gap-2 bg-secondary/50 rounded-md px-3 py-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Badge variant={a.user_id ? "default" : "secondary"} className="text-[10px] shrink-0">
-                          {a.user_id ? "team" : "volunteer"}
-                        </Badge>
-                        <span className="text-sm truncate">{labelFor(a)}</span>
+                  {items.map((a) => {
+                    const isMe = !!user && a.user_id === user.id;
+                    return (
+                      <div key={a.id} className="flex items-center justify-between gap-2 bg-secondary/50 rounded-md px-3 py-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Badge variant={a.user_id ? "default" : "secondary"} className="text-[10px] shrink-0">
+                            {a.user_id ? "team" : "volunteer"}
+                          </Badge>
+                          <span className="text-sm truncate">{labelFor(a)}{isMe ? " (you)" : ""}</span>
+                        </div>
+                        {isAdmin && (
+                          <button onClick={() => removeAssign(a.id)} className="text-muted-foreground hover:text-terracotta">
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
-                      <button onClick={() => removeAssign(a.id)} className="text-muted-foreground hover:text-terracotta">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
               <div className="space-y-2 pt-4 mt-auto">
                 {(() => {
-                  const alreadyVolunteered = !!user && items.some((a) => a.user_id === user.id);
+                  const myAssign = user ? items.find((a) => a.user_id === user.id) : undefined;
+                  const alreadyVolunteered = !!myAssign;
                   return (
                     <>
                       <Button
                         size="sm"
-                        onClick={() => addAssign(c.id, true)}
-                        disabled={!user || alreadyVolunteered}
-                        className="w-full bg-terracotta text-cream hover:bg-terracotta/90"
+                        onClick={() => alreadyVolunteered ? removeAssign(myAssign!.id) : addAssign(c.id, true)}
+                        disabled={!user}
+                        variant={alreadyVolunteered ? "outline" : "default"}
+                        className={alreadyVolunteered ? "w-full" : "w-full bg-terracotta text-cream hover:bg-terracotta/90"}
                       >
                         <Hand className="w-4 h-4 mr-2" />
-                        {alreadyVolunteered ? "You're volunteering" : "I want to volunteer"}
+                        {alreadyVolunteered ? "Withdraw my volunteer" : "I want to volunteer"}
                       </Button>
                       {isAdmin && (
                         <div className="flex gap-2">
