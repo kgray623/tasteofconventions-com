@@ -886,6 +886,100 @@ function UploadPage() {
 
   const dupCount = rows.filter((r) => r._dupReason).length;
 
+  const fileToDataUrl = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(reader.error ?? new Error("read failed"));
+      reader.onload = () => resolve(String(reader.result ?? ""));
+      reader.readAsDataURL(file);
+    });
+
+  const onScreenshots = async (files: FileList | File[]) => {
+    const list = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    if (list.length === 0) {
+      toast.error("Please pick image files (PNG, JPG, HEIC).");
+      return;
+    }
+    if (list.length > 10) {
+      toast.error("Up to 10 screenshots at a time.");
+      return;
+    }
+    setScreenshotBusy(true);
+    setDone(null);
+    try {
+      const images = await Promise.all(list.map(fileToDataUrl));
+      const { contacts } = await extractContacts({ data: { images } });
+      if (!contacts.length) {
+        toast.error("No contacts found in those screenshots.");
+        return;
+      }
+      await parseRows(
+        contacts.map((c) => ({
+          name: c.name,
+          email: c.email,
+          phone: c.phone,
+          notes: "",
+        })),
+        true,
+      );
+      toast.success(
+        `Found ${contacts.length} contact${contacts.length === 1 ? "" : "s"} in your screenshot${list.length === 1 ? "" : "s"}`,
+      );
+    } catch (e) {
+      console.error("[upload] screenshot extract failed", e);
+      toast.error("Couldn't read those screenshots", { description: getErrorMessage(e) });
+    } finally {
+      setScreenshotBusy(false);
+      if (screenshotRef.current) screenshotRef.current.value = "";
+    }
+  };
+
+  const submitQuotaRequest = async () => {
+    if (!user?.id) return;
+    const target = parseInt(requestedQuota, 10);
+    if (!Number.isFinite(target) || target <= 0 || target > 1000) {
+      toast.error("Enter a number between 1 and 1000.");
+      return;
+    }
+    setSavingQuotaReq(true);
+    try {
+      const nowIso = new Date().toISOString();
+      const payload = {
+        requested_quota: target,
+        quota_request_note: quotaNote.trim() || null,
+        quota_requested_at: nowIso,
+      };
+      if (inviterId) {
+        const { error } = await supabase
+          .from("inviters")
+          .update(payload)
+          .eq("id", inviterId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from("inviters")
+          .insert({
+            host_id: user.id,
+            name: inviterName || "Committee member",
+            active: true,
+            ...payload,
+          })
+          .select("id")
+          .single();
+        if (error) throw error;
+        setInviterId(data.id);
+      }
+      setQuotaRequestedAt(nowIso);
+      toast.success("Sent your RSVP request to the admin.");
+    } catch (e) {
+      console.error("[upload] quota request failed", e);
+      toast.error("Couldn't send request", { description: getErrorMessage(e) });
+    } finally {
+      setSavingQuotaReq(false);
+    }
+  };
+
+
   const onQuickAdd = async () => {
     if (!eventId || !user) return;
     const name = quick.name.trim();
