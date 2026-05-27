@@ -26,6 +26,15 @@ function internalPhoneLoginAddress(phoneNorm: string) {
 }
 
 async function findAuthUserByPhoneOrLogin(phoneE164: string, phoneNorm: string, loginAddress: string) {
+  // Digits-only RPC handles every stored format ("+18082787562", "18082787562", "8082787562").
+  const { data: digitsId, error: digitsErr } = await supabaseAdmin.rpc(
+    "get_auth_user_id_by_phone_digits",
+    { _digits: phoneNorm },
+  );
+  if (digitsErr) console.error("get_auth_user_id_by_phone_digits failed:", digitsErr);
+  if (digitsId) return digitsId as string;
+
+  // Legacy exact-match RPC (kept as belt-and-suspenders).
   for (const candidate of [phoneE164, phoneNorm, `+${phoneNorm}`]) {
     const { data: id } = await supabaseAdmin.rpc("get_auth_user_id_by_phone", {
       _phone: candidate,
@@ -33,17 +42,24 @@ async function findAuthUserByPhoneOrLogin(phoneE164: string, phoneNorm: string, 
     if (id) return id as string;
   }
 
+  // Last-resort scan via admin API in case RPC permissions ever drift again.
   for (let page = 1; page <= 25; page += 1) {
     const { data: list, error } = await supabaseAdmin.auth.admin.listUsers({
       page,
       perPage: 1000,
     });
-    if (error) throw new Error(error.message);
-    const owner = list.users.find(
-      (u) =>
-        (u.phone && u.phone.replace(/\D/g, "") === phoneNorm) ||
-        u.email?.toLowerCase() === loginAddress,
-    );
+    if (error) {
+      console.error("listUsers failed:", error);
+      break;
+    }
+    const owner = list.users.find((u) => {
+      const stored = (u.phone || "").replace(/\D/g, "");
+      return (
+        stored === phoneNorm ||
+        (stored.length >= 10 && phoneNorm.length >= 10 && stored.slice(-10) === phoneNorm.slice(-10)) ||
+        u.email?.toLowerCase() === loginAddress
+      );
+    });
     if (owner) return owner.id;
     if (list.users.length < 1000) break;
   }
