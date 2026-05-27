@@ -1,0 +1,1 @@
+UPDATE public.invitation_content SET location_name='Falconwood Park', location_subtitle='Bellevue, Nebraska';
