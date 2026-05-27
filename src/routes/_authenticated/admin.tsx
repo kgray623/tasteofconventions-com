@@ -93,7 +93,7 @@ function AdminLayout() {
     );
   }
 
-  if (isTeam && !isAdmin && !teamAllowedPaths.has(path)) {
+  if (isTeam && !isAdmin && !isTeamAllowedPath(path)) {
     return <div className="mx-auto max-w-6xl px-6 py-10 text-muted-foreground">Opening committee workspace…</div>;
   }
 
