@@ -190,7 +190,7 @@ function CategoriesPage() {
                       </div>
                     </div>
                   ) : (
-                    <p className="text-xs text-muted-foreground italic leading-relaxed min-h-[3rem]">
+                    <p className="text-xs text-muted-foreground leading-relaxed min-h-[3rem]">
                       {c.description || "\u00A0"}
                     </p>
                   )}
@@ -198,7 +198,7 @@ function CategoriesPage() {
 
                 <div className="space-y-1.5">
                   {items.length === 0 && (
-                    <p className="text-xs text-muted-foreground italic">No one has volunteered yet.</p>
+                    <p className="text-xs text-muted-foreground">No one has volunteered yet.</p>
                   )}
                   {items.map((a) => {
                     const isMe = !!user && a.user_id === user.id;
