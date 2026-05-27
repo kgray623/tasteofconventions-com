@@ -129,7 +129,7 @@ function CategoriesPage() {
               <div className="space-y-1.5">
                 {c.name.toLowerCase().includes("alcohol") && (
                   <p className="text-xs text-muted-foreground italic mb-2">
-                    To ensure the dignity of the event, this role will ensure all who choose to use alcohol, do so in moderation.
+                    This includes ensuring the event is dignified and alcohol is limited to those of legal age and limit intake to 2 drinks.
                   </p>
                 )}
                 {items.length === 0 && !c.name.toLowerCase().includes("alcohol") && (
