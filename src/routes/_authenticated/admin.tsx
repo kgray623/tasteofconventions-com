@@ -106,9 +106,26 @@ function AdminLayout() {
           <p className="text-xs uppercase tracking-[0.3em] text-terracotta">{headingEyebrow}</p>
           <h1 className="font-display text-3xl mt-1">{headingTitle}</h1>
         </div>
-        <Button onClick={signOut} variant="outline" size="sm">
-          <LogOut className="w-4 h-4 mr-2" /> Log out
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {isActualAdmin && (
+            previewCommittee ? (
+              <Button asChild variant="outline" size="sm">
+                <Link to="/admin" search={{ view: undefined }}>
+                  <Eye className="w-4 h-4 mr-2" /> Back to admin view
+                </Link>
+              </Button>
+            ) : (
+              <Button asChild variant="outline" size="sm">
+                <Link to="/admin" search={{ view: "committee" }}>
+                  <Eye className="w-4 h-4 mr-2" /> Preview committee view
+                </Link>
+              </Button>
+            )
+          )}
+          <Button onClick={signOut} variant="outline" size="sm">
+            <LogOut className="w-4 h-4 mr-2" /> Log out
+          </Button>
+        </div>
       </div>
       <nav className="flex flex-wrap gap-1 border-b border-border mb-8">
         {visibleTabs.map((t) => {
