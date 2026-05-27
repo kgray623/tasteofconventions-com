@@ -905,49 +905,6 @@ function UploadPage() {
     }
   };
 
-  const fileToDataUrl = (file: File) =>
-    new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = () => reject(reader.error ?? new Error("Couldn't read image"));
-      reader.readAsDataURL(file);
-    });
-
-  const onImages = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    const list = Array.from(files).slice(0, 8);
-    setDone(null);
-    setOcrBusy(true);
-    try {
-      const dataUrls = await Promise.all(list.map(fileToDataUrl));
-      setImagePreviews(dataUrls);
-      const { contacts } = await runOcr({ data: { images: dataUrls } });
-      if (!contacts.length) {
-        toast.error("I couldn't read any contacts from that image.", {
-          description: "Try a clearer screenshot of the contact card.",
-        });
-        return;
-      }
-      await parseRows(
-        contacts.map((c) => ({
-          name: c.name,
-          email: c.email,
-          phone: c.phone,
-          notes: c.notes,
-        })),
-        true,
-      );
-      toast.success(
-        `Found ${contacts.length} contact${contacts.length === 1 ? "" : "s"} in your screenshot${list.length === 1 ? "" : "s"}`,
-      );
-    } catch (e) {
-      console.error("[upload] image OCR failed", e);
-      toast.error("Couldn't read those screenshots", { description: getErrorMessage(e) });
-    } finally {
-      setOcrBusy(false);
-      if (imageRef.current) imageRef.current.value = "";
-    }
-  };
 
   return (
     <div className="space-y-6">
