@@ -197,7 +197,7 @@ function clearUploadDraft(userId?: string) {
 
 function UploadPage() {
   const { user } = useAuth();
-  const { isTeam, loading: rolesLoading } = useRoles();
+  const { isAdmin, isTeam, loading: rolesLoading } = useRoles();
   const fileRef = useRef<HTMLInputElement>(null);
   const vcardRef = useRef<HTMLInputElement>(null);
   const quickNameRef = useRef<HTMLInputElement>(null);
@@ -258,13 +258,20 @@ function UploadPage() {
     }
     setSavedLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("invitations")
         .select(
-          "id,guest_name,guest_email,guest_phone,rsvp_token,invite_sent_at,is_committee,rsvps(status)",
+          "id,guest_name,guest_email,guest_phone,rsvp_token,invite_sent_at,is_committee,host_id,rsvps(status)",
         )
         .eq("event_id", evId)
         .order("created_at", { ascending: false });
+      // Non-admin committee members only see their OWN guest list.
+      // Committee-tagged guests from other inviters stay hidden unless this
+      // user is an actual admin.
+      if (!isAdmin && user?.id) {
+        query = query.eq("host_id", user.id);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       type Row = {
         id: string;
@@ -300,7 +307,8 @@ function UploadPage() {
 
   useEffect(() => {
     void loadSavedGuests(eventId);
-  }, [eventId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventId, isAdmin, user?.id]);
 
   // Load this team member's quota and display name (for SMS personalization)
   useEffect(() => {

@@ -1,11 +1,12 @@
 import { createFileRoute, Link, Outlet, useRouterState, useNavigate, useSearch } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 import { useRoles } from "@/hooks/use-roles";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlus, UtensilsCrossed, Mail, HandCoins, CalendarCog, MessageSquare, Ticket, Eye } from "lucide-react";
+import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlus, UtensilsCrossed, Mail, HandCoins, CalendarCog, MessageSquare, Ticket, Eye, PlayCircle } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — A Taste of Special Conventions" }] }),
@@ -34,11 +35,28 @@ const isTeamAllowedPath = (path: string) =>
 
 function AdminLayout() {
   const { isAdmin: isActualAdmin, isTeam, loading } = useRoles();
+  const { user } = useAuth();
   const search = useSearch({ from: "/_authenticated/admin" });
   const previewCommittee = isActualAdmin && search.view === "committee";
   const isAdmin = isActualAdmin && !previewCommittee;
   const path = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
+  const [displayName, setDisplayName] = useState<string>("");
+
+  useEffect(() => {
+    if (!user?.id) { setDisplayName(""); return; }
+    let alive = true;
+    void (async () => {
+      const { data } = await supabase.from("profiles").select("display_name,email").eq("id", user.id).maybeSingle();
+      if (!alive) return;
+      const fromProfile = data?.display_name?.trim();
+      const fromMeta = (user.user_metadata?.display_name as string | undefined)?.trim();
+      const fromEmail = (data?.email || user.email || "").split("@")[0];
+      const full = fromProfile || fromMeta || fromEmail || "";
+      setDisplayName(full.split(" ")[0] || full);
+    })();
+    return () => { alive = false; };
+  }, [user?.id, user?.email, user?.user_metadata]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -98,8 +116,10 @@ function AdminLayout() {
   }
 
   const visibleTabs = tabs.filter((t) => isAdmin || t.team);
-  const headingEyebrow = isAdmin ? "Event admin" : "Steering Committee member";
-  const headingTitle = isAdmin ? "Master control" : "Steering Committee workspace";
+  const headingEyebrow = isAdmin ? "Event admin" : "Steering Committee";
+  const headingTitle = isAdmin
+    ? "Master control"
+    : `Welcome${displayName ? `, ${displayName}` : ""}`;
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
@@ -129,6 +149,15 @@ function AdminLayout() {
           </Button>
         </div>
       </div>
+      {!isAdmin && (
+        <div className="mb-6 rounded-lg border border-border bg-muted/40 aspect-video w-full flex flex-col items-center justify-center text-center px-6">
+          <PlayCircle className="w-12 h-12 text-terracotta mb-3" />
+          <p className="font-display text-lg">Steering Committee walkthrough</p>
+          <p className="text-sm text-muted-foreground mt-1 max-w-md">
+            A short video will be placed here showing you how to use this workspace — your guest list, committee tagging, and volunteer assignments.
+          </p>
+        </div>
+      )}
       <nav className="flex flex-wrap gap-1 border-b border-border mb-8">
         {visibleTabs.map((t) => {
           const active = t.exact ? path === t.to : path.startsWith(t.to);
