@@ -359,7 +359,7 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-2">
               <p>
-                Because of the many expenses putting on a large event, sonations
+                Because of the many expenses putting on a large event, donations
                 are greatly appreciated. To send a donation, please text Kari
                 Gray at 808.278.7562.
               </p>
@@ -397,10 +397,9 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-3">
               <p>
-                Would you like to volunteer for the? We have many needs for help.
-                Below are the categories we need help with. Please send a text
-                to Kari Gray 808.278.7562 with your name and the word
-                VOLUNTEER to sign up.
+                Would you like to volunteer for the? We have need for help.
+                Please send a text to Kari Gray at 808.278.7562 with your name 
+                and the word VOLUNTEER to sign up.
               </p>
               {assignments.length > 0 ? (
                 <ul className="list-disc pl-5 space-y-1">
@@ -412,7 +411,7 @@ export function InvitationPage() {
                 <p className="italic">Assignment list loading…</p>
               )}
               <p className="text-sm">
-                You can sign up by texting your name to 808.278.7562 with the word VOUNTEER.
+                You can sign up by texting your name to 808.278.7562 with the word VOLUNTEER.
               </p>
 
             </AccordionContent>
