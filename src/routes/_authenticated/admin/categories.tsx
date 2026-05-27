@@ -33,6 +33,7 @@ function CategoriesPage() {
   const [newDesc, setNewDesc] = useState("");
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [editingDesc, setEditingDesc] = useState<Record<string, string>>({});
+  const [chatOpen, setChatOpen] = useState<string | null>(null);
 
   const load = async () => {
     const [c, a, p] = await Promise.all([
