@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, X, UserPlus } from "lucide-react";
+import { Plus, X, Hand } from "lucide-react";
 import { useRoles } from "@/hooks/use-roles";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_authenticated/admin/categories")({
   component: CategoriesPage,
@@ -19,6 +20,7 @@ type Profile = { id: string; display_name: string | null; email: string | null }
 
 function CategoriesPage() {
   const { isAdmin, loading: rolesLoading } = useRoles();
+  const { user } = useAuth();
   const [cats, setCats] = useState<Cat[]>([]);
   const [assigns, setAssigns] = useState<Assign[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -52,7 +54,21 @@ function CategoriesPage() {
     load();
   };
 
-  const addAssign = async (catId: string) => {
+  const addAssign = async (catId: string, selfVolunteer = false) => {
+    if (selfVolunteer) {
+      if (!user) return toast.error("Please sign in to volunteer.");
+      const exists = assigns.some((a) => a.category_id === catId && a.user_id === user.id);
+      if (exists) return;
+      const { error } = await supabase.from("category_assignments").insert({
+        category_id: catId,
+        user_id: user.id,
+        volunteer_name: null,
+      });
+      if (error) return toast.error(error.message);
+      toast.success("Thanks for volunteering!");
+      load();
+      return;
+    }
     const value = (drafts[catId] || "").trim();
     if (!value) return;
     const profile = profiles.find((p) => p.email === value || p.display_name === value);
@@ -127,26 +143,42 @@ function CategoriesPage() {
                   </div>
                 ))}
               </div>
-              {isAdmin && (
-                <div className="flex gap-2 pt-1">
-                <Input
-                  list={`profiles-${c.id}`}
-                  value={drafts[c.id] || ""}
-                  onChange={(e) => setDrafts({ ...drafts, [c.id]: e.target.value })}
-                  onKeyDown={(e) => e.key === "Enter" && addAssign(c.id)}
-                  placeholder="Add person…"
-                  className="text-sm"
-                />
-                <datalist id={`profiles-${c.id}`}>
-                  {profiles.map((p) => (
-                    <option key={p.id} value={p.email ?? p.display_name ?? ""}>{p.display_name}</option>
-                  ))}
-                </datalist>
-                <Button size="sm" onClick={() => addAssign(c.id)}>
-                  <UserPlus className="w-4 h-4" />
-                </Button>
-              </div>
-              )}
+              {(() => {
+                const alreadyVolunteered = !!user && items.some((a) => a.user_id === user.id);
+                return (
+                  <div className="space-y-2 pt-1">
+                    <Button
+                      size="sm"
+                      onClick={() => addAssign(c.id, true)}
+                      disabled={!user || alreadyVolunteered}
+                      className="w-full bg-terracotta text-cream hover:bg-terracotta/90"
+                    >
+                      <Hand className="w-4 h-4 mr-2" />
+                      {alreadyVolunteered ? "You're volunteering" : "I want to volunteer"}
+                    </Button>
+                    {isAdmin && (
+                      <div className="flex gap-2">
+                        <Input
+                          list={`profiles-${c.id}`}
+                          value={drafts[c.id] || ""}
+                          onChange={(e) => setDrafts({ ...drafts, [c.id]: e.target.value })}
+                          onKeyDown={(e) => e.key === "Enter" && addAssign(c.id)}
+                          placeholder="Admin: add someone else…"
+                          className="text-sm"
+                        />
+                        <datalist id={`profiles-${c.id}`}>
+                          {profiles.map((p) => (
+                            <option key={p.id} value={p.email ?? p.display_name ?? ""}>{p.display_name}</option>
+                          ))}
+                        </datalist>
+                        <Button size="sm" variant="outline" onClick={() => addAssign(c.id)}>
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </Card>
           );
         })}
