@@ -187,7 +187,7 @@ export function InvitationPage() {
         <div className="text-center mb-10">
           <p className="text-xs uppercase tracking-[0.4em] text-magenta mb-3">Step One</p>
           <p className="text-xs uppercase tracking-[0.35em] text-magenta mb-3 flex items-center justify-center gap-2">
-            <Globe2 className="w-4 h-4" /> Conventions & Countries
+            <Globe2 className="w-4 h-4" /> Conventions, Countries, and Cuisine
           </p>
           <h2 className="font-display text-5xl sm:text-6xl text-ink">A Journey Together</h2>
           <p className="mt-4 text-muted-foreground">
