@@ -369,8 +369,8 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-3">
               <p className="whitespace-pre-line">
-                Please bring finger food to share, and if you're ordering a
-                restaurant catered meal, these will be available on the premises.
+                Please bring food to share if you are not ordering a restaurant
+                catered meal.
               </p>
               {isAdmin && (
                 <Link to="/admin/invitation">
