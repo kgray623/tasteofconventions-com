@@ -18,6 +18,7 @@ import {
   Plus,
   Trash2,
   UserPlus,
+  Users,
   Send,
   Upload,
   ChevronDown,
