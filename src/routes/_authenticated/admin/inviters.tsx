@@ -824,7 +824,66 @@ function InvitersPage() {
         </Card>
       )}
 
+      {(() => {
+        const pending = inviters.filter(
+          (i) => i.requested_quota != null && i.requested_quota !== i.quota,
+        );
+        if (pending.length === 0) return null;
+        return (
+          <Card className="p-0 overflow-hidden border-terracotta/40">
+            <div className="px-6 py-4 border-b border-border bg-terracotta/5">
+              <h2 className="font-display text-xl flex items-center gap-2">
+                <Clock className="w-5 h-5 text-terracotta" />
+                Pending RSVP requests ({pending.length})
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Committee members asking to change their RSVP quota. Approve to update their quota, or decline to clear the request.
+              </p>
+            </div>
+            <div className="divide-y divide-border">
+              {pending.map((inv) => (
+                <div key={inv.id} className="px-6 py-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium">{inv.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Current quota: <span className="font-medium text-foreground">{inv.quota}</span>
+                      {" · "}
+                      Requesting: <span className="font-medium text-terracotta">{inv.requested_quota}</span>
+                    </p>
+                    {inv.quota_request_note && (
+                      <p className="text-sm mt-1 italic">"{inv.quota_request_note}"</p>
+                    )}
+                    {inv.quota_requested_at && (
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        Requested {new Date(inv.quota_requested_at).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      size="sm"
+                      onClick={() => approveQuotaRequest(inv)}
+                      className="bg-ink text-cream hover:bg-ink/90"
+                    >
+                      Approve {inv.requested_quota}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => declineQuotaRequest(inv)}
+                    >
+                      Decline
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        );
+      })()}
+
       <Card className="p-0 overflow-hidden">
+
         <div className="px-6 py-4 border-b border-border">
           <h2 className="font-display text-xl">Steering committee invitations &amp; usage</h2>
           <p className="text-sm text-muted-foreground">
