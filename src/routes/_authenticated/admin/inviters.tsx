@@ -610,7 +610,7 @@ function InvitersPage() {
             </div>
             <div className="space-y-3 max-h-[260px] overflow-y-auto pr-1">
               {cats.length === 0 ? (
-                <p className="text-sm text-muted-foreground italic">
+                <p className="text-sm text-muted-foreground">
                   No needs have been added yet.
                 </p>
               ) : (
@@ -623,7 +623,7 @@ function InvitersPage() {
                         <Badge variant="secondary">{items.length}</Badge>
                       </div>
                       {cat.description && (
-                        <p className="mt-1 text-xs text-muted-foreground italic leading-relaxed">
+                        <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
                           {cat.description}
                         </p>
                       )}
