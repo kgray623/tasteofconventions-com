@@ -563,7 +563,7 @@ function InvitersPage() {
           <Card className="p-5 space-y-4">
             <div>
               <h2 className="font-display text-xl flex items-center gap-2">
-                <ListChecks className="w-5 h-5 text-terracotta" /> Committee tasks
+                <ListChecks className="w-5 h-5 text-terracotta" /> Committee needs
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
                 All current needs and assignments are visible here.
@@ -572,7 +572,7 @@ function InvitersPage() {
             <div className="space-y-3 max-h-[260px] overflow-y-auto pr-1">
               {cats.length === 0 ? (
                 <p className="text-sm text-muted-foreground italic">
-                  No tasks have been added yet.
+                  No needs have been added yet.
                 </p>
               ) : (
                 cats.map((cat) => {
@@ -583,25 +583,26 @@ function InvitersPage() {
                         <p className="font-medium">{cat.name}</p>
                         <Badge variant="secondary">{items.length}</Badge>
                       </div>
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {items.length === 0 ? (
-                          <span className="text-xs text-muted-foreground">Needs a volunteer</span>
-                        ) : (
-                          items.map((item) => (
-                            <Badge key={item.id} variant={item.user_id ? "default" : "outline"}>
-                              {assignmentLabel(item)}
-                            </Badge>
-                          ))
-                        )}
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                        <span className="text-xs text-muted-foreground">Needs a volunteer</span>
+                        {items.map((item) => (
+                          <Badge key={item.id} variant={item.user_id ? "default" : "outline"}>
+                            {assignmentLabel(item)}
+                          </Badge>
+                        ))}
                       </div>
                     </div>
                   );
                 })
               )}
             </div>
-            <Link to="/admin/categories">
+            <Link
+              to="/admin/categories"
+              search={previewCommittee ? { view: "committee" } : { view: undefined }}
+            >
               <Button variant="outline" className="w-full">
-                <Plus className="w-4 h-4 mr-2" /> Add or update tasks
+                <Plus className="w-4 h-4 mr-2" />
+                {isAdmin ? "Add or update needs" : "Choose a volunteer opportunity"}
               </Button>
             </Link>
           </Card>
