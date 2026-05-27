@@ -677,26 +677,6 @@ function InvitersPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="p-5">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Total cap</p>
-          <p className="font-display text-3xl mt-2">{TOTAL_CAP}</p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">
-            Seats used (attending)
-          </p>
-          <p className="font-display text-3xl mt-2">{totalUsed}</p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Allocated quota</p>
-          <p className="font-display text-3xl mt-2">{totalQuota}</p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Open pool</p>
-          <p className="font-display text-3xl mt-2 text-terracotta">{openPool}</p>
-        </Card>
-      </div>
 
       <Card className="p-6 space-y-4">
         <div>
