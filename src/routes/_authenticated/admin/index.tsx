@@ -88,27 +88,27 @@ function AdminOverview() {
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <Button asChild className="bg-ink text-cream hover:bg-ink/90 justify-start h-14">
-            <Link to="/admin/categories">
+            <Link to="/admin/categories" search={{ view: "committee" }}>
               <ListChecks className="w-4 h-4" /> Volunteer
             </Link>
           </Button>
           <Button asChild variant="outline" className="justify-start h-14">
-            <Link to="/admin/upload">
+            <Link to="/admin/upload" search={{ view: "committee" }}>
               <Upload className="w-4 h-4" /> Add guests
             </Link>
           </Button>
           <Button asChild variant="outline" className="justify-start h-14">
-            <Link to="/admin/chat">
+            <Link to="/admin/chat" search={{ view: "committee" }}>
               <MessageSquare className="w-4 h-4" /> Committee chat
             </Link>
           </Button>
           <Button asChild variant="outline" className="justify-start h-14">
-            <Link to="/admin/event">
+            <Link to="/admin/event" search={{ view: "committee" }}>
               <CalendarCog className="w-4 h-4" /> Event details
             </Link>
           </Button>
           <Button asChild variant="outline" className="justify-start h-14">
-            <Link to="/admin/preorders">
+            <Link to="/admin/preorders" search={{ view: "committee" }}>
               <Utensils className="w-4 h-4" /> Food report
             </Link>
           </Button>
