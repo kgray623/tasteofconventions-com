@@ -127,6 +127,15 @@ function CategoriesPage() {
     return p?.display_name || p?.email || "Member";
   };
 
+  const isCurrentUserAssignment = (a: Assign) => {
+    if (!user) return false;
+    if (a.user_id === user.id) return true;
+    const profile = profiles.find((p) => p.id === user.id);
+    const displayName = profile?.display_name?.trim().toLowerCase();
+    const volunteerName = a.volunteer_name?.trim().toLowerCase();
+    return !!displayName && !!volunteerName && displayName === volunteerName;
+  };
+
   if (rolesLoading) return <p className="text-muted-foreground">Loading assignments…</p>;
 
   return (
@@ -201,7 +210,7 @@ function CategoriesPage() {
                     <p className="text-xs text-muted-foreground">No one has volunteered yet.</p>
                   )}
                   {items.map((a) => {
-                    const isMe = !!user && a.user_id === user.id;
+                    const isMe = isCurrentUserAssignment(a);
                     return (
                       <div key={a.id} className="flex items-center justify-between gap-2 bg-secondary/50 rounded-md px-3 py-2">
                         <div className="flex items-center gap-2 min-w-0">
@@ -223,7 +232,7 @@ function CategoriesPage() {
 
               <div className="space-y-2 pt-4 mt-auto">
                 {(() => {
-                  const myAssign = user ? items.find((a) => a.user_id === user.id) : undefined;
+                  const myAssign = items.find(isCurrentUserAssignment);
                   const alreadyVolunteered = !!myAssign;
                   return (
                     <>
@@ -291,7 +300,7 @@ function CategoriesPage() {
                 onOpenChange={(v) => setChatOpen(v ? c.id : null)}
                 categoryId={c.id}
                 categoryName={c.name}
-                canChat={isAdmin || (!!user && items.some((a) => a.user_id === user.id))}
+                canChat={isAdmin || items.some(isCurrentUserAssignment)}
                 isAdmin={isAdmin}
                 nameFor={nameForUser}
               />
