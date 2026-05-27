@@ -197,7 +197,7 @@ function clearUploadDraft(userId?: string) {
 
 function UploadPage() {
   const { user } = useAuth();
-  const { isTeam, loading: rolesLoading } = useRoles();
+  const { isAdmin, isTeam, loading: rolesLoading } = useRoles();
   const fileRef = useRef<HTMLInputElement>(null);
   const vcardRef = useRef<HTMLInputElement>(null);
   const quickNameRef = useRef<HTMLInputElement>(null);
