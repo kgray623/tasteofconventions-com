@@ -229,6 +229,22 @@ function CategoriesPage() {
                     <>
                       <Button
                         size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          if (!user) return toast.error("Please sign in.");
+                          if (!alreadyVolunteered && !isAdmin) {
+                            return toast.info("Volunteer for this category to join the chat.");
+                          }
+                          setChatOpen(c.id);
+                        }}
+                        disabled={!user}
+                        className="w-full"
+                      >
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        Open chat
+                      </Button>
+                      <Button
+                        size="sm"
                         onClick={() => addAssign(c.id, true)}
                         disabled={!user}
                         className="w-full bg-terracotta text-cream hover:bg-terracotta/90"
@@ -270,6 +286,15 @@ function CategoriesPage() {
                   );
                 })()}
               </div>
+              <CategoryChat
+                open={chatOpen === c.id}
+                onOpenChange={(v) => setChatOpen(v ? c.id : null)}
+                categoryId={c.id}
+                categoryName={c.name}
+                canChat={isAdmin || (!!user && items.some((a) => a.user_id === user.id))}
+                isAdmin={isAdmin}
+                nameFor={nameForUser}
+              />
             </Card>
           );
         })}
