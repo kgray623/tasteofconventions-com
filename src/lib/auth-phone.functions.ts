@@ -25,6 +25,32 @@ function internalPhoneLoginAddress(phoneNorm: string) {
   return `phone-${phoneNorm}@tasteofconventions.local`;
 }
 
+async function findAuthUserByPhoneOrLogin(phoneE164: string, phoneNorm: string, loginAddress: string) {
+  for (const candidate of [phoneE164, phoneNorm, `+${phoneNorm}`]) {
+    const { data: id } = await supabaseAdmin.rpc("get_auth_user_id_by_phone", {
+      _phone: candidate,
+    });
+    if (id) return id as string;
+  }
+
+  for (let page = 1; page <= 25; page += 1) {
+    const { data: list, error } = await supabaseAdmin.auth.admin.listUsers({
+      page,
+      perPage: 1000,
+    });
+    if (error) throw new Error(error.message);
+    const owner = list.users.find(
+      (u) =>
+        (u.phone && u.phone.replace(/\D/g, "") === phoneNorm) ||
+        u.email?.toLowerCase() === loginAddress,
+    );
+    if (owner) return owner.id;
+    if (list.users.length < 1000) break;
+  }
+
+  return null;
+}
+
 /**
  * Phone-only sign-in. The user enters a mobile number, and if the number
  * matches an invitation we issue them a session for that phone-number account.
@@ -41,28 +67,7 @@ export const signInWithPhoneOnly = createServerFn({ method: "POST" })
     const loginAddress = internalPhoneLoginAddress(phoneNorm);
 
     // 1) Find an existing auth user by phone in any stored format.
-    let userId: string | null = null;
-    for (const candidate of [phoneE164, phoneNorm, `+${phoneNorm}`]) {
-      if (userId) break;
-      const { data: id } = await supabaseAdmin.rpc("get_auth_user_id_by_phone", {
-        _phone: candidate,
-      });
-      userId = (id as string | null) ?? null;
-    }
-
-    if (!userId) {
-      const { data: list, error: listErr } = await supabaseAdmin.auth.admin.listUsers({
-        page: 1,
-        perPage: 1000,
-      });
-      if (listErr) throw new Error(listErr.message);
-      userId =
-        list.users.find(
-          (u) =>
-            (u.phone && u.phone.replace(/\D/g, "") === phoneNorm) ||
-            u.email?.toLowerCase() === loginAddress,
-        )?.id ?? null;
-    }
+    let userId: string | null = await findAuthUserByPhoneOrLogin(phoneE164, phoneNorm, loginAddress);
 
     // 2) If no auth user, require the phone be tied to a known person.
     if (!userId) {
@@ -102,8 +107,14 @@ export const signInWithPhoneOnly = createServerFn({ method: "POST" })
         phone_confirm: true,
         user_metadata: { display_name: displayName, phone: data.phone },
       });
-      if (createErr) throw new Error(createErr.message);
-      userId = created.user?.id ?? null;
+      if (createErr) {
+        if (/phone.*already|email.*already|already.*registered/i.test(createErr.message)) {
+          userId = await findAuthUserByPhoneOrLogin(phoneE164, phoneNorm, loginAddress);
+        }
+        if (!userId) throw new Error(createErr.message);
+      } else {
+        userId = created.user?.id ?? null;
+      }
       if (!userId) throw new Error("Could not create account");
     }
 
@@ -120,10 +131,9 @@ export const signInWithPhoneOnly = createServerFn({ method: "POST" })
     });
     if (updErr && /phone.*already/i.test(updErr.message)) {
       // Another auth user owns this phone — find them and use that account instead.
-      const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-      const owner = list?.users.find((u) => u.phone && u.phone.replace(/\D/g, "") === phoneNorm);
-      if (owner && owner.id !== userId) {
-        userId = owner.id;
+      const ownerId = await findAuthUserByPhoneOrLogin(phoneE164, phoneNorm, loginAddress);
+      if (ownerId && ownerId !== userId) {
+        userId = ownerId;
         const retry = await supabaseAdmin.auth.admin.updateUserById(userId, {
           email: loginAddress,
           phone: phoneE164,
