@@ -143,7 +143,10 @@ function RsvpPage() {
       }
       const { data: iv } = await withTimeout(supabase.rpc("get_public_inviters"), 10000);
       if (!alive) return;
-      setInviters(iv ?? []);
+      const sorted = (iv ?? []).slice().sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+      );
+      setInviters(sorted);
     })()
       .catch(() => {
         if (alive) setLoading(false);
@@ -161,6 +164,7 @@ function RsvpPage() {
         return toast.error("Please tell us whether you'll be ordering food");
       }
       const finalInvitedBy = invitedBy === "__other__" ? invitedByOther.trim() : invitedBy;
+      if (!finalInvitedBy) return toast.error("Please select who invited you");
       const orderingFoodBool =
         status === "yes" && attendanceMode === "in_person" ? orderingFood === "yes" : null;
       const res = await submit({
@@ -459,7 +463,7 @@ function RsvpPage() {
             </>
           )}
           <div className="space-y-1.5">
-            <Label htmlFor="invited-by">Invited by</Label>
+            <Label htmlFor="invited-by">Invited by <span className="text-destructive">*</span></Label>
             <Select value={invitedBy || undefined} onValueChange={setInvitedBy}>
               <SelectTrigger id="invited-by">
                 <SelectValue placeholder="Select who invited you" />

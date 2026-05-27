@@ -81,8 +81,14 @@ function PreviewPage() {
   const canChooseMeals = name.trim().length > 0 && phoneDigits.length >= 7;
 
   useEffect(() => {
-    supabase.rpc("get_public_inviters").then(({ data }) => setInviters(data ?? []));
+    supabase.rpc("get_public_inviters").then(({ data }) => {
+      const list = (data ?? []).slice().sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+      );
+      setInviters(list);
+    });
   }, []);
+
 
   const save = useServerFn(submitPublicRsvp);
   const lookupRsvp = useServerFn(getPublicRsvpByPhone);
@@ -128,7 +134,10 @@ function PreviewPage() {
   const handleSave = async () => {
     if (status !== "no" && !name.trim()) return toast.error("Please enter your full name");
     if (phoneDigits.length < 7) return toast.error("Please enter your mobile number");
+    const finalInvitedBy = invitedBy === "__other__" ? invitedByOther.trim() : invitedBy;
+    if (!finalInvitedBy) return toast.error("Please select who invited you");
     setSaving(true);
+
     try {
       const selections =
         status === "yes" && attendanceMode === "in_person"
@@ -151,7 +160,7 @@ function PreviewPage() {
           party_size: partySize,
           attendance_mode: attendanceMode,
           ordering_food: orderingFoodBool,
-          invited_by: (invitedBy === "__other__" ? invitedByOther.trim() : invitedBy) || null,
+          invited_by: finalInvitedBy,
           cuisine_selections: selections,
         },
       });
@@ -287,7 +296,7 @@ function PreviewPage() {
             </>
           )}
           <div className="space-y-1.5">
-            <Label htmlFor="invited-by">Invited by</Label>
+            <Label htmlFor="invited-by">Invited by <span className="text-destructive">*</span></Label>
             <Select value={invitedBy || undefined} onValueChange={setInvitedBy}>
               <SelectTrigger id="invited-by">
                 <SelectValue placeholder="Select who invited you" />
