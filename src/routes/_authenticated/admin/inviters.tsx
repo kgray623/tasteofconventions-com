@@ -654,8 +654,7 @@ function InvitersPage() {
           <Card className="p-5 space-y-4 border-terracotta/30 bg-terracotta/5">
             <div>
               <h2 className="font-display text-xl flex items-center gap-2">
-                <Upload className="w-5 h-5 text-terracotta" /> Upload contacts &amp; send
-                invitations
+                <Upload className="w-5 h-5 text-terracotta" /> Upload your contacts to invite
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
                 Add your guests from a CSV or phone contact file without leaving this page.
