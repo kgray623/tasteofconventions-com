@@ -191,12 +191,7 @@ export function InvitationPage() {
           </p>
           <h2 className="font-display text-5xl sm:text-6xl text-ink">A Journey Together</h2>
           <p className="mt-4 text-muted-foreground">
-            Join us as we journey through four special conventions, and taste
-            the culture's cuisine from a local restaurant as an option for a
-            fuller experience. Catered meals will be in the $20-25.00 range. Click
-            below to reserve a pre-order so we can negotiate with the restaurants
-            once we have a count. You will be updated with the menu in the coming
-            weeks.
+            Join us as we journey through four special conventions and as we do, you can taste the culture's cuisine from local restaurants as an option for a fuller experience. Catered meals will be in the $25.00 range per meal. Click below to reserve a meal so we can negotiate with the restaurants once we have a count. You will be updated with the menu in the coming weeks, and to pay the restaurant direct.
           </p>
         </div>
 
