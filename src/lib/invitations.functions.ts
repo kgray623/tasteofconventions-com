@@ -246,11 +246,17 @@ export const getPublicRsvpByPhone = createServerFn({ method: "GET" })
       .from("events").select("id").order("starts_at", { ascending: true }).limit(1).maybeSingle();
     if (!ev) return { invitation: null, rsvp: null, preorder: null };
 
+    const candidates = Array.from(new Set([
+      phoneNorm,
+      phoneNorm.length === 11 && phoneNorm.startsWith("1") ? phoneNorm.slice(1) : phoneNorm,
+      phoneNorm.length === 10 ? `1${phoneNorm}` : phoneNorm,
+    ]));
+
     const { data: invitation, error: invErr } = await supabaseAdmin
       .from("invitations")
       .select("id,guest_name,guest_phone")
       .eq("event_id", ev.id)
-      .eq("guest_phone_normalized", phoneNorm)
+      .in("guest_phone_normalized", candidates)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
