@@ -118,7 +118,11 @@ function MyRsvpPage() {
     )
       ? order.items
       : [];
-    const cuisines = ["Myanmar", "African", "Indonesian"];
+    const cuisines = [
+      { key: "Myanmar", label: "Myanmar/Burmese" },
+      { key: "African", label: "African" },
+      { key: "Indonesian", label: "Indonesian" },
+    ];
     const preorderTotal = Object.values(cuisineCounts).reduce(
       (sum, qty) => sum + (Number(qty) || 0),
       0,
@@ -252,27 +256,30 @@ function MyRsvpPage() {
           {rsvpAttending && rsvp?.attendance_mode !== "zoom" && (
             <Card className="p-7 space-y-5">
               <div>
-                <h2 className="font-display text-2xl">Restaurant meal pre-order</h2>
+                <h2 className="font-display text-2xl">
+                  Pre-order from your cultural choice restaurant
+                </h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Tell us how many meals you want from each cultural restaurant so the counts stay
-                  on your RSVP.
+                  Cultural meals will be in the 20-25.00 range. Click below to be added to the pre
+                  order list. We will negotiate with the resturants once we have a count. You will
+                  be updated with the menu to confirm in the coming weeks.
                 </p>
               </div>
               <div className="space-y-3">
                 {cuisines.map((cuisine) => {
-                  const qty = cuisineCounts[cuisine] ?? 0;
+                  const qty = cuisineCounts[cuisine.key] ?? 0;
                   const selected = qty > 0;
                   return (
                     <div
-                      key={cuisine}
+                      key={cuisine.key}
                       className="rounded-md border border-border bg-card p-4 space-y-3"
                     >
                       <div className="flex items-center justify-between gap-3">
-                        <span className="text-base font-display text-ink">{cuisine}</span>
+                        <span className="text-base font-display text-ink">{cuisine.label}</span>
                         <div className="grid grid-cols-2 gap-2 w-36">
                           <button
                             type="button"
-                            onClick={() => setCuisineQty(cuisine, qty > 0 ? qty : 1)}
+                            onClick={() => setCuisineQty(cuisine.key, qty > 0 ? qty : 1)}
                             className={`rounded-md border-2 px-3 py-2 text-sm font-medium transition ${
                               selected
                                 ? "border-terracotta bg-terracotta text-cream"
@@ -283,7 +290,7 @@ function MyRsvpPage() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => setCuisineQty(cuisine, 0)}
+                            onClick={() => setCuisineQty(cuisine.key, 0)}
                             className={`rounded-md border-2 px-3 py-2 text-sm font-medium transition ${
                               !selected
                                 ? "border-ink bg-ink text-cream"
@@ -295,13 +302,15 @@ function MyRsvpPage() {
                         </div>
                       </div>
                       <div className="flex items-center justify-between gap-3">
-                        <span className="text-sm text-muted-foreground">Number of dishes</span>
+                        <span className="text-sm text-muted-foreground">
+                          How many meals do you want?
+                        </span>
                         <div className="flex items-center gap-2">
                           <Button
                             size="icon"
                             variant="outline"
-                            onClick={() => setCuisineQty(cuisine, qty - 1)}
-                            aria-label={`Fewer ${cuisine} dishes`}
+                            onClick={() => setCuisineQty(cuisine.key, qty - 1)}
+                            aria-label={`Fewer ${cuisine.label} meals`}
                           >
                             <Minus className="w-3 h-3" />
                           </Button>
@@ -311,8 +320,8 @@ function MyRsvpPage() {
                           <Button
                             size="icon"
                             variant="outline"
-                            onClick={() => setCuisineQty(cuisine, qty + 1)}
-                            aria-label={`More ${cuisine} dishes`}
+                            onClick={() => setCuisineQty(cuisine.key, qty + 1)}
+                            aria-label={`More ${cuisine.label} meals`}
                           >
                             <Plus className="w-3 h-3" />
                           </Button>

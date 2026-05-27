@@ -10,7 +10,13 @@ import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useDraftState } from "@/hooks/use-draft-state";
 import { Check, X, Minus, Plus, ArrowLeft, Users, Video } from "lucide-react";
 
@@ -28,35 +34,54 @@ type CuisineSelection = { cuisine: string; qty: number };
 function isSelection(value: unknown): value is CuisineSelection {
   return Boolean(
     value &&
-      typeof value === "object" &&
-      !Array.isArray(value) &&
-      "cuisine" in value &&
-      "qty" in value &&
-      typeof (value as CuisineSelection).cuisine === "string" &&
-      typeof (value as CuisineSelection).qty === "number",
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    "cuisine" in value &&
+    "qty" in value &&
+    typeof (value as CuisineSelection).cuisine === "string" &&
+    typeof (value as CuisineSelection).qty === "number",
   );
 }
 
 function PreviewPage() {
   const draftScope = "rsvp-public";
   const [status, setStatus] = useDraftState<"yes" | "no">(draftScope, "status", "yes");
-  const [attendanceMode, setAttendanceMode] = useDraftState<"in_person" | "zoom">(draftScope, "attendanceMode", "in_person");
+  const [attendanceMode, setAttendanceMode] = useDraftState<"in_person" | "zoom">(
+    draftScope,
+    "attendanceMode",
+    "in_person",
+  );
   const [partySize, setPartySize] = useDraftState(draftScope, "partySize", 2);
   const [name, setName] = useDraftState(draftScope, "name", "");
   const [phone, setPhone] = useDraftState(draftScope, "phone", "");
   const [invitedBy, setInvitedBy] = useDraftState(draftScope, "invitedBy", "");
   const [invitedByOther, setInvitedByOther] = useDraftState(draftScope, "invitedByOther", "");
-  const [cuisineCounts, setCuisineCounts] = useDraftState<Record<string, number>>(draftScope, "cuisineCounts", {});
-  const [wantsCuisine, setWantsCuisine] = useDraftState<"yes" | "no" | "">(draftScope, "wantsCuisine", "");
-  const [submittedAt, setSubmittedAt] = useDraftState<string | null>(draftScope, "submittedAt", null);
+  const [cuisineCounts, setCuisineCounts] = useDraftState<Record<string, number>>(
+    draftScope,
+    "cuisineCounts",
+    {},
+  );
+  const [wantsCuisine, setWantsCuisine] = useDraftState<"yes" | "no" | "">(
+    draftScope,
+    "wantsCuisine",
+    "",
+  );
+  const [submittedAt, setSubmittedAt] = useDraftState<string | null>(
+    draftScope,
+    "submittedAt",
+    null,
+  );
   const [inviters, setInviters] = useState<{ id: string; name: string }[]>([]);
-  const cuisines = ["Myanmar", "African", "Indonesian"];
+  const cuisines = [
+    { key: "Myanmar", label: "Myanmar/Burmese" },
+    { key: "African", label: "African" },
+    { key: "Indonesian", label: "Indonesian" },
+  ];
   const phoneDigits = phone.replace(/\D/g, "");
   const canChooseMeals = name.trim().length > 0 && phoneDigits.length >= 7;
 
   useEffect(() => {
-    supabase.rpc("get_public_inviters")
-      .then(({ data }) => setInviters(data ?? []));
+    supabase.rpc("get_public_inviters").then(({ data }) => setInviters(data ?? []));
   }, []);
 
   const save = useServerFn(submitPublicRsvp);
@@ -81,18 +106,20 @@ function PreviewPage() {
       setPartySize(result.rsvp.party_size ?? 1);
       setInvitedBy(result.rsvp.invited_by ?? "");
       const restoredCounts = Array.isArray(result.preorder?.selections)
-        ? result.preorder.selections.filter(isSelection).reduce<Record<string, number>>((acc, item) => {
-            acc[item.cuisine] = item.qty;
-            return acc;
-          }, {})
+        ? result.preorder.selections
+            .filter(isSelection)
+            .reduce<Record<string, number>>((acc, item) => {
+              acc[item.cuisine] = item.qty;
+              return acc;
+            }, {})
         : {};
       setCuisineCounts(restoredCounts);
       setWantsCuisine(Object.values(restoredCounts).some((n) => n > 0) ? "yes" : "no");
       setSubmittedAt(result.rsvp.responded_at ?? new Date().toISOString());
       setSaved(false);
       toast.success("Your RSVP was restored.");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Could not restore RSVP");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Could not restore RSVP");
     } finally {
       setRestoring(false);
     }
@@ -103,32 +130,36 @@ function PreviewPage() {
     if (phoneDigits.length < 7) return toast.error("Please enter your mobile number");
     setSaving(true);
     try {
-      const selections = status === "yes" && attendanceMode === "in_person"
-        ? Object.entries(cuisineCounts)
-            .filter(([, qty]) => qty > 0)
-            .map(([cuisine, qty]) => ({ cuisine, qty }))
-        : [];
+      const selections =
+        status === "yes" && attendanceMode === "in_person"
+          ? Object.entries(cuisineCounts)
+              .filter(([, qty]) => qty > 0)
+              .map(([cuisine, qty]) => ({ cuisine, qty }))
+          : [];
       if (selections.length > 0 && !canChooseMeals) {
         return toast.error("Please enter your full name and mobile number before choosing meals");
       }
-      const orderingFoodBool = status === "yes" && attendanceMode === "in_person" ? selections.length > 0 : null;
-      await save({ data: {
-        guest_name: name.trim() || "Guest",
-        guest_email: null,
-        guest_phone: phone.trim() || null,
-        password: phoneDigits,
-        status,
-        party_size: partySize,
-        attendance_mode: attendanceMode,
-        ordering_food: orderingFoodBool,
-        invited_by: (invitedBy === "__other__" ? invitedByOther.trim() : invitedBy) || null,
-        cuisine_selections: selections,
-      }});
+      const orderingFoodBool =
+        status === "yes" && attendanceMode === "in_person" ? selections.length > 0 : null;
+      await save({
+        data: {
+          guest_name: name.trim() || "Guest",
+          guest_email: null,
+          guest_phone: phone.trim() || null,
+          password: phoneDigits,
+          status,
+          party_size: partySize,
+          attendance_mode: attendanceMode,
+          ordering_food: orderingFoodBool,
+          invited_by: (invitedBy === "__other__" ? invitedByOther.trim() : invitedBy) || null,
+          cuisine_selections: selections,
+        },
+      });
       setSaved(true);
       setSubmittedAt(new Date().toISOString());
       toast.success("RSVP saved — thank you!");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Could not save RSVP");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Could not save RSVP");
     } finally {
       setSaving(false);
     }
@@ -138,15 +169,16 @@ function PreviewPage() {
     <div className="min-h-screen bg-gradient-warm">
       <SiteHeader />
       <div className="mx-auto max-w-3xl px-6 py-12 space-y-6">
-
-        <Link to="/" className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-ink">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-ink"
+        >
           <ArrowLeft className="w-3.5 h-3.5" /> Back to invitation
         </Link>
         <div className="text-center">
           <p className="text-xs uppercase tracking-[0.3em] text-terracotta">You're invited</p>
           <h1 className="font-display text-5xl mt-3 text-ink">{ev.title}</h1>
         </div>
-
 
         <Card className="p-7 space-y-5">
           <h2 className="font-display text-2xl">Will you be joining us?</h2>
@@ -157,9 +189,11 @@ function PreviewPage() {
             ].map((o) => (
               <button
                 key={o.v}
-                onClick={() => setStatus(o.v as any)}
+                onClick={() => setStatus(o.v as "yes" | "no")}
                 className={`p-4 rounded-md border-2 transition flex flex-col items-center gap-2 ${
-                  status === o.v ? "border-ink bg-ink text-cream" : "border-border bg-card hover:border-ink/40"
+                  status === o.v
+                    ? "border-ink bg-ink text-cream"
+                    : "border-border bg-card hover:border-ink/40"
                 }`}
               >
                 <o.icon className="w-5 h-5" />
@@ -173,19 +207,30 @@ function PreviewPage() {
                 <Label>How will you attend?</Label>
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { v: "in_person", icon: Users, label: "In-person Attendance", sub: "Limited seating" },
+                    {
+                      v: "in_person",
+                      icon: Users,
+                      label: "In-person Attendance",
+                      sub: "Limited seating",
+                    },
                     { v: "zoom", icon: Video, label: "Virtual Attendance", sub: "Join on Zoom" },
                   ].map((o) => (
                     <button
                       key={o.v}
                       onClick={() => setAttendanceMode(o.v as "in_person" | "zoom")}
                       className={`p-4 rounded-md border-2 transition flex flex-col items-center gap-1.5 ${
-                        attendanceMode === o.v ? "border-ink bg-ink text-cream" : "border-border bg-card hover:border-ink/40"
+                        attendanceMode === o.v
+                          ? "border-ink bg-ink text-cream"
+                          : "border-border bg-card hover:border-ink/40"
                       }`}
                     >
                       <o.icon className="w-5 h-5" />
                       <span className="text-sm font-medium">{o.label}</span>
-                      <span className={`text-[10px] uppercase tracking-widest ${attendanceMode === o.v ? "text-cream/70" : "text-muted-foreground"}`}>{o.sub}</span>
+                      <span
+                        className={`text-[10px] uppercase tracking-widest ${attendanceMode === o.v ? "text-cream/70" : "text-muted-foreground"}`}
+                      >
+                        {o.sub}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -194,22 +239,49 @@ function PreviewPage() {
                 <div className="space-y-1.5">
                   <Label>Party size (including you)</Label>
                   <div className="flex items-center gap-3">
-                    <Button size="icon" variant="outline" onClick={() => setPartySize(Math.max(1, partySize - 1))}><Minus className="w-4 h-4" /></Button>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      onClick={() => setPartySize(Math.max(1, partySize - 1))}
+                    >
+                      <Minus className="w-4 h-4" />
+                    </Button>
                     <span className="font-display text-2xl w-10 text-center">{partySize}</span>
-                    <Button size="icon" variant="outline" onClick={() => setPartySize(Math.min(20, partySize + 1))}><Plus className="w-4 h-4" /></Button>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      onClick={() => setPartySize(Math.min(20, partySize + 1))}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
                   </div>
-                  <p className="text-xs text-muted-foreground">Seating is limited — please count everyone in your group.</p>
+                  <p className="text-xs text-muted-foreground">
+                    Seating is limited — please count everyone in your group.
+                  </p>
                 </div>
               )}
               <div className="space-y-3 pt-2 border-t border-border">
-                <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground pt-3">So we can stay in touch</p>
+                <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground pt-3">
+                  So we can stay in touch
+                </p>
                 <div className="space-y-1.5">
                   <Label htmlFor="name">Full name</Label>
-                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your full name" />
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Your full name"
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="phone">Mobile number</Label>
-                  <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" />
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="(555) 123-4567"
+                  />
                 </div>
               </div>
             </>
@@ -217,9 +289,15 @@ function PreviewPage() {
           <div className="space-y-1.5">
             <Label htmlFor="invited-by">Invited by</Label>
             <Select value={invitedBy || undefined} onValueChange={setInvitedBy}>
-              <SelectTrigger id="invited-by"><SelectValue placeholder="Select who invited you" /></SelectTrigger>
+              <SelectTrigger id="invited-by">
+                <SelectValue placeholder="Select who invited you" />
+              </SelectTrigger>
               <SelectContent>
-                {inviters.map((i) => <SelectItem key={i.id} value={i.name}>{i.name}</SelectItem>)}
+                {inviters.map((i) => (
+                  <SelectItem key={i.id} value={i.name}>
+                    {i.name}
+                  </SelectItem>
+                ))}
                 <SelectItem value="__other__">Other…</SelectItem>
               </SelectContent>
             </Select>
@@ -237,9 +315,13 @@ function PreviewPage() {
         {status === "yes" && attendanceMode === "in_person" && (
           <Card className="p-7 space-y-5">
             <div>
-              <h2 className="font-display text-2xl">Pre-order from your cultural choice restaurant</h2>
+              <h2 className="font-display text-2xl">
+                Pre-order from your cultural choice restaurant
+              </h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Meals run about <strong>$20–$30 per plate</strong>. Choose Yes or No for each cuisine and enter the number of dishes you'd like from that restaurant.
+                Cultural meals will be in the 20-25.00 range. Click below to be added to the pre
+                order list. We will negotiate with the resturants once we have a count. You will be
+                updated with the menu to confirm in the coming weeks.
               </p>
             </div>
             {!canChooseMeals && (
@@ -249,23 +331,33 @@ function PreviewPage() {
             )}
             <div className="space-y-3">
               {cuisines.map((cuisine) => {
-                const qty = cuisineCounts[cuisine] ?? 0;
+                const qty = cuisineCounts[cuisine.key] ?? 0;
                 const selected = qty > 0;
                 const setQty = (n: number) =>
                   canChooseMeals
-                    ? setCuisineCounts({ ...cuisineCounts, [cuisine]: Math.max(0, Math.min(20, n)) })
-                    : toast.error("Please enter your full name and mobile number before choosing meals");
+                    ? setCuisineCounts({
+                        ...cuisineCounts,
+                        [cuisine.key]: Math.max(0, Math.min(20, n)),
+                      })
+                    : toast.error(
+                        "Please enter your full name and mobile number before choosing meals",
+                      );
                 return (
-                  <div key={cuisine} className={`rounded-md border border-border bg-card p-4 space-y-3 ${canChooseMeals ? "" : "opacity-60"}`}>
+                  <div
+                    key={cuisine.key}
+                    className={`rounded-md border border-border bg-card p-4 space-y-3 ${canChooseMeals ? "" : "opacity-60"}`}
+                  >
                     <div className="flex items-center justify-between gap-3">
-                      <Label className="text-base font-display text-ink">{cuisine}</Label>
+                      <Label className="text-base font-display text-ink">{cuisine.label}</Label>
                       <div className="grid grid-cols-2 gap-2 w-36">
                         <button
                           type="button"
                           disabled={!canChooseMeals}
                           onClick={() => setQty(qty > 0 ? qty : 1)}
                           className={`rounded-md border-2 px-3 py-2 text-sm font-medium transition ${
-                            selected ? "border-terracotta bg-terracotta text-cream" : "border-border bg-card hover:border-terracotta/40"
+                            selected
+                              ? "border-terracotta bg-terracotta text-cream"
+                              : "border-border bg-card hover:border-terracotta/40"
                           }`}
                         >
                           Yes
@@ -275,7 +367,9 @@ function PreviewPage() {
                           disabled={!canChooseMeals}
                           onClick={() => setQty(0)}
                           className={`rounded-md border-2 px-3 py-2 text-sm font-medium transition ${
-                            !selected ? "border-ink bg-ink text-cream" : "border-border bg-card hover:border-ink/40"
+                            !selected
+                              ? "border-ink bg-ink text-cream"
+                              : "border-border bg-card hover:border-ink/40"
                           }`}
                         >
                           No
@@ -283,13 +377,29 @@ function PreviewPage() {
                       </div>
                     </div>
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-sm text-muted-foreground">Number of dishes</span>
+                      <span className="text-sm text-muted-foreground">
+                        How many meals do you want?
+                      </span>
                       <div className="flex items-center gap-2">
-                        <Button size="icon" variant="outline" disabled={!canChooseMeals} onClick={() => setQty(qty - 1)} aria-label={`Fewer ${cuisine} dishes`}>
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          disabled={!canChooseMeals}
+                          onClick={() => setQty(qty - 1)}
+                          aria-label={`Fewer ${cuisine.label} meals`}
+                        >
                           <Minus className="w-3 h-3" />
                         </Button>
-                        <span className="w-10 text-center font-display text-2xl text-ink">{qty}</span>
-                        <Button size="icon" variant="outline" disabled={!canChooseMeals} onClick={() => setQty(qty + 1)} aria-label={`More ${cuisine} dishes`}>
+                        <span className="w-10 text-center font-display text-2xl text-ink">
+                          {qty}
+                        </span>
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          disabled={!canChooseMeals}
+                          onClick={() => setQty(qty + 1)}
+                          aria-label={`More ${cuisine.label} meals`}
+                        >
                           <Plus className="w-3 h-3" />
                         </Button>
                       </div>
@@ -303,20 +413,26 @@ function PreviewPage() {
         )}
 
         <Card className="p-5 space-y-4 border-terracotta/30 bg-card">
-          <Button onClick={handleSave} disabled={saving} className="bg-ink text-cream hover:bg-ink/90 w-full h-12 text-base">
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            className="bg-ink text-cream hover:bg-ink/90 w-full h-12 text-base"
+          >
             {saving ? "Submitting…" : "Submit RSVP"}
           </Button>
           {hasSubmitted && (
             <div className="rounded-md border border-border bg-cream/40 p-4 text-sm text-ink space-y-3">
-              <p className="font-medium">Once you have RSVP'd, please log in to make any changes to your reservation.</p>
+              <p className="font-medium">
+                Once you have RSVP'd, please log in to make any changes to your reservation.
+              </p>
               <Link to="/login">
-                <Button variant="outline" className="w-full">Log in</Button>
+                <Button variant="outline" className="w-full">
+                  Log in
+                </Button>
               </Link>
             </div>
           )}
-
         </Card>
-
       </div>
     </div>
   );
