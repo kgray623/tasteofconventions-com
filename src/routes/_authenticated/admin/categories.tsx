@@ -127,7 +127,12 @@ function CategoriesPage() {
                 )}
               </div>
               <div className="space-y-1.5">
-                {items.length === 0 && (
+                {c.name.toLowerCase().includes("alcohol") && (
+                  <p className="text-xs text-muted-foreground italic mb-2">
+                    To ensure the dignity of the event, this role will ensure all who choose to use alcohol, do so in moderation.
+                  </p>
+                )}
+                {items.length === 0 && !c.name.toLowerCase().includes("alcohol") && (
                   <p className="text-xs text-muted-foreground italic">No one assigned yet.</p>
                 )}
                 {items.map((a) => (
