@@ -1084,37 +1084,63 @@ function UploadPage() {
         )}
       </Card>
 
-      <Card className="p-6 space-y-3 border-terracotta/40 bg-terracotta/5">
-        <div className="flex items-center gap-2">
-          <ImageIcon className="w-4 h-4 text-terracotta" />
-          <p className="font-medium">Upload screenshots of those you want to invite</p>
-        </div>
+      <Card className="p-6 space-y-4 border-terracotta/40 bg-terracotta/5">
         <p className="text-xs text-muted-foreground whitespace-pre-line">
           To add guests, take a screenshot from your phone contact list and upload the picture. The system will read it and add each to the guest invite list (8 max at a time).{"\n\n"}
           You can also add a spreadsheet of your invited guest by listing each by name and phone number on seperate lines.{"\n\n"}
           The system will upload your guest list and verify each person ensuring your guest receives only one invitation.
         </p>
-        <Button
-          type="button"
-          disabled={screenshotBusy}
-          onClick={() => screenshotRef.current?.click()}
-          className="bg-terracotta text-cream hover:bg-terracotta/90"
-        >
-          {screenshotBusy ? (
-            <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Reading…</>
-          ) : (
-            <><Upload className="w-4 h-4 mr-2" /> Choose screenshots</>
-          )}
-        </Button>
-        <input
-          ref={screenshotRef}
-          type="file"
-          accept="image/*"
-          multiple
-          disabled={screenshotBusy}
-          onChange={(e) => e.target.files && e.target.files.length > 0 && onScreenshots(e.target.files)}
-          className="hidden"
-        />
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="w-4 h-4 text-terracotta" />
+              <p className="text-sm font-medium">Option 1 — Upload screenshots</p>
+            </div>
+            <Button
+              type="button"
+              disabled={screenshotBusy}
+              onClick={() => screenshotRef.current?.click()}
+              className="bg-terracotta text-cream hover:bg-terracotta/90 w-full"
+            >
+              {screenshotBusy ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Reading…</>
+              ) : (
+                <><Upload className="w-4 h-4 mr-2" /> Choose screenshots</>
+              )}
+            </Button>
+            <input
+              ref={screenshotRef}
+              type="file"
+              accept="image/*"
+              multiple
+              disabled={screenshotBusy}
+              onChange={(e) => e.target.files && e.target.files.length > 0 && onScreenshots(e.target.files)}
+              className="hidden"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <FileSpreadsheet className="w-4 h-4 text-terracotta" />
+              <p className="text-sm font-medium">Option 2 — Upload spreadsheet</p>
+            </div>
+            <Button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="bg-terracotta text-cream hover:bg-terracotta/90 w-full"
+            >
+              <Upload className="w-4 h-4 mr-2" /> Choose spreadsheet
+            </Button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".csv,.xlsx,.xls,.vcf"
+              onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
+              className="hidden"
+            />
+          </div>
+        </div>
       </Card>
 
 
