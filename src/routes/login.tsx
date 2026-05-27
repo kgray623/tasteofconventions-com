@@ -15,7 +15,7 @@ export const Route = createFileRoute("/login")({
   component: HelperLogin,
 });
 
-type RouteDestination = { to: "/admin" } | { to: "/admin/upload" } | { to: "/my-rsvp" };
+type RouteDestination = { to: "/admin" } | { to: "/admin/upload" } | { to: "/dashboard" } | { to: "/my-rsvp" };
 const allowedRedirects = new Set(["/admin", "/admin/upload", "/my-rsvp", "/dashboard"]);
 
 function safeRedirect(value: string | undefined) {
@@ -31,14 +31,28 @@ function normalizeMobilePhone(value: string) {
 }
 
 async function routeForUser(userId: string): Promise<RouteDestination> {
-  const { data } = await withTimeout(
+  const { data: roleData } = await withTimeout(
     supabase.from("user_roles").select("role").eq("user_id", userId),
     5000,
   );
-  const roles = (data ?? []).map((r) => r.role as string);
+  const roles = (roleData ?? []).map((r) => r.role as string);
   if (roles.includes("admin") || roles.includes("team")) return { to: "/admin" };
+
+  // Committee members (tagged on their invitation) land on the committee dashboard.
+  try {
+    const { data: isCommittee } = await withTimeout(
+      supabase.rpc("is_current_user_committee"),
+      5000,
+    );
+    if (isCommittee === true) return { to: "/dashboard" };
+  } catch {
+    // fall through to default
+  }
+
   return { to: "/my-rsvp" };
 }
+
+
 
 function HelperLogin() {
   const { user, loading } = useAuth();
