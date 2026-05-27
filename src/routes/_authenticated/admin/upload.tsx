@@ -252,6 +252,7 @@ function UploadPage() {
   const [quotaRequestedAt, setQuotaRequestedAt] = useState<string | null>(null);
   const [savingQuotaReq, setSavingQuotaReq] = useState(false);
   const [quotaPool, setQuotaPool] = useState({ total: TOTAL_RSVP_CAP, allocated: 0 });
+  const [rsvpAttendingTotal, setRsvpAttendingTotal] = useState(0);
 
   const loadSavedGuests = async (evId: string) => {
     if (!evId) {
