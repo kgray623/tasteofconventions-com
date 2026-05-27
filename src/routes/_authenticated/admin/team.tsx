@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Phone, Trash2, ShieldCheck, Users } from "lucide-react";
+import { Phone, Trash2, ShieldCheck, Users, Pencil, Check, X } from "lucide-react";
 import { inviteTeamMember } from "@/lib/team.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/team")({
