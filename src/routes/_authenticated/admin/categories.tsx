@@ -183,11 +183,9 @@ function CategoriesPage() {
                       </div>
                     </div>
                   ) : (
-                    c.description && (
-                      <p className="text-xs text-muted-foreground italic leading-relaxed">
-                        {c.description}
-                      </p>
-                    )
+                    <p className="text-xs text-muted-foreground italic leading-relaxed min-h-[3rem]">
+                      {c.description || "\u00A0"}
+                    </p>
                   )}
                 </div>
 
@@ -224,16 +222,25 @@ function CategoriesPage() {
                     <>
                       <Button
                         size="sm"
-                        onClick={() => alreadyVolunteered ? removeAssign(myAssign!.id) : addAssign(c.id, true)}
-                        disabled={!user}
-                        variant={alreadyVolunteered ? "outline" : "default"}
-                        className={alreadyVolunteered ? "w-full" : "w-full bg-terracotta text-cream hover:bg-terracotta/90"}
+                        onClick={() => addAssign(c.id, true)}
+                        disabled={!user || alreadyVolunteered}
+                        className="w-full bg-terracotta text-cream hover:bg-terracotta/90"
                       >
                         <Hand className="w-4 h-4 mr-2" />
-                        {alreadyVolunteered ? "Withdraw my volunteer" : "I want to volunteer"}
+                        I want to volunteer
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => myAssign && removeAssign(myAssign.id)}
+                        disabled={!alreadyVolunteered}
+                        className="w-full"
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        I want to withdraw my volunteer
                       </Button>
                       {isAdmin && (
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 pt-1">
                           <Input
                             list={`profiles-${c.id}`}
                             value={drafts[c.id] || ""}
