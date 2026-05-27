@@ -1068,7 +1068,7 @@ function UploadPage() {
         <div className="space-y-1">
           <Textarea
             aria-label="Note for admin"
-            placeholder="Tell the admin why this RSVP request number works for you."
+            placeholder="Message admin"
             value={quotaNote}
             maxLength={500}
             onChange={(e) => setQuotaNote(e.target.value)}
