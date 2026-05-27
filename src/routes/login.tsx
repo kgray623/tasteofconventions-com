@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { FormEvent, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,7 +53,6 @@ async function routeForUser(userId: string): Promise<RouteDestination> {
 function HelperLogin() {
   const { user, loading } = useAuth();
   const search = useSearch({ strict: false }) as { redirect?: string };
-  const navigate = useNavigate();
   const phoneLogin = useServerFn(signInWithPhoneOnly);
   const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
@@ -89,13 +88,17 @@ function HelperLogin() {
         setBusy(false);
         return toast.error(setErr.message);
       }
+      const { data: verified, error: verifyErr } = await withTimeout(supabase.auth.getUser(), 10000);
+      if (verifyErr || !verified.user) {
+        throw new Error(verifyErr?.message || "Sign-in did not finish. Please try again.");
+      }
       toast.success("Signed in.");
-      const destination = await routeForUser(session.user_id);
+      const destination = await routeForUser(verified.user.id);
       const next =
         search.redirect === "/admin/upload" && destination.to === "/admin"
           ? { to: "/admin/upload" as const }
           : destination;
-      navigate({ to: next.to });
+      window.location.replace(next.to);
     } catch (error) {
       setBusy(false);
       toast.error(getErrorMessage(error));
