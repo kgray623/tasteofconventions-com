@@ -680,50 +680,63 @@ function InvitersPage() {
       </div>
 
 
-      <Card className="p-6 space-y-4">
-        <div>
-          <h2 className="font-display text-xl">Add Steering Committee Member</h2>
+      {isAdmin ? (
+        <Card className="p-6 space-y-4">
+          <div>
+            <h2 className="font-display text-xl">Add Steering Committee Member</h2>
+            <p className="text-sm text-muted-foreground">
+              They'll appear in the dropdown on the RSVP form.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Jane Doe"
+              />
+            </div>
+
+
+            <div className="space-y-1.5">
+              <Label htmlFor="phone">Phone</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="(555) 123-4567"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="quota">Quota</Label>
+              <Input
+                id="quota"
+                type="number"
+                min={0}
+                value={quota}
+                onChange={(e) => setQuota(parseInt(e.target.value) || 0)}
+              />
+            </div>
+          </div>
+          <Button onClick={add} disabled={adding} className="bg-ink text-cream hover:bg-ink/90">
+            <UserPlus className="w-4 h-4 mr-2" /> {adding ? "Adding…" : "Add"}
+          </Button>
+        </Card>
+      ) : (
+        <Card className="p-6 space-y-2">
+          <h2 className="font-display text-xl">Nominate a Steering Committee Member</h2>
           <p className="text-sm text-muted-foreground">
-            They'll appear in the dropdown on the RSVP form.
+            Only the event admin can add new committee members. To nominate someone, please contact the admin directly at{" "}
+            <a href="tel:+18082787562" className="text-terracotta font-medium underline-offset-2 hover:underline">
+              (808) 278-7562
+            </a>
+            .
           </p>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="name">Name</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Jane Doe"
-            />
-          </div>
-
-
-          <div className="space-y-1.5">
-            <Label htmlFor="phone">Phone</Label>
-            <Input
-              id="phone"
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="(555) 123-4567"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="quota">Quota</Label>
-            <Input
-              id="quota"
-              type="number"
-              min={0}
-              value={quota}
-              onChange={(e) => setQuota(parseInt(e.target.value) || 0)}
-            />
-          </div>
-        </div>
-        <Button onClick={add} disabled={adding} className="bg-ink text-cream hover:bg-ink/90">
-          <UserPlus className="w-4 h-4 mr-2" /> {adding ? "Adding…" : "Add"}
-        </Button>
-      </Card>
+        </Card>
+      )}
 
       <Card className="p-0 overflow-hidden">
         <div className="px-6 py-4 border-b border-border">
