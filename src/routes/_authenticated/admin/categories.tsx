@@ -163,18 +163,14 @@ function CategoriesPage() {
                       <Textarea 
                         value={currentDesc} 
                         onChange={(e) => setEditingDesc({ ...editingDesc, [c.id]: e.target.value })}
-                        placeholder="Add a description for this role..."
+                        onBlur={() => { if (isDirty) updateDescription(c.id); }}
+                        placeholder="Add a description for this role (saves automatically)..."
                         className="text-xs min-h-[60px] resize-none"
                       />
                       {isDirty && (
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
-                          className="absolute bottom-1 right-1 h-6 w-6 text-terracotta"
-                          onClick={() => updateDescription(c.id)}
-                        >
-                          <Save className="w-3 h-3" />
-                        </Button>
+                        <span className="absolute bottom-1 right-2 text-[10px] text-terracotta italic">
+                          unsaved — click out to save
+                        </span>
                       )}
                     </div>
                   ) : (
