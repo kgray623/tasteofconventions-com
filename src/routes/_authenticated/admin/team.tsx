@@ -138,9 +138,11 @@ function TeamPage() {
                 <Badge variant={m.role === "admin" ? "default" : "secondary"}>
                   {m.role === "admin" && <ShieldCheck className="w-3 h-3 mr-1" />}{m.role}
                 </Badge>
-                <button onClick={() => removeRole(m.user_id, m.role)} className="text-muted-foreground hover:text-terracotta">
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {isAdmin && (
+                  <button onClick={() => removeRole(m.user_id, m.role)} className="text-muted-foreground hover:text-terracotta">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
           ))}
