@@ -374,7 +374,7 @@ function RsvpPage() {
         })()}
 
         <Card className="p-7 space-y-5">
-          <h2 className="font-display text-2xl">Will you join us?</h2>
+          <h2 className="font-display text-2xl">Will you be joining us?</h2>
           <div className="grid grid-cols-2 gap-2">
             {[
               { v: "yes", icon: Check, label: "Attending" },
@@ -482,9 +482,6 @@ function RsvpPage() {
               />
             )}
           </div>
-          <Button onClick={handleSubmit} className="bg-ink text-cream hover:bg-ink/90 w-full">
-            Save RSVP
-          </Button>
         </Card>
 
         {status === "yes" && attendanceMode === "in_person" && (
@@ -577,6 +574,12 @@ function RsvpPage() {
             </div>
           </Card>
         )}
+
+        <Card className="p-5 space-y-4 border-terracotta/30 bg-card">
+          <Button onClick={handleSubmit} className="bg-ink text-cream hover:bg-ink/90 w-full h-12 text-base">
+            Save RSVP
+          </Button>
+        </Card>
       </div>
     </div>
   );
