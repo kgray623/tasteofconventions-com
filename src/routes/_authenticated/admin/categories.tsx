@@ -183,11 +183,9 @@ function CategoriesPage() {
                       </div>
                     </div>
                   ) : (
-                    c.description && (
-                      <p className="text-xs text-muted-foreground italic leading-relaxed">
-                        {c.description}
-                      </p>
-                    )
+                    <p className="text-xs text-muted-foreground italic leading-relaxed min-h-[3rem]">
+                      {c.description || "\u00A0"}
+                    </p>
                   )}
                 </div>
 
