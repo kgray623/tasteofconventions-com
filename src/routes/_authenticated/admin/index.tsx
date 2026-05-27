@@ -88,7 +88,7 @@ function AdminOverview() {
         <div className="grid gap-3 sm:grid-cols-2">
           <Button asChild className="bg-ink text-cream hover:bg-ink/90 justify-start h-14">
             <Link to="/admin/categories">
-              <ListChecks className="w-4 h-4" /> Assignments
+              <ListChecks className="w-4 h-4" /> Volunteer
             </Link>
           </Button>
           <Button asChild variant="outline" className="justify-start h-14">
@@ -118,44 +118,6 @@ function AdminOverview() {
 
   return (
     <div className="space-y-6">
-      <p className="text-muted-foreground">
-        You have full admin access. Manage the guest list, assignments, team, and chat.
-      </p>
-      <Card className="p-5 border-terracotta/30 bg-terracotta/5 space-y-4">
-        <div>
-          <h2 className="font-display text-xl">Steering Committee workspace</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Communicate with the committee, see tasks, make invitations, and upload your contacts here.
-          </p>
-        </div>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <Button asChild className="bg-ink text-cream hover:bg-ink/90 justify-start">
-            <Link to="/admin/inviters">
-              <UserPlus className="w-4 h-4" /> Committee invitations
-            </Link>
-          </Button>
-          <Button asChild variant="outline" className="justify-start">
-            <Link to="/admin/upload">
-              <Upload className="w-4 h-4" /> Upload contacts
-            </Link>
-          </Button>
-          <Button asChild variant="outline" className="justify-start">
-            <Link to="/admin/categories">
-              <ListChecks className="w-4 h-4" /> Tasks
-            </Link>
-          </Button>
-          <Button asChild variant="outline" className="justify-start">
-            <Link to="/admin/chat">
-              <MessageSquare className="w-4 h-4" /> Committee chat
-            </Link>
-          </Button>
-          <Button asChild variant="outline" className="justify-start">
-            <Link to="/admin/preorders">
-              <Utensils className="w-4 h-4" /> Food report
-            </Link>
-          </Button>
-        </div>
-      </Card>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {stats.map((s) => (
           <Link key={s.label} to={s.to}>
