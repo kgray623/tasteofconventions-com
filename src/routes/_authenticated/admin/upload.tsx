@@ -1117,23 +1117,6 @@ function UploadPage() {
         />
       </Card>
 
-      <Card className="p-6 space-y-3">
-        <div className="flex items-center gap-2">
-          <FileSpreadsheet className="w-4 h-4 text-terracotta" />
-          <p className="font-medium">CSV / Excel file</p>
-        </div>
-        <input
-          ref={fileRef}
-          type="file"
-          accept=".csv,.xlsx,.xls"
-          onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
-          className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-ink file:text-cream hover:file:bg-ink/90 file:cursor-pointer"
-        />
-        <p className="text-xs text-muted-foreground">
-          Expected columns: <code>name</code>, <code>email</code>, <code>phone</code>,{" "}
-          <code>notes</code>.
-        </p>
-      </Card>
 
 
 
@@ -1252,47 +1235,6 @@ function UploadPage() {
         </Card>
       )}
 
-      {(() => {
-        const sentCount = savedGuests.filter((g) => g.invite_sent_at).length;
-        const pendingCount = savedGuests.filter((g) => !g.invite_sent_at).length;
-        const activeCount = savedGuests.filter(
-          (g) => g.rsvp_status === "yes" || g.invite_sent_at,
-        ).length;
-        const left = myQuota !== null ? Math.max(0, myQuota - activeCount) : null;
-        return (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <Card className="p-4">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                Invites sent
-              </p>
-              <p className="font-display text-2xl mt-1">{sentCount}</p>
-              {pendingCount > 0 && (
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {pendingCount} not sent yet
-                </p>
-              )}
-            </Card>
-            <Card className="p-4">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                RSVPs (yes)
-              </p>
-              <p className="font-display text-2xl mt-1">{myRsvpCount}</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">{myRsvpSeats} seats</p>
-            </Card>
-            <Card className="p-4">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                Your quota
-              </p>
-              <p className="font-display text-2xl mt-1">{myQuota ?? "—"}</p>
-              {left !== null && (
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {left} invite{left === 1 ? "" : "s"} left to send
-                </p>
-              )}
-            </Card>
-          </div>
-        );
-      })()}
 
 
       <Card className="overflow-hidden">
@@ -1460,6 +1402,52 @@ function UploadPage() {
           </div>
         )}
       </Card>
+
+      {(() => {
+        const sentCount = savedGuests.filter((g) => g.invite_sent_at).length;
+        const pendingCount = savedGuests.filter((g) => !g.invite_sent_at).length;
+        const requested = parseInt(requestedQuota, 10);
+        const requestedNum = Number.isFinite(requested) && requested > 0 ? requested : null;
+        const remaining =
+          requestedNum !== null ? Math.max(0, requestedNum - myRsvpCount) : null;
+        return (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <Card className="p-4">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                RSVP requests
+              </p>
+              <p className="font-display text-2xl mt-1">{requestedNum ?? "—"}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                {requestedNum === null
+                  ? "Send a request above"
+                  : "How many you asked for"}
+              </p>
+            </Card>
+            <Card className="p-4">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                Invites sent
+              </p>
+              <p className="font-display text-2xl mt-1">{sentCount}</p>
+              {pendingCount > 0 && (
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {pendingCount} not sent yet
+                </p>
+              )}
+            </Card>
+            <Card className="p-4">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                RSVP confirmations
+              </p>
+              <p className="font-display text-2xl mt-1">{myRsvpCount}</p>
+              {remaining !== null && (
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {remaining} remaining of {requestedNum}
+                </p>
+              )}
+            </Card>
+          </div>
+        );
+      })()}
     </div>
   );
 }
