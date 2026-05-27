@@ -81,8 +81,14 @@ function PreviewPage() {
   const canChooseMeals = name.trim().length > 0 && phoneDigits.length >= 7;
 
   useEffect(() => {
-    supabase.rpc("get_public_inviters").then(({ data }) => setInviters(data ?? []));
+    supabase.rpc("get_public_inviters").then(({ data }) => {
+      const list = (data ?? []).slice().sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+      );
+      setInviters(list);
+    });
   }, []);
+
 
   const save = useServerFn(submitPublicRsvp);
   const lookupRsvp = useServerFn(getPublicRsvpByPhone);
