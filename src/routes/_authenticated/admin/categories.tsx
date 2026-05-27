@@ -129,26 +129,42 @@ function CategoriesPage() {
                   </div>
                 ))}
               </div>
-              {isAdmin && (
-                <div className="flex gap-2 pt-1">
-                <Input
-                  list={`profiles-${c.id}`}
-                  value={drafts[c.id] || ""}
-                  onChange={(e) => setDrafts({ ...drafts, [c.id]: e.target.value })}
-                  onKeyDown={(e) => e.key === "Enter" && addAssign(c.id)}
-                  placeholder="Add person…"
-                  className="text-sm"
-                />
-                <datalist id={`profiles-${c.id}`}>
-                  {profiles.map((p) => (
-                    <option key={p.id} value={p.email ?? p.display_name ?? ""}>{p.display_name}</option>
-                  ))}
-                </datalist>
-                <Button size="sm" onClick={() => addAssign(c.id)}>
-                  <UserPlus className="w-4 h-4" />
-                </Button>
-              </div>
-              )}
+              {(() => {
+                const alreadyVolunteered = !!user && items.some((a) => a.user_id === user.id);
+                return (
+                  <div className="space-y-2 pt-1">
+                    <Button
+                      size="sm"
+                      onClick={() => addAssign(c.id, true)}
+                      disabled={!user || alreadyVolunteered}
+                      className="w-full bg-terracotta text-cream hover:bg-terracotta/90"
+                    >
+                      <Hand className="w-4 h-4 mr-2" />
+                      {alreadyVolunteered ? "You're volunteering" : "I want to volunteer"}
+                    </Button>
+                    {isAdmin && (
+                      <div className="flex gap-2">
+                        <Input
+                          list={`profiles-${c.id}`}
+                          value={drafts[c.id] || ""}
+                          onChange={(e) => setDrafts({ ...drafts, [c.id]: e.target.value })}
+                          onKeyDown={(e) => e.key === "Enter" && addAssign(c.id)}
+                          placeholder="Admin: add someone else…"
+                          className="text-sm"
+                        />
+                        <datalist id={`profiles-${c.id}`}>
+                          {profiles.map((p) => (
+                            <option key={p.id} value={p.email ?? p.display_name ?? ""}>{p.display_name}</option>
+                          ))}
+                        </datalist>
+                        <Button size="sm" variant="outline" onClick={() => addAssign(c.id)}>
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </Card>
           );
         })}
