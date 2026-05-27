@@ -84,7 +84,7 @@ function CategoriesPage() {
     if (selfVolunteer) {
       if (!user) return toast.error("Please sign in to volunteer.");
       const exists = assigns.some((a) => a.category_id === catId && a.user_id === user.id);
-      if (exists) return;
+      if (exists) { toast.info("You're already volunteering for this."); return; }
       const { error } = await supabase.from("category_assignments").insert({
         category_id: catId,
         user_id: user.id,
@@ -223,7 +223,7 @@ function CategoriesPage() {
                       <Button
                         size="sm"
                         onClick={() => addAssign(c.id, true)}
-                        disabled={!user || alreadyVolunteered}
+                        disabled={!user}
                         className="w-full bg-terracotta text-cream hover:bg-terracotta/90"
                       >
                         <Hand className="w-4 h-4 mr-2" />
@@ -232,8 +232,8 @@ function CategoriesPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => myAssign && removeAssign(myAssign.id)}
-                        disabled={!alreadyVolunteered}
+                        onClick={() => myAssign ? removeAssign(myAssign.id) : toast.info("You haven't volunteered for this yet.")}
+                        disabled={!user}
                         className="w-full"
                       >
                         <X className="w-4 h-4 mr-2" />
