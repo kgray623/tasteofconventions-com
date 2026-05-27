@@ -30,6 +30,7 @@ import {
 import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 
 import { inviteTeamMember } from "@/lib/team.functions";
+import { extractContactsFromImages } from "@/lib/extract-contacts.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/inviters")({
   head: () => ({ meta: [{ title: "Committee — Admin" }] }),
@@ -151,9 +152,11 @@ function InvitersPage() {
   const [adding, setAdding] = useState(false);
   const [resendingId, setResendingId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const vcardRef = useRef<HTMLInputElement>(null);
+  const screenshotRef = useRef<HTMLInputElement>(null);
+  const [screenshotBusy, setScreenshotBusy] = useState(false);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const inviteTeamMemberFn = useServerFn(inviteTeamMember);
+  const extractContactsFn = useServerFn(extractContactsFromImages);
 
 
   const load = async () => {
@@ -346,6 +349,44 @@ function InvitersPage() {
       load();
     } finally {
       setSavingContacts(false);
+    }
+  };
+
+  const fileToDataUrl = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(reader.error ?? new Error("read failed"));
+      reader.onload = () => resolve(String(reader.result ?? ""));
+      reader.readAsDataURL(file);
+    });
+
+  const onScreenshots = async (files: FileList | File[]) => {
+    const list = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    if (list.length === 0) {
+      toast.error("Please pick image files (PNG, JPG, HEIC).");
+      return;
+    }
+    if (list.length > 10) {
+      toast.error("Up to 10 screenshots at a time.");
+      return;
+    }
+    setScreenshotBusy(true);
+    try {
+      const images = await Promise.all(list.map(fileToDataUrl));
+      const { contacts: found } = await extractContactsFn({ data: { images } });
+      if (!found.length) {
+        toast.error("No contacts found in those screenshots.");
+        return;
+      }
+      setContacts(found.map((c) => ({ name: c.name, email: c.email, phone: c.phone, notes: "" })));
+      toast.success(
+        `Found ${found.length} contact${found.length === 1 ? "" : "s"} in your screenshot${list.length === 1 ? "" : "s"}`,
+      );
+    } catch (e) {
+      toast.error("Couldn't read those screenshots", { description: getErrorMessage(e) });
+    } finally {
+      setScreenshotBusy(false);
+      if (screenshotRef.current) screenshotRef.current.value = "";
     }
   };
 
@@ -643,18 +684,25 @@ function InvitersPage() {
               onChange={(e) => e.target.files?.[0] && parseContactFile(e.target.files[0])}
             />
             <input
-              ref={vcardRef}
+              ref={screenshotRef}
               type="file"
-              accept=".vcf,text/vcard"
+              accept="image/*"
+              multiple
               className="hidden"
-              onChange={(e) => e.target.files?.[0] && parseContactFile(e.target.files[0])}
+              disabled={screenshotBusy}
+              onChange={(e) => e.target.files && e.target.files.length > 0 && onScreenshots(e.target.files)}
             />
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" onClick={() => fileRef.current?.click()}>
-                <FileUp className="w-4 h-4 mr-2" /> CSV
+              <Button
+                variant="outline"
+                disabled={screenshotBusy}
+                onClick={() => screenshotRef.current?.click()}
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                {screenshotBusy ? "Reading…" : "Upload screenshot of contacts"}
               </Button>
-              <Button variant="outline" onClick={() => vcardRef.current?.click()}>
-                <FileUp className="w-4 h-4 mr-2" /> Contacts
+              <Button variant="outline" onClick={() => fileRef.current?.click()}>
+                <FileUp className="w-4 h-4 mr-2" /> Upload a spreadsheet
               </Button>
             </div>
             {contacts.length > 0 && (
@@ -679,14 +727,6 @@ function InvitersPage() {
                 </Button>
               </div>
             )}
-            <Link
-              to="/admin/upload"
-              search={previewCommittee ? { view: "committee" } : { view: undefined }}
-            >
-              <Button variant="ghost" className="w-full">
-                Open full uploader
-              </Button>
-            </Link>
           </Card>
         </div>
       </div>
@@ -752,7 +792,7 @@ function InvitersPage() {
 
       <Card className="p-0 overflow-hidden">
         <div className="px-6 py-4 border-b border-border">
-          <h2 className="font-display text-xl">Inviters & usage</h2>
+          <h2 className="font-display text-xl">Steering committee invitations &amp; usage</h2>
           <p className="text-sm text-muted-foreground">
             Seats are counted from RSVPs marked attending. Unused quota stays in the open pool.
           </p>
