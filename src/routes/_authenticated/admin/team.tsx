@@ -126,7 +126,32 @@ function TeamPage() {
         </Card>
       )}
 
+      <Card className="p-5 space-y-3">
+        <div className="flex items-center gap-2">
+          <Users className="w-4 h-4 text-terracotta" />
+          <h2 className="font-display text-lg">Committee (flagged on guest list)</h2>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Everyone tagged as committee on the guest list — so the whole team can see who's on board.
+        </p>
+        {committeeGuests.length === 0 ? (
+          <p className="text-sm text-muted-foreground italic">No committee members flagged yet.</p>
+        ) : (
+          <div className="grid sm:grid-cols-2 gap-2">
+            {committeeGuests.map((g) => (
+              <div key={g.id} className="rounded-lg border border-border bg-background px-3 py-2">
+                <p className="font-medium text-sm">{g.guest_name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {g.guest_phone || g.guest_email || "No contact on file"}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
       <Card className="overflow-hidden">
+
         <div className="p-4 border-b border-border flex items-center gap-2">
           <Users className="w-4 h-4" /> <h2 className="font-display text-lg">Committee members</h2>
         </div>
