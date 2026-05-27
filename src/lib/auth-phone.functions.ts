@@ -110,7 +110,7 @@ export const signInWithPhoneOnly = createServerFn({ method: "POST" })
     // 3) Ensure the account has this phone-number login identity + a fresh
     //    internal password, then sign in without calling the disabled phone provider.
     const sessionPassword = randomPassword();
-    const { error: updErr } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+    let { error: updErr } = await supabaseAdmin.auth.admin.updateUserById(userId, {
       email: loginAddress,
       phone: phoneE164,
       email_confirm: true,
@@ -118,7 +118,50 @@ export const signInWithPhoneOnly = createServerFn({ method: "POST" })
       password: sessionPassword,
       user_metadata: { phone: data.phone },
     });
+    if (updErr && /phone.*already/i.test(updErr.message)) {
+      // Another auth user owns this phone — find them and use that account instead.
+      const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      const owner = list?.users.find((u) => u.phone && u.phone.replace(/\D/g, "") === phoneNorm);
+      if (owner && owner.id !== userId) {
+        userId = owner.id;
+        const retry = await supabaseAdmin.auth.admin.updateUserById(userId, {
+          email: loginAddress,
+          phone: phoneE164,
+          email_confirm: true,
+          phone_confirm: true,
+          password: sessionPassword,
+          user_metadata: { phone: data.phone },
+        });
+        updErr = retry.error;
+      }
+    }
     if (updErr) throw new Error(updErr.message);
+
+    // 3b) If this phone is on the team invite list, grant the role and mark accepted.
+    const { data: teamInviteRow } = await supabaseAdmin
+      .from("team_invites")
+      .select("id,role,accepted_at")
+      .eq("phone_normalized", phoneNorm)
+      .maybeSingle();
+    if (teamInviteRow) {
+      const { data: existingRole } = await supabaseAdmin
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("role", teamInviteRow.role)
+        .maybeSingle();
+      if (!existingRole) {
+        await supabaseAdmin
+          .from("user_roles")
+          .insert({ user_id: userId, role: teamInviteRow.role });
+      }
+      if (!teamInviteRow.accepted_at) {
+        await supabaseAdmin
+          .from("team_invites")
+          .update({ accepted_at: new Date().toISOString() })
+          .eq("id", teamInviteRow.id);
+      }
+    }
 
     const url = process.env.SUPABASE_URL!;
     const anonKey = process.env.SUPABASE_PUBLISHABLE_KEY!;
