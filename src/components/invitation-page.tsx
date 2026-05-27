@@ -358,9 +358,9 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-2">
               <p>
-                Because of the many expenses putting on a large event, donations
-                are greatly appreciated. To send a donation, please text Kari
-                Gray at 808.278.7562.
+                With many expenses putting on a large event, donations are
+                greatly appreciated. Please text Kari Gray at 808.278.7562 to
+                discuss making a donation by PayPal or in-person.
               </p>
             </AccordionContent>
           </AccordionItem>
