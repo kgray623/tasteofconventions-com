@@ -35,11 +35,28 @@ const isTeamAllowedPath = (path: string) =>
 
 function AdminLayout() {
   const { isAdmin: isActualAdmin, isTeam, loading } = useRoles();
+  const { user } = useAuth();
   const search = useSearch({ from: "/_authenticated/admin" });
   const previewCommittee = isActualAdmin && search.view === "committee";
   const isAdmin = isActualAdmin && !previewCommittee;
   const path = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
+  const [displayName, setDisplayName] = useState<string>("");
+
+  useEffect(() => {
+    if (!user?.id) { setDisplayName(""); return; }
+    let alive = true;
+    void (async () => {
+      const { data } = await supabase.from("profiles").select("display_name,email").eq("id", user.id).maybeSingle();
+      if (!alive) return;
+      const fromProfile = data?.display_name?.trim();
+      const fromMeta = (user.user_metadata?.display_name as string | undefined)?.trim();
+      const fromEmail = (data?.email || user.email || "").split("@")[0];
+      const full = fromProfile || fromMeta || fromEmail || "";
+      setDisplayName(full.split(" ")[0] || full);
+    })();
+    return () => { alive = false; };
+  }, [user?.id, user?.email, user?.user_metadata]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
