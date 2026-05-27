@@ -478,7 +478,7 @@ function LoggedInRsvpCta() {
   const { user, loading } = useAuth();
   if (loading || !user) return null;
   return (
-    <div className="mb-4">
+    <div className="mt-4">
       <Link to="/my-rsvp">
         <Button
           size="lg"
