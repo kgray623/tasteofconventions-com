@@ -25,10 +25,10 @@ const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boole
   { to: "/admin/donations", label: "Donations", icon: HandCoins },
   { to: "/admin/team", label: "Team access", icon: Users },
   { to: "/admin/chat", label: "Committee chat", icon: MessagesSquare, team: true, teamLabel: "Chat" },
-  { to: "/my-rsvp", label: "My RSVP", icon: Ticket, team: true },
+  { to: "/admin/my-rsvp", label: "My RSVP", icon: Ticket, team: true },
 ];
 
-const teamAllowedPaths = new Set(["/admin", "/admin/upload", "/admin/inviters", "/admin/categories", "/admin/chat"]);
+const teamAllowedPaths = new Set(["/admin", "/admin/upload", "/admin/inviters", "/admin/categories", "/admin/chat", "/admin/my-rsvp"]);
 
 function AdminLayout() {
   const { isAdmin: isActualAdmin, isTeam, loading } = useRoles();
@@ -135,6 +135,7 @@ function AdminLayout() {
             <Link
               key={t.to}
               to={t.to}
+              search={previewCommittee ? { view: "committee" } : { view: undefined }}
               className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm border-b-2 -mb-px transition ${
                 active
                   ? "border-terracotta text-ink font-medium"
