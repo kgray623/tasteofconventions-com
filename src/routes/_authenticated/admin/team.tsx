@@ -89,36 +89,38 @@ function TeamPage() {
 
   return (
     <div className="space-y-6">
-      <Card className="p-5 space-y-4">
-        <div className="flex items-center gap-2">
-          <Phone className="w-4 h-4 text-terracotta" />
-          <h2 className="font-display text-xl">Add Steering Committee Member</h2>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Full name"
-          />
-          <Input
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="Phone number"
-          />
-          <Select value={role} onValueChange={(v) => setRole(v as "team" | "admin")}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="team">Committee</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <Button onClick={sendInvite} disabled={sending} className="bg-ink text-cream hover:bg-ink/90">{sending ? "Adding…" : "Add"}</Button>
-        <p className="text-xs text-muted-foreground">
-          When this person signs up and enters the same phone number, they'll automatically get {role} access.
-        </p>
-      </Card>
+      {isAdmin && (
+        <Card className="p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <Phone className="w-4 h-4 text-terracotta" />
+            <h2 className="font-display text-xl">Add Steering Committee Member</h2>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Full name"
+            />
+            <Input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="Phone number"
+            />
+            <Select value={role} onValueChange={(v) => setRole(v as "team" | "admin")}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="team">Committee</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={sendInvite} disabled={sending} className="bg-ink text-cream hover:bg-ink/90">{sending ? "Adding…" : "Add"}</Button>
+          <p className="text-xs text-muted-foreground">
+            When this person signs up and enters the same phone number, they'll automatically get {role} access.
+          </p>
+        </Card>
+      )}
 
       <Card className="overflow-hidden">
         <div className="p-4 border-b border-border flex items-center gap-2">
