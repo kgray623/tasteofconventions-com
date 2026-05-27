@@ -494,9 +494,9 @@ function RsvpPage() {
                 Pre-order from your cultural choice restaurant
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Cultural meals will be in the 20-25.00 range. Click below to be added to
-                the pre order list. We will negotiate with the resturants once we have a
-                count. You will be updated with the menu to confirm in the coming weeks.
+                Cultural meals will be in the 20-25.00 range. Click below to be added to the pre
+                order list. We will negotiate with the resturants once we have a count. You will be
+                updated with the menu to confirm in the coming weeks.
               </p>
             </div>
             <div className="space-y-3">
@@ -536,7 +536,9 @@ function RsvpPage() {
                       </div>
                     </div>
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-sm text-muted-foreground">How many meals do you want?</span>
+                      <span className="text-sm text-muted-foreground">
+                        How many meals do you want?
+                      </span>
                       <div className="flex items-center gap-2">
                         <Button
                           size="icon"
