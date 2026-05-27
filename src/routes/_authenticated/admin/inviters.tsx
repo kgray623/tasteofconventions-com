@@ -687,7 +687,7 @@ function InvitersPage() {
       </div>
 
 
-      {isAdmin ? (
+      {previewCommittee ? null : isAdmin ? (
         <Card className="p-6 space-y-4">
           <div>
             <h2 className="font-display text-xl">Add Steering Committee Member</h2>
