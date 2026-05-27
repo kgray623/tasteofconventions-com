@@ -845,17 +845,17 @@ function InvitersPage() {
                           )}
                         </td>
                         <td className="px-2 py-3 font-medium">
-                          {i.name}
-                          {i.requested_quota != null && i.requested_quota !== i.quota && (
+                          <div>{i.name}</div>
+                          {i.requested_quota != null && i.requested_quota > i.quota && (
                             <div
-                              className="mt-1 text-[10px] inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-terracotta text-terracotta"
+                              className="mt-2 text-[10px] inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-terracotta text-terracotta"
                               title={i.quota_request_note ?? undefined}
                             >
-                              Requested {i.requested_quota} RSVPs
+                              Requested {i.requested_quota} RSVPs (currently {i.quota})
                             </div>
                           )}
-                          {i.quota_request_note && (
-                            <div className="mt-1 text-[11px] text-muted-foreground italic max-w-[260px] truncate">
+                          {i.requested_quota != null && i.requested_quota > i.quota && i.quota_request_note && (
+                            <div className="mt-1 text-[11px] text-muted-foreground max-w-[260px] truncate">
                               "{i.quota_request_note}"
                             </div>
                           )}
