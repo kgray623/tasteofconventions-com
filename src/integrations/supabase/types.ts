@@ -499,6 +499,9 @@ export type Database = {
           name: string
           phone: string | null
           quota: number
+          quota_request_note: string | null
+          quota_requested_at: string | null
+          requested_quota: number | null
         }
         Insert: {
           active?: boolean
@@ -509,6 +512,9 @@ export type Database = {
           name: string
           phone?: string | null
           quota?: number
+          quota_request_note?: string | null
+          quota_requested_at?: string | null
+          requested_quota?: number | null
         }
         Update: {
           active?: boolean
@@ -519,6 +525,9 @@ export type Database = {
           name?: string
           phone?: string | null
           quota?: number
+          quota_request_note?: string | null
+          quota_requested_at?: string | null
+          requested_quota?: number | null
         }
         Relationships: []
       }
