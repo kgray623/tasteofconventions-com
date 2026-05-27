@@ -28,7 +28,9 @@ const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boole
   { to: "/admin/my-rsvp", label: "My RSVP", icon: Ticket, team: true },
 ];
 
-const teamAllowedPaths = new Set(["/admin", "/admin/upload", "/admin/inviters", "/admin/categories", "/admin/chat", "/admin/my-rsvp"]);
+const teamAllowedPrefixes = ["/admin/upload", "/admin/inviters", "/admin/categories", "/admin/chat", "/admin/my-rsvp", "/admin/preorders"];
+const isTeamAllowedPath = (path: string) =>
+  path === "/admin" || teamAllowedPrefixes.some((p) => path === p || path.startsWith(p + "/"));
 
 function AdminLayout() {
   const { isAdmin: isActualAdmin, isTeam, loading } = useRoles();
