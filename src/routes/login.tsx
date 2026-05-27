@@ -31,32 +31,27 @@ function normalizeMobilePhone(value: string) {
 }
 
 async function routeForUser(userId: string): Promise<RouteDestination> {
-  const [{ data: roleData }, { data: userData }] = await Promise.all([
-    withTimeout(supabase.from("user_roles").select("role").eq("user_id", userId), 5000),
-    withTimeout(supabase.auth.getUser(), 5000),
-  ]);
+  const { data: roleData } = await withTimeout(
+    supabase.from("user_roles").select("role").eq("user_id", userId),
+    5000,
+  );
   const roles = (roleData ?? []).map((r) => r.role as string);
   if (roles.includes("admin") || roles.includes("team")) return { to: "/admin" };
 
   // Committee members (tagged on their invitation) land on the committee dashboard.
-  const authPhone = userData?.user?.phone ?? "";
-  const digits = authPhone.replace(/\D/g, "");
-  if (digits.length >= 7) {
-    const last10 = digits.slice(-10);
-    const { data: committeeRows } = await withTimeout(
-      supabase
-        .from("invitations")
-        .select("id")
-        .eq("is_committee", true)
-        .or(`guest_phone_normalized.eq.${digits},guest_phone_normalized.eq.${last10}`)
-        .limit(1),
+  try {
+    const { data: isCommittee } = await withTimeout(
+      supabase.rpc("is_current_user_committee"),
       5000,
     );
-    if ((committeeRows ?? []).length > 0) return { to: "/dashboard" };
+    if (isCommittee === true) return { to: "/dashboard" };
+  } catch {
+    // fall through to default
   }
 
   return { to: "/my-rsvp" };
 }
+
 
 
 function HelperLogin() {
