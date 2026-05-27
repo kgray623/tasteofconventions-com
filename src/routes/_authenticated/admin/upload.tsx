@@ -1235,47 +1235,6 @@ function UploadPage() {
         </Card>
       )}
 
-      {(() => {
-        const sentCount = savedGuests.filter((g) => g.invite_sent_at).length;
-        const pendingCount = savedGuests.filter((g) => !g.invite_sent_at).length;
-        const activeCount = savedGuests.filter(
-          (g) => g.rsvp_status === "yes" || g.invite_sent_at,
-        ).length;
-        const left = myQuota !== null ? Math.max(0, myQuota - activeCount) : null;
-        return (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <Card className="p-4">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                Invites sent
-              </p>
-              <p className="font-display text-2xl mt-1">{sentCount}</p>
-              {pendingCount > 0 && (
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {pendingCount} not sent yet
-                </p>
-              )}
-            </Card>
-            <Card className="p-4">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                RSVPs (yes)
-              </p>
-              <p className="font-display text-2xl mt-1">{myRsvpCount}</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">{myRsvpSeats} seats</p>
-            </Card>
-            <Card className="p-4">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                Your quota
-              </p>
-              <p className="font-display text-2xl mt-1">{myQuota ?? "—"}</p>
-              {left !== null && (
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {left} invite{left === 1 ? "" : "s"} left to send
-                </p>
-              )}
-            </Card>
-          </div>
-        );
-      })()}
 
 
       <Card className="overflow-hidden">
