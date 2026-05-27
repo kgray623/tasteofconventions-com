@@ -1,0 +1,1 @@
+DELETE FROM public.categories WHERE name = 'Prayer';
