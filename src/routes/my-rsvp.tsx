@@ -260,7 +260,7 @@ function MyRsvpPage() {
                   Pre-order from your cultural choice restaurant
                 </h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Cultural meals will be in the 20-25.00 range. Click below to be added to the pre
+                  Cultural meals will be in the $20-25.00 range. Click below to be added to the pre
                   order list. We will negotiate with the resturants once we have a count. You will
                   be updated with the menu to confirm in the coming weeks.
                 </p>
