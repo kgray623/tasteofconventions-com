@@ -1095,7 +1095,7 @@ function UploadPage() {
             {savingQuotaReq ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : quotaRequestedAt ? (
-              "Update request"
+              "Send"
             ) : (
               "Send request"
             )}
