@@ -159,19 +159,28 @@ function CategoriesPage() {
               <div className="flex-1 space-y-4">
                 <div className="space-y-2">
                   {isAdmin ? (
-                    <div className="relative group">
+                    <div className="space-y-1.5">
                       <Textarea 
                         value={currentDesc} 
                         onChange={(e) => setEditingDesc({ ...editingDesc, [c.id]: e.target.value })}
                         onBlur={() => { if (isDirty) updateDescription(c.id); }}
-                        placeholder="Add a description for this role (saves automatically)..."
+                        placeholder="Add a description for this role..."
                         className="text-xs min-h-[60px] resize-none"
                       />
-                      {isDirty && (
-                        <span className="absolute bottom-1 right-2 text-[10px] text-terracotta italic">
-                          unsaved — click out to save
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={`text-[10px] italic ${isDirty ? "text-terracotta" : "text-muted-foreground"}`}>
+                          {isDirty ? "Unsaved changes" : "Saved"}
                         </span>
-                      )}
+                        <Button
+                          size="sm"
+                          variant={isDirty ? "default" : "outline"}
+                          disabled={!isDirty}
+                          onClick={() => updateDescription(c.id)}
+                          className="h-7 text-xs"
+                        >
+                          <Save className="w-3 h-3 mr-1" /> Save description
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     c.description && (
