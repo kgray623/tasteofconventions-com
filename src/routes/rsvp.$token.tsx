@@ -466,7 +466,7 @@ function RsvpPage() {
             <Label htmlFor="invited-by">Invited by <span className="text-destructive">*</span></Label>
             <Select value={invitedBy || undefined} onValueChange={setInvitedBy}>
               <SelectTrigger id="invited-by">
-                <SelectValue placeholder="Select who invited you" />
+                <SelectValue placeholder="Open to select" />
               </SelectTrigger>
               <SelectContent>
                 {inviters.map((i) => (
