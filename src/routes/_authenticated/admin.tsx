@@ -28,7 +28,9 @@ const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boole
   { to: "/admin/my-rsvp", label: "My RSVP", icon: Ticket, team: true },
 ];
 
-const teamAllowedPaths = new Set(["/admin", "/admin/upload", "/admin/inviters", "/admin/categories", "/admin/chat", "/admin/my-rsvp"]);
+const teamAllowedPrefixes = ["/admin/upload", "/admin/inviters", "/admin/categories", "/admin/chat", "/admin/my-rsvp", "/admin/preorders"];
+const isTeamAllowedPath = (path: string) =>
+  path === "/admin" || teamAllowedPrefixes.some((p) => path === p || path.startsWith(p + "/"));
 
 function AdminLayout() {
   const { isAdmin: isActualAdmin, isTeam, loading } = useRoles();
@@ -63,7 +65,7 @@ function AdminLayout() {
   }, [loading, isTeam, navigate]);
 
   useEffect(() => {
-    if (loading || isAdmin || !isTeam || teamAllowedPaths.has(path)) return;
+    if (loading || isAdmin || !isTeam || isTeamAllowedPath(path)) return;
     navigate({ to: "/admin" });
   }, [loading, isAdmin, isTeam, path, navigate]);
 
@@ -91,7 +93,7 @@ function AdminLayout() {
     );
   }
 
-  if (isTeam && !isAdmin && !teamAllowedPaths.has(path)) {
+  if (isTeam && !isAdmin && !isTeamAllowedPath(path)) {
     return <div className="mx-auto max-w-6xl px-6 py-10 text-muted-foreground">Opening committee workspace…</div>;
   }
 
