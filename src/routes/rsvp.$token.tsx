@@ -41,6 +41,29 @@ export const Route = createFileRoute("/rsvp/$token")({
 });
 
 type CuisineSelection = { cuisine: string; qty: number };
+type RsvpTokenData = {
+  invitation: {
+    guest_name: string;
+    guest_email?: string | null;
+    guest_phone?: string | null;
+    events: {
+      title: string;
+      description?: string | null;
+      starts_at: string;
+      location?: string | null;
+    };
+  };
+  rsvp?: {
+    responded_at?: string | null;
+    status?: string;
+    party_size?: number | null;
+    attendance_mode?: string | null;
+    ordering_food?: boolean | null;
+    invited_by?: string | null;
+  } | null;
+  order?: { items?: unknown; total?: number | string | null; notes?: string | null } | null;
+  preorder?: { selections?: unknown } | null;
+};
 
 function isCuisineSelection(value: unknown): value is CuisineSelection {
   return Boolean(
@@ -62,7 +85,7 @@ function RsvpPage() {
   const rsvpDraftScope = `rsvp-token:${token}:response`;
   const orderDraftScope = `rsvp-token:${token}:order`;
 
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<RsvpTokenData | null>(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useDraftState<"yes" | "no">(rsvpDraftScope, "status", "yes");
   const [attendanceMode, setAttendanceMode] = useDraftState<"in_person" | "zoom">(
@@ -93,7 +116,7 @@ function RsvpPage() {
     }, 10000);
     (async () => {
       try {
-        const r = await withTimeout(fetchInv({ data: { token } }), 10000);
+        const r = (await withTimeout(fetchInv({ data: { token } }), 10000)) as RsvpTokenData;
         if (!alive) return;
         setData(r);
         if (r.rsvp) {
@@ -152,15 +175,15 @@ function RsvpPage() {
         },
       });
       clearDraftScope(rsvpDraftScope);
-      if ((res as any)?.waitlisted) {
+      if (res && typeof res === "object" && "waitlisted" in res && Boolean((res as { waitlisted?: boolean }).waitlisted)) {
         toast.success(
           "You're on the waiting list — seats with your inviter are full. We'll be in touch if one opens up.",
         );
       } else {
         toast.success("RSVP saved — thank you!");
       }
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Could not save RSVP");
     }
   };
 
@@ -173,8 +196,8 @@ function RsvpPage() {
       await saveCuisinePreorder({ data: { token, selections } });
       clearDraftScope(orderDraftScope);
       toast.success("Meal order saved");
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Could not save meal order");
     } finally {
       setSavingMeals(false);
     }
@@ -350,7 +373,7 @@ function RsvpPage() {
             ].map((o) => (
               <button
                 key={o.v}
-                onClick={() => setStatus(o.v as any)}
+                onClick={() => setStatus(o.v as "yes" | "no")}
                 className={`p-4 rounded-md border-2 transition flex flex-col items-center gap-2 ${
                   status === o.v
                     ? "border-ink bg-ink text-cream"
