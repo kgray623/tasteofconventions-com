@@ -70,17 +70,18 @@ function RsvpPage() {
           setOrderingFood(r.rsvp.ordering_food === true ? "yes" : r.rsvp.ordering_food === false ? "no" : "");
           setInvitedBy(r.rsvp.invited_by ?? "");
         }
+        const selections: unknown = r.preorder?.selections;
+        if (Array.isArray(selections)) {
+          const restoredCounts = selections.filter(isCuisineSelection).reduce<Record<string, number>>((acc, item) => {
+            if (item.qty > 0) acc[item.cuisine] = item.qty;
+            return acc;
+          }, {});
+          setCuisineCounts(restoredCounts);
+        }
       } finally { if (alive) setLoading(false); }
-      const [{ data: rs }, { data: ms }, { data: iv }] = await withTimeout(Promise.all([
-        supabase.from("restaurants").select("id,name,cuisine").eq("active", true),
-        supabase.from("menu_items").select("id,restaurant_id,name,description,price").eq("available", true),
-        supabase.rpc("get_public_inviters"),
-      ]), 10000);
+      const { data: iv } = await withTimeout(supabase.rpc("get_public_inviters"), 10000);
       if (!alive) return;
-      setRestaurants(rs ?? []);
-      setMenu((ms as M[]) ?? []);
       setInviters(iv ?? []);
-      if (rs?.[0]) setRestaurantId(rs[0].id);
     })().catch(() => {
       if (alive) setLoading(false);
     }).finally(() => window.clearTimeout(fallback));
@@ -107,24 +108,27 @@ function RsvpPage() {
     } catch (e: any) { toast.error(e.message); }
   };
 
-  const handleOrder = async () => {
-    const items = menu.filter((m) => m.restaurant_id === restaurantId && cart[m.id] > 0)
-      .map((m) => ({ menu_item_id: m.id, name: m.name, price: Number(m.price), quantity: cart[m.id] }));
-    if (items.length === 0) return toast.error("Add at least one item");
+  const handleCuisineOrder = async () => {
+    const selections = Object.entries(cuisineCounts)
+      .filter(([, qty]) => qty > 0)
+      .map(([cuisine, qty]) => ({ cuisine, qty }));
     try {
-      await order({ data: { token, restaurant_id: restaurantId, items, notes: orderNotes } });
+      setSavingMeals(true);
+      await saveCuisinePreorder({ data: { token, selections } });
       clearDraftScope(orderDraftScope);
-      setCart({});
-      setOrderNotes("");
-      toast.success("Order placed");
+      toast.success("Meal order saved");
     } catch (e: any) { toast.error(e.message); }
+    finally { setSavingMeals(false); }
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
   if (!data?.invitation) return <InvitationPage />;
   const ev = data.invitation.events;
-  const restaurantMenu = menu.filter((m) => m.restaurant_id === restaurantId);
-  const orderTotal = restaurantMenu.reduce((s, m) => s + (cart[m.id] ?? 0) * Number(m.price), 0);
+  const cuisines = ["Myanmar", "African", "Indonesian"];
+  const preorderTotal = Object.values(cuisineCounts).reduce((sum, qty) => sum + (Number(qty) || 0), 0);
+  const setCuisineQty = (cuisine: string, qty: number) => {
+    setCuisineCounts({ ...cuisineCounts, [cuisine]: Math.max(0, Math.min(20, qty || 0)) });
+  };
 
   return (
     <div className="min-h-screen bg-gradient-warm">
