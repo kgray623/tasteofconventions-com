@@ -965,7 +965,20 @@ function UploadPage() {
           .eq("id", inviterId);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase
+        const { data: existingInviter } = await supabase
+          .from("inviters")
+          .select("id")
+          .eq("name", inviterName || "Committee member")
+          .maybeSingle();
+        if (existingInviter?.id) {
+          const { error } = await supabase
+            .from("inviters")
+            .update({ host_id: user.id, ...payload })
+            .eq("id", existingInviter.id);
+          if (error) throw error;
+          setInviterId(existingInviter.id);
+        } else {
+          const { data, error } = await supabase
           .from("inviters")
           .insert({
             host_id: user.id,
@@ -975,8 +988,9 @@ function UploadPage() {
           })
           .select("id")
           .single();
-        if (error) throw error;
-        setInviterId(data.id);
+          if (error) throw error;
+          setInviterId(data.id);
+        }
       }
       setQuotaRequestedAt(nowIso);
       toast.success("Sent your RSVP request to the admin.");
