@@ -820,7 +820,7 @@ function InvitersPage() {
                 {inviters.flatMap((i) => {
                   const used = usage[i.name.toLowerCase()] ?? 0;
                   const invited = i.host_id ? (invitedCounts[i.host_id] ?? 0) : 0;
-                  const remaining = i.quota - Math.max(used, invited);
+                  const remaining = i.quota - used;
                   const guests = i.host_id ? (guestsByHost[i.host_id] ?? []) : [];
                   const isOpen = expandedHost === i.id;
                   const rows: ReactNode[] = [];
