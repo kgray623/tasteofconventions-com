@@ -122,6 +122,11 @@ function CategoriesPage() {
     return p?.display_name || p?.email || "Unknown";
   };
 
+  const nameForUser = (uid: string) => {
+    const p = profiles.find((x) => x.id === uid);
+    return p?.display_name || p?.email || "Member";
+  };
+
   if (rolesLoading) return <p className="text-muted-foreground">Loading assignments…</p>;
 
   return (
