@@ -116,8 +116,10 @@ function AdminLayout() {
   }
 
   const visibleTabs = tabs.filter((t) => isAdmin || t.team);
-  const headingEyebrow = isAdmin ? "Event admin" : "Steering Committee member";
-  const headingTitle = isAdmin ? "Master control" : "Steering Committee workspace";
+  const headingEyebrow = isAdmin ? "Event admin" : "Steering Committee";
+  const headingTitle = isAdmin
+    ? "Master control"
+    : `Welcome${displayName ? `, ${displayName}` : ""}`;
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
