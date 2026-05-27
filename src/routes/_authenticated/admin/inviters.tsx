@@ -385,7 +385,6 @@ function InvitersPage() {
       toast.error("Couldn't read those screenshots", { description: getErrorMessage(e) });
     } finally {
       setScreenshotBusy(false);
-      if (screenshotRef.current) screenshotRef.current.value = "";
     }
   };
 
