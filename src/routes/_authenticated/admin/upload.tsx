@@ -974,8 +974,8 @@ function UploadPage() {
   const submitQuotaRequest = async () => {
     if (!user?.id) return;
     const target = parseInt(requestedQuota, 10);
-    if (!Number.isFinite(target) || target <= 0 || target > 1000) {
-      toast.error("Enter a number between 1 and 1000.");
+    if (!Number.isFinite(target) || target <= 0 || target > availableRsvps) {
+      toast.error(`Enter a number between 1 and ${availableRsvps}.`);
       return;
     }
     setSavingQuotaReq(true);
@@ -983,7 +983,7 @@ function UploadPage() {
       const nowIso = new Date().toISOString();
       const payload = {
         requested_quota: target,
-        quota_request_note: quotaNote.trim() || null,
+        quota_request_note: null,
         quota_requested_at: nowIso,
       };
       if (inviterId) {
@@ -1118,33 +1118,20 @@ function UploadPage() {
         </Card>
       )}
 
-      <Card className="p-6 space-y-3">
+      <Card className="p-4 space-y-3">
         <div className="flex items-center gap-2">
           <Target className="w-4 h-4 text-terracotta" />
-          <p className="font-medium">How many RSVP's do you want to request?</p>
+          <p className="font-medium">How many RSVPs do you want to request?</p>
         </div>
-        <div className="space-y-1">
-          <Textarea
-            aria-label="Note for admin"
-            placeholder="Message admin"
-            value={quotaNote}
-            maxLength={500}
-            onChange={(e) => setQuotaNote(e.target.value)}
-            className="min-h-[72px] text-xs"
-          />
-          <p className="text-[11px] text-muted-foreground">
-            Current quota: <span className="font-medium text-foreground">{myQuota ?? "not set"}</span>.
-          </p>
-          <p className="text-sm font-medium text-terracotta">
-            {availableRsvps} RSVP{availableRsvps === 1 ? "" : "s"} available to request
-          </p>
-        </div>
-        <div className="grid sm:grid-cols-[160px_auto] gap-2 items-start">
+        <p className="text-sm font-medium text-terracotta">
+          {availableRsvps} RSVP{availableRsvps === 1 ? "" : "s"} available to request
+        </p>
+        <div className="grid sm:grid-cols-[180px_auto] gap-2 items-start">
           <Input
             type="number"
             min={1}
-            max={1000}
-            placeholder="e.g. 40"
+            max={availableRsvps}
+            placeholder="Enter amount"
             value={requestedQuota}
             onChange={(e) => setRequestedQuota(e.target.value)}
           />
@@ -1155,10 +1142,8 @@ function UploadPage() {
           >
             {savingQuotaReq ? (
               <Loader2 className="w-4 h-4 animate-spin" />
-            ) : quotaRequestedAt ? (
-              "Send"
             ) : (
-              "Send request"
+              "Submit"
             )}
           </Button>
         </div>
