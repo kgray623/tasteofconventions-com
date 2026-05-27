@@ -1090,9 +1090,12 @@ function UploadPage() {
           <p className="font-medium">Upload screenshots of those you want to invite</p>
         </div>
         <p className="text-xs text-muted-foreground">
-          Snap or upload screenshots from your phone contacts, a text thread, or any
-          list of names &amp; numbers. We'll read them and add the people to your
-          review list below.
+          To add guests, take a screenshot from your phone contact list and
+          upload the picture. The system will read it and add them to the list.
+          You can also add a spreadsheet of the name and phone number of your
+          invited guests on a seperate line. The system will upload your guest
+          list and verify another person on the team hasn't invited them
+          ensuring your guest receives only one invitation.
         </p>
         <Button
           type="button"
