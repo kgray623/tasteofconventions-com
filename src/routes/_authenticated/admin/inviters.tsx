@@ -527,7 +527,14 @@ function InvitersPage() {
           </p>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {committee.map((m) => (
+            {committee
+              .slice()
+              .sort((a, b) => {
+                const lastA = a.guest_name.trim().split(" ").pop() || "";
+                const lastB = b.guest_name.trim().split(" ").pop() || "";
+                return lastA.localeCompare(lastB);
+              })
+              .map((m) => (
               <div key={m.id} className="rounded-lg border border-border bg-background px-3 py-2">
                 <p className="font-medium text-sm">{m.guest_name}</p>
                 <p className="text-xs text-muted-foreground">
