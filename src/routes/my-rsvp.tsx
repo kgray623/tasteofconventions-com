@@ -10,6 +10,25 @@ import { withTimeout } from "@/lib/async-safety";
 import { toast } from "sonner";
 
 type CuisineSelection = { cuisine: string; qty: number };
+type MyRsvpData = {
+  invitation: {
+    rsvp_token: string;
+    guest_name: string;
+    guest_email?: string | null;
+    guest_phone?: string | null;
+    events: { title: string; starts_at: string; location?: string | null };
+  };
+  rsvp?: {
+    responded_at?: string | null;
+    status?: string;
+    attendance_mode?: string | null;
+    party_size?: number | null;
+    ordering_food?: boolean | null;
+    invited_by?: string | null;
+  } | null;
+  order?: { items?: unknown; total?: number | string | null; notes?: string | null } | null;
+  preorder?: { selections?: unknown; updated_at?: string | null } | null;
+};
 
 function isCuisineSelection(value: unknown): value is CuisineSelection {
   return Boolean(
@@ -33,7 +52,7 @@ function MyRsvpPage() {
   const fetchMine = useServerFn(getMyInvitation);
   const saveCuisinePreorder = useServerFn(submitCuisinePreorder);
   const [state, setState] = useState<"loading" | "none" | "ready">("loading");
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<MyRsvpData | null>(null);
   const [cuisineCounts, setCuisineCounts] = useState<Record<string, number>>({});
   const [savingMeals, setSavingMeals] = useState(false);
 
@@ -46,7 +65,7 @@ function MyRsvpPage() {
     }, 10000);
     (async () => {
       try {
-        const r = await withTimeout(fetchMine(), 10000);
+        const r = (await withTimeout(fetchMine(), 10000)) as MyRsvpData;
         if (cancelled) return;
         if (r?.invitation) {
           setData(r);
@@ -102,13 +121,10 @@ function MyRsvpPage() {
           .filter(([, qty]) => qty > 0)
           .map(([cuisine, qty]) => ({ cuisine, qty }));
         await saveCuisinePreorder({ data: { token: invitation.rsvp_token, selections } });
-        setData((current: unknown) => {
-          const currentData = current && typeof current === "object" ? current : {};
-          return { ...currentData, preorder: { selections } };
-        });
+        setData((current) => (current ? { ...current, preorder: { selections } } : current));
         toast.success("Meal order saved.");
-      } catch (e: any) {
-        toast.error(e?.message ?? "Could not save meal order");
+      } catch (e: unknown) {
+        toast.error(e instanceof Error ? e.message : "Could not save meal order");
       } finally {
         setSavingMeals(false);
       }
