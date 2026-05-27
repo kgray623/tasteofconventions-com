@@ -9,6 +9,20 @@ import { Calendar, MapPin, Users, Check, X, UtensilsCrossed, Minus, Plus } from 
 import { withTimeout } from "@/lib/async-safety";
 import { toast } from "sonner";
 
+type CuisineSelection = { cuisine: string; qty: number };
+
+function isCuisineSelection(value: unknown): value is CuisineSelection {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      "cuisine" in value &&
+      "qty" in value &&
+      typeof (value as CuisineSelection).cuisine === "string" &&
+      typeof (value as CuisineSelection).qty === "number",
+  );
+}
+
 export const Route = createFileRoute("/my-rsvp")({
   head: () => ({ meta: [{ title: "My RSVP — A Taste of Special Conventions" }] }),
   component: MyRsvpPage,
@@ -36,11 +50,10 @@ function MyRsvpPage() {
         if (cancelled) return;
         if (r?.invitation) {
           setData(r);
-          const restoredCounts = Array.isArray(r.preorder?.selections)
-            ? r.preorder.selections.reduce((acc: Record<string, number>, item: any) => {
-                const cuisine = typeof item?.cuisine === "string" ? item.cuisine : "";
-                const qty = Number(item?.qty ?? 0);
-                if (cuisine && Number.isFinite(qty) && qty > 0) acc[cuisine] = qty;
+          const selections: unknown = r.preorder?.selections;
+          const restoredCounts = Array.isArray(selections)
+            ? selections.filter(isCuisineSelection).reduce((acc: Record<string, number>, item) => {
+                if (item.qty > 0) acc[item.cuisine] = item.qty;
                 return acc;
               }, {})
             : {};
@@ -75,9 +88,9 @@ function MyRsvpPage() {
     const rsvpYes = rsvp?.status === "yes";
     const rsvpAttending = rsvp?.status !== "no";
     const orderItems: Array<{ name?: string; quantity?: number; price?: number }> = Array.isArray(order?.items) ? order.items : [];
-    const orderDone = orderItems.length > 0;
     const cuisines = ["Myanmar", "African", "Indonesian"];
     const preorderTotal = Object.values(cuisineCounts).reduce((sum, qty) => sum + (Number(qty) || 0), 0);
+    const orderDone = orderItems.length > 0 || preorderTotal > 0;
     const setCuisineQty = (cuisine: string, qty: number) => {
       setCuisineCounts((current) => ({ ...current, [cuisine]: Math.max(0, Math.min(20, qty || 0)) }));
     };
@@ -88,7 +101,10 @@ function MyRsvpPage() {
           .filter(([, qty]) => qty > 0)
           .map(([cuisine, qty]) => ({ cuisine, qty }));
         await saveCuisinePreorder({ data: { token: invitation.rsvp_token, selections } });
-        setData((current: any) => ({ ...current, preorder: { ...(current?.preorder ?? {}), selections } }));
+        setData((current: unknown) => {
+          const currentData = current && typeof current === "object" ? current : {};
+          return { ...currentData, preorder: { selections } };
+        });
         toast.success("Meal order saved.");
       } catch (e: any) {
         toast.error(e?.message ?? "Could not save meal order");
