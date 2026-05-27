@@ -485,11 +485,10 @@ function LoggedInRsvpCta() {
           variant="outline"
           className="border-ink text-ink hover:bg-ink hover:text-cream px-8"
         >
-          View / update my RSVP
+          Click here to update my RSVP
           <ArrowRight className="ml-2 w-4 h-4" />
         </Button>
       </Link>
-      <p className="text-xs text-muted-foreground mt-2">Signed in as {user.email}</p>
     </div>
   );
 }
