@@ -135,6 +135,7 @@ function AdminLayout() {
             <Link
               key={t.to}
               to={t.to}
+              search={previewCommittee ? { view: "committee" } : { view: undefined }}
               className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm border-b-2 -mb-px transition ${
                 active
                   ? "border-terracotta text-ink font-medium"
