@@ -433,6 +433,37 @@ function InvitersPage() {
     load();
   };
 
+  const approveQuotaRequest = async (inv: Inviter) => {
+    if (inv.requested_quota == null) return;
+    const { error } = await supabase
+      .from("inviters")
+      .update({
+        quota: inv.requested_quota,
+        requested_quota: null,
+        quota_request_note: null,
+        quota_requested_at: null,
+      })
+      .eq("id", inv.id);
+    if (error) return toast.error(error.message);
+    toast.success(`Approved — ${inv.name} now has ${inv.requested_quota} RSVPs.`);
+    load();
+  };
+
+  const declineQuotaRequest = async (inv: Inviter) => {
+    const { error } = await supabase
+      .from("inviters")
+      .update({
+        requested_quota: null,
+        quota_request_note: null,
+        quota_requested_at: null,
+      })
+      .eq("id", inv.id);
+    if (error) return toast.error(error.message);
+    toast.success(`Declined request from ${inv.name}.`);
+    load();
+  };
+
+
 
   const toggleActive = async (id: string, active: boolean) => {
     await supabase.from("inviters").update({ active }).eq("id", id);
