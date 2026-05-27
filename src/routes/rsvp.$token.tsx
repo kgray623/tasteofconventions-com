@@ -175,7 +175,12 @@ function RsvpPage() {
         },
       });
       clearDraftScope(rsvpDraftScope);
-      if (res && typeof res === "object" && "waitlisted" in res && Boolean((res as { waitlisted?: boolean }).waitlisted)) {
+      if (
+        res &&
+        typeof res === "object" &&
+        "waitlisted" in res &&
+        Boolean((res as { waitlisted?: boolean }).waitlisted)
+      ) {
         toast.success(
           "You're on the waiting list — seats with your inviter are full. We'll be in touch if one opens up.",
         );
