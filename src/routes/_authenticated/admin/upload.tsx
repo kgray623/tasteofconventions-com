@@ -1038,7 +1038,7 @@ function UploadPage() {
       <Card className="p-6 space-y-3">
         <div className="flex items-center gap-2">
           <Target className="w-4 h-4 text-terracotta" />
-          <p className="font-medium">How many RSVPs do you want to secure?</p>
+          <p className="font-medium">How many RSVPs do you want?</p>
         </div>
         <p className="text-xs text-muted-foreground">
           Out of the 550 guests for the event, tell the admin how many RSVPs
