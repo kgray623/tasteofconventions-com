@@ -1,17 +1,8 @@
-## Make "Invited by" required on RSVP forms and ensure alphabetical order
+The "Invited by" dropdown currently shows placeholder text "Select who invited you" and the first alphabetical inviter (e.g., "Carrie Gray") can appear pre-selected if the user had previously selected it and the value was restored from draft state. The user wants a clearer empty default state.
 
-### What
+Changes in both `rsvp.index.tsx` and `rsvp.$token.tsx`:
 
-1. **Alphabetical order**
-   - The `get_public_inviters` RPC already returns inviters sorted by name (`ORDER BY name`), so new names will appear in alphabetical order automatically.
-   - As a safety net, sort the inviter list client-side after fetching in both `src/routes/rsvp.index.tsx` and `src/routes/rsvp.$token.tsx` (case-insensitive sort by name).
+1. Change the `SelectValue` placeholder from "Select who invited you" to "Open to select" so the empty state is unmistakable.
+2. Add a disabled first `<SelectItem value="" disabled>Open to select</SelectItem>` inside `<SelectContent>` as a visual placeholder option at the top of the list.
 
-2. **Require "Invited by" before accepting RSVP**
-   - `src/routes/rsvp.index.tsx` (`handleSave`): block submit and show a toast ("Please select who invited you") if `invitedBy` is empty, or if `invitedBy === "__other__"` and `invitedByOther.trim()` is empty.
-   - `src/routes/rsvp.$token.tsx` (`handleSubmit`): same validation before calling the server function.
-   - Mark the field as required visually: append a red asterisk to the "Invited by" label on both forms.
-
-### What is not changing
-
-- No backend / database / server function changes. Validation lives on the client form layer where the existing toast pattern already lives.
-- Other fields, layout, copy, and RSVP/waitlist logic remain untouched.
+This keeps the existing validation (toast error if nothing is selected on submit) and preserves all other RSVP logic untouched.
