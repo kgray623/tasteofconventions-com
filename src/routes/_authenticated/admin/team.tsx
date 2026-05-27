@@ -86,6 +86,32 @@ function TeamPage() {
     load();
   };
 
+  const startEdit = (i: Invite) => {
+    setEditingId(i.id);
+    setEditName(i.name ?? "");
+    setEditPhone(i.phone ?? "");
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditName("");
+    setEditPhone("");
+  };
+
+  const saveEdit = async (id: string) => {
+    const parsed = inviteSchema.safeParse({ name: editName, phone: editPhone });
+    if (!parsed.success) return toast.error(parsed.error.issues[0]?.message ?? "Check the form");
+    const { error } = await supabase
+      .from("team_invites")
+      .update({ name: parsed.data.name, phone: parsed.data.phone })
+      .eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Updated");
+    cancelEdit();
+    load();
+  };
+
+
   const removeRole = async (userId: string, r: string) => {
     if (userId === user?.id && r === "admin") return toast.error("You can't remove your own admin role.");
     if (!confirm(`Remove ${r} access from this user?`)) return;
