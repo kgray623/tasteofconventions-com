@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
