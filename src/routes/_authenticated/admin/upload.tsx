@@ -307,14 +307,27 @@ function UploadPage() {
     if (!user?.id) return;
     let alive = true;
     void (async () => {
-      const [{ data: inv }, { data: profile }] = await Promise.all([
-        supabase
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("display_name,email")
+        .eq("id", user.id)
+        .maybeSingle();
+      const fallbackName =
+        profile?.display_name ||
+        (profile?.email ? profile.email.split("@")[0] : "your friend");
+      let { data: inv } = await supabase
+        .from("inviters")
+        .select("id,quota,name,requested_quota,quota_request_note,quota_requested_at")
+        .eq("host_id", user.id)
+        .maybeSingle();
+      if (!inv && fallbackName) {
+        const { data: namedInv } = await supabase
           .from("inviters")
           .select("id,quota,name,requested_quota,quota_request_note,quota_requested_at")
-          .eq("host_id", user.id)
-          .maybeSingle(),
-        supabase.from("profiles").select("display_name,email").eq("id", user.id).maybeSingle(),
-      ]);
+          .eq("name", fallbackName)
+          .maybeSingle();
+        inv = namedInv;
+      }
       if (!alive) return;
       setMyQuota(inv?.quota ?? null);
       setInviterId(inv?.id ?? null);
@@ -323,11 +336,7 @@ function UploadPage() {
       );
       setQuotaNote(inv?.quota_request_note ?? "");
       setQuotaRequestedAt(inv?.quota_requested_at ?? null);
-      setInviterName(
-        inv?.name ||
-          profile?.display_name ||
-          (profile?.email ? profile.email.split("@")[0] : "your friend"),
-      );
+      setInviterName(inv?.name || fallbackName);
     })();
     return () => {
       alive = false;
@@ -956,7 +965,20 @@ function UploadPage() {
           .eq("id", inviterId);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase
+        const { data: existingInviter } = await supabase
+          .from("inviters")
+          .select("id")
+          .eq("name", inviterName || "Committee member")
+          .maybeSingle();
+        if (existingInviter?.id) {
+          const { error } = await supabase
+            .from("inviters")
+            .update({ host_id: user.id, ...payload })
+            .eq("id", existingInviter.id);
+          if (error) throw error;
+          setInviterId(existingInviter.id);
+        } else {
+          const { data, error } = await supabase
           .from("inviters")
           .insert({
             host_id: user.id,
@@ -966,8 +988,9 @@ function UploadPage() {
           })
           .select("id")
           .single();
-        if (error) throw error;
-        setInviterId(data.id);
+          if (error) throw error;
+          setInviterId(data.id);
+        }
       }
       setQuotaRequestedAt(nowIso);
       toast.success("Sent your RSVP request to the admin.");
@@ -1042,12 +1065,20 @@ function UploadPage() {
           <Target className="w-4 h-4 text-terracotta" />
           <p className="font-medium">How many RSVP's do you want to request?</p>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Out of the 550 guests for the event, tell the admin how many RSVPs
-          you'd like to be responsible for. Your current quota is{" "}
-          <span className="font-medium text-foreground">{myQuota ?? "not set"}</span>.
-        </p>
-        <div className="grid sm:grid-cols-[160px_1fr_auto] gap-2 items-start">
+        <div className="space-y-1">
+          <Textarea
+            aria-label="Note for admin"
+            placeholder="Tell the admin why this RSVP request number works for you."
+            value={quotaNote}
+            maxLength={500}
+            onChange={(e) => setQuotaNote(e.target.value)}
+            className="min-h-[72px] text-xs"
+          />
+          <p className="text-[11px] text-muted-foreground">
+            Current quota: <span className="font-medium text-foreground">{myQuota ?? "not set"}</span>.
+          </p>
+        </div>
+        <div className="grid sm:grid-cols-[160px_auto] gap-2 items-start">
           <Input
             type="number"
             min={1}
@@ -1055,13 +1086,6 @@ function UploadPage() {
             placeholder="e.g. 40"
             value={requestedQuota}
             onChange={(e) => setRequestedQuota(e.target.value)}
-          />
-          <Textarea
-            placeholder="Note for admin "
-            value={quotaNote}
-            maxLength={500}
-            onChange={(e) => setQuotaNote(e.target.value)}
-            className="min-h-[40px]"
           />
           <Button
             onClick={submitQuotaRequest}
