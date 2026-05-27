@@ -122,6 +122,7 @@ function parseVCards(text: string): ContactRow[] {
 
 function InvitersPage() {
   const { user } = useAuth();
+  const { isAdmin } = useRoles();
   const [inviters, setInviters] = useState<Inviter[]>([]);
   const [usage, setUsage] = useState<Record<string, number>>({});
   const [invitedCounts, setInvitedCounts] = useState<Record<string, number>>({});
