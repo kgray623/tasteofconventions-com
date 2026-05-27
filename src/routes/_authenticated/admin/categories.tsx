@@ -201,7 +201,7 @@ function CategoriesPage() {
                           <Badge variant="secondary" className="text-[10px] shrink-0">
                             volunteer
                           </Badge>
-                          <span className="text-sm truncate">{labelFor(a)}{isMe ? " (you)" : ""}</span>
+                          <span className="text-sm truncate">{labelFor(a)}</span>
                         </div>
                         {isAdmin && (
                           <button onClick={() => removeAssign(a.id)} className="text-muted-foreground hover:text-terracotta">
