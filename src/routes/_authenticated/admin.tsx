@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlus, UtensilsCrossed, Mail, HandCoins, CalendarCog, MessageSquare, Ticket, Eye, PlayCircle } from "lucide-react";
+import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlus, UtensilsCrossed, Mail, HandCoins, CalendarCog, MessageSquare, Ticket, Eye } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — A Taste of Special Conventions" }] }),
@@ -149,15 +149,6 @@ function AdminLayout() {
           </Button>
         </div>
       </div>
-      {!isAdmin && (
-        <div className="mb-6 rounded-lg border border-border bg-muted/40 aspect-video w-full flex flex-col items-center justify-center text-center px-6">
-          <PlayCircle className="w-12 h-12 text-terracotta mb-3" />
-          <p className="font-display text-lg">Steering Committee walkthrough</p>
-          <p className="text-sm text-muted-foreground mt-1 max-w-md">
-            A short video will be placed here showing you how to use this workspace — your guest list, committee tagging, and volunteer assignments.
-          </p>
-        </div>
-      )}
       <nav className="flex flex-wrap gap-1 border-b border-border mb-8">
         {visibleTabs.map((t) => {
           const active = t.exact ? path === t.to : path.startsWith(t.to);

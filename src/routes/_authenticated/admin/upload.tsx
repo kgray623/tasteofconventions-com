@@ -35,7 +35,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { extractContactsFromImages } from "@/lib/extract-contacts.functions";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Image as ImageIcon, Target } from "lucide-react";
+import { Image as ImageIcon, Target, PlayCircle } from "lucide-react";
 
 
 
@@ -252,6 +252,7 @@ function UploadPage() {
   const [quotaRequestedAt, setQuotaRequestedAt] = useState<string | null>(null);
   const [savingQuotaReq, setSavingQuotaReq] = useState(false);
   const [quotaPool, setQuotaPool] = useState({ total: TOTAL_RSVP_CAP, allocated: 0 });
+  const [rsvpAttendingTotal, setRsvpAttendingTotal] = useState(0);
 
   const loadSavedGuests = async (evId: string) => {
     if (!evId) {
@@ -345,9 +346,18 @@ function UploadPage() {
         (sum, row) => sum + (row.active === false ? 0 : row.quota ?? 0),
         0,
       );
+      const { data: attendingRows } = await supabase
+        .from("rsvps")
+        .select("party_size,status")
+        .eq("status", "yes");
+      const attendingTotal = (attendingRows ?? []).reduce(
+        (sum, r) => sum + (r.party_size ?? 1),
+        0,
+      );
       if (!alive) return;
       setMyQuota(inv?.quota ?? null);
       setQuotaPool({ total: TOTAL_RSVP_CAP, allocated });
+      setRsvpAttendingTotal(attendingTotal);
       setInviterId(inv?.id ?? null);
       setRequestedQuota(
         inv?.requested_quota != null ? String(inv.requested_quota) : "",
@@ -1065,6 +1075,35 @@ function UploadPage() {
 
   return (
     <div className="space-y-6">
+      <div className="rounded-lg border border-border bg-muted/40 aspect-video w-full flex flex-col items-center justify-center text-center px-6">
+        <PlayCircle className="w-12 h-12 text-terracotta mb-3" />
+        <p className="font-display text-lg">Guest list walkthrough</p>
+        <p className="text-sm text-muted-foreground mt-1 max-w-md">
+          A short video will be placed here showing you how to add guests, send invitations, and track RSVPs.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="p-5">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Total cap</p>
+          <p className="font-display text-3xl mt-2">{quotaPool.total}</p>
+        </Card>
+        <Card className="p-5">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">RSVPs</p>
+          <p className="font-display text-3xl mt-2">{rsvpAttendingTotal}</p>
+        </Card>
+        <Card className="p-5">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Requested</p>
+          <p className="font-display text-3xl mt-2">{quotaPool.allocated}</p>
+        </Card>
+        <Card className="p-5">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Available RSVPs</p>
+          <p className="font-display text-3xl mt-2 text-terracotta">
+            {Math.max(0, quotaPool.total - quotaPool.allocated)}
+          </p>
+        </Card>
+      </div>
+
       {events.length > 1 && (
         <Card className="p-6 space-y-2">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Event</p>
