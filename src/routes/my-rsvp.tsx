@@ -90,7 +90,8 @@ function MyRsvpPage() {
     const orderItems: Array<{ name?: string; quantity?: number; price?: number }> = Array.isArray(order?.items) ? order.items : [];
     const cuisines = ["Myanmar", "African", "Indonesian"];
     const preorderTotal = Object.values(cuisineCounts).reduce((sum, qty) => sum + (Number(qty) || 0), 0);
-    const orderDone = orderItems.length > 0 || preorderTotal > 0;
+    const menuOrderDone = orderItems.length > 0;
+    const orderDone = menuOrderDone || preorderTotal > 0;
     const setCuisineQty = (cuisine: string, qty: number) => {
       setCuisineCounts((current) => ({ ...current, [cuisine]: Math.max(0, Math.min(20, qty || 0)) }));
     };
@@ -150,16 +151,20 @@ function MyRsvpPage() {
                 <p className="font-display text-2xl leading-tight">
                   {orderDone ? "ORDERED" : "No order yet"}
                 </p>
-                {orderDone && (
+                {menuOrderDone ? (
                   <p className="text-xs opacity-90 mt-0.5">
                     {orderItems.reduce((s, i) => s + (i.quantity ?? 0), 0)} item{orderItems.length === 1 ? "" : "s"} · ${Number(order?.total ?? 0).toFixed(2)}
                   </p>
+                ) : preorderTotal > 0 ? (
+                  <p className="text-xs opacity-90 mt-0.5">{preorderTotal} restaurant meal{preorderTotal === 1 ? "" : "s"}</p>
+                ) : (
+                  null
                 )}
               </div>
             </div>
           </div>
 
-          {orderDone && (
+          {menuOrderDone && (
             <Card className="p-7 space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="font-display text-2xl">What you pre-ordered</h2>
