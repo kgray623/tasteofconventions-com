@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/accordion";
 
 import { supabase } from "@/integrations/supabase/client";
-import eaglesLandingImg from "@/assets/eagles-landing.jpg";
+import falconwoodImg from "@/assets/falconwood-park.jpg";
 import { useAuth } from "@/hooks/use-auth";
 import { useRoles } from "@/hooks/use-roles";
 import {
@@ -294,12 +294,22 @@ export function InvitationPage() {
               <p><strong className="text-ink">{content.location_name}</strong> · {content.location_subtitle}</p>
               <div className="relative aspect-[16/8] rounded-xl overflow-hidden border border-border">
                 <img
-                  src={eaglesLandingImg}
-                  alt="Eagle's Landing venue in La Platte, Nebraska"
+                  src={falconwoodImg}
+                  alt="Aerial rendering of Falconwood Park in Bellevue, Nebraska"
                   loading="lazy"
                   width={1280}
                   height={640}
                   className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="relative aspect-[16/9] rounded-xl overflow-hidden border border-border">
+                <iframe
+                  title="Falconwood Park on Google Maps"
+                  src="https://www.google.com/maps?q=Falconwood+Park+Bellevue+Nebraska&output=embed"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  className="absolute inset-0 w-full h-full border-0"
+                  allowFullScreen
                 />
               </div>
               <p className="text-sm whitespace-pre-line">{content.location_body}</p>
