@@ -1075,6 +1075,35 @@ function UploadPage() {
 
   return (
     <div className="space-y-6">
+      <div className="rounded-lg border border-border bg-muted/40 aspect-video w-full flex flex-col items-center justify-center text-center px-6">
+        <PlayCircle className="w-12 h-12 text-terracotta mb-3" />
+        <p className="font-display text-lg">Guest list walkthrough</p>
+        <p className="text-sm text-muted-foreground mt-1 max-w-md">
+          A short video will be placed here showing you how to add guests, send invitations, and track RSVPs.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="p-5">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Total cap</p>
+          <p className="font-display text-3xl mt-2">{quotaPool.total}</p>
+        </Card>
+        <Card className="p-5">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">RSVPs</p>
+          <p className="font-display text-3xl mt-2">{rsvpAttendingTotal}</p>
+        </Card>
+        <Card className="p-5">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Requested</p>
+          <p className="font-display text-3xl mt-2">{quotaPool.allocated}</p>
+        </Card>
+        <Card className="p-5">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Available RSVPs</p>
+          <p className="font-display text-3xl mt-2 text-terracotta">
+            {Math.max(0, quotaPool.total - quotaPool.allocated)}
+          </p>
+        </Card>
+      </div>
+
       {events.length > 1 && (
         <Card className="p-6 space-y-2">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Event</p>
