@@ -1,12 +1,11 @@
 import { createFileRoute, useParams, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { getInvitationByToken, submitRsvp, submitOrder } from "@/lib/invitations.functions";
+import { getInvitationByToken, submitRsvp, submitCuisinePreorder } from "@/lib/invitations.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
@@ -20,14 +19,25 @@ export const Route = createFileRoute("/rsvp/$token")({
   component: RsvpPage,
 });
 
-type R = { id: string; name: string; cuisine: string | null };
-type M = { id: string; restaurant_id: string; name: string; description: string | null; price: number };
+type CuisineSelection = { cuisine: string; qty: number };
+
+function isCuisineSelection(value: unknown): value is CuisineSelection {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      "cuisine" in value &&
+      "qty" in value &&
+      typeof (value as CuisineSelection).cuisine === "string" &&
+      typeof (value as CuisineSelection).qty === "number",
+  );
+}
 
 function RsvpPage() {
   const { token } = useParams({ from: "/rsvp/$token" });
   const fetchInv = useServerFn(getInvitationByToken);
   const submit = useServerFn(submitRsvp);
-  const order = useServerFn(submitOrder);
+  const saveCuisinePreorder = useServerFn(submitCuisinePreorder);
   const rsvpDraftScope = `rsvp-token:${token}:response`;
   const orderDraftScope = `rsvp-token:${token}:order`;
 
@@ -40,11 +50,8 @@ function RsvpPage() {
   const [invitedBy, setInvitedBy] = useDraftState(rsvpDraftScope, "invitedBy", "");
   const [invitedByOther, setInvitedByOther] = useDraftState(rsvpDraftScope, "invitedByOther", "");
   const [inviters, setInviters] = useState<{ id: string; name: string }[]>([]);
-  const [restaurants, setRestaurants] = useState<R[]>([]);
-  const [menu, setMenu] = useState<M[]>([]);
-  const [restaurantId, setRestaurantId] = useDraftState(orderDraftScope, "restaurantId", "");
-  const [cart, setCart] = useDraftState<Record<string, number>>(orderDraftScope, "cart", {});
-  const [orderNotes, setOrderNotes] = useDraftState(orderDraftScope, "orderNotes", "");
+  const [cuisineCounts, setCuisineCounts] = useDraftState<Record<string, number>>(orderDraftScope, "cuisineCounts", {});
+  const [savingMeals, setSavingMeals] = useState(false);
 
   useEffect(() => {
     let alive = true;
