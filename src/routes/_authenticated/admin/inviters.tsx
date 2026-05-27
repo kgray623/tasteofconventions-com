@@ -464,7 +464,34 @@ function InvitersPage() {
 
   return (
     <div className="space-y-8">
+      <Card className="p-5 space-y-3">
+        <div>
+          <h2 className="font-display text-xl flex items-center gap-2">
+            <Users className="w-5 h-5 text-terracotta" /> Committee members
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Anyone flagged as committee on the guest list appears here so the whole team can see who's on board.
+          </p>
+        </div>
+        {committee.length === 0 ? (
+          <p className="text-sm text-muted-foreground italic">
+            No committee members flagged yet. Open <Link to="/admin/upload" className="underline">Add guests / Guest list</Link> and check the committee box next to a guest.
+          </p>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {committee.map((m) => (
+              <div key={m.id} className="rounded-lg border border-border bg-background px-3 py-2">
+                <p className="font-medium text-sm">{m.guest_name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {m.guest_phone || m.guest_email || "No contact on file"}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
       <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+
         <Card className="flex min-h-[360px] flex-col overflow-hidden">
           <div className="border-b border-border px-5 py-4">
             <h2 className="font-display text-xl flex items-center gap-2">
