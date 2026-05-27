@@ -31,7 +31,10 @@ const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boole
 const teamAllowedPaths = new Set(["/admin", "/admin/upload", "/admin/categories", "/admin/team", "/admin/chat"]);
 
 function AdminLayout() {
-  const { isAdmin, isTeam, loading } = useRoles();
+  const { isAdmin: isActualAdmin, isTeam, loading } = useRoles();
+  const search = useSearch({ from: "/_authenticated/admin" });
+  const previewCommittee = isActualAdmin && search.view === "committee";
+  const isAdmin = isActualAdmin && !previewCommittee;
   const path = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
 
