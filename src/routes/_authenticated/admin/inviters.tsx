@@ -50,6 +50,9 @@ type Inviter = {
   host_id: string | null;
   email: string | null;
   phone: string | null;
+  requested_quota: number | null;
+  quota_request_note: string | null;
+  quota_requested_at: string | null;
 };
 type TeamMsg = { id: string; user_id: string; body: string; created_at: string };
 type Profile = { id: string; display_name: string | null; email: string | null };
