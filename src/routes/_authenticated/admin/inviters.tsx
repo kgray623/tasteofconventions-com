@@ -30,6 +30,7 @@ import {
 import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 
 import { inviteTeamMember } from "@/lib/team.functions";
+import { extractContactsFromImages } from "@/lib/extract-contacts.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/inviters")({
   head: () => ({ meta: [{ title: "Committee — Admin" }] }),
