@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -7,10 +7,12 @@ import { useRoles } from "@/hooks/use-roles";
 import { CalendarCog, ListChecks, MessageSquare, Play, Upload, UserPlus, Utensils, Video } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
+  validateSearch: (s: Record<string, unknown>) => ({ view: s.view === "committee" ? "committee" : undefined }),
   component: AdminOverview,
 });
 
 function AdminOverview() {
+  const { view } = useSearch({ from: "/_authenticated/admin/" });
   const { isAdmin, loading: rolesLoading } = useRoles();
   const [counts, setCounts] = useState({
     invites: 0,
@@ -60,7 +62,7 @@ function AdminOverview() {
 
   if (rolesLoading) return <p className="text-muted-foreground">Loading workspace…</p>;
 
-  if (!isAdmin) {
+  if (!isAdmin || view === "committee") {
     return (
       <div className="space-y-6">
         <Card className="overflow-hidden border-ink/10">
