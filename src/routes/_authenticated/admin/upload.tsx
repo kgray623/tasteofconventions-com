@@ -1055,8 +1055,7 @@ function UploadPage() {
             onChange={(e) => setRequestedQuota(e.target.value)}
           />
           <Textarea
-            placeholder="Optional note for the admin (why this number, who you plan to invite, etc.)"
-            value={quotaNote}
+            placeholder="Note for admin "
             maxLength={500}
             onChange={(e) => setQuotaNote(e.target.value)}
             className="min-h-[40px]"
