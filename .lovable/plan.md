@@ -1,6 +1,9 @@
-I will update the visible Step One line on the home page from `Conventions & Countries` to `Conventions, Countries, and Cuisine`.
+I’ll update the Step Two RSVP section so the visible order is:
 
-Scope:
-- Change only the frontend label in the invitation page Step One section.
-- Do not change database content, RSVP logic, backend behavior, or other copy.
-- Verify the updated label appears in the Step One area after the edit.
+1. `Click here to RSVP`
+2. `Click here to update my RSVP`
+
+Technical details:
+- In `src/components/invitation-page.tsx`, move `<LoggedInRsvpCta />` so it renders after the `/rsvp` button instead of before it.
+- Adjust the spacing wrapper on the update button so it has top spacing under the first button, not bottom spacing above it.
+- No backend, RSVP logic, database, or route changes.

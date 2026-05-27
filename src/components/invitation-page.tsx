@@ -240,7 +240,6 @@ export function InvitationPage() {
               Space is limited
             </p>
 
-            <LoggedInRsvpCta />
             <Link to="/rsvp">
               <Button
                 size="lg"
@@ -250,6 +249,7 @@ export function InvitationPage() {
                 <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </Link>
+            <LoggedInRsvpCta />
           </div>
         </div>
       </section>
@@ -478,7 +478,7 @@ function LoggedInRsvpCta() {
   const { user, loading } = useAuth();
   if (loading || !user) return null;
   return (
-    <div className="mb-4">
+    <div className="mt-4">
       <Link to="/my-rsvp">
         <Button
           size="lg"
