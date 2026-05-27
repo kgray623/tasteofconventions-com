@@ -35,6 +35,7 @@ const inviteSchema = z.object({
 
 function TeamPage() {
   const { user } = useAuth();
+  const { isAdmin } = useRoles();
   const [invites, setInvites] = useState<Invite[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [name, setName] = useState("");
