@@ -352,6 +352,44 @@ function InvitersPage() {
     }
   };
 
+  const fileToDataUrl = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(reader.error ?? new Error("read failed"));
+      reader.onload = () => resolve(String(reader.result ?? ""));
+      reader.readAsDataURL(file);
+    });
+
+  const onScreenshots = async (files: FileList | File[]) => {
+    const list = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    if (list.length === 0) {
+      toast.error("Please pick image files (PNG, JPG, HEIC).");
+      return;
+    }
+    if (list.length > 10) {
+      toast.error("Up to 10 screenshots at a time.");
+      return;
+    }
+    setScreenshotBusy(true);
+    try {
+      const images = await Promise.all(list.map(fileToDataUrl));
+      const { contacts: found } = await extractContactsFn({ data: { images } });
+      if (!found.length) {
+        toast.error("No contacts found in those screenshots.");
+        return;
+      }
+      setContacts(found.map((c) => ({ name: c.name, email: c.email, phone: c.phone, notes: "" })));
+      toast.success(
+        `Found ${found.length} contact${found.length === 1 ? "" : "s"} in your screenshot${list.length === 1 ? "" : "s"}`,
+      );
+    } catch (e) {
+      toast.error("Couldn't read those screenshots", { description: getErrorMessage(e) });
+    } finally {
+      setScreenshotBusy(false);
+      if (screenshotRef.current) screenshotRef.current.value = "";
+    }
+  };
+
   const add = async () => {
     if (!name.trim()) return toast.error("Name is required");
     const trimmedPhone = phone.trim();
