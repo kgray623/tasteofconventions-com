@@ -44,6 +44,9 @@ function TeamPage() {
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState<"team" | "admin">("team");
   const [sending, setSending] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
   const sendInviteFn = useServerFn(inviteTeamMember);
 
   const load = async () => {
