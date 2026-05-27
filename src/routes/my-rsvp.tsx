@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Users, Check, X, UtensilsCrossed, Minus, Plus } from "lucide-react";
 import { withTimeout } from "@/lib/async-safety";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/my-rsvp")({
   head: () => ({ meta: [{ title: "My RSVP — A Taste of Special Conventions" }] }),
@@ -72,6 +73,7 @@ function MyRsvpPage() {
     const order = data.order;
     const rsvpDone = !!rsvp?.responded_at;
     const rsvpYes = rsvp?.status === "yes";
+    const rsvpAttending = rsvp?.status !== "no";
     const orderItems: Array<{ name?: string; quantity?: number; price?: number }> = Array.isArray(order?.items) ? order.items : [];
     const orderDone = orderItems.length > 0;
     const cuisines = ["Myanmar", "African", "Indonesian"];
@@ -87,6 +89,9 @@ function MyRsvpPage() {
           .map(([cuisine, qty]) => ({ cuisine, qty }));
         await saveCuisinePreorder({ data: { token: invitation.rsvp_token, selections } });
         setData((current: any) => ({ ...current, preorder: { ...(current?.preorder ?? {}), selections } }));
+        toast.success("Meal order saved.");
+      } catch (e: any) {
+        toast.error(e?.message ?? "Could not save meal order");
       } finally {
         setSavingMeals(false);
       }
@@ -159,7 +164,7 @@ function MyRsvpPage() {
             </Card>
           )}
 
-          {rsvpYes && rsvp?.attendance_mode !== "zoom" && (
+          {rsvpAttending && rsvp?.attendance_mode !== "zoom" && (
             <Card className="p-7 space-y-5">
               <div>
                 <h2 className="font-display text-2xl">Restaurant meal pre-order</h2>
