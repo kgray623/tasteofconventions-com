@@ -31,6 +31,7 @@ import {
   Wine,
   Plus,
   HandHeart,
+  Trash2,
 } from "lucide-react";
 
 type Stop = { country: string; when: string; note: string; restaurant: boolean };
