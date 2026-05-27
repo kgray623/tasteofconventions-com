@@ -1354,9 +1354,11 @@ function UploadPage() {
 
 
       <Card className="overflow-hidden">
-        <div className="px-4 pt-3 text-[11px] text-muted-foreground">
-          Tip: checking the <span className="font-medium text-terracotta">committee</span> box next to a guest saves instantly and adds them to the <Link to="/admin/inviters" className="underline">Committee</Link> page.
-        </div>
+        {isAdmin && (
+          <div className="px-4 pt-3 text-[11px] text-muted-foreground">
+            Tip: checking the <span className="font-medium text-terracotta">committee</span> box next to a guest saves instantly and adds them to the <Link to="/admin/inviters" className="underline">Committee</Link> page.
+          </div>
+        )}
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">
 
 
@@ -1381,13 +1383,15 @@ function UploadPage() {
             })()}
           </div>
           <div className="flex items-center gap-2">
-            <label className="inline-flex items-center gap-2 h-8 px-2 rounded-md border border-input text-xs cursor-pointer hover:bg-accent">
-              <Checkbox
-                checked={committeeFilter}
-                onCheckedChange={(v) => setCommitteeFilter(v === true)}
-              />
-              <span>Committee only</span>
-            </label>
+            {isAdmin && (
+              <label className="inline-flex items-center gap-2 h-8 px-2 rounded-md border border-input text-xs cursor-pointer hover:bg-accent">
+                <Checkbox
+                  checked={committeeFilter}
+                  onCheckedChange={(v) => setCommitteeFilter(v === true)}
+                />
+                <span>Committee only</span>
+              </label>
+            )}
             {savedLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
           </div>
         </div>
@@ -1407,18 +1411,20 @@ function UploadPage() {
                 key={g.id}
                 className={`px-4 py-2.5 flex flex-wrap items-center gap-3 text-sm ${isDup ? "bg-destructive/5" : ""}`}
               >
-                <label
-                  className={`inline-flex items-center gap-1.5 h-7 px-2 rounded-md border text-[11px] cursor-pointer shrink-0 ${g.is_committee ? "bg-terracotta text-cream border-terracotta hover:bg-terracotta/90" : "border-input hover:bg-accent"}`}
-                  title="Add this guest to the committee"
-                >
-                  <Checkbox
-                    checked={g.is_committee}
-                    disabled={togglingCommitteeId === g.id}
-                    onCheckedChange={(v) => void toggleCommittee(g, v === true)}
-                    className={g.is_committee ? "border-cream data-[state=checked]:bg-cream data-[state=checked]:text-terracotta" : ""}
-                  />
-                  <span>{togglingCommitteeId === g.id ? "Saving…" : "Committee"}</span>
-                </label>
+                {isAdmin && (
+                  <label
+                    className={`inline-flex items-center gap-1.5 h-7 px-2 rounded-md border text-[11px] cursor-pointer shrink-0 ${g.is_committee ? "bg-terracotta text-cream border-terracotta hover:bg-terracotta/90" : "border-input hover:bg-accent"}`}
+                    title="Add this guest to the committee"
+                  >
+                    <Checkbox
+                      checked={g.is_committee}
+                      disabled={togglingCommitteeId === g.id}
+                      onCheckedChange={(v) => void toggleCommittee(g, v === true)}
+                      className={g.is_committee ? "border-cream data-[state=checked]:bg-cream data-[state=checked]:text-terracotta" : ""}
+                    />
+                    <span>{togglingCommitteeId === g.id ? "Saving…" : "Committee"}</span>
+                  </label>
+                )}
                 {editingSavedId === g.id ? (
                   <input
                     autoFocus
