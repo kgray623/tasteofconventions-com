@@ -54,7 +54,21 @@ function CategoriesPage() {
     load();
   };
 
-  const addAssign = async (catId: string) => {
+  const addAssign = async (catId: string, selfVolunteer = false) => {
+    if (selfVolunteer) {
+      if (!user) return toast.error("Please sign in to volunteer.");
+      const exists = assigns.some((a) => a.category_id === catId && a.user_id === user.id);
+      if (exists) return;
+      const { error } = await supabase.from("category_assignments").insert({
+        category_id: catId,
+        user_id: user.id,
+        volunteer_name: null,
+      });
+      if (error) return toast.error(error.message);
+      toast.success("Thanks for volunteering!");
+      load();
+      return;
+    }
     const value = (drafts[catId] || "").trim();
     if (!value) return;
     const profile = profiles.find((p) => p.email === value || p.display_name === value);
