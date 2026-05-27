@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, X, UserPlus } from "lucide-react";
+import { Plus, X, Hand } from "lucide-react";
 import { useRoles } from "@/hooks/use-roles";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_authenticated/admin/categories")({
   component: CategoriesPage,
