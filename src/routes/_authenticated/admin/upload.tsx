@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
@@ -1097,7 +1097,11 @@ function UploadPage() {
 
 
       <Card className="overflow-hidden">
+        <div className="px-4 pt-3 text-[11px] text-muted-foreground">
+          Tip: checking the <span className="font-medium text-terracotta">committee</span> box next to a guest saves instantly and adds them to the <Link to="/admin/inviters" className="underline">Committee</Link> page.
+        </div>
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">
+
 
           <div className="flex items-center gap-2 flex-wrap">
             <CheckCircle2 className="w-5 h-5 text-emerald-600" />

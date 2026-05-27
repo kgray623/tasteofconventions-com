@@ -27,6 +27,7 @@ type Invite = {
   created_at: string;
 };
 type Member = { user_id: string; role: string; profile?: { display_name: string | null; email: string | null } };
+type CommitteeGuest = { id: string; guest_name: string; guest_email: string | null; guest_phone: string | null };
 
 const inviteSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(120),
@@ -38,6 +39,7 @@ function TeamPage() {
   const { isAdmin } = useRoles();
   const [invites, setInvites] = useState<Invite[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [committeeGuests, setCommitteeGuests] = useState<CommitteeGuest[]>([]);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState<"team" | "admin">("team");
@@ -45,14 +47,16 @@ function TeamPage() {
   const sendInviteFn = useServerFn(inviteTeamMember);
 
   const load = async () => {
-    const [inv, mem, prof] = await Promise.all([
+    const [inv, mem, prof, comm] = await Promise.all([
       supabase.from("team_invites").select("id,name,phone,role,accepted_at,created_at").order("created_at", { ascending: false }),
       supabase.from("user_roles").select("user_id,role").in("role", ["admin", "team"]),
       supabase.from("profiles").select("id,display_name,email"),
+      supabase.from("invitations").select("id,guest_name,guest_email,guest_phone").eq("is_committee", true).order("guest_name"),
     ]);
     setInvites((inv.data ?? []) as Invite[]);
     const profMap = new Map((prof.data ?? []).map((p) => [p.id, p]));
     setMembers((mem.data ?? []).map((m) => ({ ...m, profile: profMap.get(m.user_id) })));
+    setCommitteeGuests((comm.data ?? []) as CommitteeGuest[]);
   };
   useEffect(() => { load(); }, []);
 
@@ -122,7 +126,32 @@ function TeamPage() {
         </Card>
       )}
 
+      <Card className="p-5 space-y-3">
+        <div className="flex items-center gap-2">
+          <Users className="w-4 h-4 text-terracotta" />
+          <h2 className="font-display text-lg">Committee (flagged on guest list)</h2>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Everyone tagged as committee on the guest list — so the whole team can see who's on board.
+        </p>
+        {committeeGuests.length === 0 ? (
+          <p className="text-sm text-muted-foreground italic">No committee members flagged yet.</p>
+        ) : (
+          <div className="grid sm:grid-cols-2 gap-2">
+            {committeeGuests.map((g) => (
+              <div key={g.id} className="rounded-lg border border-border bg-background px-3 py-2">
+                <p className="font-medium text-sm">{g.guest_name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {g.guest_phone || g.guest_email || "No contact on file"}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
       <Card className="overflow-hidden">
+
         <div className="p-4 border-b border-border flex items-center gap-2">
           <Users className="w-4 h-4" /> <h2 className="font-display text-lg">Committee members</h2>
         </div>
