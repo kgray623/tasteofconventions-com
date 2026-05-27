@@ -297,64 +297,64 @@ function RsvpPage() {
           <Button onClick={handleSubmit} className="bg-ink text-cream hover:bg-ink/90 w-full">Save RSVP</Button>
         </Card>
 
-        {status === "yes" && restaurants.length > 0 && (
+        {status === "yes" && attendanceMode === "in_person" && (
           <Card className="p-7 space-y-5">
             <div>
-              <h2 className="font-display text-2xl">Optional. Pre-order from your cultural choice restaurant</h2>
-              <p className="text-sm text-muted-foreground mt-1">Refreshments provided at the event.</p>
+              <h2 className="font-display text-2xl">Pre-order from your cultural choice restaurant</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Meals run about <strong>$20–$30 per plate</strong>. Choose Yes or No for each cuisine and enter the number of dishes you'd like from that restaurant.
+              </p>
             </div>
-            {attendanceMode === "in_person" && (
-              <div className="space-y-1.5">
-                <Label>Will you be ordering?</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { v: "yes", label: "Ordering food" },
-                    { v: "no", label: "Not ordering food" },
-                  ].map((o) => (
-                    <button
-                      key={o.v}
-                      onClick={() => setOrderingFood(o.v as "yes" | "no")}
-                      className={`p-3 rounded-md border-2 transition text-sm font-medium ${
-                        orderingFood === o.v ? "border-terracotta bg-terracotta text-cream" : "border-border bg-card hover:border-terracotta/40"
-                      }`}
-                    >
-                      {o.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <Select value={restaurantId} onValueChange={(v) => { setRestaurantId(v); setCart({}); }}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {restaurants.map((r) => <SelectItem key={r.id} value={r.id}>{r.name}{r.cuisine ? ` · ${r.cuisine}` : ""}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            {restaurantMenu.length === 0 ? (
-              <p className="text-sm text-muted-foreground italic">No items yet for this restaurant.</p>
-            ) : (
-              <div className="divide-y divide-border">
-                {restaurantMenu.map((m) => (
-                  <div key={m.id} className="py-3 flex items-center gap-3">
-                    <div className="flex-1">
-                      <p className="font-medium">{m.name}</p>
-                      {m.description && <p className="text-xs text-muted-foreground">{m.description}</p>}
+            <div className="space-y-3">
+              {cuisines.map((cuisine) => {
+                const qty = cuisineCounts[cuisine] ?? 0;
+                const selected = qty > 0;
+                return (
+                  <div key={cuisine} className="rounded-md border border-border bg-card p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <Label className="text-base font-display text-ink">{cuisine}</Label>
+                      <div className="grid grid-cols-2 gap-2 w-36">
+                        <button
+                          type="button"
+                          onClick={() => setCuisineQty(cuisine, qty > 0 ? qty : 1)}
+                          className={`rounded-md border-2 px-3 py-2 text-sm font-medium transition ${
+                            selected ? "border-terracotta bg-terracotta text-cream" : "border-border bg-card hover:border-terracotta/40"
+                          }`}
+                        >
+                          Yes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCuisineQty(cuisine, 0)}
+                          className={`rounded-md border-2 px-3 py-2 text-sm font-medium transition ${
+                            !selected ? "border-ink bg-ink text-cream" : "border-border bg-card hover:border-ink/40"
+                          }`}
+                        >
+                          No
+                        </button>
+                      </div>
                     </div>
-                    <span className="font-display text-lg w-16 text-right">${Number(m.price).toFixed(2)}</span>
-                    <div className="flex items-center gap-2">
-                      <Button size="icon" variant="outline" onClick={() => setCart({ ...cart, [m.id]: Math.max(0, (cart[m.id] ?? 0) - 1) })}><Minus className="w-3 h-3" /></Button>
-                      <span className="w-6 text-center">{cart[m.id] ?? 0}</span>
-                      <Button size="icon" variant="outline" onClick={() => setCart({ ...cart, [m.id]: Math.min(10, (cart[m.id] ?? 0) + 1) })}><Plus className="w-3 h-3" /></Button>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm text-muted-foreground">Number of dishes</span>
+                      <div className="flex items-center gap-2">
+                        <Button size="icon" variant="outline" onClick={() => setCuisineQty(cuisine, qty - 1)} aria-label={`Fewer ${cuisine} dishes`}>
+                          <Minus className="w-3 h-3" />
+                        </Button>
+                        <span className="w-10 text-center font-display text-2xl text-ink">{qty}</span>
+                        <Button size="icon" variant="outline" onClick={() => setCuisineQty(cuisine, qty + 1)} aria-label={`More ${cuisine} dishes`}>
+                          <Plus className="w-3 h-3" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-            <Textarea value={orderNotes} onChange={(e) => setOrderNotes(e.target.value)} placeholder="Special requests" />
-            <div className="flex items-center justify-between">
-              <span className="font-display text-2xl">Total: ${orderTotal.toFixed(2)}</span>
-              <Button onClick={handleOrder} className="bg-terracotta text-cream hover:bg-terracotta/90">Place order</Button>
+                );
+              })}
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <span className="font-display text-2xl">Total meals: {preorderTotal}</span>
+              <Button onClick={handleCuisineOrder} disabled={savingMeals} className="bg-terracotta text-cream hover:bg-terracotta/90">
+                {savingMeals ? "Saving…" : "Save meal order"}
+              </Button>
             </div>
           </Card>
         )}
