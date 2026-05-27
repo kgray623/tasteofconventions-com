@@ -27,6 +27,7 @@ type Invite = {
   created_at: string;
 };
 type Member = { user_id: string; role: string; profile?: { display_name: string | null; email: string | null } };
+type CommitteeGuest = { id: string; guest_name: string; guest_email: string | null; guest_phone: string | null };
 
 const inviteSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(120),
