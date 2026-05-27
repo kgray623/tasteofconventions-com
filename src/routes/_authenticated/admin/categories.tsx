@@ -190,7 +190,7 @@ function CategoriesPage() {
                       </div>
                     </div>
                   ) : (
-                    <p className="text-xs text-muted-foreground italic leading-relaxed min-h-[3rem]">
+                    <p className="text-xs text-muted-foreground leading-relaxed min-h-[3rem]">
                       {c.description || "\u00A0"}
                     </p>
                   )}
