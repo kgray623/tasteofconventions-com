@@ -7,12 +7,11 @@ import { useRoles } from "@/hooks/use-roles";
 import { CalendarCog, ListChecks, MessageSquare, Play, Upload, UserPlus, Utensils, Video } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
-  validateSearch: (s: Record<string, unknown>) => ({ view: s.view === "committee" ? "committee" : undefined }),
   component: AdminOverview,
 });
 
 function AdminOverview() {
-  const { view } = useSearch({ from: "/_authenticated/admin/" });
+  const { view } = useSearch({ from: "/_authenticated/admin" });
   const { isAdmin, loading: rolesLoading } = useRoles();
   const [counts, setCounts] = useState({
     invites: 0,
