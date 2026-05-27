@@ -164,6 +164,7 @@ function RsvpPage() {
         return toast.error("Please tell us whether you'll be ordering food");
       }
       const finalInvitedBy = invitedBy === "__other__" ? invitedByOther.trim() : invitedBy;
+      if (!finalInvitedBy) return toast.error("Please select who invited you");
       const orderingFoodBool =
         status === "yes" && attendanceMode === "in_person" ? orderingFood === "yes" : null;
       const res = await submit({
