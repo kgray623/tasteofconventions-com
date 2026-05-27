@@ -233,6 +233,14 @@ function InvitersPage() {
       }
       setGuestsByHost(byHost);
 
+      const { data: commData } = await supabase
+        .from("invitations")
+        .select("id,guest_name,guest_email,guest_phone")
+        .eq("is_committee", true)
+        .order("guest_name");
+      setCommittee((commData as CommitteeRow[]) ?? []);
+
+
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
