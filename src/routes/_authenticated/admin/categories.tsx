@@ -223,7 +223,7 @@ function CategoriesPage() {
                       <Button
                         size="sm"
                         onClick={() => addAssign(c.id, true)}
-                        disabled={!user || alreadyVolunteered}
+                        disabled={!user}
                         className="w-full bg-terracotta text-cream hover:bg-terracotta/90"
                       >
                         <Hand className="w-4 h-4 mr-2" />
@@ -232,8 +232,8 @@ function CategoriesPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => myAssign && removeAssign(myAssign.id)}
-                        disabled={!alreadyVolunteered}
+                        onClick={() => myAssign ? removeAssign(myAssign.id) : toast.info("You haven't volunteered for this yet.")}
+                        disabled={!user}
                         className="w-full"
                       >
                         <X className="w-4 h-4 mr-2" />
