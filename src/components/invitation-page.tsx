@@ -102,11 +102,11 @@ export function InvitationPage() {
       });
     supabase
       .from("categories")
-      .select("name")
+      .select("id,name")
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true })
       .then(({ data }) => {
-        if (data) setAssignments(data.map((c: { name: string }) => c.name));
+        if (data) setAssignments(data as { id: string; name: string }[]);
       });
   }, []);
 
