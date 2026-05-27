@@ -130,6 +130,13 @@ function HelperLogin() {
             <Button
               type="submit"
               disabled={busy}
+              onClick={(e) => {
+                // Fallback in case form submit doesn't fire (e.g. mobile keyboard dismissal swallowing the first tap)
+                if (!busy) {
+                  e.preventDefault();
+                  void signIn();
+                }
+              }}
               className="w-full bg-ink text-cream hover:bg-ink/90"
             >
               {busy ? "Signing in…" : "Sign in"}
