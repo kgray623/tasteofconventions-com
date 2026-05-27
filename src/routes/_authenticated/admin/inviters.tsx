@@ -57,7 +57,7 @@ type Inviter = {
 };
 type TeamMsg = { id: string; user_id: string; body: string; created_at: string };
 type Profile = { id: string; display_name: string | null; email: string | null };
-type Cat = { id: string; name: string; sort_order: number };
+type Cat = { id: string; name: string; sort_order: number; description: string | null };
 type Assign = {
   id: string;
   category_id: string;
