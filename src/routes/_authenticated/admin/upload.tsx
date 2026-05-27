@@ -1383,13 +1383,15 @@ function UploadPage() {
             })()}
           </div>
           <div className="flex items-center gap-2">
-            <label className="inline-flex items-center gap-2 h-8 px-2 rounded-md border border-input text-xs cursor-pointer hover:bg-accent">
-              <Checkbox
-                checked={committeeFilter}
-                onCheckedChange={(v) => setCommitteeFilter(v === true)}
-              />
-              <span>Committee only</span>
-            </label>
+            {isAdmin && (
+              <label className="inline-flex items-center gap-2 h-8 px-2 rounded-md border border-input text-xs cursor-pointer hover:bg-accent">
+                <Checkbox
+                  checked={committeeFilter}
+                  onCheckedChange={(v) => setCommitteeFilter(v === true)}
+                />
+                <span>Committee only</span>
+              </label>
+            )}
             {savedLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
           </div>
         </div>
