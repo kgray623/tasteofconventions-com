@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 import { getErrorMessage } from "@/lib/async-safety";
 import { useServerFn } from "@tanstack/react-start";
-import { extractContactsFromImages } from "@/lib/contact-ocr.functions";
+
 
 class UploadErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state = { error: null as Error | null };
