@@ -34,9 +34,12 @@ export const getMyInvitation = createServerFn({ method: "GET" })
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!inv) return { invitation: null, rsvp: null, order: null };
-    const { data: rsvp } = await supabaseAdmin.from("rsvps").select("*").eq("invitation_id", inv.id).maybeSingle();
-    const { data: order } = await supabaseAdmin.from("orders").select("*").eq("invitation_id", inv.id).maybeSingle();
-    return { invitation: inv, rsvp, order };
+    const [{ data: rsvp }, { data: order }, { data: preorder }] = await Promise.all([
+      supabaseAdmin.from("rsvps").select("*").eq("invitation_id", inv.id).maybeSingle(),
+      supabaseAdmin.from("orders").select("*").eq("invitation_id", inv.id).maybeSingle(),
+      supabaseAdmin.from("cuisine_preorders").select("selections,updated_at").eq("invitation_id", inv.id).maybeSingle(),
+    ]);
+    return { invitation: inv, rsvp, order, preorder };
   });
 
 async function sendRsvpConfirmation(invitationId: string, status: "yes" | "no" | "maybe", partySize: number) {
@@ -109,9 +112,12 @@ export const getInvitationByToken = createServerFn({ method: "GET" })
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!inv) return { invitation: null, rsvp: null, order: null, expired: false };
-    const { data: rsvp } = await supabaseAdmin.from("rsvps").select("*").eq("invitation_id", inv.id).maybeSingle();
-    const { data: order } = await supabaseAdmin.from("orders").select("*").eq("invitation_id", inv.id).maybeSingle();
-    return { invitation: inv, rsvp, order, expired: false };
+    const [{ data: rsvp }, { data: order }, { data: preorder }] = await Promise.all([
+      supabaseAdmin.from("rsvps").select("*").eq("invitation_id", inv.id).maybeSingle(),
+      supabaseAdmin.from("orders").select("*").eq("invitation_id", inv.id).maybeSingle(),
+      supabaseAdmin.from("cuisine_preorders").select("selections,updated_at").eq("invitation_id", inv.id).maybeSingle(),
+    ]);
+    return { invitation: inv, rsvp, order, preorder, expired: false };
   });
 
 const RsvpInput = z.object({
@@ -170,6 +176,40 @@ const OrderInput = z.object({
   })).min(1).max(20),
   notes: z.string().max(500).optional().nullable(),
 });
+
+const CuisinePreorderInput = z.object({
+  token: z.string().min(8).max(120),
+  selections: z.array(z.object({
+    cuisine: z.string().min(1).max(80),
+    qty: z.number().int().min(1).max(50),
+  })).max(10),
+});
+
+export const submitCuisinePreorder = createServerFn({ method: "POST" })
+  .inputValidator((d) => CuisinePreorderInput.parse(d))
+  .handler(async ({ data }) => {
+    const { data: inv } = await supabaseAdmin
+      .from("invitations")
+      .select("id,guest_name,guest_phone")
+      .in("rsvp_token", rsvpTokenCandidates(data.token))
+      .maybeSingle();
+    if (!inv) throw new Error("Invitation not found");
+
+    if (data.selections.length > 0) {
+      const { error } = await supabaseAdmin.from("cuisine_preorders").upsert({
+        invitation_id: inv.id,
+        name: inv.guest_name.slice(0, 120),
+        phone: (inv.guest_phone ?? "").slice(0, 40) || "—",
+        selections: data.selections,
+      }, { onConflict: "invitation_id" });
+      if (error) throw new Error(error.message);
+    } else {
+      const { error } = await supabaseAdmin.from("cuisine_preorders").delete().eq("invitation_id", inv.id);
+      if (error) throw new Error(error.message);
+    }
+
+    return { ok: true };
+  });
 
 export const submitOrder = createServerFn({ method: "POST" })
   .inputValidator((d) => OrderInput.parse(d))
