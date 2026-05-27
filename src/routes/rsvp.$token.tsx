@@ -463,7 +463,7 @@ function RsvpPage() {
             </>
           )}
           <div className="space-y-1.5">
-            <Label htmlFor="invited-by">Invited by</Label>
+            <Label htmlFor="invited-by">Invited by <span className="text-destructive">*</span></Label>
             <Select value={invitedBy || undefined} onValueChange={setInvitedBy}>
               <SelectTrigger id="invited-by">
                 <SelectValue placeholder="Select who invited you" />
