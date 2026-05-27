@@ -22,9 +22,7 @@ import {
   FileSpreadsheet,
   AlertCircle,
   CheckCircle2,
-  Camera,
   Loader2,
-  X,
   Trash2,
   Pencil,
   AlertTriangle,
@@ -33,7 +31,7 @@ import {
   Clock,
 } from "lucide-react";
 import { getErrorMessage } from "@/lib/async-safety";
-import { useServerFn } from "@tanstack/react-start";
+
 
 
 class UploadErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
