@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Plus, X, Hand, Save } from "lucide-react";
+import { Plus, X, Hand, Save, MessageCircle } from "lucide-react";
 import { useRoles } from "@/hooks/use-roles";
 import { useAuth } from "@/hooks/use-auth";
+import { CategoryChat } from "@/components/CategoryChat";
 
 export const Route = createFileRoute("/_authenticated/admin/categories")({
   component: CategoriesPage,
