@@ -108,6 +108,7 @@ function AdminLayout() {
       <nav className="flex flex-wrap gap-1 border-b border-border mb-8">
         {visibleTabs.map((t) => {
           const active = t.exact ? path === t.to : path.startsWith(t.to);
+          const label = !isAdmin && t.teamLabel ? t.teamLabel : t.label;
           return (
             <Link
               key={t.to}
@@ -118,7 +119,7 @@ function AdminLayout() {
                   : "border-transparent text-muted-foreground hover:text-ink"
               }`}
             >
-              <t.icon className="w-4 h-4" /> {t.label}
+              <t.icon className="w-4 h-4" /> {label}
             </Link>
           );
         })}
