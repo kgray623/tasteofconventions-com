@@ -50,6 +50,9 @@ type Inviter = {
   host_id: string | null;
   email: string | null;
   phone: string | null;
+  requested_quota: number | null;
+  quota_request_note: string | null;
+  quota_requested_at: string | null;
 };
 type TeamMsg = { id: string; user_id: string; body: string; created_at: string };
 type Profile = { id: string; display_name: string | null; email: string | null };
@@ -794,7 +797,22 @@ function InvitersPage() {
                             </button>
                           )}
                         </td>
-                        <td className="px-2 py-3 font-medium">{i.name}</td>
+                        <td className="px-2 py-3 font-medium">
+                          {i.name}
+                          {i.requested_quota != null && i.requested_quota !== i.quota && (
+                            <div
+                              className="mt-1 text-[10px] inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-terracotta text-terracotta"
+                              title={i.quota_request_note ?? undefined}
+                            >
+                              Requested {i.requested_quota} RSVPs
+                            </div>
+                          )}
+                          {i.quota_request_note && (
+                            <div className="mt-1 text-[11px] text-muted-foreground italic max-w-[260px] truncate">
+                              "{i.quota_request_note}"
+                            </div>
+                          )}
+                        </td>
                         <td className="px-4 py-3">
                           <Input
                             type="number"

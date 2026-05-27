@@ -31,6 +31,11 @@ import {
   Clock,
 } from "lucide-react";
 import { getErrorMessage } from "@/lib/async-safety";
+import { useServerFn } from "@tanstack/react-start";
+import { extractContactsFromImages } from "@/lib/extract-contacts.functions";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Image as ImageIcon, Target } from "lucide-react";
 
 
 
@@ -237,6 +242,14 @@ function UploadPage() {
   const [myQuota, setMyQuota] = useState<number | null>(null);
   const [myRsvpSeats, setMyRsvpSeats] = useState(0);
   const [myRsvpCount, setMyRsvpCount] = useState(0);
+  const screenshotRef = useRef<HTMLInputElement>(null);
+  const [screenshotBusy, setScreenshotBusy] = useState(false);
+  const extractContacts = useServerFn(extractContactsFromImages);
+  const [inviterId, setInviterId] = useState<string | null>(null);
+  const [requestedQuota, setRequestedQuota] = useState<string>("");
+  const [quotaNote, setQuotaNote] = useState<string>("");
+  const [quotaRequestedAt, setQuotaRequestedAt] = useState<string | null>(null);
+  const [savingQuotaReq, setSavingQuotaReq] = useState(false);
 
   const loadSavedGuests = async (evId: string) => {
     if (!evId) {
@@ -295,11 +308,21 @@ function UploadPage() {
     let alive = true;
     void (async () => {
       const [{ data: inv }, { data: profile }] = await Promise.all([
-        supabase.from("inviters").select("quota,name").eq("host_id", user.id).maybeSingle(),
+        supabase
+          .from("inviters")
+          .select("id,quota,name,requested_quota,quota_request_note,quota_requested_at")
+          .eq("host_id", user.id)
+          .maybeSingle(),
         supabase.from("profiles").select("display_name,email").eq("id", user.id).maybeSingle(),
       ]);
       if (!alive) return;
       setMyQuota(inv?.quota ?? null);
+      setInviterId(inv?.id ?? null);
+      setRequestedQuota(
+        inv?.requested_quota != null ? String(inv.requested_quota) : "",
+      );
+      setQuotaNote(inv?.quota_request_note ?? "");
+      setQuotaRequestedAt(inv?.quota_requested_at ?? null);
       setInviterName(
         inv?.name ||
           profile?.display_name ||
@@ -863,6 +886,100 @@ function UploadPage() {
 
   const dupCount = rows.filter((r) => r._dupReason).length;
 
+  const fileToDataUrl = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(reader.error ?? new Error("read failed"));
+      reader.onload = () => resolve(String(reader.result ?? ""));
+      reader.readAsDataURL(file);
+    });
+
+  const onScreenshots = async (files: FileList | File[]) => {
+    const list = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    if (list.length === 0) {
+      toast.error("Please pick image files (PNG, JPG, HEIC).");
+      return;
+    }
+    if (list.length > 10) {
+      toast.error("Up to 10 screenshots at a time.");
+      return;
+    }
+    setScreenshotBusy(true);
+    setDone(null);
+    try {
+      const images = await Promise.all(list.map(fileToDataUrl));
+      const { contacts } = await extractContacts({ data: { images } });
+      if (!contacts.length) {
+        toast.error("No contacts found in those screenshots.");
+        return;
+      }
+      await parseRows(
+        contacts.map((c) => ({
+          name: c.name,
+          email: c.email,
+          phone: c.phone,
+          notes: "",
+        })),
+        true,
+      );
+      toast.success(
+        `Found ${contacts.length} contact${contacts.length === 1 ? "" : "s"} in your screenshot${list.length === 1 ? "" : "s"}`,
+      );
+    } catch (e) {
+      console.error("[upload] screenshot extract failed", e);
+      toast.error("Couldn't read those screenshots", { description: getErrorMessage(e) });
+    } finally {
+      setScreenshotBusy(false);
+      if (screenshotRef.current) screenshotRef.current.value = "";
+    }
+  };
+
+  const submitQuotaRequest = async () => {
+    if (!user?.id) return;
+    const target = parseInt(requestedQuota, 10);
+    if (!Number.isFinite(target) || target <= 0 || target > 1000) {
+      toast.error("Enter a number between 1 and 1000.");
+      return;
+    }
+    setSavingQuotaReq(true);
+    try {
+      const nowIso = new Date().toISOString();
+      const payload = {
+        requested_quota: target,
+        quota_request_note: quotaNote.trim() || null,
+        quota_requested_at: nowIso,
+      };
+      if (inviterId) {
+        const { error } = await supabase
+          .from("inviters")
+          .update(payload)
+          .eq("id", inviterId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from("inviters")
+          .insert({
+            host_id: user.id,
+            name: inviterName || "Committee member",
+            active: true,
+            ...payload,
+          })
+          .select("id")
+          .single();
+        if (error) throw error;
+        setInviterId(data.id);
+      }
+      setQuotaRequestedAt(nowIso);
+      toast.success("Sent your RSVP request to the admin.");
+    } catch (e) {
+      console.error("[upload] quota request failed", e);
+      toast.error("Couldn't send request", { description: getErrorMessage(e) });
+    } finally {
+      setSavingQuotaReq(false);
+    }
+  };
+
+
   const onQuickAdd = async () => {
     if (!eventId || !user) return;
     const name = quick.name.trim();
@@ -918,6 +1035,53 @@ function UploadPage() {
         </Select>
       </Card>
 
+      <Card className="p-6 space-y-3">
+        <div className="flex items-center gap-2">
+          <Target className="w-4 h-4 text-terracotta" />
+          <p className="font-medium">How many RSVPs do you want to secure?</p>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Out of the 550 guests for the event, tell the admin how many RSVPs
+          you'd like to be responsible for. Your current quota is{" "}
+          <span className="font-medium text-foreground">{myQuota ?? "not set"}</span>.
+        </p>
+        <div className="grid sm:grid-cols-[160px_1fr_auto] gap-2 items-start">
+          <Input
+            type="number"
+            min={1}
+            max={1000}
+            placeholder="e.g. 40"
+            value={requestedQuota}
+            onChange={(e) => setRequestedQuota(e.target.value)}
+          />
+          <Textarea
+            placeholder="Optional note for the admin (why this number, who you plan to invite, etc.)"
+            value={quotaNote}
+            maxLength={500}
+            onChange={(e) => setQuotaNote(e.target.value)}
+            className="min-h-[40px]"
+          />
+          <Button
+            onClick={submitQuotaRequest}
+            disabled={savingQuotaReq || !requestedQuota.trim()}
+            className="bg-ink text-cream hover:bg-ink/90"
+          >
+            {savingQuotaReq ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : quotaRequestedAt ? (
+              "Update request"
+            ) : (
+              "Send request"
+            )}
+          </Button>
+        </div>
+        {quotaRequestedAt && (
+          <p className="text-[11px] text-muted-foreground">
+            Last requested {new Date(quotaRequestedAt).toLocaleString()}.
+          </p>
+        )}
+      </Card>
+
 
       <Card className="p-6 space-y-3">
         <div className="flex items-center gap-2">
@@ -935,6 +1099,32 @@ function UploadPage() {
           Expected columns: <code>name</code>, <code>email</code>, <code>phone</code>,{" "}
           <code>notes</code>.
         </p>
+      </Card>
+
+      <Card className="p-6 space-y-3">
+        <div className="flex items-center gap-2">
+          <ImageIcon className="w-4 h-4 text-terracotta" />
+          <p className="font-medium">Upload screenshots of those you want to invite</p>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Snap or upload screenshots from your phone contacts, a text thread, or any
+          list of names &amp; numbers. We'll read them and add the people to your
+          review list below — you can edit or remove anyone before saving.
+        </p>
+        <input
+          ref={screenshotRef}
+          type="file"
+          accept="image/*"
+          multiple
+          disabled={screenshotBusy}
+          onChange={(e) => e.target.files && e.target.files.length > 0 && onScreenshots(e.target.files)}
+          className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-ink file:text-cream hover:file:bg-ink/90 file:cursor-pointer disabled:opacity-50"
+        />
+        {screenshotBusy && (
+          <p className="text-xs text-muted-foreground flex items-center gap-2">
+            <Loader2 className="w-3 h-3 animate-spin" /> Reading your screenshots…
+          </p>
+        )}
       </Card>
 
 
