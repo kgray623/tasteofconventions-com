@@ -240,7 +240,6 @@ export function InvitationPage() {
               Space is limited
             </p>
 
-            <LoggedInRsvpCta />
             <Link to="/rsvp">
               <Button
                 size="lg"
@@ -250,6 +249,7 @@ export function InvitationPage() {
                 <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </Link>
+            <LoggedInRsvpCta />
           </div>
         </div>
       </section>
