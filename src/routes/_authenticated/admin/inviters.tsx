@@ -30,9 +30,16 @@ import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 import { inviteTeamMember } from "@/lib/team.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/inviters")({
-  head: () => ({ meta: [{ title: "Inviters — Admin" }] }),
+  head: () => ({ meta: [{ title: "Committee — Admin" }] }),
   component: InvitersPage,
 });
+
+type CommitteeRow = {
+  id: string;
+  guest_name: string;
+  guest_email: string | null;
+  guest_phone: string | null;
+};
 
 type Inviter = {
   id: string;
