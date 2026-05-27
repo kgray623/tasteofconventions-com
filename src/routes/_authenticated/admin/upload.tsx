@@ -33,7 +33,6 @@ import {
 import { getErrorMessage } from "@/lib/async-safety";
 import { useServerFn } from "@tanstack/react-start";
 import { extractContactsFromImages } from "@/lib/extract-contacts.functions";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Image as ImageIcon, Target, PlayCircle } from "lucide-react";
 
@@ -248,7 +247,6 @@ function UploadPage() {
   const extractContacts = useServerFn(extractContactsFromImages);
   const [inviterId, setInviterId] = useState<string | null>(null);
   const [requestedQuota, setRequestedQuota] = useState<string>("");
-  const [quotaNote, setQuotaNote] = useState<string>("");
   const [quotaRequestedAt, setQuotaRequestedAt] = useState<string | null>(null);
   const [savingQuotaReq, setSavingQuotaReq] = useState(false);
   const [quotaPool, setQuotaPool] = useState({ total: TOTAL_RSVP_CAP, allocated: 0 });
@@ -359,10 +357,7 @@ function UploadPage() {
       setQuotaPool({ total: TOTAL_RSVP_CAP, allocated });
       setRsvpAttendingTotal(attendingTotal);
       setInviterId(inv?.id ?? null);
-      setRequestedQuota(
-        inv?.requested_quota != null ? String(inv.requested_quota) : "",
-      );
-      setQuotaNote(inv?.quota_request_note ?? "");
+      setRequestedQuota("");
       setQuotaRequestedAt(inv?.quota_requested_at ?? null);
       setInviterName(inv?.name || fallbackName);
     })();
