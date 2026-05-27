@@ -1117,23 +1117,6 @@ function UploadPage() {
         />
       </Card>
 
-      <Card className="p-6 space-y-3">
-        <div className="flex items-center gap-2">
-          <FileSpreadsheet className="w-4 h-4 text-terracotta" />
-          <p className="font-medium">CSV / Excel file</p>
-        </div>
-        <input
-          ref={fileRef}
-          type="file"
-          accept=".csv,.xlsx,.xls"
-          onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
-          className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-ink file:text-cream hover:file:bg-ink/90 file:cursor-pointer"
-        />
-        <p className="text-xs text-muted-foreground">
-          Expected columns: <code>name</code>, <code>email</code>, <code>phone</code>,{" "}
-          <code>notes</code>.
-        </p>
-      </Card>
 
 
 
