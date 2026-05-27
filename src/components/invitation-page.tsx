@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/accordion";
 
 import { supabase } from "@/integrations/supabase/client";
-import falconwoodImg from "@/assets/falconwood-park.jpg";
+
 import { useAuth } from "@/hooks/use-auth";
 import { useRoles } from "@/hooks/use-roles";
 import {
@@ -292,16 +292,6 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-3">
               <p><strong className="text-ink">{content.location_name}</strong> · {content.location_subtitle}</p>
-              <div className="relative aspect-[16/8] rounded-xl overflow-hidden border border-border">
-                <img
-                  src={falconwoodImg}
-                  alt="Aerial rendering of Falconwood Park in Bellevue, Nebraska"
-                  loading="lazy"
-                  width={1280}
-                  height={640}
-                  className="w-full h-full object-cover"
-                />
-              </div>
               <div className="relative aspect-[16/9] rounded-xl overflow-hidden border border-border">
                 <iframe
                   title="Falconwood Park on Google Maps"
