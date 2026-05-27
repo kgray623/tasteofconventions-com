@@ -1101,6 +1101,32 @@ function UploadPage() {
         </p>
       </Card>
 
+      <Card className="p-6 space-y-3">
+        <div className="flex items-center gap-2">
+          <ImageIcon className="w-4 h-4 text-terracotta" />
+          <p className="font-medium">Upload screenshots of those you want to invite</p>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Snap or upload screenshots from your phone contacts, a text thread, or any
+          list of names &amp; numbers. We'll read them and add the people to your
+          review list below — you can edit or remove anyone before saving.
+        </p>
+        <input
+          ref={screenshotRef}
+          type="file"
+          accept="image/*"
+          multiple
+          disabled={screenshotBusy}
+          onChange={(e) => e.target.files && e.target.files.length > 0 && onScreenshots(e.target.files)}
+          className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-ink file:text-cream hover:file:bg-ink/90 file:cursor-pointer disabled:opacity-50"
+        />
+        {screenshotBusy && (
+          <p className="text-xs text-muted-foreground flex items-center gap-2">
+            <Loader2 className="w-3 h-3 animate-spin" /> Reading your screenshots…
+          </p>
+        )}
+      </Card>
+
 
       {done && (
         <Card className="p-5 border-emerald-500/40 bg-emerald-500/5 flex items-start gap-3">
