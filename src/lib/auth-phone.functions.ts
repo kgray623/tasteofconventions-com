@@ -120,6 +120,32 @@ export const signInWithPhoneOnly = createServerFn({ method: "POST" })
     });
     if (updErr) throw new Error(updErr.message);
 
+    // 3b) If this phone is on the team invite list, grant the role and mark accepted.
+    const { data: teamInviteRow } = await supabaseAdmin
+      .from("team_invites")
+      .select("id,role,accepted_at")
+      .eq("phone_normalized", phoneNorm)
+      .maybeSingle();
+    if (teamInviteRow) {
+      const { data: existingRole } = await supabaseAdmin
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("role", teamInviteRow.role)
+        .maybeSingle();
+      if (!existingRole) {
+        await supabaseAdmin
+          .from("user_roles")
+          .insert({ user_id: userId, role: teamInviteRow.role });
+      }
+      if (!teamInviteRow.accepted_at) {
+        await supabaseAdmin
+          .from("team_invites")
+          .update({ accepted_at: new Date().toISOString() })
+          .eq("id", teamInviteRow.id);
+      }
+    }
+
     const url = process.env.SUPABASE_URL!;
     const anonKey = process.env.SUPABASE_PUBLISHABLE_KEY!;
     const anon = createClient(url, anonKey, { auth: { persistSession: false } });
