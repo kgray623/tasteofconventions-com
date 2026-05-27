@@ -31,6 +31,7 @@ import {
   Wine,
   Plus,
   HandHeart,
+  Trash2,
 } from "lucide-react";
 
 type Stop = { country: string; when: string; note: string; restaurant: boolean };
@@ -84,7 +85,7 @@ const defaultContent: Content = {
 export function InvitationPage() {
   const [content, setContent] = useState<Content>(defaultContent);
   const [openItems, setOpenItems] = useState<string[]>([]);
-  const [assignments, setAssignments] = useState<string[]>([]);
+  const [assignments, setAssignments] = useState<{ id: string; name: string }[]>([]);
   const { isAdmin } = useRoles();
 
 
@@ -101,11 +102,11 @@ export function InvitationPage() {
       });
     supabase
       .from("categories")
-      .select("name")
+      .select("id,name")
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true })
       .then(({ data }) => {
-        if (data) setAssignments(data.map((c: { name: string }) => c.name));
+        if (data) setAssignments(data as { id: string; name: string }[]);
       });
   }, []);
 
@@ -403,8 +404,25 @@ export function InvitationPage() {
               </p>
               {assignments.length > 0 ? (
                 <ul className="list-disc pl-5 space-y-1">
-                  {assignments.map((name) => (
-                    <li key={name}>{name}</li>
+                  {assignments.map((c) => (
+                    <li key={c.id} className="flex items-center justify-between gap-2 group">
+                      <span>{c.name}</span>
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!confirm(`Delete "${c.name}"?`)) return;
+                            const { error } = await supabase.from("categories").delete().eq("id", c.id);
+                            if (error) return;
+                            setAssignments((prev) => prev.filter((x) => x.id !== c.id));
+                          }}
+                          className="text-muted-foreground hover:text-terracotta opacity-0 group-hover:opacity-100 transition-opacity"
+                          aria-label={`Delete ${c.name}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </li>
                   ))}
                 </ul>
               ) : (
