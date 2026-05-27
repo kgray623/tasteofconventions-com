@@ -19,16 +19,16 @@ const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boole
   { to: "/admin/invitation", label: "Invitation page", icon: Mail },
   { to: "/admin/upload", label: "Add guests", icon: Upload, team: true, teamLabel: "Guest list" },
   { to: "/admin/committee-message", label: "Committee message", icon: MessageSquare },
-  { to: "/admin/inviters", label: "Inviters", icon: UserPlus },
+  { to: "/admin/inviters", label: "Committee", icon: UserPlus, team: true, teamLabel: "Committee" },
   { to: "/admin/restaurants", label: "Restaurants", icon: UtensilsCrossed },
   { to: "/admin/categories", label: "Assignments", icon: ListChecks, team: true, teamLabel: "Duties" },
   { to: "/admin/donations", label: "Donations", icon: HandCoins },
-  { to: "/admin/team", label: "Committee", icon: Users, team: true, teamLabel: "Volunteers" },
+  { to: "/admin/team", label: "Team access", icon: Users },
   { to: "/admin/chat", label: "Committee chat", icon: MessagesSquare, team: true, teamLabel: "Chat" },
   { to: "/my-rsvp", label: "My RSVP", icon: Ticket, team: true },
 ];
 
-const teamAllowedPaths = new Set(["/admin", "/admin/upload", "/admin/categories", "/admin/team", "/admin/chat"]);
+const teamAllowedPaths = new Set(["/admin", "/admin/upload", "/admin/inviters", "/admin/categories", "/admin/chat"]);
 
 function AdminLayout() {
   const { isAdmin: isActualAdmin, isTeam, loading } = useRoles();
