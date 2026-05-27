@@ -149,32 +149,34 @@ function TeamPage() {
         </div>
       </Card>
 
-      <Card className="overflow-hidden">
-        <div className="p-4 border-b border-border">
-          <h2 className="font-display text-lg">Pending &amp; past invites</h2>
-        </div>
-        <div className="divide-y divide-border">
-          {invites.length === 0 && <p className="p-6 text-sm text-muted-foreground text-center">No invites added yet.</p>}
-          {invites.map((i) => (
-            <div key={i.id} className="p-4 flex items-center justify-between gap-3">
-              <div>
-                <p className="font-medium">{i.name || i.phone || "—"}</p>
-                <p className="text-xs text-muted-foreground">
-                  {i.phone ? i.phone : "No phone"} · {i.accepted_at ? `Accepted ${new Date(i.accepted_at).toLocaleDateString()}` : "Awaiting signup"}
-                </p>
+      {isAdmin && (
+        <Card className="overflow-hidden">
+          <div className="p-4 border-b border-border">
+            <h2 className="font-display text-lg">Pending &amp; past invites</h2>
+          </div>
+          <div className="divide-y divide-border">
+            {invites.length === 0 && <p className="p-6 text-sm text-muted-foreground text-center">No invites added yet.</p>}
+            {invites.map((i) => (
+              <div key={i.id} className="p-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="font-medium">{i.name || i.phone || "—"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {i.phone ? i.phone : "No phone"} · {i.accepted_at ? `Accepted ${new Date(i.accepted_at).toLocaleDateString()}` : "Awaiting signup"}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">{i.role}</Badge>
+                  {!i.accepted_at && (
+                    <button onClick={() => revoke(i.id)} className="text-muted-foreground hover:text-terracotta">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">{i.role}</Badge>
-                {!i.accepted_at && (
-                  <button onClick={() => revoke(i.id)} className="text-muted-foreground hover:text-terracotta">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
