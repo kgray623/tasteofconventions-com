@@ -39,6 +39,7 @@ function TeamPage() {
   const { isAdmin } = useRoles();
   const [invites, setInvites] = useState<Invite[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [committeeGuests, setCommitteeGuests] = useState<CommitteeGuest[]>([]);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState<"team" | "admin">("team");
@@ -46,14 +47,16 @@ function TeamPage() {
   const sendInviteFn = useServerFn(inviteTeamMember);
 
   const load = async () => {
-    const [inv, mem, prof] = await Promise.all([
+    const [inv, mem, prof, comm] = await Promise.all([
       supabase.from("team_invites").select("id,name,phone,role,accepted_at,created_at").order("created_at", { ascending: false }),
       supabase.from("user_roles").select("user_id,role").in("role", ["admin", "team"]),
       supabase.from("profiles").select("id,display_name,email"),
+      supabase.from("invitations").select("id,guest_name,guest_email,guest_phone").eq("is_committee", true).order("guest_name"),
     ]);
     setInvites((inv.data ?? []) as Invite[]);
     const profMap = new Map((prof.data ?? []).map((p) => [p.id, p]));
     setMembers((mem.data ?? []).map((m) => ({ ...m, profile: profMap.get(m.user_id) })));
+    setCommitteeGuests((comm.data ?? []) as CommitteeGuest[]);
   };
   useEffect(() => { load(); }, []);
 
