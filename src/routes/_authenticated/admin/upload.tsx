@@ -1110,9 +1110,9 @@ function UploadPage() {
 
       <Card className="p-6 space-y-4 border-terracotta/40 bg-terracotta/5">
         <p className="text-xs text-muted-foreground whitespace-pre-line">
-          To add guests, take a screenshot from your phone contact list and upload the picture. The system will read it and add each to the guest invite list (8 max at a time).{"\n\n"}
-          You can also add a spreadsheet of your invited guest by listing each by name and phone number on seperate lines.{"\n\n"}
-          The system will upload your guest list and verify each person ensuring your guest receives only one invitation.
+          Option 1: Add your guests BEFORE TEXTING THEM THE INVITATION to ensure they receive only ONE INVITATION. We all know many of the same peope, this ensures no duplicate invitations. (8 screenshots max at a time).{"\n\n"}
+          Option 2: You can add a spreadsheet of your guests by listing each by name and phone number per seperate line and collumn.{"\n\n"}
+          The system crosschecks your guest list with the rest of the comittee volunteers flagging duplicate invitations. Only invite those in good standing in the congregation.
         </p>
 
         <div className="grid gap-3 sm:grid-cols-2">
