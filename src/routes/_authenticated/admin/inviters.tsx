@@ -657,7 +657,7 @@ function InvitersPage() {
                 <Upload className="w-5 h-5 text-terracotta" /> Upload your contacts to invite
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Add your guests from a CSV or phone contact file without leaving this page.
+                Please add your guests in either phone contact screenshots or a spreadsheet to ensure guests don't receive multiple invitations.
               </p>
             </div>
             {events.length > 1 && (
