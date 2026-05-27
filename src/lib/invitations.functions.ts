@@ -16,10 +16,19 @@ export const getMyInvitation = createServerFn({ method: "GET" })
     const phoneNorm = String(rawPhone).replace(/[^0-9]/g, "");
     if (!phoneNorm || phoneNorm.length < 7) return { invitation: null, rsvp: null, order: null };
 
+    // guest_phone_normalized is a generated column that strips non-digits from
+    // whatever was typed, so the same US number can be stored as "8082787562"
+    // (10) or "18082787562" (11). Match both.
+    const candidates = Array.from(new Set([
+      phoneNorm,
+      phoneNorm.length === 11 && phoneNorm.startsWith("1") ? phoneNorm.slice(1) : phoneNorm,
+      phoneNorm.length === 10 ? `1${phoneNorm}` : phoneNorm,
+    ]));
+
     const { data: inv, error } = await supabaseAdmin
       .from("invitations")
       .select("id,event_id,guest_name,guest_email,guest_phone,notes,rsvp_token,created_at,events(title,description,starts_at,ends_at,location,virtual_link)")
-      .eq("guest_phone_normalized", phoneNorm)
+      .in("guest_phone_normalized", candidates)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -237,11 +246,17 @@ export const getPublicRsvpByPhone = createServerFn({ method: "GET" })
       .from("events").select("id").order("starts_at", { ascending: true }).limit(1).maybeSingle();
     if (!ev) return { invitation: null, rsvp: null, preorder: null };
 
+    const candidates = Array.from(new Set([
+      phoneNorm,
+      phoneNorm.length === 11 && phoneNorm.startsWith("1") ? phoneNorm.slice(1) : phoneNorm,
+      phoneNorm.length === 10 ? `1${phoneNorm}` : phoneNorm,
+    ]));
+
     const { data: invitation, error: invErr } = await supabaseAdmin
       .from("invitations")
       .select("id,guest_name,guest_phone")
       .eq("event_id", ev.id)
-      .eq("guest_phone_normalized", phoneNorm)
+      .in("guest_phone_normalized", candidates)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
