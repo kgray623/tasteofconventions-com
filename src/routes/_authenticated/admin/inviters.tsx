@@ -792,7 +792,7 @@ function InvitersPage() {
 
       <Card className="p-0 overflow-hidden">
         <div className="px-6 py-4 border-b border-border">
-          <h2 className="font-display text-xl">Inviters & usage</h2>
+          <h2 className="font-display text-xl">Steering committee invitations &amp; usage</h2>
           <p className="text-sm text-muted-foreground">
             Seats are counted from RSVPs marked attending. Unused quota stays in the open pool.
           </p>
