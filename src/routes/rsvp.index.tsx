@@ -160,7 +160,7 @@ function PreviewPage() {
           party_size: partySize,
           attendance_mode: attendanceMode,
           ordering_food: orderingFoodBool,
-          invited_by: (invitedBy === "__other__" ? invitedByOther.trim() : invitedBy) || null,
+          invited_by: finalInvitedBy,
           cuisine_selections: selections,
         },
       });
