@@ -166,6 +166,7 @@ function parseContactText(value: string) {
 }
 
 const uploadDraftKey = (userId?: string) => `admin-upload-draft:${userId ?? "unknown"}`;
+const TOTAL_RSVP_CAP = 550;
 
 function loadUploadDraft(userId?: string) {
   if (typeof window === "undefined") return null;
@@ -250,6 +251,7 @@ function UploadPage() {
   const [quotaNote, setQuotaNote] = useState<string>("");
   const [quotaRequestedAt, setQuotaRequestedAt] = useState<string | null>(null);
   const [savingQuotaReq, setSavingQuotaReq] = useState(false);
+  const [quotaPool, setQuotaPool] = useState({ total: TOTAL_RSVP_CAP, allocated: 0 });
 
   const loadSavedGuests = async (evId: string) => {
     if (!evId) {
@@ -336,8 +338,16 @@ function UploadPage() {
           .maybeSingle();
         inv = namedInv;
       }
+      const { data: allInviters } = await supabase
+        .from("inviters")
+        .select("quota,active");
+      const allocated = (allInviters ?? []).reduce(
+        (sum, row) => sum + (row.active === false ? 0 : row.quota ?? 0),
+        0,
+      );
       if (!alive) return;
       setMyQuota(inv?.quota ?? null);
+      setQuotaPool({ total: TOTAL_RSVP_CAP, allocated });
       setInviterId(inv?.id ?? null);
       setRequestedQuota(
         inv?.requested_quota != null ? String(inv.requested_quota) : "",
