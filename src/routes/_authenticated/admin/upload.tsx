@@ -346,9 +346,18 @@ function UploadPage() {
         (sum, row) => sum + (row.active === false ? 0 : row.quota ?? 0),
         0,
       );
+      const { data: attendingRows } = await supabase
+        .from("rsvps")
+        .select("party_size,status")
+        .eq("status", "yes");
+      const attendingTotal = (attendingRows ?? []).reduce(
+        (sum, r) => sum + (r.party_size ?? 1),
+        0,
+      );
       if (!alive) return;
       setMyQuota(inv?.quota ?? null);
       setQuotaPool({ total: TOTAL_RSVP_CAP, allocated });
+      setRsvpAttendingTotal(attendingTotal);
       setInviterId(inv?.id ?? null);
       setRequestedQuota(
         inv?.requested_quota != null ? String(inv.requested_quota) : "",
