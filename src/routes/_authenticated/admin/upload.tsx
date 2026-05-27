@@ -242,6 +242,14 @@ function UploadPage() {
   const [myQuota, setMyQuota] = useState<number | null>(null);
   const [myRsvpSeats, setMyRsvpSeats] = useState(0);
   const [myRsvpCount, setMyRsvpCount] = useState(0);
+  const screenshotRef = useRef<HTMLInputElement>(null);
+  const [screenshotBusy, setScreenshotBusy] = useState(false);
+  const extractContacts = useServerFn(extractContactsFromImages);
+  const [inviterId, setInviterId] = useState<string | null>(null);
+  const [requestedQuota, setRequestedQuota] = useState<string>("");
+  const [quotaNote, setQuotaNote] = useState<string>("");
+  const [quotaRequestedAt, setQuotaRequestedAt] = useState<string | null>(null);
+  const [savingQuotaReq, setSavingQuotaReq] = useState(false);
 
   const loadSavedGuests = async (evId: string) => {
     if (!evId) {
