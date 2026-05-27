@@ -20,6 +20,7 @@ type Profile = { id: string; display_name: string | null; email: string | null }
 
 function CategoriesPage() {
   const { isAdmin, loading: rolesLoading } = useRoles();
+  const { user } = useAuth();
   const [cats, setCats] = useState<Cat[]>([]);
   const [assigns, setAssigns] = useState<Assign[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
