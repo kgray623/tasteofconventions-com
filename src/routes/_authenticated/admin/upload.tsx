@@ -1089,13 +1089,10 @@ function UploadPage() {
           <ImageIcon className="w-4 h-4 text-terracotta" />
           <p className="font-medium">Upload screenshots of those you want to invite</p>
         </div>
-        <p className="text-xs text-muted-foreground">
-          To add guests, take a screenshot from your phone contact list and
-          upload the picture. The system will read it and add them to the list.
-          You can also add a spreadsheet of the name and phone number of your
-          invited guests on a seperate line. The system will upload your guest
-          list and verify another person on the team hasn't invited them
-          ensuring your guest receives only one invitation.
+        <p className="text-xs text-muted-foreground whitespace-pre-line">
+          To add guests, take a screenshot from your phone contact list and upload the picture. The system will read it and add each to the guest invite list (8 max at a time).{"\n\n"}
+          You can also add a spreadsheet of your invited guest by listing each by name and phone number on seperate lines.{"\n\n"}
+          The system will upload your guest list and verify each person ensuring your guest receives only one invitation.
         </p>
         <Button
           type="button"
