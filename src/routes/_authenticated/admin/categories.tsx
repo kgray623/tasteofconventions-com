@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Plus, X, Hand, Save } from "lucide-react";
+import { Plus, X, Hand, Save, MessageCircle } from "lucide-react";
 import { useRoles } from "@/hooks/use-roles";
 import { useAuth } from "@/hooks/use-auth";
+import { CategoryChat } from "@/components/CategoryChat";
 
 export const Route = createFileRoute("/_authenticated/admin/categories")({
   component: CategoriesPage,
@@ -32,6 +33,7 @@ function CategoriesPage() {
   const [newDesc, setNewDesc] = useState("");
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [editingDesc, setEditingDesc] = useState<Record<string, string>>({});
+  const [chatOpen, setChatOpen] = useState<string | null>(null);
 
   const load = async () => {
     const [c, a, p] = await Promise.all([
@@ -118,6 +120,11 @@ function CategoriesPage() {
     if (a.volunteer_name) return a.volunteer_name;
     const p = profiles.find((x) => x.id === a.user_id);
     return p?.display_name || p?.email || "Unknown";
+  };
+
+  const nameForUser = (uid: string) => {
+    const p = profiles.find((x) => x.id === uid);
+    return p?.display_name || p?.email || "Member";
   };
 
   if (rolesLoading) return <p className="text-muted-foreground">Loading assignments…</p>;
@@ -222,6 +229,22 @@ function CategoriesPage() {
                     <>
                       <Button
                         size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          if (!user) return toast.error("Please sign in.");
+                          if (!alreadyVolunteered && !isAdmin) {
+                            return toast.info("Volunteer for this category to join the chat.");
+                          }
+                          setChatOpen(c.id);
+                        }}
+                        disabled={!user}
+                        className="w-full"
+                      >
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        Open chat
+                      </Button>
+                      <Button
+                        size="sm"
                         onClick={() => addAssign(c.id, true)}
                         disabled={!user}
                         className="w-full bg-terracotta text-cream hover:bg-terracotta/90"
@@ -263,6 +286,15 @@ function CategoriesPage() {
                   );
                 })()}
               </div>
+              <CategoryChat
+                open={chatOpen === c.id}
+                onOpenChange={(v) => setChatOpen(v ? c.id : null)}
+                categoryId={c.id}
+                categoryName={c.name}
+                canChat={isAdmin || (!!user && items.some((a) => a.user_id === user.id))}
+                isAdmin={isAdmin}
+                nameFor={nameForUser}
+              />
             </Card>
           );
         })}
