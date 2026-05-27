@@ -152,7 +152,6 @@ function InvitersPage() {
   const [adding, setAdding] = useState(false);
   const [resendingId, setResendingId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const screenshotRef = useRef<HTMLInputElement>(null);
   const [screenshotBusy, setScreenshotBusy] = useState(false);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const inviteTeamMemberFn = useServerFn(inviteTeamMember);
@@ -386,7 +385,6 @@ function InvitersPage() {
       toast.error("Couldn't read those screenshots", { description: getErrorMessage(e) });
     } finally {
       setScreenshotBusy(false);
-      if (screenshotRef.current) screenshotRef.current.value = "";
     }
   };
 
@@ -679,32 +677,31 @@ function InvitersPage() {
             <input
               ref={fileRef}
               type="file"
-              accept=".csv,text/csv"
-              className="hidden"
-              onChange={(e) => e.target.files?.[0] && parseContactFile(e.target.files[0])}
-            />
-            <input
-              ref={screenshotRef}
-              type="file"
-              accept="image/*"
+              accept=".csv,text/csv,image/*"
               multiple
               className="hidden"
               disabled={screenshotBusy}
-              onChange={(e) => e.target.files && e.target.files.length > 0 && onScreenshots(e.target.files)}
+              onChange={(e) => {
+                const files = Array.from(e.target.files ?? []);
+                if (files.length === 0) return;
+                const images = files.filter((f) => f.type.startsWith("image/"));
+                if (images.length > 0) {
+                  onScreenshots(images);
+                } else {
+                  parseContactFile(files[0]);
+                }
+                e.target.value = "";
+              }}
             />
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="outline"
-                disabled={screenshotBusy}
-                onClick={() => screenshotRef.current?.click()}
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                {screenshotBusy ? "Reading…" : "Upload screenshot of contacts"}
-              </Button>
-              <Button variant="outline" onClick={() => fileRef.current?.click()}>
-                <FileUp className="w-4 h-4 mr-2" /> Upload a spreadsheet
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              className="w-full"
+              disabled={screenshotBusy}
+              onClick={() => fileRef.current?.click()}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              {screenshotBusy ? "Reading…" : "Upload spreadsheet or screenshot of contacts"}
+            </Button>
             {contacts.length > 0 && (
               <div className="rounded-lg border border-border bg-background p-3 space-y-3">
                 <p className="text-sm font-medium">
