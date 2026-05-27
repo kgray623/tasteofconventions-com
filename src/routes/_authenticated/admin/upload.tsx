@@ -1035,6 +1035,53 @@ function UploadPage() {
         </Select>
       </Card>
 
+      <Card className="p-6 space-y-3">
+        <div className="flex items-center gap-2">
+          <Target className="w-4 h-4 text-terracotta" />
+          <p className="font-medium">How many RSVPs do you want to secure?</p>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Out of the 550 guests for the event, tell the admin how many RSVPs
+          you'd like to be responsible for. Your current quota is{" "}
+          <span className="font-medium text-foreground">{myQuota ?? "not set"}</span>.
+        </p>
+        <div className="grid sm:grid-cols-[160px_1fr_auto] gap-2 items-start">
+          <Input
+            type="number"
+            min={1}
+            max={1000}
+            placeholder="e.g. 40"
+            value={requestedQuota}
+            onChange={(e) => setRequestedQuota(e.target.value)}
+          />
+          <Textarea
+            placeholder="Optional note for the admin (why this number, who you plan to invite, etc.)"
+            value={quotaNote}
+            maxLength={500}
+            onChange={(e) => setQuotaNote(e.target.value)}
+            className="min-h-[40px]"
+          />
+          <Button
+            onClick={submitQuotaRequest}
+            disabled={savingQuotaReq || !requestedQuota.trim()}
+            className="bg-ink text-cream hover:bg-ink/90"
+          >
+            {savingQuotaReq ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : quotaRequestedAt ? (
+              "Update request"
+            ) : (
+              "Send request"
+            )}
+          </Button>
+        </div>
+        {quotaRequestedAt && (
+          <p className="text-[11px] text-muted-foreground">
+            Last requested {new Date(quotaRequestedAt).toLocaleString()}.
+          </p>
+        )}
+      </Card>
+
 
       <Card className="p-6 space-y-3">
         <div className="flex items-center gap-2">
