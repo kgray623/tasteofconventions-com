@@ -124,6 +124,7 @@ function InvitersPage() {
   const [expandedHost, setExpandedHost] = useState<string | null>(null);
   const [rowBusy, setRowBusy] = useState<string | null>(null);
   const [unassigned, setUnassigned] = useState(0);
+  const [committee, setCommittee] = useState<CommitteeRow[]>([]);
   const [msgs, setMsgs] = useState<TeamMsg[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [messageBody, setMessageBody] = useState("");
