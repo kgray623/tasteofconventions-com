@@ -50,7 +50,11 @@ function PreviewPage() {
   const [wantsCuisine, setWantsCuisine] = useDraftState<"yes" | "no" | "">(draftScope, "wantsCuisine", "");
   const [submittedAt, setSubmittedAt] = useDraftState<string | null>(draftScope, "submittedAt", null);
   const [inviters, setInviters] = useState<{ id: string; name: string }[]>([]);
-  const cuisines = ["Myanmar", "African", "Indonesian"];
+  const cuisines = [
+    { key: "Myanmar", label: "Myanmar/Burmese" },
+    { key: "African", label: "African" },
+    { key: "Indonesian", label: "Indonesian" },
+  ];
   const phoneDigits = phone.replace(/\D/g, "");
   const canChooseMeals = name.trim().length > 0 && phoneDigits.length >= 7;
 
@@ -239,7 +243,7 @@ function PreviewPage() {
             <div>
               <h2 className="font-display text-2xl">Pre-order from your cultural choice restaurant</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Meals run about <strong>$20–$30 per plate</strong>. Choose Yes or No for each cuisine and enter the number of dishes you'd like from that restaurant.
+                Cultural meals will be in the 20-25.00 range. Click below to be added to the pre order list. We will negotiate with the resturants once we have a count. You will be updated with the menu to confirm in the coming weeks.
               </p>
             </div>
             {!canChooseMeals && (
@@ -249,16 +253,16 @@ function PreviewPage() {
             )}
             <div className="space-y-3">
               {cuisines.map((cuisine) => {
-                const qty = cuisineCounts[cuisine] ?? 0;
+                const qty = cuisineCounts[cuisine.key] ?? 0;
                 const selected = qty > 0;
                 const setQty = (n: number) =>
                   canChooseMeals
-                    ? setCuisineCounts({ ...cuisineCounts, [cuisine]: Math.max(0, Math.min(20, n)) })
+                    ? setCuisineCounts({ ...cuisineCounts, [cuisine.key]: Math.max(0, Math.min(20, n)) })
                     : toast.error("Please enter your full name and mobile number before choosing meals");
                 return (
-                  <div key={cuisine} className={`rounded-md border border-border bg-card p-4 space-y-3 ${canChooseMeals ? "" : "opacity-60"}`}>
+                  <div key={cuisine.key} className={`rounded-md border border-border bg-card p-4 space-y-3 ${canChooseMeals ? "" : "opacity-60"}`}>
                     <div className="flex items-center justify-between gap-3">
-                      <Label className="text-base font-display text-ink">{cuisine}</Label>
+                      <Label className="text-base font-display text-ink">{cuisine.label}</Label>
                       <div className="grid grid-cols-2 gap-2 w-36">
                         <button
                           type="button"
@@ -283,13 +287,13 @@ function PreviewPage() {
                       </div>
                     </div>
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-sm text-muted-foreground">Number of dishes</span>
+                      <span className="text-sm text-muted-foreground">How many meals do you want?</span>
                       <div className="flex items-center gap-2">
-                        <Button size="icon" variant="outline" disabled={!canChooseMeals} onClick={() => setQty(qty - 1)} aria-label={`Fewer ${cuisine} dishes`}>
+                        <Button size="icon" variant="outline" disabled={!canChooseMeals} onClick={() => setQty(qty - 1)} aria-label={`Fewer ${cuisine.label} meals`}>
                           <Minus className="w-3 h-3" />
                         </Button>
                         <span className="w-10 text-center font-display text-2xl text-ink">{qty}</span>
-                        <Button size="icon" variant="outline" disabled={!canChooseMeals} onClick={() => setQty(qty + 1)} aria-label={`More ${cuisine} dishes`}>
+                        <Button size="icon" variant="outline" disabled={!canChooseMeals} onClick={() => setQty(qty + 1)} aria-label={`More ${cuisine.label} meals`}>
                           <Plus className="w-3 h-3" />
                         </Button>
                       </div>
