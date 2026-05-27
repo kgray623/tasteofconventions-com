@@ -31,23 +31,19 @@ function normalizeMobilePhone(value: string) {
 }
 
 async function routeForUser(userId: string): Promise<RouteDestination> {
+  // Promote committee members to the "team" role so they see the full dashboard.
+  try {
+    await withTimeout(supabase.rpc("ensure_committee_team_role"), 5000);
+  } catch {
+    // non-fatal
+  }
+
   const { data: roleData } = await withTimeout(
     supabase.from("user_roles").select("role").eq("user_id", userId),
     5000,
   );
   const roles = (roleData ?? []).map((r) => r.role as string);
   if (roles.includes("admin") || roles.includes("team")) return { to: "/admin" };
-
-  // Committee members (tagged on their invitation) land on the committee dashboard.
-  try {
-    const { data: isCommittee } = await withTimeout(
-      supabase.rpc("is_current_user_committee"),
-      5000,
-    );
-    if (isCommittee === true) return { to: "/dashboard" };
-  } catch {
-    // fall through to default
-  }
 
   return { to: "/my-rsvp" };
 }

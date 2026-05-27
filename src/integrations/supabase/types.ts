@@ -831,6 +831,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      ensure_committee_team_role: { Args: never; Returns: boolean }
       get_auth_user_id_by_phone: { Args: { _phone: string }; Returns: string }
       get_auth_user_id_by_phone_digits: {
         Args: { _digits: string }
