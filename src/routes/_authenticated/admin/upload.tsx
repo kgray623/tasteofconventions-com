@@ -1085,15 +1085,15 @@ function UploadPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-5">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Total cap</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Total RSVPs</p>
           <p className="font-display text-3xl mt-2">{quotaPool.total}</p>
         </Card>
         <Card className="p-5">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">RSVPs</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Current RSVPs</p>
           <p className="font-display text-3xl mt-2">{rsvpAttendingTotal}</p>
         </Card>
         <Card className="p-5">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Requested</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Requested RSVPs</p>
           <p className="font-display text-3xl mt-2">{quotaPool.allocated}</p>
         </Card>
         <Card className="p-5">
@@ -1103,6 +1103,7 @@ function UploadPage() {
           </p>
         </Card>
       </div>
+
 
       {events.length > 1 && (
         <Card className="p-6 space-y-2">
