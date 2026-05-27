@@ -19,7 +19,10 @@ type Assign = { id: string; category_id: string; user_id: string | null; volunte
 type Profile = { id: string; display_name: string | null; email: string | null };
 
 function CategoriesPage() {
-  const { isAdmin, loading: rolesLoading } = useRoles();
+  const { isAdmin: isActualAdmin, loading: rolesLoading } = useRoles();
+  const search = useSearch({ from: "/_authenticated/admin" });
+  const previewCommittee = isActualAdmin && search.view === "committee";
+  const isAdmin = isActualAdmin && !previewCommittee;
   const { user } = useAuth();
   const [cats, setCats] = useState<Cat[]>([]);
   const [assigns, setAssigns] = useState<Assign[]>([]);
