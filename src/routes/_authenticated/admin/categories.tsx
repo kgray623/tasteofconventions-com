@@ -84,7 +84,7 @@ function CategoriesPage() {
     if (selfVolunteer) {
       if (!user) return toast.error("Please sign in to volunteer.");
       const exists = assigns.some((a) => a.category_id === catId && a.user_id === user.id);
-      if (exists) return;
+      if (exists) { toast.info("You're already volunteering for this."); return; }
       const { error } = await supabase.from("category_assignments").insert({
         category_id: catId,
         user_id: user.id,
