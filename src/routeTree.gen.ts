@@ -30,6 +30,7 @@ import { Route as AuthenticatedAdminUploadRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminTeamRouteImport } from './routes/_authenticated/admin/team'
 import { Route as AuthenticatedAdminRestaurantsRouteImport } from './routes/_authenticated/admin/restaurants'
 import { Route as AuthenticatedAdminPreordersRouteImport } from './routes/_authenticated/admin/preorders'
+import { Route as AuthenticatedAdminMyRsvpRouteImport } from './routes/_authenticated/admin/my-rsvp'
 import { Route as AuthenticatedAdminInvitersRouteImport } from './routes/_authenticated/admin/inviters'
 import { Route as AuthenticatedAdminInvitationRouteImport } from './routes/_authenticated/admin/invitation'
 import { Route as AuthenticatedAdminEventRouteImport } from './routes/_authenticated/admin/event'
@@ -151,6 +152,12 @@ const AuthenticatedAdminPreordersRoute =
     path: '/preorders',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminMyRsvpRoute =
+  AuthenticatedAdminMyRsvpRouteImport.update({
+    id: '/my-rsvp',
+    path: '/my-rsvp',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminInvitersRoute =
   AuthenticatedAdminInvitersRouteImport.update({
     id: '/inviters',
@@ -241,6 +248,7 @@ export interface FileRoutesByFullPath {
   '/admin/event': typeof AuthenticatedAdminEventRoute
   '/admin/invitation': typeof AuthenticatedAdminInvitationRoute
   '/admin/inviters': typeof AuthenticatedAdminInvitersRoute
+  '/admin/my-rsvp': typeof AuthenticatedAdminMyRsvpRoute
   '/admin/preorders': typeof AuthenticatedAdminPreordersRoute
   '/admin/restaurants': typeof AuthenticatedAdminRestaurantsRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
@@ -274,6 +282,7 @@ export interface FileRoutesByTo {
   '/admin/event': typeof AuthenticatedAdminEventRoute
   '/admin/invitation': typeof AuthenticatedAdminInvitationRoute
   '/admin/inviters': typeof AuthenticatedAdminInvitersRoute
+  '/admin/my-rsvp': typeof AuthenticatedAdminMyRsvpRoute
   '/admin/preorders': typeof AuthenticatedAdminPreordersRoute
   '/admin/restaurants': typeof AuthenticatedAdminRestaurantsRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
@@ -310,6 +319,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/event': typeof AuthenticatedAdminEventRoute
   '/_authenticated/admin/invitation': typeof AuthenticatedAdminInvitationRoute
   '/_authenticated/admin/inviters': typeof AuthenticatedAdminInvitersRoute
+  '/_authenticated/admin/my-rsvp': typeof AuthenticatedAdminMyRsvpRoute
   '/_authenticated/admin/preorders': typeof AuthenticatedAdminPreordersRoute
   '/_authenticated/admin/restaurants': typeof AuthenticatedAdminRestaurantsRoute
   '/_authenticated/admin/team': typeof AuthenticatedAdminTeamRoute
@@ -346,6 +356,7 @@ export interface FileRouteTypes {
     | '/admin/event'
     | '/admin/invitation'
     | '/admin/inviters'
+    | '/admin/my-rsvp'
     | '/admin/preorders'
     | '/admin/restaurants'
     | '/admin/team'
@@ -379,6 +390,7 @@ export interface FileRouteTypes {
     | '/admin/event'
     | '/admin/invitation'
     | '/admin/inviters'
+    | '/admin/my-rsvp'
     | '/admin/preorders'
     | '/admin/restaurants'
     | '/admin/team'
@@ -414,6 +426,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/event'
     | '/_authenticated/admin/invitation'
     | '/_authenticated/admin/inviters'
+    | '/_authenticated/admin/my-rsvp'
     | '/_authenticated/admin/preorders'
     | '/_authenticated/admin/restaurants'
     | '/_authenticated/admin/team'
@@ -598,6 +611,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminPreordersRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/my-rsvp': {
+      id: '/_authenticated/admin/my-rsvp'
+      path: '/my-rsvp'
+      fullPath: '/admin/my-rsvp'
+      preLoaderRoute: typeof AuthenticatedAdminMyRsvpRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/inviters': {
       id: '/_authenticated/admin/inviters'
       path: '/inviters'
@@ -693,6 +713,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminEventRoute: typeof AuthenticatedAdminEventRoute
   AuthenticatedAdminInvitationRoute: typeof AuthenticatedAdminInvitationRoute
   AuthenticatedAdminInvitersRoute: typeof AuthenticatedAdminInvitersRoute
+  AuthenticatedAdminMyRsvpRoute: typeof AuthenticatedAdminMyRsvpRoute
   AuthenticatedAdminPreordersRoute: typeof AuthenticatedAdminPreordersRoute
   AuthenticatedAdminRestaurantsRoute: typeof AuthenticatedAdminRestaurantsRoute
   AuthenticatedAdminTeamRoute: typeof AuthenticatedAdminTeamRoute
@@ -709,6 +730,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminEventRoute: AuthenticatedAdminEventRoute,
   AuthenticatedAdminInvitationRoute: AuthenticatedAdminInvitationRoute,
   AuthenticatedAdminInvitersRoute: AuthenticatedAdminInvitersRoute,
+  AuthenticatedAdminMyRsvpRoute: AuthenticatedAdminMyRsvpRoute,
   AuthenticatedAdminPreordersRoute: AuthenticatedAdminPreordersRoute,
   AuthenticatedAdminRestaurantsRoute: AuthenticatedAdminRestaurantsRoute,
   AuthenticatedAdminTeamRoute: AuthenticatedAdminTeamRoute,
