@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useRoles } from "@/hooks/use-roles";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,7 @@ const inviteSchema = z.object({
 
 function TeamPage() {
   const { user } = useAuth();
+  const { isAdmin } = useRoles();
   const [invites, setInvites] = useState<Invite[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [name, setName] = useState("");
@@ -87,36 +89,38 @@ function TeamPage() {
 
   return (
     <div className="space-y-6">
-      <Card className="p-5 space-y-4">
-        <div className="flex items-center gap-2">
-          <Phone className="w-4 h-4 text-terracotta" />
-          <h2 className="font-display text-xl">Add Steering Committee Member</h2>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Full name"
-          />
-          <Input
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="Phone number"
-          />
-          <Select value={role} onValueChange={(v) => setRole(v as "team" | "admin")}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="team">Committee</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <Button onClick={sendInvite} disabled={sending} className="bg-ink text-cream hover:bg-ink/90">{sending ? "Adding…" : "Add"}</Button>
-        <p className="text-xs text-muted-foreground">
-          When this person signs up and enters the same phone number, they'll automatically get {role} access.
-        </p>
-      </Card>
+      {isAdmin && (
+        <Card className="p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <Phone className="w-4 h-4 text-terracotta" />
+            <h2 className="font-display text-xl">Add Steering Committee Member</h2>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Full name"
+            />
+            <Input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="Phone number"
+            />
+            <Select value={role} onValueChange={(v) => setRole(v as "team" | "admin")}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="team">Committee</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={sendInvite} disabled={sending} className="bg-ink text-cream hover:bg-ink/90">{sending ? "Adding…" : "Add"}</Button>
+          <p className="text-xs text-muted-foreground">
+            When this person signs up and enters the same phone number, they'll automatically get {role} access.
+          </p>
+        </Card>
+      )}
 
       <Card className="overflow-hidden">
         <div className="p-4 border-b border-border flex items-center gap-2">
@@ -134,33 +138,8 @@ function TeamPage() {
                 <Badge variant={m.role === "admin" ? "default" : "secondary"}>
                   {m.role === "admin" && <ShieldCheck className="w-3 h-3 mr-1" />}{m.role}
                 </Badge>
-                <button onClick={() => removeRole(m.user_id, m.role)} className="text-muted-foreground hover:text-terracotta">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      <Card className="overflow-hidden">
-        <div className="p-4 border-b border-border">
-          <h2 className="font-display text-lg">Pending &amp; past invites</h2>
-        </div>
-        <div className="divide-y divide-border">
-          {invites.length === 0 && <p className="p-6 text-sm text-muted-foreground text-center">No invites added yet.</p>}
-          {invites.map((i) => (
-            <div key={i.id} className="p-4 flex items-center justify-between gap-3">
-              <div>
-                <p className="font-medium">{i.name || i.phone || "—"}</p>
-                <p className="text-xs text-muted-foreground">
-                  {i.phone ? i.phone : "No phone"} · {i.accepted_at ? `Accepted ${new Date(i.accepted_at).toLocaleDateString()}` : "Awaiting signup"}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">{i.role}</Badge>
-                {!i.accepted_at && (
-                  <button onClick={() => revoke(i.id)} className="text-muted-foreground hover:text-terracotta">
+                {isAdmin && (
+                  <button onClick={() => removeRole(m.user_id, m.role)} className="text-muted-foreground hover:text-terracotta">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 )}
@@ -169,6 +148,35 @@ function TeamPage() {
           ))}
         </div>
       </Card>
+
+      {isAdmin && (
+        <Card className="overflow-hidden">
+          <div className="p-4 border-b border-border">
+            <h2 className="font-display text-lg">Pending &amp; past invites</h2>
+          </div>
+          <div className="divide-y divide-border">
+            {invites.length === 0 && <p className="p-6 text-sm text-muted-foreground text-center">No invites added yet.</p>}
+            {invites.map((i) => (
+              <div key={i.id} className="p-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="font-medium">{i.name || i.phone || "—"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {i.phone ? i.phone : "No phone"} · {i.accepted_at ? `Accepted ${new Date(i.accepted_at).toLocaleDateString()}` : "Awaiting signup"}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">{i.role}</Badge>
+                  {!i.accepted_at && (
+                    <button onClick={() => revoke(i.id)} className="text-muted-foreground hover:text-terracotta">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

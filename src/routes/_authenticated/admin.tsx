@@ -4,28 +4,29 @@ import { useRoles } from "@/hooks/use-roles";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlus, UtensilsCrossed, Mail, HandCoins, CalendarCog, MessageSquare } from "lucide-react";
+import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlus, UtensilsCrossed, Mail, HandCoins, CalendarCog, MessageSquare, Ticket } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — A Taste of Special Conventions" }] }),
   component: AdminLayout,
 });
 
-const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boolean; team?: boolean }[] = [
+const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boolean; team?: boolean; teamLabel?: string }[] = [
   { to: "/admin", label: "Overview", icon: ShieldCheck, exact: true },
-  { to: "/admin/event", label: "Event details", icon: CalendarCog, team: true },
+  { to: "/admin/event", label: "Event details", icon: CalendarCog },
   { to: "/admin/invitation", label: "Invitation page", icon: Mail },
-  { to: "/admin/upload", label: "Add guests", icon: Upload, team: true },
-  { to: "/admin/committee-message", label: "Committee message", icon: MessageSquare, team: true },
+  { to: "/admin/upload", label: "Add guests", icon: Upload, team: true, teamLabel: "Guest list" },
+  { to: "/admin/committee-message", label: "Committee message", icon: MessageSquare },
   { to: "/admin/inviters", label: "Inviters", icon: UserPlus },
   { to: "/admin/restaurants", label: "Restaurants", icon: UtensilsCrossed },
-  { to: "/admin/categories", label: "Assignments", icon: ListChecks, team: true },
+  { to: "/admin/categories", label: "Assignments", icon: ListChecks, team: true, teamLabel: "Duties" },
   { to: "/admin/donations", label: "Donations", icon: HandCoins },
-  { to: "/admin/team", label: "Committee", icon: Users },
-  { to: "/admin/chat", label: "Committee chat", icon: MessagesSquare, team: true },
+  { to: "/admin/team", label: "Committee", icon: Users, team: true, teamLabel: "Volunteers" },
+  { to: "/admin/chat", label: "Committee chat", icon: MessagesSquare, team: true, teamLabel: "Chat" },
+  { to: "/my-rsvp", label: "My RSVP", icon: Ticket, team: true },
 ];
 
-const teamAllowedPaths = new Set(["/admin", "/admin/event", "/admin/upload", "/admin/committee-message", "/admin/categories", "/admin/chat"]);
+const teamAllowedPaths = new Set(["/admin", "/admin/upload", "/admin/categories", "/admin/team", "/admin/chat"]);
 
 function AdminLayout() {
   const { isAdmin, isTeam, loading } = useRoles();
@@ -107,6 +108,7 @@ function AdminLayout() {
       <nav className="flex flex-wrap gap-1 border-b border-border mb-8">
         {visibleTabs.map((t) => {
           const active = t.exact ? path === t.to : path.startsWith(t.to);
+          const label = !isAdmin && t.teamLabel ? t.teamLabel : t.label;
           return (
             <Link
               key={t.to}
@@ -117,7 +119,7 @@ function AdminLayout() {
                   : "border-transparent text-muted-foreground hover:text-ink"
               }`}
             >
-              <t.icon className="w-4 h-4" /> {t.label}
+              <t.icon className="w-4 h-4" /> {label}
             </Link>
           );
         })}
