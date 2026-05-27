@@ -674,7 +674,10 @@ function InvitersPage() {
                 </Button>
               </div>
             )}
-            <Link to="/admin/upload">
+            <Link
+              to="/admin/upload"
+              search={previewCommittee ? { view: "committee" } : { view: undefined }}
+            >
               <Button variant="ghost" className="w-full">
                 Open full uploader
               </Button>
