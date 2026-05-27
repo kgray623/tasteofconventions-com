@@ -684,18 +684,25 @@ function InvitersPage() {
               onChange={(e) => e.target.files?.[0] && parseContactFile(e.target.files[0])}
             />
             <input
-              ref={vcardRef}
+              ref={screenshotRef}
               type="file"
-              accept=".vcf,text/vcard"
+              accept="image/*"
+              multiple
               className="hidden"
-              onChange={(e) => e.target.files?.[0] && parseContactFile(e.target.files[0])}
+              disabled={screenshotBusy}
+              onChange={(e) => e.target.files && e.target.files.length > 0 && onScreenshots(e.target.files)}
             />
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" onClick={() => fileRef.current?.click()}>
-                <FileUp className="w-4 h-4 mr-2" /> CSV
+              <Button
+                variant="outline"
+                disabled={screenshotBusy}
+                onClick={() => screenshotRef.current?.click()}
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                {screenshotBusy ? "Reading…" : "Upload screenshot of contacts"}
               </Button>
-              <Button variant="outline" onClick={() => vcardRef.current?.click()}>
-                <FileUp className="w-4 h-4 mr-2" /> Contacts
+              <Button variant="outline" onClick={() => fileRef.current?.click()}>
+                <FileUp className="w-4 h-4 mr-2" /> Upload a spreadsheet
               </Button>
             </div>
             {contacts.length > 0 && (
@@ -720,14 +727,6 @@ function InvitersPage() {
                 </Button>
               </div>
             )}
-            <Link
-              to="/admin/upload"
-              search={previewCommittee ? { view: "committee" } : { view: undefined }}
-            >
-              <Button variant="ghost" className="w-full">
-                Open full uploader
-              </Button>
-            </Link>
           </Card>
         </div>
       </div>
