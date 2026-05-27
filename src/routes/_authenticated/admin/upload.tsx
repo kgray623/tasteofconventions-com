@@ -615,6 +615,11 @@ function UploadPage() {
     return <p className="text-muted-foreground">Only team members can add guests.</p>;
   }
 
+  const availableRsvps = Math.max(
+    0,
+    quotaPool.total - quotaPool.allocated + (myQuota ?? 0),
+  );
+
   const flagDuplicates = async (parsed: Parsed[]) => {
     const seenE = new Map<string, number>();
     const seenP = new Map<string, number>();
@@ -1094,6 +1099,9 @@ function UploadPage() {
           />
           <p className="text-[11px] text-muted-foreground">
             Current quota: <span className="font-medium text-foreground">{myQuota ?? "not set"}</span>.
+          </p>
+          <p className="text-sm font-medium text-terracotta">
+            {availableRsvps} RSVP{availableRsvps === 1 ? "" : "s"} available to request
           </p>
         </div>
         <div className="grid sm:grid-cols-[160px_auto] gap-2 items-start">
