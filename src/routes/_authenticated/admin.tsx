@@ -65,7 +65,7 @@ function AdminLayout() {
   }, [loading, isTeam, navigate]);
 
   useEffect(() => {
-    if (loading || isAdmin || !isTeam || teamAllowedPaths.has(path)) return;
+    if (loading || isAdmin || !isTeam || isTeamAllowedPath(path)) return;
     navigate({ to: "/admin" });
   }, [loading, isAdmin, isTeam, path, navigate]);
 
