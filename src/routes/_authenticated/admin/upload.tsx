@@ -166,6 +166,7 @@ function parseContactText(value: string) {
 }
 
 const uploadDraftKey = (userId?: string) => `admin-upload-draft:${userId ?? "unknown"}`;
+const TOTAL_RSVP_CAP = 550;
 
 function loadUploadDraft(userId?: string) {
   if (typeof window === "undefined") return null;
@@ -250,6 +251,7 @@ function UploadPage() {
   const [quotaNote, setQuotaNote] = useState<string>("");
   const [quotaRequestedAt, setQuotaRequestedAt] = useState<string | null>(null);
   const [savingQuotaReq, setSavingQuotaReq] = useState(false);
+  const [quotaPool, setQuotaPool] = useState({ total: TOTAL_RSVP_CAP, allocated: 0 });
 
   const loadSavedGuests = async (evId: string) => {
     if (!evId) {
@@ -336,8 +338,16 @@ function UploadPage() {
           .maybeSingle();
         inv = namedInv;
       }
+      const { data: allInviters } = await supabase
+        .from("inviters")
+        .select("quota,active");
+      const allocated = (allInviters ?? []).reduce(
+        (sum, row) => sum + (row.active === false ? 0 : row.quota ?? 0),
+        0,
+      );
       if (!alive) return;
       setMyQuota(inv?.quota ?? null);
+      setQuotaPool({ total: TOTAL_RSVP_CAP, allocated });
       setInviterId(inv?.id ?? null);
       setRequestedQuota(
         inv?.requested_quota != null ? String(inv.requested_quota) : "",
@@ -604,6 +614,11 @@ function UploadPage() {
   if (!isTeam) {
     return <p className="text-muted-foreground">Only team members can add guests.</p>;
   }
+
+  const availableRsvps = Math.max(
+    0,
+    quotaPool.total - quotaPool.allocated + (myQuota ?? 0),
+  );
 
   const flagDuplicates = async (parsed: Parsed[]) => {
     const seenE = new Map<string, number>();
@@ -1084,6 +1099,9 @@ function UploadPage() {
           />
           <p className="text-[11px] text-muted-foreground">
             Current quota: <span className="font-medium text-foreground">{myQuota ?? "not set"}</span>.
+          </p>
+          <p className="text-sm font-medium text-terracotta">
+            {availableRsvps} RSVP{availableRsvps === 1 ? "" : "s"} available to request
           </p>
         </div>
         <div className="grid sm:grid-cols-[160px_auto] gap-2 items-start">
