@@ -576,7 +576,10 @@ function RsvpPage() {
         )}
 
         <Card className="p-5 space-y-4 border-terracotta/30 bg-card">
-          <Button onClick={handleSubmit} className="bg-ink text-cream hover:bg-ink/90 w-full h-12 text-base">
+          <Button
+            onClick={handleSubmit}
+            className="bg-ink text-cream hover:bg-ink/90 w-full h-12 text-base"
+          >
             Save RSVP
           </Button>
         </Card>
