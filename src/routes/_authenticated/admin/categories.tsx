@@ -198,8 +198,8 @@ function CategoriesPage() {
                     return (
                       <div key={a.id} className="flex items-center justify-between gap-2 bg-secondary/50 rounded-md px-3 py-2">
                         <div className="flex items-center gap-2 min-w-0">
-                          <Badge variant={a.user_id ? "default" : "secondary"} className="text-[10px] shrink-0">
-                            {a.user_id ? "team" : "volunteer"}
+                          <Badge variant="secondary" className="text-[10px] shrink-0">
+                            volunteer
                           </Badge>
                           <span className="text-sm truncate">{labelFor(a)}{isMe ? " (you)" : ""}</span>
                         </div>
