@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Phone, Trash2, ShieldCheck, Users } from "lucide-react";
+import { Phone, Trash2, ShieldCheck, Users, Pencil, Check, X } from "lucide-react";
 import { inviteTeamMember } from "@/lib/team.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/team")({
@@ -44,6 +44,9 @@ function TeamPage() {
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState<"team" | "admin">("team");
   const [sending, setSending] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
   const sendInviteFn = useServerFn(inviteTeamMember);
 
   const load = async () => {
@@ -82,6 +85,32 @@ function TeamPage() {
     if (error) return toast.error(error.message);
     load();
   };
+
+  const startEdit = (i: Invite) => {
+    setEditingId(i.id);
+    setEditName(i.name ?? "");
+    setEditPhone(i.phone ?? "");
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditName("");
+    setEditPhone("");
+  };
+
+  const saveEdit = async (id: string) => {
+    const parsed = inviteSchema.safeParse({ name: editName, phone: editPhone });
+    if (!parsed.success) return toast.error(parsed.error.issues[0]?.message ?? "Check the form");
+    const { error } = await supabase
+      .from("team_invites")
+      .update({ name: parsed.data.name, phone: parsed.data.phone })
+      .eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Updated");
+    cancelEdit();
+    load();
+  };
+
 
   const removeRole = async (userId: string, r: string) => {
     if (userId === user?.id && r === "admin") return toast.error("You can't remove your own admin role.");
@@ -187,18 +216,41 @@ function TeamPage() {
             {invites.length === 0 && <p className="p-6 text-sm text-muted-foreground text-center">No invites added yet.</p>}
             {invites.map((i) => (
               <div key={i.id} className="p-4 flex items-center justify-between gap-3">
-                <div>
-                  <p className="font-medium">{i.name || i.phone || "—"}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {i.phone ? i.phone : "No phone"} · {i.accepted_at ? `Accepted ${new Date(i.accepted_at).toLocaleDateString()}` : "Awaiting signup"}
-                  </p>
-                </div>
+                {editingId === i.id ? (
+                  <div className="flex-1 grid gap-2 sm:grid-cols-2">
+                    <Input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Full name" />
+                    <Input type="tel" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="Phone number" />
+                  </div>
+                ) : (
+                  <div>
+                    <p className="font-medium">{i.name || i.phone || "—"}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {i.phone ? i.phone : "No phone"} · {i.accepted_at ? `Accepted ${new Date(i.accepted_at).toLocaleDateString()}` : "Awaiting signup"}
+                    </p>
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                   <Badge variant="outline">{i.role}</Badge>
-                  {!i.accepted_at && (
-                    <button onClick={() => revoke(i.id)} className="text-muted-foreground hover:text-terracotta">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                  {editingId === i.id ? (
+                    <>
+                      <button onClick={() => saveEdit(i.id)} className="text-muted-foreground hover:text-terracotta" aria-label="Save">
+                        <Check className="w-4 h-4" />
+                      </button>
+                      <button onClick={cancelEdit} className="text-muted-foreground hover:text-terracotta" aria-label="Cancel">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button onClick={() => startEdit(i)} className="text-muted-foreground hover:text-terracotta" aria-label="Edit">
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      {!i.accepted_at && (
+                        <button onClick={() => revoke(i.id)} className="text-muted-foreground hover:text-terracotta" aria-label="Remove">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
