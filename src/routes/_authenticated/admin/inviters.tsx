@@ -57,7 +57,7 @@ type Inviter = {
 };
 type TeamMsg = { id: string; user_id: string; body: string; created_at: string };
 type Profile = { id: string; display_name: string | null; email: string | null };
-type Cat = { id: string; name: string; sort_order: number };
+type Cat = { id: string; name: string; sort_order: number; description: string | null };
 type Assign = {
   id: string;
   category_id: string;
@@ -583,9 +583,14 @@ function InvitersPage() {
                         <p className="font-medium">{cat.name}</p>
                         <Badge variant="secondary">{items.length}</Badge>
                       </div>
+                      {cat.description && (
+                        <p className="mt-1 text-xs text-muted-foreground italic leading-relaxed">
+                          {cat.description}
+                        </p>
+                      )}
                       <div className="mt-2 flex flex-wrap items-center gap-1.5">
                         <span className="text-xs text-muted-foreground">Needs a volunteer</span>
-                        {items.map((item) => (
+                        {isAdmin && items.map((item) => (
                           <Badge key={item.id} variant={item.user_id ? "default" : "outline"}>
                             {assignmentLabel(item)}
                           </Badge>
