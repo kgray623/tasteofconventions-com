@@ -118,8 +118,8 @@ function PreviewPage() {
       setSubmittedAt(result.rsvp.responded_at ?? new Date().toISOString());
       setSaved(false);
       toast.success("Your RSVP was restored.");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Could not restore RSVP");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Could not restore RSVP");
     } finally {
       setRestoring(false);
     }
@@ -158,8 +158,8 @@ function PreviewPage() {
       setSaved(true);
       setSubmittedAt(new Date().toISOString());
       toast.success("RSVP saved — thank you!");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Could not save RSVP");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Could not save RSVP");
     } finally {
       setSaving(false);
     }
@@ -189,7 +189,7 @@ function PreviewPage() {
             ].map((o) => (
               <button
                 key={o.v}
-                onClick={() => setStatus(o.v as any)}
+                onClick={() => setStatus(o.v as "yes" | "no")}
                 className={`p-4 rounded-md border-2 transition flex flex-col items-center gap-2 ${
                   status === o.v
                     ? "border-ink bg-ink text-cream"
