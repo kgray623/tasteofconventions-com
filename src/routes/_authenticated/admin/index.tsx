@@ -88,7 +88,7 @@ function AdminOverview() {
         <div className="grid gap-3 sm:grid-cols-2">
           <Button asChild className="bg-ink text-cream hover:bg-ink/90 justify-start h-14">
             <Link to="/admin/categories">
-              <ListChecks className="w-4 h-4" /> Assignments
+              <ListChecks className="w-4 h-4" /> Volunteer
             </Link>
           </Button>
           <Button asChild variant="outline" className="justify-start h-14">
