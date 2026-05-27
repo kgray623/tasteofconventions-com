@@ -98,7 +98,7 @@ function PreorderPage() {
           </p>
           <h1 className="font-display text-4xl sm:text-5xl text-ink">Cuisine pre-order</h1>
           <p className="mt-4 text-muted-foreground">
-            Cultural meals will be in the $20–25 range. Tell us how many of each
+            Catered meals will be in the $25.00 range per meal. Tell us how many of each
             cuisine you'd like and we'll send the menu to confirm in the coming weeks.
           </p>
         </div>
