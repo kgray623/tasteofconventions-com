@@ -132,10 +132,10 @@ function CategoriesPage() {
                     This includes ensuring the event is dignified and alcohol is limited to those of legal age and limit intake to 2 drinks.
                   </p>
                 )}
-                {items.length === 0 && !c.name.toLowerCase().includes("alcohol") && (
+                {items.length === 0 && !c.name.toLowerCase().includes("alcohol") && isAdmin && (
                   <p className="text-xs text-muted-foreground italic">No one assigned yet.</p>
                 )}
-                {items.map((a) => (
+                {isAdmin && items.map((a) => (
                   <div key={a.id} className="flex items-center justify-between gap-2 bg-secondary/50 rounded-md px-3 py-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <Badge variant={a.user_id ? "default" : "secondary"} className="text-[10px] shrink-0">
