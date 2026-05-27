@@ -370,7 +370,7 @@ export function InvitationPage() {
             <AccordionContent className="pb-6 text-muted-foreground space-y-3">
               <p className="whitespace-pre-line">
                 Please bring food to share if you are not ordering a restaurant
-                catered meal.
+                catered meal.{" "}
               </p>
               {isAdmin && (
                 <Link to="/admin/invitation">
