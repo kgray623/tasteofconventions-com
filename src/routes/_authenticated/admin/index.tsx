@@ -84,7 +84,7 @@ function AdminOverview() {
         </Card>
 
         <p className="text-muted-foreground">
-          Use these committee tools to coordinate assignments, add your guests, chat with everyone, and review event details.
+          See the following where you can add your guests, chat with others, choose what to volunteer for, et cetera.
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <Button asChild className="bg-ink text-cream hover:bg-ink/90 justify-start h-14">
