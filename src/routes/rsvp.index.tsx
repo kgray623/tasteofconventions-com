@@ -432,7 +432,7 @@ function PreviewPage() {
           {hasSubmitted && (
             <div className="rounded-md border border-border bg-cream/40 p-4 text-sm text-ink space-y-3">
               <p className="font-medium">
-                If you need to modify your RSVP, use the login button below with your phone number.
+                If you need to modify your RSVP, use the login button with your phone number for access to your account.
               </p>
               <Link to="/login">
                 <Button variant="outline" className="w-full">
