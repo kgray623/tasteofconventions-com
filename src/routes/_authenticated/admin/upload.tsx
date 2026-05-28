@@ -29,6 +29,7 @@ import {
   MessageSquare,
   Send,
   Clock,
+  Copy,
 } from "lucide-react";
 import { getErrorMessage } from "@/lib/async-safety";
 import { useServerFn } from "@tanstack/react-start";
@@ -974,8 +975,8 @@ function UploadPage() {
   const submitQuotaRequest = async () => {
     if (!user?.id) return;
     const target = parseInt(requestedQuota, 10);
-    if (!Number.isFinite(target) || target <= 0 || target > availableRsvps) {
-      toast.error(`Enter a number between 1 and ${availableRsvps}.`);
+    if (!Number.isFinite(target) || target <= 0) {
+      toast.error(`Enter a number greater than 0.`);
       return;
     }
     setSavingQuotaReq(true);
@@ -1123,21 +1124,17 @@ function UploadPage() {
           <Target className="w-4 h-4 text-terracotta" />
           <p className="font-medium">How many RSVPs do you want to request?</p>
         </div>
-        <p className="text-sm font-medium text-terracotta">
-          {availableRsvps} RSVP{availableRsvps === 1 ? "" : "s"} available to request
-        </p>
         <div className="grid sm:grid-cols-[180px_auto] gap-2 items-start">
           <Input
             type="number"
             min={1}
-            max={availableRsvps}
             placeholder="Enter amount"
             value={requestedQuota}
             onChange={(e) => setRequestedQuota(e.target.value)}
           />
           <Button
             onClick={submitQuotaRequest}
-            disabled={savingQuotaReq || !requestedQuota.trim() || availableRsvps <= 0}
+            disabled={savingQuotaReq || !requestedQuota.trim()}
             className="bg-ink text-cream hover:bg-ink/90"
           >
             {savingQuotaReq ? (
@@ -1155,6 +1152,10 @@ function UploadPage() {
       </Card>
 
       <Card className="p-6 space-y-4 border-terracotta/40 bg-terracotta/5">
+        <div className="flex items-center gap-2">
+          <Upload className="w-5 h-5 text-terracotta" />
+          <h2 className="text-lg font-semibold">Upload your guest list</h2>
+        </div>
         <p className="text-sm text-muted-foreground whitespace-pre-line">
           Option 1: Add your guests BEFORE TEXTING THEM THE INVITATION to ensure they receive only ONE INVITATION. We all know many of the same peope, this ensures no duplicate invitations. (8 screenshots max at a time).{"\n\n"}
           Option 2: You can add a spreadsheet of your guests by listing each by name and phone number per seperate line and collumn.{"\n\n"}
@@ -1213,6 +1214,39 @@ function UploadPage() {
         </div>
       </Card>
 
+      <Card className="p-6 space-y-3 max-w-2xl">
+        <div className="flex items-center gap-2">
+          <MessageSquare className="w-5 h-5 text-terracotta" />
+          <h2 className="text-lg font-semibold">Sample message</h2>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Copy this and send it from your phone. Replace the link with each guest's invitation link before sending.
+        </p>
+        {(() => {
+          const siteUrl =
+            typeof window !== "undefined" ? window.location.origin : "https://tasteofconventions.com";
+          const sample = `Hey! Just thinking of you — I'd love for you to come to A Taste of Special Conventions on Sunday, August 30, 2026. Here's the invite: ${siteUrl}/rsvp`;
+          return (
+            <>
+              <div className="rounded-md border border-input bg-background p-3 text-sm whitespace-pre-wrap">
+                {sample}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  void navigator.clipboard
+                    .writeText(sample)
+                    .then(() => toast.success("Sample message copied"))
+                    .catch(() => toast.error("Couldn't copy"));
+                }}
+              >
+                <Copy className="w-4 h-4 mr-2" /> Copy sample message
+              </Button>
+            </>
+          );
+        })()}
+      </Card>
 
 
 
@@ -1334,11 +1368,6 @@ function UploadPage() {
 
 
       <Card className="overflow-hidden">
-        {isAdmin && (
-          <div className="px-4 pt-3 text-[11px] text-muted-foreground">
-            Tip: checking the <span className="font-medium text-terracotta">committee</span> box next to a guest saves instantly and adds them to the <Link to="/admin/inviters" className="underline">Committee</Link> page.
-          </div>
-        )}
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">
 
 
@@ -1353,25 +1382,8 @@ function UploadPage() {
                 {duplicateCount} possible duplicate{duplicateCount === 1 ? "" : "s"}
               </Badge>
             )}
-            {(() => {
-              const committeeCount = savedGuests.filter((g) => g.is_committee).length;
-              return committeeCount > 0 ? (
-                <Badge variant="outline" className="border-terracotta text-terracotta gap-1">
-                  {committeeCount} committee
-                </Badge>
-              ) : null;
-            })()}
           </div>
           <div className="flex items-center gap-2">
-            {isAdmin && (
-              <label className="inline-flex items-center gap-2 h-8 px-2 rounded-md border border-input text-xs cursor-pointer hover:bg-accent">
-                <Checkbox
-                  checked={committeeFilter}
-                  onCheckedChange={(v) => setCommitteeFilter(v === true)}
-                />
-                <span>Committee only</span>
-              </label>
-            )}
             {savedLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
           </div>
         </div>
@@ -1385,26 +1397,12 @@ function UploadPage() {
           </div>
         ) : (
           <div className="divide-y divide-border max-h-[480px] overflow-auto">
-            {savedGuests.filter((g) => !committeeFilter || g.is_committee).map((g) => {
+            {savedGuests.map((g) => {
               const isDup = duplicateGroups.dupIds.has(g.id);
               return (<div
                 key={g.id}
                 className={`px-4 py-2.5 flex flex-wrap items-center gap-3 text-sm ${isDup ? "bg-destructive/5" : ""}`}
               >
-                {isAdmin && (
-                  <label
-                    className={`inline-flex items-center gap-1.5 h-7 px-2 rounded-md border text-[11px] cursor-pointer shrink-0 ${g.is_committee ? "bg-terracotta text-cream border-terracotta hover:bg-terracotta/90" : "border-input hover:bg-accent"}`}
-                    title="Add this guest to the committee"
-                  >
-                    <Checkbox
-                      checked={g.is_committee}
-                      disabled={togglingCommitteeId === g.id}
-                      onCheckedChange={(v) => void toggleCommittee(g, v === true)}
-                      className={g.is_committee ? "border-cream data-[state=checked]:bg-cream data-[state=checked]:text-terracotta" : ""}
-                    />
-                    <span>{togglingCommitteeId === g.id ? "Saving…" : "Committee"}</span>
-                  </label>
-                )}
                 {editingSavedId === g.id ? (
                   <input
                     autoFocus
@@ -1435,11 +1433,6 @@ function UploadPage() {
                   <Badge variant="destructive" className="gap-1 h-5">
                     <AlertTriangle className="w-3 h-3" />
                     Duplicate
-                  </Badge>
-                )}
-                {g.is_committee && (
-                  <Badge className="gap-1 h-5 bg-terracotta text-cream hover:bg-terracotta">
-                    Committee
                   </Badge>
                 )}
                 {(() => {
@@ -1491,7 +1484,7 @@ function UploadPage() {
                       {markingSentId === g.id
                         ? "Saving…"
                         : g.invite_sent_at
-                          ? "Text sent"
+                          ? `Text sent ${new Date(g.invite_sent_at).toLocaleDateString()}`
                           : "I sent the text"}
                     </span>
                   </label>
