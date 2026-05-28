@@ -191,7 +191,7 @@ export function InvitationPage() {
           </p>
           <h2 className="font-display text-5xl sm:text-6xl text-ink">A Journey Together</h2>
           <p className="mt-4 text-muted-foreground">
-            Pre-order your cultural meal. Cultural meals will be in the twenty to twenty-five dollar range. Click below to pre-order. We will negotiate with the restaurants once we have an order total. You'll be updated with the menu to confirm your selection in the coming weeks.
+            Pre-order your cultural meal. Cultural meals are in the twenty to twenty-five dollar range per meal. Click below to pre-order. We will negotiate with the restaurant once we have a meal count total. You'll be updated with the menu to confirm in the coming weeks and to pay the restaurant direct.
           </p>
         </div>
 
