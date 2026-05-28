@@ -587,7 +587,7 @@ function RsvpPage() {
             Save RSVP
           </Button>
           <p className="text-sm text-muted-foreground text-center">
-            If you need to modify your RSVP later, use the login button below with your phone number.
+            If you need to modify your RSVP, use the login button with your phone number for access to your account.
           </p>
           <Link to="/login">
             <Button variant="outline" className="w-full">
