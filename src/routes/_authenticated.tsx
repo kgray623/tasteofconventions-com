@@ -1,7 +1,8 @@
-import { createFileRoute, Outlet, useLocation } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { SiteHeader } from "@/components/site-header";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthLayout,
@@ -18,14 +19,36 @@ function safeLoginRedirect(pathname: string) {
 function AuthLayout() {
   const { user, loading } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
     if (loading || user) return;
-    const search = new URLSearchParams({ redirect: safeLoginRedirect(location.pathname) });
-    window.location.replace(`/login?${search.toString()}`);
-  }, [loading, user, location.pathname]);
+    let cancelled = false;
+    setVerifying(true);
+    // Double-check via getUser() before redirecting — the AuthProvider
+    // may simply not have hydrated the session yet (e.g. right after
+    // setSession on /login → SPA navigation here).
+    void (async () => {
+      const { data } = await supabase.auth.getUser().catch(() => ({ data: { user: null } as { user: null } }));
+      if (cancelled) return;
+      if (data.user) {
+        // Session exists; AuthProvider's onAuthStateChange will pick it up.
+        setVerifying(false);
+        return;
+      }
+      const search = new URLSearchParams({ redirect: safeLoginRedirect(location.pathname) });
+      await navigate({ to: "/login", search: { redirect: safeLoginRedirect(location.pathname) } as never, replace: true })
+        .catch(() => {
+          window.location.replace(`/login?${search.toString()}`);
+        });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [loading, user, location.pathname, navigate]);
 
-  if (loading) {
+  if (loading || (verifying && !user)) {
     return (
       <div className="min-h-screen flex items-center justify-center text-muted-foreground">
         Loading…
