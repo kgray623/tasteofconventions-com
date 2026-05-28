@@ -974,8 +974,8 @@ function UploadPage() {
   const submitQuotaRequest = async () => {
     if (!user?.id) return;
     const target = parseInt(requestedQuota, 10);
-    if (!Number.isFinite(target) || target <= 0 || target > availableRsvps) {
-      toast.error(`Enter a number between 1 and ${availableRsvps}.`);
+    if (!Number.isFinite(target) || target <= 0) {
+      toast.error(`Enter a number greater than 0.`);
       return;
     }
     setSavingQuotaReq(true);
