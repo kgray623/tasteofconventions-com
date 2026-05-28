@@ -1,5 +1,5 @@
-import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
-import { FormEvent, useEffect, useState } from "react";
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -53,26 +53,29 @@ async function routeForUser(userId: string): Promise<RouteDestination> {
 function HelperLogin() {
   const { user, loading } = useAuth();
   const search = useSearch({ strict: false }) as { redirect?: string };
+  const navigate = useNavigate();
   const phoneLogin = useServerFn(signInWithPhoneOnly);
   const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
+  const navigatingRef = useRef(false);
+
+  const goToDestination = async (userId: string) => {
+    if (navigatingRef.current) return;
+    navigatingRef.current = true;
+    const destination = await routeForUser(userId);
+    const redirect = safeRedirect(search.redirect);
+    const nextTo =
+      redirect === "/admin/upload" && destination.to === "/admin"
+        ? "/admin/upload"
+        : destination.to;
+    await navigate({ to: nextTo, replace: true });
+  };
 
   useEffect(() => {
     if (loading || !user) return;
-    let cancelled = false;
-    const redirect = safeRedirect(search.redirect);
-    routeForUser(user.id).then((destination) => {
-      if (cancelled) return;
-      const nextTo =
-        redirect === "/admin/upload" && destination.to === "/admin"
-          ? "/admin/upload"
-          : destination.to;
-      window.location.replace(nextTo);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [user?.id, loading, search.redirect]);
+    void goToDestination(user.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, loading]);
 
   const signIn = async (event?: FormEvent) => {
     event?.preventDefault();
@@ -93,13 +96,9 @@ function HelperLogin() {
         throw new Error(verifyErr?.message || "Sign-in did not finish. Please try again.");
       }
       toast.success("Signed in.");
-      const destination = await routeForUser(verified.user.id);
-      const next =
-        search.redirect === "/admin/upload" && destination.to === "/admin"
-          ? { to: "/admin/upload" as const }
-          : destination;
-      window.location.replace(next.to);
+      await goToDestination(verified.user.id);
     } catch (error) {
+      navigatingRef.current = false;
       setBusy(false);
       toast.error(getErrorMessage(error));
     }
