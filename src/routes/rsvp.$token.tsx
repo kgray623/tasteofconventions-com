@@ -580,15 +580,20 @@ function RsvpPage() {
         )}
 
         <Card className="p-5 space-y-4 border-terracotta/30 bg-card">
-          <p className="text-sm text-muted-foreground text-center">
-            If you need to modify your RSVP later, use the login button below with your phone number.
-          </p>
           <Button
             onClick={handleSubmit}
             className="bg-ink text-cream hover:bg-ink/90 w-full h-12 text-base"
           >
             Save RSVP
           </Button>
+          <p className="text-sm text-muted-foreground text-center">
+            If you need to modify your RSVP later, use the login button below with your phone number.
+          </p>
+          <Link to="/login">
+            <Button variant="outline" className="w-full">
+              Log in
+            </Button>
+          </Link>
         </Card>
       </div>
     </div>
