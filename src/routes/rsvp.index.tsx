@@ -270,9 +270,6 @@ function PreviewPage() {
                 </div>
               )}
               <div className="space-y-3 pt-2 border-t border-border">
-                <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground pt-3">
-                  So we can stay in touch
-                </p>
                 <div className="space-y-1.5">
                   <Label htmlFor="name">Full name</Label>
                   <Input
