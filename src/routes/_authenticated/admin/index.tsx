@@ -84,7 +84,7 @@ function AdminOverview() {
         </Card>
 
         <p className="text-muted-foreground">
-          See the following where you can add your guests, chat with others, choose what to volunteer for, et cetera.
+          See the following where you can add your guests, chat with others, choose what to volunteer for, etc. If you have any issues with the platform, please screenshot it and text it to 808.278.7562.
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <Button asChild className="bg-ink text-cream hover:bg-ink/90 justify-start h-14">
