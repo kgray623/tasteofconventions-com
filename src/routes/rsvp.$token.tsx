@@ -581,7 +581,7 @@ function RsvpPage() {
 
         <Card className="p-5 space-y-4 border-terracotta/30 bg-card">
           <p className="text-sm text-muted-foreground text-center">
-            Want to edit or modify your RSVP later? Log in using the login button in the upper right corner with your phone number.
+            If you need to modify your RSVP later, use the login button below with your phone number.
           </p>
           <Button
             onClick={handleSubmit}
