@@ -1397,7 +1397,7 @@ function UploadPage() {
           </div>
         ) : (
           <div className="divide-y divide-border max-h-[480px] overflow-auto">
-            {savedGuests.filter((g) => !committeeFilter || g.is_committee).map((g) => {
+            {savedGuests.map((g) => {
               const isDup = duplicateGroups.dupIds.has(g.id);
               return (<div
                 key={g.id}
