@@ -457,9 +457,6 @@ function RsvpPage() {
                   </p>
                 </div>
               )}
-              <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground pt-1">
-                So we can stay in touch
-              </p>
             </>
           )}
           <div className="space-y-1.5">
