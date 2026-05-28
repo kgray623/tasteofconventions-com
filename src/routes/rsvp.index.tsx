@@ -322,12 +322,10 @@ function PreviewPage() {
           <Card className="p-7 space-y-5">
             <div>
               <h2 className="font-display text-2xl">
-                Pre-order from your cultural choice restaurant
+                Pre-order your cultural meal
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Cultural meals will be in the $20-25.00 range. Click below to be added to the pre
-                order list. We will negotiate with the resturants once we have a count. You will be
-                updated with the menu to confirm in the coming weeks.
+                Cultural meals are in the twenty to twenty-five dollar range per meal. Click below to pre-order. We will negotiate with the restaurant once we have a meal count total. You'll be updated with the menu to confirm in the coming weeks and to pay the restaurant direct.
               </p>
             </div>
             {!canChooseMeals && (
