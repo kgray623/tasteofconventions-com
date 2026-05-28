@@ -191,7 +191,7 @@ export function InvitationPage() {
           </p>
           <h2 className="font-display text-5xl sm:text-6xl text-ink">A Journey Together</h2>
           <p className="mt-4 text-muted-foreground">
-            Join us as we journey through four special conventions and as we do, you can taste the culture's cuisine from local restaurants as an option for a fuller experience. Catered meals will be in the $25.00 range per meal. Click below to reserve a meal so we can negotiate with the restaurants once we have a count. You will be updated with the menu in the coming weeks, and to pay the restaurant direct.
+            Pre-order your cultural meal. Cultural meals will be in the twenty to twenty-five dollar range. Click below to pre-order. We will negotiate with the restaurants once we have an order total. You'll be updated with the menu to confirm your selection in the coming weeks.
           </p>
         </div>
 
