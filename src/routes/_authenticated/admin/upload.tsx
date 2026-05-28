@@ -1484,7 +1484,7 @@ function UploadPage() {
                       {markingSentId === g.id
                         ? "Saving…"
                         : g.invite_sent_at
-                          ? "Text sent"
+                          ? `Text sent ${new Date(g.invite_sent_at).toLocaleDateString()}`
                           : "I sent the text"}
                     </span>
                   </label>
