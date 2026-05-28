@@ -1382,25 +1382,8 @@ function UploadPage() {
                 {duplicateCount} possible duplicate{duplicateCount === 1 ? "" : "s"}
               </Badge>
             )}
-            {(() => {
-              const committeeCount = savedGuests.filter((g) => g.is_committee).length;
-              return committeeCount > 0 ? (
-                <Badge variant="outline" className="border-terracotta text-terracotta gap-1">
-                  {committeeCount} committee
-                </Badge>
-              ) : null;
-            })()}
           </div>
           <div className="flex items-center gap-2">
-            {isAdmin && (
-              <label className="inline-flex items-center gap-2 h-8 px-2 rounded-md border border-input text-xs cursor-pointer hover:bg-accent">
-                <Checkbox
-                  checked={committeeFilter}
-                  onCheckedChange={(v) => setCommitteeFilter(v === true)}
-                />
-                <span>Committee only</span>
-              </label>
-            )}
             {savedLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
           </div>
         </div>
