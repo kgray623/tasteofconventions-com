@@ -1123,21 +1123,17 @@ function UploadPage() {
           <Target className="w-4 h-4 text-terracotta" />
           <p className="font-medium">How many RSVPs do you want to request?</p>
         </div>
-        <p className="text-sm font-medium text-terracotta">
-          {availableRsvps} RSVP{availableRsvps === 1 ? "" : "s"} available to request
-        </p>
         <div className="grid sm:grid-cols-[180px_auto] gap-2 items-start">
           <Input
             type="number"
             min={1}
-            max={availableRsvps}
             placeholder="Enter amount"
             value={requestedQuota}
             onChange={(e) => setRequestedQuota(e.target.value)}
           />
           <Button
             onClick={submitQuotaRequest}
-            disabled={savingQuotaReq || !requestedQuota.trim() || availableRsvps <= 0}
+            disabled={savingQuotaReq || !requestedQuota.trim()}
             className="bg-ink text-cream hover:bg-ink/90"
           >
             {savingQuotaReq ? (
