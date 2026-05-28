@@ -1151,6 +1151,10 @@ function UploadPage() {
       </Card>
 
       <Card className="p-6 space-y-4 border-terracotta/40 bg-terracotta/5">
+        <div className="flex items-center gap-2">
+          <Upload className="w-5 h-5 text-terracotta" />
+          <h2 className="text-lg font-semibold">Upload your guest list</h2>
+        </div>
         <p className="text-sm text-muted-foreground whitespace-pre-line">
           Option 1: Add your guests BEFORE TEXTING THEM THE INVITATION to ensure they receive only ONE INVITATION. We all know many of the same peope, this ensures no duplicate invitations. (8 screenshots max at a time).{"\n\n"}
           Option 2: You can add a spreadsheet of your guests by listing each by name and phone number per seperate line and collumn.{"\n\n"}
