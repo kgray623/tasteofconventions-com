@@ -1214,6 +1214,39 @@ function UploadPage() {
         </div>
       </Card>
 
+      <Card className="p-6 space-y-3 max-w-2xl">
+        <div className="flex items-center gap-2">
+          <MessageSquare className="w-5 h-5 text-terracotta" />
+          <h2 className="text-lg font-semibold">Sample message</h2>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Copy this and send it from your phone. Replace the link with each guest's invitation link before sending.
+        </p>
+        {(() => {
+          const siteUrl =
+            typeof window !== "undefined" ? window.location.origin : "https://tasteofconventions.com";
+          const sample = `Hey! Just thinking of you — I'd love for you to come to A Taste of Special Conventions on Sunday, August 30, 2026. Here's the invite: ${siteUrl}/rsvp`;
+          return (
+            <>
+              <div className="rounded-md border border-input bg-background p-3 text-sm whitespace-pre-wrap">
+                {sample}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  void navigator.clipboard
+                    .writeText(sample)
+                    .then(() => toast.success("Sample message copied"))
+                    .catch(() => toast.error("Couldn't copy"));
+                }}
+              >
+                <Copy className="w-4 h-4 mr-2" /> Copy sample message
+              </Button>
+            </>
+          );
+        })()}
+      </Card>
 
 
 
