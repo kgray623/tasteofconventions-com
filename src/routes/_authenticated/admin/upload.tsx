@@ -29,6 +29,7 @@ import {
   MessageSquare,
   Send,
   Clock,
+  Copy,
 } from "lucide-react";
 import { getErrorMessage } from "@/lib/async-safety";
 import { useServerFn } from "@tanstack/react-start";
