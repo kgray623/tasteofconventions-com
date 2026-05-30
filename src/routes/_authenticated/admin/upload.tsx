@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Component, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
@@ -358,7 +358,7 @@ function UploadPage() {
       setQuotaPool({ total: TOTAL_RSVP_CAP, allocated });
       setRsvpAttendingTotal(attendingTotal);
       setInviterId(inv?.id ?? null);
-      setRequestedQuota("");
+      setRequestedQuota(inv?.requested_quota ? String(inv.requested_quota) : "");
       setQuotaRequestedAt(inv?.quota_requested_at ?? null);
       setInviterName(inv?.name || fallbackName);
     })();
@@ -972,8 +972,12 @@ function UploadPage() {
     }
   };
 
-  const submitQuotaRequest = async () => {
-    if (!user?.id) return;
+  const submitQuotaRequest = async (event?: FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
+    if (!user?.id) {
+      toast.error("Please sign in again before sending your RSVP request.");
+      return;
+    }
     const target = parseInt(requestedQuota, 10);
     if (!Number.isFinite(target) || target <= 0) {
       toast.error(`Enter a number greater than 0.`);
@@ -1021,8 +1025,9 @@ function UploadPage() {
           setInviterId(data.id);
         }
       }
+      setRequestedQuota(String(target));
       setQuotaRequestedAt(nowIso);
-      toast.success("Sent your RSVP request to the admin.");
+      toast.success(`Sent your request for ${target} RSVP${target === 1 ? "" : "s"} to the admin.`);
     } catch (e) {
       console.error("[upload] quota request failed", e);
       toast.error("Couldn't send request", { description: getErrorMessage(e) });
