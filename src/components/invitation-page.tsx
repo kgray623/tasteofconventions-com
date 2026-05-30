@@ -237,7 +237,7 @@ export function InvitationPage() {
               Please RSVP if you want to join us in person or virtually including your party size. In person space is limited to 550. RSVP is first reserved. Once the in-person space is spoken for, a waiting list will be made in case of cancellations. Virtual attendance is unlimited.
             </p>
             <p className="text-xs uppercase tracking-[0.25em] text-magenta mb-7">
-              Space is limited
+              In-person space is limited
             </p>
 
             <Link to="/rsvp">
