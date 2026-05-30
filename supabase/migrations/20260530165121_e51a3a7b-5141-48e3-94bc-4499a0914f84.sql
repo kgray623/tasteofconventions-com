@@ -1,0 +1,1 @@
+UPDATE public.invitation_content SET video_url = 'https://www.youtube.com/embed/-epANF-L6KM' WHERE id = 'c93cf325-bb6c-4e2a-a747-557e078f10d2';
