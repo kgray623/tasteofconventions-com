@@ -1232,7 +1232,7 @@ function UploadPage() {
         {(() => {
           const siteUrl =
             typeof window !== "undefined" ? window.location.origin : "https://tasteofconventions.com";
-          const sample = `Hey! Just thinking of you — I'd love for you to come to A Taste of Special Conventions on Sunday, August 30, 2026. Here's the invite: ${siteUrl}/rsvp`;
+          const sample = `Hey, I wanted to send you an invite to an event happening Sunday, August 30, 2026. It's called A Taste of Special Conventions. Please RSVP — in-person space is limited (RSVP is first-come, first-served). The invite is at tasteofconventions.com`;
           return (
             <>
               <div className="rounded-md border border-input bg-background p-3 text-sm whitespace-pre-wrap">
