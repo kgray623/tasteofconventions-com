@@ -1124,7 +1124,8 @@ function UploadPage() {
         </Card>
       )}
 
-      <Card className="p-4 space-y-3 max-w-xl">
+      <form onSubmit={submitQuotaRequest} className="max-w-xl">
+      <Card className="p-4 space-y-3">
         <div className="flex items-center gap-2">
           <Target className="w-4 h-4 text-terracotta" />
           <p className="font-medium">How many RSVPs do you want to request?</p>
@@ -1138,7 +1139,7 @@ function UploadPage() {
             onChange={(e) => setRequestedQuota(e.target.value)}
           />
           <Button
-            onClick={submitQuotaRequest}
+            type="submit"
             disabled={savingQuotaReq || !requestedQuota.trim()}
             className="bg-ink text-cream hover:bg-ink/90"
           >
@@ -1155,6 +1156,7 @@ function UploadPage() {
           </p>
         )}
       </Card>
+      </form>
 
       <Card className="p-6 space-y-4 border-terracotta/40 bg-terracotta/5">
         <div className="flex items-center gap-2">
