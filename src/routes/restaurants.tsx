@@ -9,7 +9,9 @@ export const Route = createFileRoute("/restaurants")({
   head: () => ({
     meta: [
       { title: "Restaurants — A Taste of Special Conventions" },
-      { name: "description", content: "Browse the curated restaurant lineup for the event." },
+      { name: "description", content: "Browse the curated restaurant lineup contributing cultural cuisines to A Taste of Special Conventions on August 30, 2026." },
+      { property: "og:title", content: "Restaurants — A Taste of Special Conventions" },
+      { property: "og:description", content: "Hand-picked kitchens contributing cultural cuisines to the August 30, 2026 evening at Eagle's Landing." },
     ],
   }),
   component: Restaurants,
