@@ -162,7 +162,7 @@ export function InvitationPage() {
           <div className="relative w-full max-w-xl">
             <p className="text-[10px] uppercase tracking-[0.4em] text-cream/90 mb-3 text-center">For Details · Watch the Invitation</p>
             {content.video_url ? (
-              <div className="relative aspect-video rounded-2xl overflow-hidden border border-cream/20 bg-ink/40 backdrop-blur-md shadow-elegant">
+              <div className="relative aspect-[9/16] md:aspect-video rounded-2xl overflow-hidden border border-cream/20 bg-ink/40 backdrop-blur-md shadow-elegant mx-auto w-full max-w-sm md:max-w-none">
                 {/\.(mp4|webm|mov|m4v)(\?|$)/i.test(content.video_url) ? (
                   <video
                     src={content.video_url}
