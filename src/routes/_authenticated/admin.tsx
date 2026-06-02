@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlus, UtensilsCrossed, Mail, HandCoins, CalendarCog, MessageSquare, Ticket, Eye } from "lucide-react";
+import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlus, UtensilsCrossed, Mail, HandCoins, MessageSquare, Ticket, Eye } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — A Taste of Special Conventions" }] }),
@@ -16,7 +16,6 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boolean; team?: boolean; teamLabel?: string }[] = [
   { to: "/admin", label: "Overview", icon: ShieldCheck, exact: true },
-  { to: "/admin/event", label: "Event details", icon: CalendarCog },
   { to: "/admin/invitation", label: "Invitation page", icon: Mail },
   { to: "/admin/upload", label: "Add guests", icon: Upload, team: true, teamLabel: "Guest list" },
   { to: "/admin/committee-message", label: "Committee message", icon: MessageSquare },
