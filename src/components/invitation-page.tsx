@@ -133,6 +133,7 @@ export function InvitationPage() {
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
+      <main>
 
       {/* Hero */}
       <section className="relative grid lg:grid-cols-2 min-h-[calc(100vh-4rem)]">
