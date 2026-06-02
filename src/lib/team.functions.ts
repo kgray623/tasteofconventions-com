@@ -23,6 +23,30 @@ async function assertAdmin(userId: string) {
   if (!isAdmin) throw new Error("Only admins can manage team invites");
 }
 
+async function syncCommitteeInviter(data: z.infer<typeof InviteInput>) {
+  if (data.role !== "team") return;
+  const phoneNorm = normalizePhone(data.phone);
+  const { data: inviters, error: readErr } = await supabaseAdmin
+    .from("inviters")
+    .select("id,phone");
+  if (readErr) throw new Error(readErr.message);
+
+  const existing = (inviters ?? []).find((row) => normalizePhone(row.phone ?? "") === phoneNorm);
+  if (existing) {
+    const { error } = await supabaseAdmin
+      .from("inviters")
+      .update({ name: data.name, phone: data.phone, active: true })
+      .eq("id", existing.id);
+    if (error) throw new Error(error.message);
+    return;
+  }
+
+  const { error } = await supabaseAdmin
+    .from("inviters")
+    .insert({ name: data.name, phone: data.phone, quota: 40, active: true });
+  if (error) throw new Error(error.message);
+}
+
 export const inviteTeamMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => InviteInput.parse(d))
@@ -57,6 +81,7 @@ export const inviteTeamMember = createServerFn({ method: "POST" })
         })
         .eq("id", existing.id);
       if (updErr) throw new Error(updErr.message);
+      await syncCommitteeInviter(data);
       return { ok: true };
     }
 
@@ -69,5 +94,6 @@ export const inviteTeamMember = createServerFn({ method: "POST" })
         phone: data.phone,
       });
     if (insErr) throw new Error(insErr.message);
+    await syncCommitteeInviter(data);
     return { ok: true };
   });
