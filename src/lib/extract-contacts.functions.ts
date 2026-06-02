@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const Input = z.object({
   // Data URLs like "data:image/png;base64,...."
@@ -12,7 +13,16 @@ type ExtractedContact = { name: string; phone: string; email: string };
 export const extractContactsFromImages = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => Input.parse(d))
-  .handler(async ({ data }): Promise<{ contacts: ExtractedContact[] }> => {
+  .handler(async ({ data, context }): Promise<{ contacts: ExtractedContact[] }> => {
+    const userId = (context as any).userId as string | undefined;
+    if (!userId) throw new Error("Forbidden");
+    const { data: roles } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    const allowed = (roles ?? []).some((r) => r.role === "admin" || r.role === "team");
+    if (!allowed) throw new Error("Forbidden");
+
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) throw new Error("AI is not configured");
 

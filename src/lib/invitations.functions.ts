@@ -4,6 +4,12 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { sendTransactionalEmailServer } from "@/lib/email/send-server";
 
+function publicDbError(error: { message?: string } | null | undefined, fallback = "Something went wrong. Please try again."): Error {
+  if (error?.message) console.error("[invitations] db error:", error.message);
+  return new Error(fallback);
+}
+
+
 // Lookup the currently signed-in guest's most recent invitation (by phone number).
 export const getMyInvitation = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -36,7 +42,7 @@ export const getMyInvitation = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (error) throw new Error(error.message);
+    if (error) throw publicDbError(error);
     if (!inv) return { invitation: null, rsvp: null, order: null };
     const [{ data: rsvp }, { data: order }, { data: preorder }] = await Promise.all([
       supabaseAdmin.from("rsvps").select("*").eq("invitation_id", inv.id).maybeSingle(),
@@ -136,7 +142,7 @@ export const getInvitationByToken = createServerFn({ method: "GET" })
       )
       .in("rsvp_token", rsvpTokenCandidates(data.token))
       .maybeSingle();
-    if (error) throw new Error(error.message);
+    if (error) throw publicDbError(error);
     if (!inv) return { invitation: null, rsvp: null, order: null, expired: false };
     const [{ data: rsvp }, { data: order }, { data: preorder }] = await Promise.all([
       supabaseAdmin.from("rsvps").select("*").eq("invitation_id", inv.id).maybeSingle(),
@@ -198,7 +204,7 @@ export const submitRsvp = createServerFn({ method: "POST" })
       },
       { onConflict: "invitation_id" },
     );
-    if (error) throw new Error(error.message);
+    if (error) throw publicDbError(error);
     await sendRsvpConfirmation(inv.id, data.status, effectivePartySize);
     return { ok: true, waitlisted };
   });
@@ -252,13 +258,13 @@ export const submitCuisinePreorder = createServerFn({ method: "POST" })
         },
         { onConflict: "invitation_id" },
       );
-      if (error) throw new Error(error.message);
+      if (error) throw publicDbError(error);
     } else {
       const { error } = await supabaseAdmin
         .from("cuisine_preorders")
         .delete()
         .eq("invitation_id", inv.id);
-      if (error) throw new Error(error.message);
+      if (error) throw publicDbError(error);
     }
 
     return { ok: true };
@@ -280,7 +286,7 @@ export const submitOrder = createServerFn({ method: "POST" })
       .from("menu_items")
       .select("id,name,price,restaurant_id,available")
       .in("id", ids);
-    if (menuErr) throw new Error(menuErr.message);
+    if (menuErr) throw publicDbError(menuErr);
     const byId = new Map((menuItems ?? []).map((m) => [m.id, m]));
     if (byId.size !== ids.length) throw new Error("Unknown menu item");
 
@@ -303,7 +309,7 @@ export const submitOrder = createServerFn({ method: "POST" })
       },
       { onConflict: "invitation_id" },
     );
-    if (error) throw new Error(error.message);
+    if (error) throw publicDbError(error);
     return { ok: true, total };
   });
 
@@ -372,7 +378,7 @@ export const getPublicRsvpByPhone = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (invErr) throw new Error(invErr.message);
+    if (invErr) throw publicDbError(invErr);
     if (!invitation) return { invitation: null, rsvp: null, preorder: null };
 
     const [{ data: rsvp, error: rsvpErr }, { data: preorderByInvitation, error: preorderErr }] =
@@ -388,8 +394,8 @@ export const getPublicRsvpByPhone = createServerFn({ method: "GET" })
           .eq("invitation_id", invitation.id)
           .maybeSingle(),
       ]);
-    if (rsvpErr) throw new Error(rsvpErr.message);
-    if (preorderErr) throw new Error(preorderErr.message);
+    if (rsvpErr) throw publicDbError(rsvpErr);
+    if (preorderErr) throw publicDbError(preorderErr);
 
     let preorder = preorderByInvitation;
     if (!preorder) {
@@ -400,7 +406,7 @@ export const getPublicRsvpByPhone = createServerFn({ method: "GET" })
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (error) throw new Error(error.message);
+      if (error) throw publicDbError(error);
       preorder = preorderByPhone;
     }
 
@@ -448,7 +454,7 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
       );
 
       if (createUserErr && !/already|registered|exists/i.test(createUserErr.message)) {
-        throw new Error(createUserErr.message);
+        throw publicDbError(createUserErr);
       }
 
       // SECURITY: Only seed profile for newly created users. NEVER call
@@ -502,7 +508,7 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
         })
         .select("id")
         .single();
-      if (invErr) throw new Error(invErr.message);
+      if (invErr) throw publicDbError(invErr);
       invitationId = inv.id;
     }
 
@@ -523,7 +529,7 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
         guest_phone: phone,
       })
       .eq("id", invitationId);
-    if (invUpdateErr) throw new Error(invUpdateErr.message);
+    if (invUpdateErr) throw publicDbError(invUpdateErr);
 
     const { error: rsvpErr } = await supabaseAdmin.from("rsvps").upsert(
       {
@@ -538,7 +544,7 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
       },
       { onConflict: "invitation_id" },
     );
-    if (rsvpErr) throw new Error(rsvpErr.message);
+    if (rsvpErr) throw publicDbError(rsvpErr);
 
     // Capture cuisine pre-order interest (separate table, no restaurant binding yet)
     if (selections.length > 0 && (data.guest_name || phone)) {
