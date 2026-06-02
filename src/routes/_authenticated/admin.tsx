@@ -128,6 +128,13 @@ function AdminLayout() {
           <h1 className="font-display text-3xl mt-1">{headingTitle}</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {isActualAdmin && !previewCommittee && (
+            <Button asChild variant="outline" size="sm">
+              <Link to="/admin" search={{ view: "committee" }}>
+                <Users className="w-4 h-4 mr-2" /> Subcommittee
+              </Link>
+            </Button>
+          )}
           <Button onClick={signOut} variant="outline" size="sm">
             <LogOut className="w-4 h-4 mr-2" /> Log out
           </Button>
