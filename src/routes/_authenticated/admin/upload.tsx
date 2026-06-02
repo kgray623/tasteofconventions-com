@@ -1488,6 +1488,12 @@ function UploadPage() {
                 <span className="text-muted-foreground min-w-[110px]">
                   {g.guest_phone ?? <span className="italic text-destructive/70">no phone</span>}
                 </span>
+                {g.invited_by && (
+                  <span className="inline-flex items-center text-[11px] px-2 py-0.5 rounded-full border bg-muted/40 text-muted-foreground">
+                    Invited by {g.invited_by}
+                  </span>
+                )}
+
                   <div className="flex items-center gap-1 ml-auto">
                    <Button
                      type="button"
