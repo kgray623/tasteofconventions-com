@@ -11,7 +11,16 @@ import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 import { signInWithPhoneOnly } from "@/lib/auth-phone.functions";
 
 export const Route = createFileRoute("/login")({
-  head: () => ({ meta: [{ title: "Log in — A Taste of Special Conventions" }] }),
+  head: () => ({
+    meta: [
+      { title: "Log in — A Taste of Special Conventions" },
+      {
+        name: "description",
+        content:
+          "Log in to manage your RSVP and pre-orders for A Taste of Special Conventions on August 30, 2026.",
+      },
+    ],
+  }),
   component: HelperLogin,
 });
 
