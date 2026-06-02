@@ -274,6 +274,43 @@ function InvitersPage() {
       }
       setCommittee(committeeRows);
 
+      // Ensure every committee member also exists in `inviters` so admin can allocate quota.
+      if (isActualAdmin) {
+        const existingByPhone = new Set(
+          inviterRows
+            .map((i) => normalizePhone(i.phone ?? ""))
+            .filter((p) => p.length > 0),
+        );
+        const existingByName = new Set(inviterRows.map((i) => i.name.trim().toLowerCase()));
+        const toCreate: { name: string; phone: string | null; quota: number; active: boolean }[] = [];
+        for (const m of committeeRows) {
+          const phoneNorm = normalizePhone(m.contact ?? "");
+          const nameKey = m.name.trim().toLowerCase();
+          if (phoneNorm && existingByPhone.has(phoneNorm)) continue;
+          if (!phoneNorm && existingByName.has(nameKey)) continue;
+          toCreate.push({
+            name: m.name,
+            phone: m.contact && /\d/.test(m.contact) ? m.contact : null,
+            quota: 0,
+            active: true,
+          });
+          if (phoneNorm) existingByPhone.add(phoneNorm);
+          existingByName.add(nameKey);
+        }
+        if (toCreate.length > 0) {
+          const { data: inserted } = await supabase
+            .from("inviters")
+            .insert(toCreate)
+            .select("*");
+          if (inserted) {
+            const merged = [...inviterRows, ...(inserted as Inviter[])].sort((a, b) =>
+              a.name.localeCompare(b.name),
+            );
+            setInviters(merged);
+          }
+        }
+      }
+
 
     } catch (error) {
       toast.error(getErrorMessage(error));
