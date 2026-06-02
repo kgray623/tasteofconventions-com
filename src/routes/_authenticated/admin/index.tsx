@@ -64,22 +64,17 @@ function AdminOverview() {
   if (!isAdmin || view === "committee") {
     return (
       <div className="space-y-6">
-        <Card className="overflow-hidden border-ink/10">
-          <div className="relative aspect-video bg-gradient-to-br from-ink/5 to-ink/10 flex flex-col items-center justify-center gap-4 p-8">
-            <div className="w-16 h-16 rounded-full bg-ink/5 flex items-center justify-center border border-ink/10">
-              <Video className="w-7 h-7 text-ink/40" />
-            </div>
-            <div className="text-center space-y-1">
-              <p className="text-sm font-medium text-ink/70">Feature Walkthrough</p>
-              <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-                A video will be placed here explaining every Steering Committee workspace feature — assignments, guest uploads, committee chat, and event details.
-              </p>
-            </div>
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-20 h-20 rounded-full bg-ink/[0.03] flex items-center justify-center">
-                <Play className="w-8 h-8 text-ink/20 ml-1" />
-              </div>
-            </div>
+        <Card className="overflow-hidden border-ink/10 bg-ink/5">
+          <div className="relative aspect-[9/16] md:aspect-video mx-auto w-full max-w-sm md:max-w-none">
+            <iframe
+              src="https://fast.wistia.net/embed/iframe/cf8d380y2y?videoFoam=true"
+              title="Steering Committee feature walkthrough"
+              allow="autoplay; fullscreen; encrypted-media"
+              allowFullScreen
+              className="absolute inset-0 h-full w-full"
+              frameBorder={0}
+              scrolling="no"
+            />
           </div>
         </Card>
 
