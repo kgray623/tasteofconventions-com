@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useBlocker } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useBlocker } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +15,9 @@ import { withTimeout } from "@/lib/async-safety";
 
 export const Route = createFileRoute("/_authenticated/admin/event")({
   head: () => ({ meta: [{ title: "Edit Event — A Taste of Special Conventions" }] }),
+  beforeLoad: () => {
+    throw redirect({ to: "/", hash: "datetime" });
+  },
   component: EditEventPage,
 });
 
