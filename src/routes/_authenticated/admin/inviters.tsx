@@ -39,10 +39,10 @@ export const Route = createFileRoute("/_authenticated/admin/inviters")({
 
 type CommitteeRow = {
   id: string;
-  guest_name: string;
-  guest_email: string | null;
-  guest_phone: string | null;
+  name: string;
+  contact: string | null;
 };
+type TeamInviteRow = { id: string; name: string | null; phone: string | null };
 
 type Inviter = {
   id: string;
@@ -244,12 +244,35 @@ function InvitersPage() {
       }
       setGuestsByHost(byHost);
 
-      const { data: commData } = await supabase
-        .from("invitations")
-        .select("id,guest_name,guest_email,guest_phone")
-        .eq("is_committee", true)
-        .order("guest_name");
-      setCommittee((commData as CommitteeRow[]) ?? []);
+      const [{ data: commData }, { data: teamInviteData }] = await Promise.all([
+        supabase
+          .from("invitations")
+          .select("id,guest_name,guest_email,guest_phone")
+          .eq("is_committee", true)
+          .order("guest_name"),
+        supabase
+          .from("team_invites")
+          .select("id,name,phone")
+          .eq("role", "team")
+          .order("name"),
+      ]);
+      const seenCommittee = new Set<string>();
+      const committeeRows: CommitteeRow[] = [];
+      for (const row of ((teamInviteData as TeamInviteRow[]) ?? [])) {
+        const contact = row.phone ?? null;
+        const key = normalizePhone(contact ?? "") || row.name?.trim().toLowerCase() || row.id;
+        if (seenCommittee.has(key)) continue;
+        seenCommittee.add(key);
+        committeeRows.push({ id: `team-${row.id}`, name: row.name || contact || "Committee member", contact });
+      }
+      for (const row of ((commData as { id: string; guest_name: string; guest_email: string | null; guest_phone: string | null }[]) ?? [])) {
+        const contact = row.guest_phone || row.guest_email || null;
+        const key = normalizePhone(row.guest_phone ?? "") || row.guest_name.trim().toLowerCase() || row.id;
+        if (seenCommittee.has(key)) continue;
+        seenCommittee.add(key);
+        committeeRows.push({ id: `guest-${row.id}`, name: row.guest_name, contact });
+      }
+      setCommittee(committeeRows);
 
 
     } catch (error) {
