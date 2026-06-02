@@ -342,7 +342,7 @@ export function InvitationPage() {
               <p className="whitespace-pre-line">{content.gifts_body}</p>
               <div className="relative aspect-[9/16] md:aspect-video rounded-2xl overflow-hidden border border-border bg-ink/40 shadow-elegant mx-auto w-full max-w-sm md:max-w-none">
                 <iframe
-                  src="https://kgray623.wistia.com/embed/iframe/qvdttmqqp37avr6"
+                  src="https://fast.wistia.net/embed/iframe/91lv1a1myy?videoFoam=true"
                   title="Gift exchanges video"
                   allow="autoplay; fullscreen; encrypted-media"
                   allowFullScreen
