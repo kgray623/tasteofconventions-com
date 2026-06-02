@@ -226,8 +226,10 @@ function UploadPage() {
       invite_sent_at: string | null;
       rsvp_status: string | null;
       is_committee: boolean;
+      invited_by: string | null;
     }[]
   >([]);
+
   const [importAsCommittee, setImportAsCommittee] = useState(false);
   const [committeeFilter, setCommitteeFilter] = useState(false);
   const [togglingCommitteeId, setTogglingCommitteeId] = useState<string | null>(null);
