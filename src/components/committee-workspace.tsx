@@ -34,9 +34,10 @@ export function CommitteeWorkspace() {
         </Button>
         <Button asChild variant="outline" className="justify-start h-14">
           <Link to="/admin/upload" search={{ view: "committee" }}>
-            <Upload className="w-4 h-4" /> Add guests
+            <Upload className="w-4 h-4" /> Guest list / Add guests
           </Link>
         </Button>
+
         <Button asChild variant="outline" className="justify-start h-14">
           <Link to="/admin/chat" search={{ view: "committee" }}>
             <MessageSquare className="w-4 h-4" /> Committee chat

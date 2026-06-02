@@ -226,8 +226,10 @@ function UploadPage() {
       invite_sent_at: string | null;
       rsvp_status: string | null;
       is_committee: boolean;
+      invited_by: string | null;
     }[]
   >([]);
+
   const [importAsCommittee, setImportAsCommittee] = useState(false);
   const [committeeFilter, setCommitteeFilter] = useState(false);
   const [togglingCommitteeId, setTogglingCommitteeId] = useState<string | null>(null);
@@ -279,10 +281,27 @@ function UploadPage() {
         rsvp_token: string;
         invite_sent_at: string | null;
         is_committee: boolean | null;
+        host_id: string;
         rsvps: { status: string }[] | { status: string } | null;
       };
+      const rows = (data ?? []) as unknown as Row[];
+
+      // Look up "invited by" display names for all unique hosts.
+      const hostIds = Array.from(new Set(rows.map((r) => r.host_id).filter(Boolean)));
+      const hostNames = new Map<string, string>();
+      if (hostIds.length) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("id,display_name,email")
+          .in("id", hostIds);
+        for (const p of profs ?? []) {
+          const name = (p.display_name ?? "").trim() || (p.email ?? "").split("@")[0] || "";
+          if (name) hostNames.set(p.id, name);
+        }
+      }
+
       setSavedGuests(
-        ((data ?? []) as unknown as Row[]).map((r) => {
+        rows.map((r) => {
           const rsvp = Array.isArray(r.rsvps) ? r.rsvps[0] : r.rsvps;
           return {
             id: r.id,
@@ -293,6 +312,7 @@ function UploadPage() {
             invite_sent_at: r.invite_sent_at,
             rsvp_status: rsvp?.status ?? null,
             is_committee: !!r.is_committee,
+            invited_by: hostNames.get(r.host_id) ?? null,
           };
         }),
       );
@@ -302,6 +322,7 @@ function UploadPage() {
       setSavedLoading(false);
     }
   };
+
 
   useEffect(() => {
     void loadSavedGuests(eventId);
@@ -1467,6 +1488,12 @@ function UploadPage() {
                 <span className="text-muted-foreground min-w-[110px]">
                   {g.guest_phone ?? <span className="italic text-destructive/70">no phone</span>}
                 </span>
+                {g.invited_by && (
+                  <span className="inline-flex items-center text-[11px] px-2 py-0.5 rounded-full border bg-muted/40 text-muted-foreground">
+                    Invited by {g.invited_by}
+                  </span>
+                )}
+
                   <div className="flex items-center gap-1 ml-auto">
                    <Button
                      type="button"
