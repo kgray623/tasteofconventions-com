@@ -128,9 +128,9 @@ function HelperLogin() {
   return (
     <div className="min-h-screen bg-gradient-warm flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-md">
-        <Link to="/" className="block text-center mb-3">
+        <Link to="/" className="block text-center mb-3" aria-label="A Taste of Special Conventions home">
           <p className="text-xs uppercase tracking-[0.3em] text-terracotta">A Taste of</p>
-          <h1 className="font-display text-3xl text-ink">Special Conventions</h1>
+          <p className="font-display text-3xl text-ink">Special Conventions</p>
         </Link>
         <div className="text-center mb-6">
           <Link
@@ -140,9 +140,9 @@ function HelperLogin() {
             ← Back to invitation
           </Link>
         </div>
-        <div className="bg-card border border-border rounded-xl p-8 shadow-elegant space-y-5">
+        <main className="bg-card border border-border rounded-xl p-8 shadow-elegant space-y-5">
           <div className="text-center space-y-1">
-            <h2 className="font-display text-2xl text-ink">Log in</h2>
+            <h1 className="font-display text-2xl text-ink">Log in to your RSVP</h1>
             <p className="text-xs text-muted-foreground">
               Enter your mobile number. We'll recognize you from your invitation.
             </p>
