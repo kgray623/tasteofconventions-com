@@ -584,15 +584,15 @@ function InvitersPage() {
             {committee
               .slice()
               .sort((a, b) => {
-                const lastA = a.guest_name.trim().split(" ").pop() || "";
-                const lastB = b.guest_name.trim().split(" ").pop() || "";
+                const lastA = a.name.trim().split(" ").pop() || "";
+                const lastB = b.name.trim().split(" ").pop() || "";
                 return lastA.localeCompare(lastB);
               })
               .map((m) => (
               <div key={m.id} className="rounded-lg border border-border bg-background px-3 py-2">
-                <p className="font-medium text-sm">{m.guest_name}</p>
+                <p className="font-medium text-sm">{m.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {m.guest_phone || m.guest_email || "No contact on file"}
+                  {m.contact || "No contact on file"}
                 </p>
               </div>
             ))}
