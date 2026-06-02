@@ -163,13 +163,23 @@ export function InvitationPage() {
             <p className="text-[10px] uppercase tracking-[0.4em] text-cream/90 mb-3 text-center">For Details · Watch the Invitation</p>
             {content.video_url ? (
               <div className="relative aspect-video rounded-2xl overflow-hidden border border-cream/20 bg-ink/40 backdrop-blur-md shadow-elegant">
-                <iframe
-                  src={content.video_url}
-                  title="Invitation video"
-                  allow="autoplay; encrypted-media"
-                  allowFullScreen
-                  className="absolute inset-0 w-full h-full"
-                />
+                {/\.(mp4|webm|mov|m4v)(\?|$)/i.test(content.video_url) ? (
+                  <video
+                    src={content.video_url}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : (
+                  <iframe
+                    src={content.video_url}
+                    title="Invitation video"
+                    allow="autoplay; encrypted-media"
+                    allowFullScreen
+                    className="absolute inset-0 w-full h-full"
+                  />
+                )}
               </div>
             ) : (
               <div className="rounded-2xl overflow-hidden border border-cream/20 shadow-elegant">
