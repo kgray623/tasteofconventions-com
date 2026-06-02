@@ -1,0 +1,1 @@
+CREATE POLICY "team reads all invitations" ON public.invitations FOR SELECT TO authenticated USING (has_role(auth.uid(), 'admin'::app_role) OR has_role(auth.uid(), 'team'::app_role));
