@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -10,6 +10,7 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 });
 
 function AdminOverview() {
+  const { view } = useSearch({ from: "/_authenticated/admin" });
   const { isAdmin, loading: rolesLoading } = useRoles();
   const [counts, setCounts] = useState({
     invites: 0,
@@ -59,7 +60,7 @@ function AdminOverview() {
 
   if (rolesLoading) return <p className="text-muted-foreground">Loading workspace…</p>;
 
-  if (!isAdmin) return <CommitteeWorkspace />;
+  if (!isAdmin || view === "committee") return <CommitteeWorkspace />;
 
   return (
     <div className="space-y-6">
