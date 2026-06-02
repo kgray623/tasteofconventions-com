@@ -98,7 +98,7 @@ function AdminOverview() {
             </Link>
           </Button>
           <Button asChild variant="outline" className="justify-start h-14">
-            <Link to="/admin/event" search={{ view: "committee" }}>
+            <Link to="/" hash="datetime">
               <CalendarCog className="w-4 h-4" /> Event details
             </Link>
           </Button>
