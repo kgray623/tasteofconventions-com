@@ -340,7 +340,15 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-4">
               <p className="whitespace-pre-line">{content.gifts_body}</p>
-              <VideoPlaceholder label="Gift exchanges · video coming soon" />
+              <div className="relative aspect-[9/16] md:aspect-video rounded-2xl overflow-hidden border border-border bg-ink/40 shadow-elegant mx-auto w-full max-w-sm md:max-w-none">
+                <iframe
+                  src="https://fast.wistia.net/embed/iframe/qvdttmqqp37avr6?seo=true&videoFoam=true"
+                  title="Gift exchanges video"
+                  allow="autoplay; fullscreen; encrypted-media"
+                  allowFullScreen
+                  className="absolute inset-0 w-full h-full"
+                />
+              </div>
             </AccordionContent>
           </AccordionItem>
 
