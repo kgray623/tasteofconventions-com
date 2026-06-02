@@ -320,6 +320,12 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-4">
               <p className="whitespace-pre-line">{content.dress_body}</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Meeting attire</li>
+                <li>Cultural attire</li>
+                <li>Formal attire</li>
+              </ul>
+
 
             </AccordionContent>
           </AccordionItem>
