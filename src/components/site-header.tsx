@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { useRoles } from "@/hooks/use-roles";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +8,8 @@ export function SiteHeader() {
   const { user } = useAuth();
   const { isAdmin, isTeam, loading } = useRoles();
   const navigate = useNavigate();
+  const location = useRouterState({ select: (state) => state.location });
+  const isCommitteeView = location.pathname.startsWith("/admin") && location.search.view === "committee";
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -21,8 +23,12 @@ export function SiteHeader() {
           {user ? (
             <>
               {loading ? null : isTeam ? (
-                <Link to="/admin" className="px-3 py-2 rounded-md hover:bg-secondary transition">
-                  {isAdmin ? "Admin" : "Steering Committee"}
+                <Link
+                  to="/admin"
+                  search={isCommitteeView ? { view: "committee" } : { view: undefined }}
+                  className="px-3 py-2 rounded-md hover:bg-secondary transition"
+                >
+                  {isAdmin && !isCommitteeView ? "Admin" : "Steering Committee"}
                 </Link>
               ) : (
                 <Link to="/my-rsvp" className="px-3 py-2 rounded-md hover:bg-secondary transition">
