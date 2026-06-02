@@ -28,7 +28,7 @@ const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boole
   { to: "/admin/my-rsvp", label: "My RSVP", icon: Ticket, team: true },
 ];
 
-const teamAllowedPrefixes = ["/admin/upload", "/admin/inviters", "/admin/categories", "/admin/chat", "/admin/my-rsvp", "/admin/preorders"];
+const teamAllowedPrefixes = ["/admin/subcommittee", "/admin/upload", "/admin/inviters", "/admin/categories", "/admin/chat", "/admin/my-rsvp", "/admin/preorders"];
 const isTeamAllowedPath = (path: string) =>
   path === "/admin" || teamAllowedPrefixes.some((p) => path === p || path.startsWith(p + "/"));
 
@@ -36,9 +36,10 @@ function AdminLayout() {
   const { isAdmin: isActualAdmin, isTeam, loading } = useRoles();
   const { user } = useAuth();
   const search = useSearch({ from: "/_authenticated/admin" });
-  const previewCommittee = isActualAdmin && search.view === "committee";
-  const isAdmin = isActualAdmin && !previewCommittee;
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const isCommitteeRoute = path === "/admin/subcommittee";
+  const previewCommittee = isActualAdmin && (search.view === "committee" || isCommitteeRoute);
+  const isAdmin = isActualAdmin && !previewCommittee;
   const navigate = useNavigate();
   const [displayName, setDisplayName] = useState<string>("");
 
@@ -83,8 +84,8 @@ function AdminLayout() {
 
   useEffect(() => {
     if (loading || isAdmin || !isTeam || isTeamAllowedPath(path)) return;
-    navigate({ to: "/admin" });
-  }, [loading, isAdmin, isTeam, path, navigate]);
+    navigate(previewCommittee ? { to: "/admin/subcommittee" } : { to: "/admin" });
+  }, [loading, isAdmin, isTeam, path, navigate, previewCommittee]);
 
   if (loading) {
     return <div className="mx-auto max-w-6xl px-6 py-10 text-muted-foreground">Loading…</div>;
@@ -130,7 +131,7 @@ function AdminLayout() {
         <div className="flex flex-wrap items-center gap-2">
           {isActualAdmin && !previewCommittee && (
             <Button asChild variant="outline" size="sm">
-              <Link to="/admin" search={{ view: "committee" }}>
+              <Link to="/admin/subcommittee">
                 <Users className="w-4 h-4 mr-2" /> Subcommittee
               </Link>
             </Button>

@@ -28,6 +28,7 @@ import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/em
 import { Route as AuthenticatedInvitationsNewRouteImport } from './routes/_authenticated/invitations.new'
 import { Route as AuthenticatedAdminUploadRouteImport } from './routes/_authenticated/admin/upload'
 import { Route as AuthenticatedAdminTeamRouteImport } from './routes/_authenticated/admin/team'
+import { Route as AuthenticatedAdminSubcommitteeRouteImport } from './routes/_authenticated/admin/subcommittee'
 import { Route as AuthenticatedAdminRestaurantsRouteImport } from './routes/_authenticated/admin/restaurants'
 import { Route as AuthenticatedAdminPreordersRouteImport } from './routes/_authenticated/admin/preorders'
 import { Route as AuthenticatedAdminMyRsvpRouteImport } from './routes/_authenticated/admin/my-rsvp'
@@ -140,6 +141,12 @@ const AuthenticatedAdminTeamRoute = AuthenticatedAdminTeamRouteImport.update({
   path: '/team',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedAdminSubcommitteeRoute =
+  AuthenticatedAdminSubcommitteeRouteImport.update({
+    id: '/subcommittee',
+    path: '/subcommittee',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminRestaurantsRoute =
   AuthenticatedAdminRestaurantsRouteImport.update({
     id: '/restaurants',
@@ -251,6 +258,7 @@ export interface FileRoutesByFullPath {
   '/admin/my-rsvp': typeof AuthenticatedAdminMyRsvpRoute
   '/admin/preorders': typeof AuthenticatedAdminPreordersRoute
   '/admin/restaurants': typeof AuthenticatedAdminRestaurantsRoute
+  '/admin/subcommittee': typeof AuthenticatedAdminSubcommitteeRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
   '/admin/upload': typeof AuthenticatedAdminUploadRoute
   '/invitations/new': typeof AuthenticatedInvitationsNewRoute
@@ -285,6 +293,7 @@ export interface FileRoutesByTo {
   '/admin/my-rsvp': typeof AuthenticatedAdminMyRsvpRoute
   '/admin/preorders': typeof AuthenticatedAdminPreordersRoute
   '/admin/restaurants': typeof AuthenticatedAdminRestaurantsRoute
+  '/admin/subcommittee': typeof AuthenticatedAdminSubcommitteeRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
   '/admin/upload': typeof AuthenticatedAdminUploadRoute
   '/invitations/new': typeof AuthenticatedInvitationsNewRoute
@@ -322,6 +331,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/my-rsvp': typeof AuthenticatedAdminMyRsvpRoute
   '/_authenticated/admin/preorders': typeof AuthenticatedAdminPreordersRoute
   '/_authenticated/admin/restaurants': typeof AuthenticatedAdminRestaurantsRoute
+  '/_authenticated/admin/subcommittee': typeof AuthenticatedAdminSubcommitteeRoute
   '/_authenticated/admin/team': typeof AuthenticatedAdminTeamRoute
   '/_authenticated/admin/upload': typeof AuthenticatedAdminUploadRoute
   '/_authenticated/invitations/new': typeof AuthenticatedInvitationsNewRoute
@@ -359,6 +369,7 @@ export interface FileRouteTypes {
     | '/admin/my-rsvp'
     | '/admin/preorders'
     | '/admin/restaurants'
+    | '/admin/subcommittee'
     | '/admin/team'
     | '/admin/upload'
     | '/invitations/new'
@@ -393,6 +404,7 @@ export interface FileRouteTypes {
     | '/admin/my-rsvp'
     | '/admin/preorders'
     | '/admin/restaurants'
+    | '/admin/subcommittee'
     | '/admin/team'
     | '/admin/upload'
     | '/invitations/new'
@@ -429,6 +441,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/my-rsvp'
     | '/_authenticated/admin/preorders'
     | '/_authenticated/admin/restaurants'
+    | '/_authenticated/admin/subcommittee'
     | '/_authenticated/admin/team'
     | '/_authenticated/admin/upload'
     | '/_authenticated/invitations/new'
@@ -597,6 +610,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminTeamRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/subcommittee': {
+      id: '/_authenticated/admin/subcommittee'
+      path: '/subcommittee'
+      fullPath: '/admin/subcommittee'
+      preLoaderRoute: typeof AuthenticatedAdminSubcommitteeRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/restaurants': {
       id: '/_authenticated/admin/restaurants'
       path: '/restaurants'
@@ -716,6 +736,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminMyRsvpRoute: typeof AuthenticatedAdminMyRsvpRoute
   AuthenticatedAdminPreordersRoute: typeof AuthenticatedAdminPreordersRoute
   AuthenticatedAdminRestaurantsRoute: typeof AuthenticatedAdminRestaurantsRoute
+  AuthenticatedAdminSubcommitteeRoute: typeof AuthenticatedAdminSubcommitteeRoute
   AuthenticatedAdminTeamRoute: typeof AuthenticatedAdminTeamRoute
   AuthenticatedAdminUploadRoute: typeof AuthenticatedAdminUploadRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
@@ -733,6 +754,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminMyRsvpRoute: AuthenticatedAdminMyRsvpRoute,
   AuthenticatedAdminPreordersRoute: AuthenticatedAdminPreordersRoute,
   AuthenticatedAdminRestaurantsRoute: AuthenticatedAdminRestaurantsRoute,
+  AuthenticatedAdminSubcommitteeRoute: AuthenticatedAdminSubcommitteeRoute,
   AuthenticatedAdminTeamRoute: AuthenticatedAdminTeamRoute,
   AuthenticatedAdminUploadRoute: AuthenticatedAdminUploadRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
