@@ -93,7 +93,7 @@ function Restaurants() {
             );
           })}
         </div>
-      </div>
+      </main>
     </div>
   );
 }
