@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -8,10 +8,6 @@ import { CommitteeWorkspace } from "@/components/committee-workspace";
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: AdminOverview,
 });
-
-function SubcommitteeRedirect() {
-  return <Navigate to="/admin/subcommittee" replace />;
-}
 
 function AdminOverview() {
   const { isAdmin, loading: rolesLoading } = useRoles();
