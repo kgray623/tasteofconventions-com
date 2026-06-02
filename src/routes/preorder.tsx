@@ -133,20 +133,21 @@ function PreorderPage() {
                 required
               />
             </div>
-          </div>
+          </section>
 
-          <div className="space-y-3">
-            <p className="text-sm font-medium text-ink">How many meals of each cuisine?</p>
+          <section className="space-y-3">
+            <h2 className="font-display text-xl text-ink">How many meals of each cuisine?</h2>
             {cuisines.length === 0 ? (
               <p className="text-sm text-muted-foreground">Cuisines will appear here once the itinerary is set.</p>
             ) : (
               <div className="divide-y divide-border rounded-xl border border-border">
                 {cuisines.map((stop) => {
                   const qty = counts[stop.country] ?? 0;
+                  const qtyId = `qty-${stop.country.replace(/\s+/g, "-").toLowerCase()}`;
                   return (
                     <div key={stop.country} className="flex items-center justify-between gap-4 p-4">
                       <div className="min-w-0">
-                        <p className="font-display text-lg text-ink truncate">{stop.country}</p>
+                        <Label htmlFor={qtyId} className="font-display text-lg text-ink truncate block">{stop.country}</Label>
                         {stop.restaurant ? (
                           <p className="text-xs text-muted-foreground truncate">{stop.restaurant}</p>
                         ) : null}
@@ -162,6 +163,8 @@ function PreorderPage() {
                           −
                         </Button>
                         <Input
+                          id={qtyId}
+                          aria-label={`${stop.country} quantity`}
                           type="number"
                           inputMode="numeric"
                           min={0}
@@ -185,7 +188,7 @@ function PreorderPage() {
                 })}
               </div>
             )}
-          </div>
+          </section>
 
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">Total meals: <span className="font-semibold text-ink">{total}</span></p>
@@ -198,7 +201,7 @@ function PreorderPage() {
             </Button>
           </div>
         </form>
-      </div>
+      </main>
     </div>
   );
 }
