@@ -178,7 +178,7 @@ function HelperLogin() {
           <p className="text-xs text-center text-muted-foreground pt-2">
             Don't see your account? You need to be on the invitation list first.
           </p>
-        </div>
+        </main>
       </div>
     </div>
   );
