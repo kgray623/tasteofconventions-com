@@ -133,6 +133,7 @@ function PreorderPage() {
                 required
               />
             </div>
+            </div>
           </section>
 
           <section className="space-y-3">
