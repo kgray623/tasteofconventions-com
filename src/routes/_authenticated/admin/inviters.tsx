@@ -966,7 +966,7 @@ function InvitersPage() {
                 </tr>
               </thead>
               <tbody>
-                {inviters.flatMap((i) => {
+                {inviters.slice().sort((a, b) => a.name.localeCompare(b.name)).flatMap((i) => {
                   const used = usage[i.name.toLowerCase()] ?? 0;
                   const invited = i.host_id ? (invitedCounts[i.host_id] ?? 0) : 0;
                   const remaining = i.quota - used;
