@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as Char91indexChar93RouteImport } from './routes/[index]'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RestaurantsRouteImport } from './routes/restaurants'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PreorderRouteImport } from './routes/preorder'
@@ -48,6 +49,11 @@ import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/em
 const Char91indexChar93Route = Char91indexChar93RouteImport.update({
   id: '/index',
   path: '/index',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RestaurantsRoute = RestaurantsRouteImport.update({
@@ -243,6 +249,7 @@ export interface FileRoutesByFullPath {
   '/preorder': typeof PreorderRoute
   '/reset-password': typeof ResetPasswordRoute
   '/restaurants': typeof RestaurantsRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
@@ -279,6 +286,7 @@ export interface FileRoutesByTo {
   '/preorder': typeof PreorderRoute
   '/reset-password': typeof ResetPasswordRoute
   '/restaurants': typeof RestaurantsRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/rsvp/$token': typeof RsvpTokenRoute
@@ -316,6 +324,7 @@ export interface FileRoutesById {
   '/preorder': typeof PreorderRoute
   '/reset-password': typeof ResetPasswordRoute
   '/restaurants': typeof RestaurantsRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
@@ -354,6 +363,7 @@ export interface FileRouteTypes {
     | '/preorder'
     | '/reset-password'
     | '/restaurants'
+    | '/sitemap.xml'
     | '/admin'
     | '/dashboard'
     | '/email/unsubscribe'
@@ -390,6 +400,7 @@ export interface FileRouteTypes {
     | '/preorder'
     | '/reset-password'
     | '/restaurants'
+    | '/sitemap.xml'
     | '/dashboard'
     | '/email/unsubscribe'
     | '/rsvp/$token'
@@ -426,6 +437,7 @@ export interface FileRouteTypes {
     | '/preorder'
     | '/reset-password'
     | '/restaurants'
+    | '/sitemap.xml'
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
     | '/email/unsubscribe'
@@ -464,6 +476,7 @@ export interface RootRouteChildren {
   PreorderRoute: typeof PreorderRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   RestaurantsRoute: typeof RestaurantsRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   RsvpTokenRoute: typeof RsvpTokenRoute
   RsvpIndexRoute: typeof RsvpIndexRoute
@@ -482,6 +495,13 @@ declare module '@tanstack/react-router' {
       path: '/index'
       fullPath: '/index'
       preLoaderRoute: typeof Char91indexChar93RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/restaurants': {
@@ -789,6 +809,7 @@ const rootRouteChildren: RootRouteChildren = {
   PreorderRoute: PreorderRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   RestaurantsRoute: RestaurantsRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   RsvpTokenRoute: RsvpTokenRoute,
   RsvpIndexRoute: RsvpIndexRoute,
