@@ -38,12 +38,17 @@ async function routeForUser(userId: string): Promise<RouteDestination> {
     // non-fatal
   }
 
-  const { data: roleData } = await withTimeout(
-    supabase.from("user_roles").select("role").eq("user_id", userId),
-    5000,
-  );
-  const roles = (roleData ?? []).map((r) => r.role as string);
-  if (roles.includes("admin") || roles.includes("team")) return { to: "/admin" };
+  try {
+    const { data: roleData } = await withTimeout(
+      supabase.from("user_roles").select("role").eq("user_id", userId),
+      5000,
+    );
+    const roles = (roleData ?? []).map((r) => r.role as string);
+    if (roles.includes("admin") || roles.includes("team")) return { to: "/admin" };
+  } catch {
+    // If we can't read roles right now, fall through to the safe default
+    // instead of leaving the user stuck on the login screen.
+  }
 
   return { to: "/my-rsvp" };
 }
@@ -62,13 +67,18 @@ function HelperLogin() {
   const goToDestination = async (userId: string) => {
     if (navigatingRef.current) return;
     navigatingRef.current = true;
-    const destination = await routeForUser(userId);
-    const redirect = safeRedirect(search.redirect);
-    const nextTo =
-      redirect === "/admin/upload" && destination.to === "/admin"
-        ? "/admin/upload"
-        : destination.to;
-    await navigate({ to: nextTo, replace: true });
+    try {
+      const destination = await routeForUser(userId);
+      const redirect = safeRedirect(search.redirect);
+      const nextTo =
+        redirect === "/admin/upload" && destination.to === "/admin"
+          ? "/admin/upload"
+          : destination.to;
+      await navigate({ to: nextTo, replace: true });
+    } catch {
+      // Allow another attempt instead of getting wedged forever.
+      navigatingRef.current = false;
+    }
   };
 
   useEffect(() => {
