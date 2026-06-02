@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlus, UtensilsCrossed, Mail, HandCoins, MessageSquare, Ticket, Eye } from "lucide-react";
+import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlus, UtensilsCrossed, Mail, HandCoins, MessageSquare, Ticket } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — A Taste of Special Conventions" }] }),
@@ -117,7 +117,7 @@ function AdminLayout() {
   const visibleTabs = tabs.filter((t) => isAdmin || t.team);
   const headingEyebrow = isAdmin ? "Event admin" : "Steering Committee";
   const headingTitle = isAdmin
-    ? "Master control"
+    ? "Admin"
     : `Welcome${displayName ? `, ${displayName}` : ""}`;
 
   return (
@@ -128,21 +128,6 @@ function AdminLayout() {
           <h1 className="font-display text-3xl mt-1">{headingTitle}</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {isActualAdmin && (
-            previewCommittee ? (
-              <Button asChild variant="outline" size="sm">
-                <Link to="/admin" search={{ view: undefined }}>
-                  <Eye className="w-4 h-4 mr-2" /> Back to admin view
-                </Link>
-              </Button>
-            ) : (
-              <Button asChild variant="outline" size="sm">
-                <Link to="/admin" search={{ view: "committee" }}>
-                  <Eye className="w-4 h-4 mr-2" /> Preview committee view
-                </Link>
-              </Button>
-            )
-          )}
           <Button onClick={signOut} variant="outline" size="sm">
             <LogOut className="w-4 h-4 mr-2" /> Log out
           </Button>
