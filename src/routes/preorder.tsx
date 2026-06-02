@@ -12,7 +12,9 @@ export const Route = createFileRoute("/preorder")({
   head: () => ({
     meta: [
       { title: "Pre-order cuisine · A Taste of Special Conventions" },
-      { name: "description", content: "Tell us how many meals you'd like from each cultural cuisine so we can plan with the restaurants." },
+      { name: "description", content: "Tell us how many meals you'd like from each cultural cuisine so we can plan with the restaurants for August 30, 2026." },
+      { property: "og:title", content: "Pre-order cuisine · A Taste of Special Conventions" },
+      { property: "og:description", content: "Reserve meals from each cultural cuisine for the August 30, 2026 evening at Eagle's Landing." },
     ],
   }),
   component: PreorderPage,
