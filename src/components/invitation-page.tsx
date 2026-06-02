@@ -216,7 +216,7 @@ export function InvitationPage() {
                   {i + 1}
                 </span>
                 <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">{stop.when}</p>
-                <h4 className="font-display text-2xl text-ink">{stop.country}</h4>
+                <h3 className="font-display text-2xl text-ink">{stop.country}</h3>
                 <p className="text-sm text-muted-foreground mt-1">{stop.note}</p>
                 {stop.restaurant ? (
                   <Link to="/preorder" className="inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full bg-gradient-sunset text-white text-[10px] uppercase tracking-widest shadow-glow hover:opacity-90 transition">
