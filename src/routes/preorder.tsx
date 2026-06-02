@@ -89,7 +89,7 @@ function PreorderPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-2xl px-6 py-12">
+      <main className="mx-auto max-w-2xl px-6 py-12">
         <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
           <ArrowLeft className="w-4 h-4" /> Back to the invitation
         </Link>
@@ -109,7 +109,9 @@ function PreorderPage() {
           onSubmit={onSubmit}
           className="rounded-3xl border border-border bg-card shadow-elegant p-6 sm:p-8 space-y-6"
         >
-          <div className="grid sm:grid-cols-2 gap-4">
+          <section className="space-y-4">
+            <h2 className="font-display text-xl text-ink">Your contact details</h2>
+            <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="name">Name</Label>
               <Input
