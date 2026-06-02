@@ -161,12 +161,21 @@ function TeamPage() {
           <h2 className="font-display text-lg">Steering Committee</h2>
         </div>
         <p className="text-sm text-muted-foreground">
-          Everyone added as a committee member or flagged as committee on the guest list.
+          Everyone added as a committee member or flagged as committee on the guest list. People show as "Pending signup" until they log in with their phone number.
         </p>
         {(() => {
           const seen = new Set<string>();
           const norm = (p?: string | null) => (p ? p.replace(/\D/g, "") : "");
-          const rows: { key: string; name: string; contact: string; status: string }[] = [];
+          type Row = {
+            key: string;
+            name: string;
+            contact: string;
+            status: string;
+            role?: string;
+            userId?: string;
+          };
+          const rows: Row[] = [];
+
           for (const inv of invites) {
             const k = norm(inv.phone) || `ti-${inv.id}`;
             if (seen.has(k)) continue;
@@ -176,6 +185,7 @@ function TeamPage() {
               name: inv.name || inv.phone || "—",
               contact: inv.phone || "No phone",
               status: inv.accepted_at ? "Joined" : "Pending signup",
+              role: inv.role,
             });
           }
           for (const g of committeeGuests) {
@@ -189,49 +199,45 @@ function TeamPage() {
               status: "On guest list",
             });
           }
+          // Include signed-up users who weren't represented by an invite (e.g. admins added directly).
+          for (const m of members) {
+            const label = m.profile?.display_name || m.profile?.email || m.user_id.slice(0, 8);
+            const alreadyShown = rows.some(
+              (r) => r.name.toLowerCase() === (label ?? "").toLowerCase(),
+            );
+            if (alreadyShown) continue;
+            rows.push({
+              key: `ur-${m.user_id}-${m.role}`,
+              name: label,
+              contact: m.profile?.email || "Signed in",
+              status: "Joined",
+              role: m.role,
+              userId: m.user_id,
+            });
+          }
+
           if (rows.length === 0) {
             return <p className="text-sm text-muted-foreground italic">No committee members yet.</p>;
           }
           return (
             <div className="grid sm:grid-cols-2 gap-2">
               {rows.map((r) => (
-                <div key={r.key} className="rounded-lg border border-border bg-background px-3 py-2">
-                  <p className="font-medium text-sm">{r.name}</p>
-                  <p className="text-xs text-muted-foreground">{r.contact}</p>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground/80 mt-0.5">{r.status}</p>
+                <div key={r.key} className="rounded-lg border border-border bg-background px-3 py-2 flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm truncate">{r.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{r.contact}</p>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground/80 mt-0.5">{r.status}</p>
+                  </div>
+                  {r.role && (
+                    <Badge variant={r.role === "admin" ? "default" : "secondary"} className="shrink-0">
+                      {r.role === "admin" && <ShieldCheck className="w-3 h-3 mr-1" />}{r.role}
+                    </Badge>
+                  )}
                 </div>
               ))}
             </div>
           );
         })()}
-      </Card>
-
-      <Card className="overflow-hidden">
-
-        <div className="p-4 border-b border-border flex items-center gap-2">
-          <Users className="w-4 h-4" /> <h2 className="font-display text-lg">Committee members</h2>
-        </div>
-        <div className="divide-y divide-border">
-          {members.length === 0 && <p className="p-6 text-sm text-muted-foreground text-center">No committee members yet.</p>}
-          {members.map((m) => (
-            <div key={`${m.user_id}-${m.role}`} className="p-4 flex items-center justify-between gap-3">
-              <div>
-                <p className="font-medium">{m.profile?.display_name || m.profile?.email || m.user_id.slice(0, 8)}</p>
-                {m.profile?.email && <p className="text-xs text-muted-foreground">{m.profile.email}</p>}
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge variant={m.role === "admin" ? "default" : "secondary"}>
-                  {m.role === "admin" && <ShieldCheck className="w-3 h-3 mr-1" />}{m.role}
-                </Badge>
-                {isAdmin && (
-                  <button onClick={() => removeRole(m.user_id, m.role)} className="text-muted-foreground hover:text-terracotta">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
       </Card>
 
       {isAdmin && (
