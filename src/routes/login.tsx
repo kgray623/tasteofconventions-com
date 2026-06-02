@@ -78,6 +78,9 @@ function HelperLogin() {
     } catch {
       // Allow another attempt instead of getting wedged forever.
       navigatingRef.current = false;
+    } finally {
+      // Always release the button so the user is never stuck on "Signing in…".
+      setBusy(false);
     }
   };
 
@@ -101,12 +104,11 @@ function HelperLogin() {
         setBusy(false);
         return toast.error(setErr.message);
       }
-      const { data: verified, error: verifyErr } = await withTimeout(supabase.auth.getUser(), 10000);
-      if (verifyErr || !verified.user) {
-        throw new Error(verifyErr?.message || "Sign-in did not finish. Please try again.");
-      }
       toast.success("Signed in.");
-      await goToDestination(verified.user.id);
+      // Navigate using the user_id from the server response directly — don't
+      // wait on getUser() (which has hung for some users) or rely solely on
+      // the onAuthStateChange listener firing.
+      await goToDestination(session.user_id);
     } catch (error) {
       navigatingRef.current = false;
       setBusy(false);
