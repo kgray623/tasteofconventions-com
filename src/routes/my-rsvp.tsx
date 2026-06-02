@@ -2,7 +2,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { MyRsvpContent } from "@/components/my-rsvp-content";
 
 export const Route = createFileRoute("/my-rsvp")({
-  head: () => ({ meta: [{ title: "My RSVP — A Taste of Special Conventions" }] }),
+  head: () => ({
+    meta: [
+      { title: "My RSVP — A Taste of Special Conventions" },
+      {
+        name: "description",
+        content:
+          "View and manage your personal RSVP details, guest count, and pre-orders for A Taste of Special Conventions.",
+      },
+    ],
+  }),
   component: MyRsvpPage,
 });
 
