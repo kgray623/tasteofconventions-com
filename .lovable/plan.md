@@ -1,9 +1,8 @@
-## Sort committee lists alphabetically by first name
+I found the issue: `/admin/upload?view=committee` is showing a placeholder that says “A short video will be placed here…” instead of the real walkthrough video.
 
-In `src/routes/_authenticated/admin/inviters.tsx`:
-
-1. **Committee members grid** (~lines 621-627): currently sorts by last name. Change to sort alphabetically by full name (first name) using `a.name.localeCompare(b.name)`.
-
-2. **Steering committee invitations & usage table** (`inviters` array): also sort alphabetically by `name` before rendering, so the quota allocation table matches.
-
-No backend or data-model changes.
+Plan:
+1. Update `src/routes/_authenticated/admin/upload.tsx` so the top walkthrough area embeds the existing Wistia video currently used by the committee workspace: `https://fast.wistia.net/embed/iframe/cf8d380y2y?videoFoam=true`.
+2. Keep the existing page layout and quota cards unchanged.
+3. Add the same iframe attributes used elsewhere so it can play fullscreen and render responsively on desktop and mobile.
+4. Remove the unused placeholder-only `PlayCircle` import if it’s no longer needed.
+5. Verify the upload page shows the real video area instead of the placeholder.

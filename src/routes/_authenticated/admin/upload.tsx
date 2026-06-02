@@ -35,7 +35,7 @@ import { getErrorMessage } from "@/lib/async-safety";
 import { useServerFn } from "@tanstack/react-start";
 import { extractContactsFromImages } from "@/lib/extract-contacts.functions";
 import { Input } from "@/components/ui/input";
-import { Image as ImageIcon, Target, PlayCircle } from "lucide-react";
+import { Image as ImageIcon, Target } from "lucide-react";
 
 
 
@@ -1076,13 +1076,20 @@ function UploadPage() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-border bg-muted/40 aspect-video w-full flex flex-col items-center justify-center text-center px-6">
-        <PlayCircle className="w-12 h-12 text-terracotta mb-3" />
-        <p className="font-display text-lg">Guest list walkthrough</p>
-        <p className="text-sm text-muted-foreground mt-1 max-w-md">
-          A short video will be placed here showing you how to add guests, send invitations, and track RSVPs.
-        </p>
-      </div>
+      <Card className="overflow-hidden border-ink/10 bg-ink/5">
+        <div className="relative aspect-[9/16] md:aspect-video mx-auto w-full max-w-sm md:max-w-none">
+          <iframe
+            src="https://fast.wistia.net/embed/iframe/cf8d380y2y?videoFoam=true"
+            title="Guest list walkthrough"
+            allow="autoplay; fullscreen; encrypted-media"
+            allowFullScreen
+            className="absolute inset-0 h-full w-full"
+            frameBorder={0}
+            scrolling="no"
+          />
+        </div>
+      </Card>
+
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-5">
