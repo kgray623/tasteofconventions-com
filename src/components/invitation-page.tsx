@@ -320,7 +320,7 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-4">
               <p className="whitespace-pre-line">{content.dress_body}</p>
-              <VideoPlaceholder label="Dress code · video coming soon" />
+
             </AccordionContent>
           </AccordionItem>
 
