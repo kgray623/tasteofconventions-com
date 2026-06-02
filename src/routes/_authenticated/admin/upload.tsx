@@ -267,12 +267,8 @@ function UploadPage() {
         )
         .eq("event_id", evId)
         .order("created_at", { ascending: false });
-      // Non-admin committee members only see their OWN guest list.
-      // Committee-tagged guests from other inviters stay hidden unless this
-      // user is an actual admin.
-      if (!isAdmin && user?.id) {
-        query = query.eq("host_id", user.id);
-      }
+      // Everyone on the steering committee (team + admin) sees the full
+      // guest list across all inviters.
       const { data, error } = await query;
       if (error) throw error;
       type Row = {
