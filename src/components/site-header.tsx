@@ -9,7 +9,7 @@ export function SiteHeader() {
   const { isAdmin, isTeam, loading } = useRoles();
   const navigate = useNavigate();
   const location = useRouterState({ select: (state) => state.location });
-  const isCommitteeView = location.pathname.startsWith("/admin") && location.search.view === "committee";
+  const isCommitteeView = location.pathname.startsWith("/admin") && (location.pathname === "/admin/subcommittee" || location.search.view === "committee");
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -24,8 +24,7 @@ export function SiteHeader() {
             <>
               {loading ? null : isTeam ? (
                 <Link
-                  to="/admin"
-                  search={isCommitteeView ? { view: "committee" } : { view: undefined }}
+                  to={isCommitteeView ? "/admin/subcommittee" : "/admin"}
                   className="px-3 py-2 rounded-md hover:bg-secondary transition"
                 >
                   {isAdmin && !isCommitteeView ? "Admin" : "Steering Committee"}
