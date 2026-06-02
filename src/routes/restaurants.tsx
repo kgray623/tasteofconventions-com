@@ -9,7 +9,9 @@ export const Route = createFileRoute("/restaurants")({
   head: () => ({
     meta: [
       { title: "Restaurants — A Taste of Special Conventions" },
-      { name: "description", content: "Browse the curated restaurant lineup for the event." },
+      { name: "description", content: "Browse the curated restaurant lineup contributing cultural cuisines to A Taste of Special Conventions on August 30, 2026." },
+      { property: "og:title", content: "Restaurants — A Taste of Special Conventions" },
+      { property: "og:description", content: "Hand-picked kitchens contributing cultural cuisines to the August 30, 2026 evening at Eagle's Landing." },
     ],
   }),
   component: Restaurants,
@@ -27,10 +29,28 @@ function Restaurants() {
     supabase.from("menu_items").select("*").eq("available", true).then(({ data }) => setItems((data as M[]) ?? []));
   }, []);
 
+  const itemListLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "Restaurants — A Taste of Special Conventions",
+    itemListElement: restaurants.map((r, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      item: {
+        "@type": "Restaurant",
+        name: r.name,
+        description: r.description ?? undefined,
+        servesCuisine: r.cuisine ?? undefined,
+        image: r.image_url ?? undefined,
+      },
+    })),
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
-      <div className="mx-auto max-w-6xl px-6 py-12">
+      <main className="mx-auto max-w-6xl px-6 py-12">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }} />
         <p className="text-xs uppercase tracking-[0.3em] text-terracotta">Curated lineup</p>
         <h1 className="font-display text-5xl mt-2">Restaurants</h1>
         <p className="text-muted-foreground mt-3 max-w-2xl">
@@ -73,7 +93,7 @@ function Restaurants() {
             );
           })}
         </div>
-      </div>
+      </main>
     </div>
   );
 }

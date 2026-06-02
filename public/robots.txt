@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /my-rsvp
+Disallow: /rsvp
+Disallow: /auth
+Disallow: /login
+Disallow: /reset-password
+Disallow: /lovable/
+
+Sitemap: https://tasteofconventions.com/sitemap.xml
