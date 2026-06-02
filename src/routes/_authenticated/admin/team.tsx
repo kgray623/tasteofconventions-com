@@ -158,25 +158,52 @@ function TeamPage() {
       <Card className="p-5 space-y-3">
         <div className="flex items-center gap-2">
           <Users className="w-4 h-4 text-terracotta" />
-          <h2 className="font-display text-lg">Committee (flagged on guest list)</h2>
+          <h2 className="font-display text-lg">Steering Committee</h2>
         </div>
         <p className="text-sm text-muted-foreground">
-          Everyone tagged as committee on the guest list — so the whole team can see who's on board.
+          Everyone added as a committee member or flagged as committee on the guest list.
         </p>
-        {committeeGuests.length === 0 ? (
-          <p className="text-sm text-muted-foreground italic">No committee members flagged yet.</p>
-        ) : (
-          <div className="grid sm:grid-cols-2 gap-2">
-            {committeeGuests.map((g) => (
-              <div key={g.id} className="rounded-lg border border-border bg-background px-3 py-2">
-                <p className="font-medium text-sm">{g.guest_name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {g.guest_phone || g.guest_email || "No contact on file"}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
+        {(() => {
+          const seen = new Set<string>();
+          const norm = (p?: string | null) => (p ? p.replace(/\D/g, "") : "");
+          const rows: { key: string; name: string; contact: string; status: string }[] = [];
+          for (const inv of invites) {
+            const k = norm(inv.phone) || `ti-${inv.id}`;
+            if (seen.has(k)) continue;
+            seen.add(k);
+            rows.push({
+              key: `ti-${inv.id}`,
+              name: inv.name || inv.phone || "—",
+              contact: inv.phone || "No phone",
+              status: inv.accepted_at ? "Joined" : "Pending signup",
+            });
+          }
+          for (const g of committeeGuests) {
+            const k = norm(g.guest_phone) || `cg-${g.id}`;
+            if (seen.has(k)) continue;
+            seen.add(k);
+            rows.push({
+              key: `cg-${g.id}`,
+              name: g.guest_name,
+              contact: g.guest_phone || g.guest_email || "No contact on file",
+              status: "On guest list",
+            });
+          }
+          if (rows.length === 0) {
+            return <p className="text-sm text-muted-foreground italic">No committee members yet.</p>;
+          }
+          return (
+            <div className="grid sm:grid-cols-2 gap-2">
+              {rows.map((r) => (
+                <div key={r.key} className="rounded-lg border border-border bg-background px-3 py-2">
+                  <p className="font-medium text-sm">{r.name}</p>
+                  <p className="text-xs text-muted-foreground">{r.contact}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground/80 mt-0.5">{r.status}</p>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
       </Card>
 
       <Card className="overflow-hidden">
