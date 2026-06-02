@@ -463,7 +463,8 @@ export function InvitationPage() {
             </AccordionContent>
           </AccordionItem>
         </Accordion>
-      </section>
+        </section>
+      </main>
 
 
       <footer className="border-t border-border py-10 text-center text-sm text-muted-foreground">
