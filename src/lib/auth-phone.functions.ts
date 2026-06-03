@@ -163,7 +163,7 @@ export const signInWithPhoneOnly = createServerFn({ method: "POST" })
     }
     if (updErr) throw new Error(updErr.message);
 
-    // 3b) If this phone is on the team invite list, grant the role and mark accepted.
+    // 3b) If this phone is on the team invite list or marked as committee on an invitation, grant the team role.
     const { data: teamInviteRow } = await supabaseAdmin
       .from("team_invites")
       .select("id,role,accepted_at")
@@ -186,6 +186,29 @@ export const signInWithPhoneOnly = createServerFn({ method: "POST" })
           .from("team_invites")
           .update({ accepted_at: new Date().toISOString() })
           .eq("id", teamInviteRow.id);
+      }
+    }
+    const { data: committeeInvite } = await supabaseAdmin
+      .from("invitations")
+      .select("id")
+      .eq("is_committee", true)
+      .or(
+        [phoneNorm, phoneNorm.slice(-10), phoneE164.replace(/\D/g, ""), phoneE164.replace(/\D/g, "").slice(-10)]
+          .filter(Boolean)
+          .map((digits) => `guest_phone_normalized.eq.${digits}`)
+          .join(","),
+      )
+      .limit(1)
+      .maybeSingle();
+    if (committeeInvite && !teamInviteRow) {
+      const { data: existingTeamRole } = await supabaseAdmin
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("role", "team")
+        .maybeSingle();
+      if (!existingTeamRole) {
+        await supabaseAdmin.from("user_roles").insert({ user_id: userId, role: "team" });
       }
     }
 
