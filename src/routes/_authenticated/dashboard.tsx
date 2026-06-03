@@ -63,7 +63,45 @@ function Dashboard() {
     await load();
   };
 
-  const duplicateGuestButton = (invite: Invite) => (
+  const setRsvpFor = async (
+    invite: Invite,
+    value: "yes1" | "yes2" | "yes3" | "yes4" | "no" | "clear",
+  ) => {
+    setSettingRsvpId(invite.id);
+    try {
+      if (value === "clear") {
+        const { error } = await supabase.from("rsvps").delete().eq("invitation_id", invite.id);
+        if (error) throw error;
+        toast.success(`Cleared RSVP for ${invite.guest_name}.`);
+      } else {
+        const status = value === "no" ? "no" : "yes";
+        const partySize = value === "no" ? 1 : Number(value.replace("yes", ""));
+        const { error } = await supabase.from("rsvps").upsert(
+          {
+            invitation_id: invite.id,
+            status,
+            party_size: partySize,
+            attendance_mode: "in_person",
+            responded_at: new Date().toISOString(),
+          },
+          { onConflict: "invitation_id" },
+        );
+        if (error) throw error;
+        toast.success(
+          status === "no"
+            ? `Marked ${invite.guest_name} as declined.`
+            : `Marked ${invite.guest_name} attending (${partySize}).`,
+        );
+      }
+      await load();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error("Couldn't save RSVP", { description: msg });
+    } finally {
+      setSettingRsvpId(null);
+    }
+  };
+
     <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1">
       <span className="font-medium">{invite.guest_name}</span>
       <AlertDialog>
