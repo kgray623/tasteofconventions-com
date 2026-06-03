@@ -252,19 +252,18 @@ export function CommitteeWorkspace() {
         </Button>
       )}
 
-      <CollapsibleSection
-        open={openSection === "my"}
-        onToggle={() => toggleSection("my")}
-        icon={<CheckCircle2 className="w-5 h-5 text-ink" />}
-        title={`My guests (${myGuests.length})`}
-        action={
-          <Button asChild variant="outline" size="sm" onClick={(e) => e.stopPropagation()}>
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b border-border flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-ink" />
+            <h2 className="font-semibold">My guests ({myGuests.length})</h2>
+          </div>
+          <Button asChild variant="outline" size="sm">
             <Link to="/invitations/new">
               <UserPlus className="w-4 h-4 mr-2" /> Add guest
             </Link>
           </Button>
-        }
-      >
+        </div>
         <p className="px-4 pt-3 text-xs text-muted-foreground">
           Guests you've invited. If someone texts you back to decline (or accept), record their RSVP here.
         </p>
@@ -312,7 +311,7 @@ export function CommitteeWorkspace() {
             ))}
           </div>
         )}
-      </CollapsibleSection>
+      </Card>
 
       <CollapsibleSection
         open={openSection === "confirmed"}
