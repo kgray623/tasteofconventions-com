@@ -34,6 +34,7 @@ function Dashboard() {
   const [events, setEvents] = useState<EventRow[]>([]);
   const [invites, setInvites] = useState<Invite[]>([]);
   const [flags, setFlags] = useState<Flag[]>([]);
+  const [settingRsvpId, setSettingRsvpId] = useState<string | null>(null);
 
   const load = async () => {
     const [{ data: e }, { data: i }, { data: f }] = await Promise.all([
