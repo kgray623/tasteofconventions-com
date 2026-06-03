@@ -192,7 +192,12 @@ export const signInWithPhoneOnly = createServerFn({ method: "POST" })
       .from("invitations")
       .select("id")
       .eq("is_committee", true)
-      .or(`guest_phone_normalized.eq.${phoneNorm},guest_phone_normalized.eq.${phoneE164.replace(/\D/g, "")}`)
+      .or(
+        [phoneNorm, phoneNorm.slice(-10), phoneE164.replace(/\D/g, ""), phoneE164.replace(/\D/g, "").slice(-10)]
+          .filter(Boolean)
+          .map((digits) => `guest_phone_normalized.eq.${digits}`)
+          .join(","),
+      )
       .limit(1)
       .maybeSingle();
     if (committeeInvite && !teamInviteRow) {
