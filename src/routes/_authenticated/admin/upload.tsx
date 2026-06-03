@@ -963,6 +963,10 @@ function UploadPage() {
       toast.error("Up to 10 screenshots at a time.");
       return;
     }
+    if (!eventId || !user) {
+      toast.error("Pick an event first.");
+      return;
+    }
     setScreenshotBusy(true);
     setDone(null);
     try {
@@ -972,18 +976,76 @@ function UploadPage() {
         toast.error("No contacts found in those screenshots.");
         return;
       }
-      await parseRows(
-        contacts.map((c) => ({
-          name: c.name,
-          email: c.email,
-          phone: c.phone,
-          notes: "",
-        })),
-        true,
-      );
-      toast.success(
-        `Found ${contacts.length} contact${contacts.length === 1 ? "" : "s"} in your screenshot${list.length === 1 ? "" : "s"}`,
-      );
+
+      // Insert directly into the guest list — no review step.
+      const insertedIds: string[] = [];
+      const insertedNames: string[] = [];
+      let failed = 0;
+      for (const c of contacts) {
+        const name = (c.name || "").trim();
+        if (!name) {
+          failed++;
+          continue;
+        }
+        const { data, error } = await supabase
+          .from("invitations")
+          .insert({
+            event_id: eventId,
+            host_id: user.id,
+            guest_name: name,
+            guest_email: (c.email || "").trim() || null,
+            guest_phone: (c.phone || "").trim() || null,
+            notes: null,
+            is_committee: importAsCommittee,
+          })
+          .select("id,guest_name")
+          .single();
+        if (error || !data) {
+          console.error("[upload] screenshot insert failed", error);
+          failed++;
+          continue;
+        }
+        insertedIds.push(data.id);
+        insertedNames.push(data.guest_name);
+      }
+
+      // Find duplicates flagged by the database trigger (email / phone / fuzzy name).
+      let dupeNames: string[] = [];
+      if (insertedIds.length) {
+        const { data: flags } = await supabase
+          .from("duplicate_flags")
+          .select("invitation_a,invitation_b,match_type")
+          .or(
+            insertedIds
+              .map((id) => `invitation_a.eq.${id},invitation_b.eq.${id}`)
+              .join(","),
+          );
+        const dupeIdSet = new Set<string>();
+        for (const f of flags ?? []) {
+          if (insertedIds.includes(f.invitation_a)) dupeIdSet.add(f.invitation_a);
+          if (insertedIds.includes(f.invitation_b)) dupeIdSet.add(f.invitation_b);
+        }
+        dupeNames = insertedNames.filter((_, i) => dupeIdSet.has(insertedIds[i]));
+      }
+
+      await loadSavedGuests(eventId);
+
+      if (insertedIds.length) {
+        toast.success(
+          `Added ${insertedIds.length} guest${insertedIds.length === 1 ? "" : "s"} to the list`,
+        );
+      }
+      if (dupeNames.length) {
+        toast.warning(
+          `${dupeNames.length} already invited (flagged as duplicate): ${dupeNames.join(", ")}`,
+          { duration: 8000 },
+        );
+      }
+      if (failed) {
+        toast.error(
+          `Couldn't add ${failed} contact${failed === 1 ? "" : "s"} (missing name or insert error).`,
+        );
+      }
     } catch (e) {
       console.error("[upload] screenshot extract failed", e);
       toast.error("Couldn't read those screenshots", { description: getErrorMessage(e) });
