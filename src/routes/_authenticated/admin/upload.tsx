@@ -242,6 +242,7 @@ function UploadPage() {
   const [editingSavedValue, setEditingSavedValue] = useState("");
   const [updatingSavedId, setUpdatingSavedId] = useState<string | null>(null);
   const [markingSentId, setMarkingSentId] = useState<string | null>(null);
+  const [settingRsvpId, setSettingRsvpId] = useState<string | null>(null);
   const [inviterName, setInviterName] = useState<string>("");
   const [myQuota, setMyQuota] = useState<number | null>(null);
   const [myRsvpSeats, setMyRsvpSeats] = useState(0);
@@ -569,6 +570,54 @@ function UploadPage() {
       ),
     );
     toast.success(checked ? "Marked as sent." : "Marked as not sent.");
+  };
+
+  // Record an RSVP on behalf of a guest who replied off-system (e.g. by text).
+  const setRsvpFor = async (
+    g: (typeof savedGuests)[number],
+    value: "yes1" | "yes2" | "yes3" | "yes4" | "no" | "clear",
+  ) => {
+    setSettingRsvpId(g.id);
+    try {
+      if (value === "clear") {
+        const { error } = await supabase.from("rsvps").delete().eq("invitation_id", g.id);
+        if (error) throw error;
+        setSavedGuests((prev) =>
+          prev.map((row) =>
+            row.id === g.id ? { ...row, rsvp_status: null, party_size: 1 } : row,
+          ),
+        );
+        toast.success(`Cleared RSVP for ${g.guest_name}.`);
+        return;
+      }
+      const status = value === "no" ? "no" : "yes";
+      const partySize = value === "no" ? 1 : Number(value.replace("yes", ""));
+      const { error } = await supabase.from("rsvps").upsert(
+        {
+          invitation_id: g.id,
+          status,
+          party_size: partySize,
+          attendance_mode: "in_person",
+          responded_at: new Date().toISOString(),
+        },
+        { onConflict: "invitation_id" },
+      );
+      if (error) throw error;
+      setSavedGuests((prev) =>
+        prev.map((row) =>
+          row.id === g.id ? { ...row, rsvp_status: status, party_size: partySize } : row,
+        ),
+      );
+      toast.success(
+        status === "no"
+          ? `Marked ${g.guest_name} as declined.`
+          : `Marked ${g.guest_name} attending (${partySize}).`,
+      );
+    } catch (e) {
+      toast.error("Couldn't save RSVP", { description: getErrorMessage(e) });
+    } finally {
+      setSettingRsvpId(null);
+    }
   };
 
   const toggleCommittee = async (g: (typeof savedGuests)[number], checked: boolean) => {
@@ -1378,6 +1427,30 @@ function UploadPage() {
                        <Trash2 className="w-4 h-4" />
                      )}
                    </Button>
+                   <Select
+                     value=""
+                     disabled={settingRsvpId === g.id}
+                     onValueChange={(v) =>
+                       void setRsvpFor(
+                         g,
+                         v as "yes1" | "yes2" | "yes3" | "yes4" | "no" | "clear",
+                       )
+                     }
+                   >
+                     <SelectTrigger className="h-8 w-[150px] text-xs">
+                       <SelectValue
+                         placeholder={settingRsvpId === g.id ? "Saving…" : "RSVP for them"}
+                       />
+                     </SelectTrigger>
+                     <SelectContent>
+                       <SelectItem value="no">No / declined</SelectItem>
+                       <SelectItem value="yes1">Yes — 1 person</SelectItem>
+                       <SelectItem value="yes2">Yes — 2 people</SelectItem>
+                       <SelectItem value="yes3">Yes — 3 people</SelectItem>
+                       <SelectItem value="yes4">Yes — 4 people</SelectItem>
+                       <SelectItem value="clear">Clear RSVP</SelectItem>
+                     </SelectContent>
+                   </Select>
                    <label className="inline-flex items-center gap-2 h-8 px-2 rounded-md border border-input text-xs cursor-pointer hover:bg-accent">
                     <Checkbox
                       checked={!!g.invite_sent_at}
