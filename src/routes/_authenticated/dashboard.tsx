@@ -219,6 +219,62 @@ function Dashboard() {
       </div>
 
       <div>
+        <h2 className="font-display text-2xl mb-4">My guests</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Guests you've invited. If someone texts you back to decline (or accept), record their RSVP here.
+        </p>
+        <Card className="overflow-hidden">
+          <div className="divide-y divide-border">
+            {myInvites.length === 0 && (
+              <div className="p-8 text-center text-muted-foreground text-sm">
+                You haven't invited anyone yet.{" "}
+                <Link to="/invitations/new" className="text-terracotta underline">Add your first guest</Link>.
+              </div>
+            )}
+            {myInvites.map((i) => (
+              <div key={i.id} className="p-4 flex flex-wrap items-center gap-3">
+                <div className="flex-1 min-w-[200px]">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{i.guest_name}</span>
+                    {i.is_committee && <Badge className="bg-terracotta text-cream hover:bg-terracotta text-[10px]">Committee</Badge>}
+                  </div>
+                  <div className="flex flex-wrap gap-3 mt-1 text-xs text-muted-foreground">
+                    {i.guest_email && <span className="inline-flex items-center gap-1"><Mail className="w-3 h-3" />{i.guest_email}</span>}
+                    {i.guest_phone && <span className="inline-flex items-center gap-1"><Phone className="w-3 h-3" />{i.guest_phone}</span>}
+                  </div>
+                </div>
+                <RsvpBadge status={i.rsvps?.status} />
+                <Select
+                  value=""
+                  disabled={settingRsvpId === i.id}
+                  onValueChange={(v) =>
+                    void setRsvpFor(i, v as "yes1" | "yes2" | "yes3" | "yes4" | "no" | "clear")
+                  }
+                >
+                  <SelectTrigger className="h-8 w-[160px] text-xs">
+                    <SelectValue
+                      placeholder={settingRsvpId === i.id ? "Saving…" : "Record RSVP"}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no">No / declined</SelectItem>
+                    <SelectItem value="yes1">Yes — 1 person</SelectItem>
+                    <SelectItem value="yes2">Yes — 2 people</SelectItem>
+                    <SelectItem value="yes3">Yes — 3 people</SelectItem>
+                    <SelectItem value="yes4">Yes — 4 people</SelectItem>
+                    <SelectItem value="clear">Clear RSVP</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Link to="/rsvp/$token" params={{ token: i.rsvp_token }} className="text-xs text-terracotta hover:underline">
+                  Open RSVP link →
+                </Link>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      <div>
         <h2 className="font-display text-2xl mb-4">All invitations</h2>
         <Card className="overflow-hidden">
           <div className="divide-y divide-border">
