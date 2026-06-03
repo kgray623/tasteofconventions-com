@@ -190,7 +190,8 @@ export function CommitteeWorkspace() {
     }
   };
 
-  const myGuests = user ? guests.filter((g) => g.host_id === user.id) : [];
+  const mineHostIdSet = new Set(myHostIds.length ? myHostIds : user ? [user.id] : []);
+  const myGuests = user ? guests.filter((g) => mineHostIdSet.has(g.host_id)) : [];
   const confirmedGuests = guests.filter((guest) => guest.rsvp_status === "yes");
   const confirmedPeople = confirmedGuests.reduce((total, guest) => total + guest.party_size, 0);
 
