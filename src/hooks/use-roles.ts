@@ -15,6 +15,7 @@ export function useRoles() {
     }
     setLoading(true);
     try {
+      await withTimeout(supabase.rpc("ensure_committee_team_role"), 5000).catch(() => null);
       const { data } = await withTimeout(
         supabase.from("user_roles").select("role").eq("user_id", user.id),
         3000,
