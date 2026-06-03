@@ -26,17 +26,24 @@ function AuthLayout() {
     if (loading || user) return;
     let cancelled = false;
     setVerifying(true);
-    // Double-check via getUser() before redirecting — the AuthProvider
-    // may simply not have hydrated the session yet (e.g. right after
-    // setSession on /login → SPA navigation here).
+    // Double-check via getUser() before redirecting — when returning to the
+    // tab from another app (e.g. Messages), AuthProvider may not have
+    // re-hydrated yet. Retry briefly before giving up so we don't bounce
+    // the user to /login mid-session.
     void (async () => {
-      const { data } = await supabase.auth.getUser().catch(() => ({ data: { user: null } as { user: null } }));
-      if (cancelled) return;
-      if (data.user) {
-        // Session exists; AuthProvider's onAuthStateChange will pick it up.
-        setVerifying(false);
-        return;
+      for (let attempt = 0; attempt < 3 && !cancelled; attempt++) {
+        const { data } = await supabase.auth
+          .getUser()
+          .catch(() => ({ data: { user: null } as { user: null } }));
+        if (cancelled) return;
+        if (data.user) {
+          setVerifying(false);
+          return;
+        }
+        // Wait a moment for onAuthStateChange to hydrate from storage.
+        await new Promise((r) => setTimeout(r, 400));
       }
+      if (cancelled) return;
       const search = new URLSearchParams({ redirect: safeLoginRedirect(location.pathname) });
       await navigate({ to: "/login", search: { redirect: safeLoginRedirect(location.pathname) } as never, replace: true })
         .catch(() => {
