@@ -65,10 +65,25 @@ export function CommitteeWorkspace() {
         ((user?.user_metadata as { phone?: string } | undefined)?.phone ?? undefined);
       const phoneDigits = (userPhone ?? "").replace(/\D/g, "");
       const tail10 = phoneDigits.slice(-10);
+      // Also match by display name (handles users with multiple accounts
+      // where the inviter row has no phone — link by name instead).
+      let myName = "";
+      try {
+        if (user?.id) {
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("display_name")
+            .eq("id", user.id)
+            .maybeSingle();
+          myName = (prof?.display_name ?? "").trim().toLowerCase();
+        }
+      } catch (e) {
+        console.warn("[committee] profile lookup failed", e);
+      }
       try {
         const { data: inviterRows } = await supabase
           .from("inviters")
-          .select("host_id,phone");
+          .select("host_id,phone,name");
         for (const row of inviterRows ?? []) {
           if (!row.host_id) continue;
           if (row.host_id === user?.id) {
@@ -77,6 +92,11 @@ export function CommitteeWorkspace() {
           }
           const rowDigits = (row.phone ?? "").replace(/\D/g, "");
           if (tail10 && rowDigits && rowDigits.slice(-10) === tail10) {
+            mineSet.add(row.host_id);
+            continue;
+          }
+          const rowName = (row.name ?? "").trim().toLowerCase();
+          if (myName && rowName && rowName === myName) {
             mineSet.add(row.host_id);
           }
         }
