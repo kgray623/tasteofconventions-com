@@ -225,6 +225,7 @@ function UploadPage() {
       rsvp_token: string;
       invite_sent_at: string | null;
       rsvp_status: string | null;
+      party_size: number;
       is_committee: boolean;
       invited_by: string | null;
     }[]
@@ -265,7 +266,7 @@ function UploadPage() {
       let query = supabase
         .from("invitations")
         .select(
-          "id,guest_name,guest_email,guest_phone,rsvp_token,invite_sent_at,is_committee,host_id,rsvps(status)",
+          "id,guest_name,guest_email,guest_phone,rsvp_token,invite_sent_at,is_committee,host_id,rsvps(status,party_size)",
         )
         .eq("event_id", evId)
         .order("created_at", { ascending: false });
@@ -282,7 +283,7 @@ function UploadPage() {
         invite_sent_at: string | null;
         is_committee: boolean | null;
         host_id: string;
-        rsvps: { status: string }[] | { status: string } | null;
+        rsvps: { status: string; party_size: number | null }[] | { status: string; party_size: number | null } | null;
       };
       const rows = (data ?? []) as unknown as Row[];
 
@@ -311,6 +312,7 @@ function UploadPage() {
             rsvp_token: r.rsvp_token,
             invite_sent_at: r.invite_sent_at,
             rsvp_status: rsvp?.status ?? null,
+            party_size: rsvp?.party_size ?? 1,
             is_committee: !!r.is_committee,
             invited_by: hostNames.get(r.host_id) ?? null,
           };
