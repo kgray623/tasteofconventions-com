@@ -27,6 +27,7 @@ const WELCOME_HIDE_KEY = "toc.committee.welcomeVideoHidden";
 export function CommitteeWorkspace() {
   const { user } = useAuth();
   const [guests, setGuests] = useState<CommitteeGuest[]>([]);
+  const [myHostIds, setMyHostIds] = useState<string[]>([]);
   const [loadingGuests, setLoadingGuests] = useState(true);
   const [settingRsvpId, setSettingRsvpId] = useState<string | null>(null);
   const [hideWelcome, setHideWelcome] = useState(false);
@@ -54,6 +55,56 @@ export function CommitteeWorkspace() {
   const loadGuests = async (alive: () => boolean = () => true) => {
     if (alive()) setLoadingGuests(true);
     try {
+      // Build the set of host_ids that count as "mine":
+      // the logged-in user + any inviter record linked to this user
+      // (by host_id, or by matching phone — handles people with multiple accounts).
+      const mineSet = new Set<string>();
+      if (user?.id) mineSet.add(user.id);
+      const userPhone: string | undefined =
+        (user as { phone?: string } | null)?.phone ||
+        ((user?.user_metadata as { phone?: string } | undefined)?.phone ?? undefined);
+      const phoneDigits = (userPhone ?? "").replace(/\D/g, "");
+      const tail10 = phoneDigits.slice(-10);
+      // Also match by display name (handles users with multiple accounts
+      // where the inviter row has no phone — link by name instead).
+      let myName = "";
+      try {
+        if (user?.id) {
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("display_name")
+            .eq("id", user.id)
+            .maybeSingle();
+          myName = (prof?.display_name ?? "").trim().toLowerCase();
+        }
+      } catch (e) {
+        console.warn("[committee] profile lookup failed", e);
+      }
+      try {
+        const { data: inviterRows } = await supabase
+          .from("inviters")
+          .select("host_id,phone,name");
+        for (const row of inviterRows ?? []) {
+          if (!row.host_id) continue;
+          if (row.host_id === user?.id) {
+            mineSet.add(row.host_id);
+            continue;
+          }
+          const rowDigits = (row.phone ?? "").replace(/\D/g, "");
+          if (tail10 && rowDigits && rowDigits.slice(-10) === tail10) {
+            mineSet.add(row.host_id);
+            continue;
+          }
+          const rowName = (row.name ?? "").trim().toLowerCase();
+          if (myName && rowName && rowName === myName) {
+            mineSet.add(row.host_id);
+          }
+        }
+      } catch (e) {
+        console.warn("[committee] inviter lookup failed", e);
+      }
+      if (alive()) setMyHostIds(Array.from(mineSet));
+
       const { data: events } = await supabase
         .from("events")
         .select("id")
@@ -159,7 +210,8 @@ export function CommitteeWorkspace() {
     }
   };
 
-  const myGuests = user ? guests.filter((g) => g.host_id === user.id) : [];
+  const mineHostIdSet = new Set(myHostIds.length ? myHostIds : user ? [user.id] : []);
+  const myGuests = user ? guests.filter((g) => mineHostIdSet.has(g.host_id)) : [];
   const confirmedGuests = guests.filter((guest) => guest.rsvp_status === "yes");
   const confirmedPeople = confirmedGuests.reduce((total, guest) => total + guest.party_size, 0);
 
