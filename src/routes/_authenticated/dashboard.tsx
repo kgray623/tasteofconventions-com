@@ -102,6 +102,7 @@ function Dashboard() {
     }
   };
 
+  const duplicateGuestButton = (invite: Invite) => (
     <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1">
       <span className="font-medium">{invite.guest_name}</span>
       <AlertDialog>
