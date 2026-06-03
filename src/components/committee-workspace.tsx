@@ -85,26 +85,6 @@ export function CommitteeWorkspace() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <h2 className="text-xl font-semibold tracking-tight">Watch the Welcome Video</h2>
-        <Card className="overflow-hidden border-ink/10 bg-ink/5">
-          <div className="relative aspect-[9/16] md:aspect-video mx-auto w-full max-w-sm md:max-w-none">
-            <iframe
-              src="https://fast.wistia.net/embed/iframe/cf8d380y2y?videoFoam=true"
-              title="Steering Committee welcome video"
-              allow="autoplay; fullscreen; encrypted-media"
-              allowFullScreen
-              className="absolute inset-0 h-full w-full"
-              frameBorder={0}
-              scrolling="no"
-            />
-          </div>
-        </Card>
-      </div>
-
-      <p className="text-muted-foreground">
-        See the following where you can add your guests, chat with others, choose what to volunteer for, etc. If you have any issues with the platform, please screenshot it and text it to 808.278.7562.
-      </p>
       <Card className="overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -144,6 +124,27 @@ export function CommitteeWorkspace() {
           </div>
         )}
       </Card>
+
+      <div className="space-y-2">
+        <h2 className="text-xl font-semibold tracking-tight">Watch the Welcome Video</h2>
+        <Card className="overflow-hidden border-ink/10 bg-ink/5">
+          <div className="relative aspect-[9/16] md:aspect-video mx-auto w-full max-w-sm md:max-w-none">
+            <iframe
+              src="https://fast.wistia.net/embed/iframe/cf8d380y2y?videoFoam=true"
+              title="Steering Committee welcome video"
+              allow="autoplay; fullscreen; encrypted-media"
+              allowFullScreen
+              className="absolute inset-0 h-full w-full"
+              frameBorder={0}
+              scrolling="no"
+            />
+          </div>
+        </Card>
+      </div>
+
+      <p className="text-muted-foreground">
+        See the following where you can add your guests, chat with others, choose what to volunteer for, etc. If you have any issues with the platform, please screenshot it and text it to 808.278.7562.
+      </p>
       <div className="grid gap-3 sm:grid-cols-2">
         <Button asChild className="bg-ink text-cream hover:bg-ink/90 justify-start h-14">
           <Link to="/admin/categories" search={{ view: "committee" }}>
