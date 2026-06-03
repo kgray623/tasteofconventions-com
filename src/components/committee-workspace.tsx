@@ -5,6 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
+import { toast } from "sonner";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 
 type CommitteeGuest = {
   id: string;
@@ -13,7 +18,9 @@ type CommitteeGuest = {
   rsvp_status: string | null;
   party_size: number;
   invited_by: string | null;
+  host_id: string;
 };
+
 
 export function CommitteeWorkspace() {
   const [guests, setGuests] = useState<CommitteeGuest[]>([]);
