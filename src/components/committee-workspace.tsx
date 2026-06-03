@@ -77,7 +77,10 @@ export function CommitteeWorkspace() {
               rsvp_status: rsvp?.status ?? null,
               party_size: rsvp?.party_size ?? 1,
               invited_by: hostNames.get(row.host_id) ?? null,
+              host_id: row.host_id,
             };
+          }),
+
           }),
         );
       } catch (error) {
