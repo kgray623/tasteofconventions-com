@@ -225,6 +225,7 @@ function UploadPage() {
       rsvp_token: string;
       invite_sent_at: string | null;
       rsvp_status: string | null;
+      party_size: number;
       is_committee: boolean;
       invited_by: string | null;
     }[]
@@ -265,7 +266,7 @@ function UploadPage() {
       let query = supabase
         .from("invitations")
         .select(
-          "id,guest_name,guest_email,guest_phone,rsvp_token,invite_sent_at,is_committee,host_id,rsvps(status)",
+          "id,guest_name,guest_email,guest_phone,rsvp_token,invite_sent_at,is_committee,host_id,rsvps(status,party_size)",
         )
         .eq("event_id", evId)
         .order("created_at", { ascending: false });
@@ -282,7 +283,7 @@ function UploadPage() {
         invite_sent_at: string | null;
         is_committee: boolean | null;
         host_id: string;
-        rsvps: { status: string }[] | { status: string } | null;
+        rsvps: { status: string; party_size: number | null }[] | { status: string; party_size: number | null } | null;
       };
       const rows = (data ?? []) as unknown as Row[];
 
@@ -311,6 +312,7 @@ function UploadPage() {
             rsvp_token: r.rsvp_token,
             invite_sent_at: r.invite_sent_at,
             rsvp_status: rsvp?.status ?? null,
+            party_size: rsvp?.party_size ?? 1,
             is_committee: !!r.is_committee,
             invited_by: hostNames.get(r.host_id) ?? null,
           };
@@ -460,6 +462,8 @@ function UploadPage() {
   }, [savedGuests]);
 
   const duplicateCount = duplicateGroups.dupIds.size;
+  const confirmedGuests = savedGuests.filter((g) => g.rsvp_status === "yes");
+  const confirmedPeople = confirmedGuests.reduce((sum, g) => sum + g.party_size, 0);
 
 
   const removeSavedGuest = async (id: string, name: string) => {
@@ -1132,6 +1136,38 @@ function UploadPage() {
           </Select>
         </Card>
       )}
+
+      <Card className="overflow-hidden border-terracotta/40 bg-terracotta/5">
+        <div className="p-4 border-b border-border flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <CheckCircle2 className="w-5 h-5 text-terracotta" />
+            <p className="font-medium">
+              Confirmed RSVPs ({confirmedPeople} people / {confirmedGuests.length} responses)
+            </p>
+          </div>
+          {savedLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+        </div>
+        {confirmedGuests.length === 0 ? (
+          <div className="p-4 text-sm text-muted-foreground">
+            {savedLoading ? "Loading confirmed RSVPs…" : "No confirmed RSVPs yet."}
+          </div>
+        ) : (
+          <div className="divide-y divide-border max-h-[360px] overflow-auto">
+            {confirmedGuests.map((g) => (
+              <div key={g.id} className="px-4 py-3 flex flex-wrap items-center gap-3 text-sm">
+                <p className="font-medium flex-1 min-w-[150px]">{g.guest_name}</p>
+                <Badge className="bg-gold text-ink hover:bg-gold">{g.party_size} attending</Badge>
+                {g.guest_phone && <span className="text-muted-foreground">{g.guest_phone}</span>}
+                {g.invited_by && (
+                  <span className="inline-flex items-center text-[11px] px-2 py-0.5 rounded-full border bg-background/70 text-muted-foreground">
+                    Invited by {g.invited_by}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
 
       <form onSubmit={submitQuotaRequest} className="max-w-xl">
       <Card className="p-4 space-y-3">
