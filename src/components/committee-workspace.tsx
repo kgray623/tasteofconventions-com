@@ -144,7 +144,69 @@ export function CommitteeWorkspace() {
 
   return (
     <div className="space-y-6">
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b border-border flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-ink" />
+            <h2 className="font-semibold">My guests ({myGuests.length})</h2>
+          </div>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/invitations/new">
+              <UserPlus className="w-4 h-4 mr-2" /> Add guest
+            </Link>
+          </Button>
+        </div>
+        <p className="px-4 pt-3 text-xs text-muted-foreground">
+          Guests you've invited. If someone texts you back to decline (or accept), record their RSVP here.
+        </p>
+        {loadingGuests ? (
+          <div className="p-4 text-sm text-muted-foreground flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" /> Loading your guests…
+          </div>
+        ) : myGuests.length === 0 ? (
+          <div className="p-4 text-sm text-muted-foreground">
+            You haven't invited anyone yet.
+          </div>
+        ) : (
+          <div className="divide-y divide-border max-h-[420px] overflow-auto">
+            {myGuests.map((guest) => (
+              <div key={guest.id} className="p-4 flex flex-wrap items-center gap-3">
+                <div className="flex-1 min-w-[160px]">
+                  <p className="font-medium">{guest.guest_name}</p>
+                  {guest.guest_phone && (
+                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                      <Phone className="w-3 h-3" /> {guest.guest_phone}
+                    </span>
+                  )}
+                </div>
+                <RsvpStatusBadge status={guest.rsvp_status} />
+                <Select
+                  value=""
+                  disabled={settingRsvpId === guest.id}
+                  onValueChange={(v) =>
+                    void setRsvpFor(guest, v as "yes1" | "yes2" | "yes3" | "yes4" | "no" | "clear")
+                  }
+                >
+                  <SelectTrigger className="h-8 w-[160px] text-xs">
+                    <SelectValue placeholder={settingRsvpId === guest.id ? "Saving…" : "Record RSVP"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no">No / declined</SelectItem>
+                    <SelectItem value="yes1">Yes — 1 person</SelectItem>
+                    <SelectItem value="yes2">Yes — 2 people</SelectItem>
+                    <SelectItem value="yes3">Yes — 3 people</SelectItem>
+                    <SelectItem value="yes4">Yes — 4 people</SelectItem>
+                    <SelectItem value="clear">Clear RSVP</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
       <Card className="overflow-hidden border-terracotta/40 bg-terracotta/5">
+
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-terracotta" />
