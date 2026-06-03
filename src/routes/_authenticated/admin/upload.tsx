@@ -572,6 +572,54 @@ function UploadPage() {
     toast.success(checked ? "Marked as sent." : "Marked as not sent.");
   };
 
+  // Record an RSVP on behalf of a guest who replied off-system (e.g. by text).
+  const setRsvpFor = async (
+    g: (typeof savedGuests)[number],
+    value: "yes1" | "yes2" | "yes3" | "yes4" | "no" | "clear",
+  ) => {
+    setSettingRsvpId(g.id);
+    try {
+      if (value === "clear") {
+        const { error } = await supabase.from("rsvps").delete().eq("invitation_id", g.id);
+        if (error) throw error;
+        setSavedGuests((prev) =>
+          prev.map((row) =>
+            row.id === g.id ? { ...row, rsvp_status: null, party_size: 1 } : row,
+          ),
+        );
+        toast.success(`Cleared RSVP for ${g.guest_name}.`);
+        return;
+      }
+      const status = value === "no" ? "no" : "yes";
+      const partySize = value === "no" ? 1 : Number(value.replace("yes", ""));
+      const { error } = await supabase.from("rsvps").upsert(
+        {
+          invitation_id: g.id,
+          status,
+          party_size: partySize,
+          attendance_mode: "in_person",
+          responded_at: new Date().toISOString(),
+        },
+        { onConflict: "invitation_id" },
+      );
+      if (error) throw error;
+      setSavedGuests((prev) =>
+        prev.map((row) =>
+          row.id === g.id ? { ...row, rsvp_status: status, party_size: partySize } : row,
+        ),
+      );
+      toast.success(
+        status === "no"
+          ? `Marked ${g.guest_name} as declined.`
+          : `Marked ${g.guest_name} attending (${partySize}).`,
+      );
+    } catch (e) {
+      toast.error("Couldn't save RSVP", { description: getErrorMessage(e) });
+    } finally {
+      setSettingRsvpId(null);
+    }
+  };
+
   const toggleCommittee = async (g: (typeof savedGuests)[number], checked: boolean) => {
     setTogglingCommitteeId(g.id);
     const { error } = await supabase
