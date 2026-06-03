@@ -1,11 +1,130 @@
 import { Link } from "@tanstack/react-router";
-import { CalendarCog, ListChecks, MessageSquare, Upload, UserPlus, Utensils } from "lucide-react";
+import { useEffect, useState } from "react";
+import { CalendarCog, CheckCircle2, Clock, ListChecks, Loader2, MessageSquare, Phone, Upload, UserPlus, Utensils } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+
+type CommitteeGuest = {
+  id: string;
+  guest_name: string;
+  guest_phone: string | null;
+  rsvp_status: string | null;
+  invited_by: string | null;
+};
 
 export function CommitteeWorkspace() {
+  const [guests, setGuests] = useState<CommitteeGuest[]>([]);
+  const [loadingGuests, setLoadingGuests] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      setLoadingGuests(true);
+      try {
+        const { data: events } = await supabase
+          .from("events")
+          .select("id")
+          .order("starts_at")
+          .limit(1);
+        const eventId = events?.[0]?.id;
+        if (!eventId) {
+          if (alive) setGuests([]);
+          return;
+        }
+        const { data, error } = await supabase
+          .from("invitations")
+          .select("id,guest_name,guest_phone,host_id,rsvps(status)")
+          .eq("event_id", eventId)
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        const rows = (data ?? []) as unknown as {
+          id: string;
+          guest_name: string;
+          guest_phone: string | null;
+          host_id: string;
+          rsvps: { status: string }[] | { status: string } | null;
+        }[];
+        const hostIds = Array.from(new Set(rows.map((r) => r.host_id).filter(Boolean)));
+        const hostNames = new Map<string, string>();
+        if (hostIds.length) {
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("id,display_name,email")
+            .in("id", hostIds);
+          for (const profile of profiles ?? []) {
+            const name = (profile.display_name ?? "").trim() || (profile.email ?? "").split("@")[0] || "";
+            if (name) hostNames.set(profile.id, name);
+          }
+        }
+        if (!alive) return;
+        setGuests(
+          rows.map((row) => {
+            const rsvp = Array.isArray(row.rsvps) ? row.rsvps[0] : row.rsvps;
+            return {
+              id: row.id,
+              guest_name: row.guest_name,
+              guest_phone: row.guest_phone,
+              rsvp_status: rsvp?.status ?? null,
+              invited_by: hostNames.get(row.host_id) ?? null,
+            };
+          }),
+        );
+      } catch (error) {
+        console.error("[committee] guest list load failed", error);
+        if (alive) setGuests([]);
+      } finally {
+        if (alive) setLoadingGuests(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   return (
     <div className="space-y-6">
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b border-border flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+            <h2 className="font-semibold">Guest list ({guests.length})</h2>
+          </div>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/admin/upload" search={{ view: "committee" }}>
+              <Upload className="w-4 h-4 mr-2" /> Add guests
+            </Link>
+          </Button>
+        </div>
+        {loadingGuests ? (
+          <div className="p-4 text-sm text-muted-foreground flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" /> Loading guest list…
+          </div>
+        ) : guests.length === 0 ? (
+          <div className="p-4 text-sm text-muted-foreground">No guests have been added yet.</div>
+        ) : (
+          <div className="divide-y divide-border max-h-[520px] overflow-auto">
+            {guests.map((guest) => (
+              <div key={guest.id} className="p-4 space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-medium flex-1 min-w-[160px]">{guest.guest_name}</p>
+                  <RsvpStatusBadge status={guest.rsvp_status} />
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  {guest.guest_phone && (
+                    <span className="inline-flex items-center gap-1">
+                      <Phone className="w-3 h-3" /> {guest.guest_phone}
+                    </span>
+                  )}
+                  {guest.invited_by && <span>Invited by {guest.invited_by}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
       <div className="space-y-2">
         <h2 className="text-xl font-semibold tracking-tight">Watch the Welcome Video</h2>
         <Card className="overflow-hidden border-ink/10 bg-ink/5">
@@ -61,4 +180,13 @@ export function CommitteeWorkspace() {
       </div>
     </div>
   );
+}
+
+function RsvpStatusBadge({ status }: { status: string | null }) {
+  if (status === "yes") {
+    return <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100"><Clock className="w-3 h-3 mr-1" /> RSVP'd yes</Badge>;
+  }
+  if (status === "no") return <Badge variant="secondary">Declined</Badge>;
+  if (status === "waitlist") return <Badge variant="outline">Waitlist</Badge>;
+  return <Badge variant="outline">Awaiting RSVP</Badge>;
 }
