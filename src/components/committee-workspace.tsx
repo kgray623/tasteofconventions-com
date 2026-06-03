@@ -1,9 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { CalendarCog, CheckCircle2, Clock, ListChecks, Loader2, MessageSquare, Phone, Upload, UserPlus, Utensils } from "lucide-react";
+import { CalendarCog, CheckCircle2, ChevronDown, Clock, EyeOff, ListChecks, Loader2, MessageSquare, Phone, Upload, UserPlus, Utensils } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -21,12 +22,34 @@ type CommitteeGuest = {
   host_id: string;
 };
 
+const WELCOME_HIDE_KEY = "toc.committee.welcomeVideoHidden";
 
 export function CommitteeWorkspace() {
   const { user } = useAuth();
   const [guests, setGuests] = useState<CommitteeGuest[]>([]);
   const [loadingGuests, setLoadingGuests] = useState(true);
   const [settingRsvpId, setSettingRsvpId] = useState<string | null>(null);
+  const [hideWelcome, setHideWelcome] = useState(false);
+  const [openSection, setOpenSection] = useState<string | null>("my");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setHideWelcome(window.localStorage.getItem(WELCOME_HIDE_KEY) === "1");
+  }, []);
+
+  const dismissWelcome = () => {
+    setHideWelcome(true);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(WELCOME_HIDE_KEY, "1");
+    }
+  };
+
+  const showWelcome = () => {
+    setHideWelcome(false);
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(WELCOME_HIDE_KEY);
+    }
+  };
 
   const loadGuests = async (alive: () => boolean = () => true) => {
     if (alive()) setLoadingGuests(true);
@@ -137,25 +160,59 @@ export function CommitteeWorkspace() {
   };
 
   const myGuests = user ? guests.filter((g) => g.host_id === user.id) : [];
-
-
   const confirmedGuests = guests.filter((guest) => guest.rsvp_status === "yes");
   const confirmedPeople = confirmedGuests.reduce((total, guest) => total + guest.party_size, 0);
 
+  const toggleSection = (key: string) => setOpenSection((prev) => (prev === key ? null : key));
+
   return (
     <div className="space-y-6">
-      <Card className="overflow-hidden">
-        <div className="p-4 border-b border-border flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-ink" />
-            <h2 className="font-semibold">My guests ({myGuests.length})</h2>
+      {!hideWelcome && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-xl font-semibold tracking-tight">Watch the Welcome Video</h2>
+            <Button variant="ghost" size="sm" onClick={dismissWelcome}>
+              <EyeOff className="w-4 h-4 mr-1" /> Hide
+            </Button>
           </div>
-          <Button asChild variant="outline" size="sm">
+          <Card className="overflow-hidden border-ink/10 bg-ink/5">
+            <div className="relative aspect-[9/16] md:aspect-video mx-auto w-full max-w-sm md:max-w-none">
+              <iframe
+                src="https://fast.wistia.net/embed/iframe/cf8d380y2y?videoFoam=true"
+                title="Steering Committee welcome video"
+                allow="autoplay; fullscreen; encrypted-media"
+                allowFullScreen
+                className="absolute inset-0 h-full w-full"
+                frameBorder={0}
+                scrolling="no"
+              />
+            </div>
+          </Card>
+          <p className="text-muted-foreground">
+            See the following where you can add your guests, chat with others, choose what to volunteer for, etc. If you have any issues with the platform, please screenshot it and text it to 808.278.7562.
+          </p>
+        </div>
+      )}
+
+      {hideWelcome && (
+        <Button variant="outline" size="sm" onClick={showWelcome}>
+          Show welcome video
+        </Button>
+      )}
+
+      <CollapsibleSection
+        open={openSection === "my"}
+        onToggle={() => toggleSection("my")}
+        icon={<CheckCircle2 className="w-5 h-5 text-ink" />}
+        title={`My guests (${myGuests.length})`}
+        action={
+          <Button asChild variant="outline" size="sm" onClick={(e) => e.stopPropagation()}>
             <Link to="/invitations/new">
               <UserPlus className="w-4 h-4 mr-2" /> Add guest
             </Link>
           </Button>
-        </div>
+        }
+      >
         <p className="px-4 pt-3 text-xs text-muted-foreground">
           Guests you've invited. If someone texts you back to decline (or accept), record their RSVP here.
         </p>
@@ -203,16 +260,15 @@ export function CommitteeWorkspace() {
             ))}
           </div>
         )}
-      </Card>
+      </CollapsibleSection>
 
-      <Card className="overflow-hidden border-terracotta/40 bg-terracotta/5">
-
-        <div className="p-4 border-b border-border flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-terracotta" />
-            <h2 className="font-semibold">Confirmed RSVPs ({confirmedPeople} people / {confirmedGuests.length} responses)</h2>
-          </div>
-        </div>
+      <CollapsibleSection
+        open={openSection === "confirmed"}
+        onToggle={() => toggleSection("confirmed")}
+        icon={<CheckCircle2 className="w-5 h-5 text-terracotta" />}
+        title={`Confirmed RSVPs (${confirmedPeople} people / ${confirmedGuests.length} responses)`}
+        cardClassName="border-terracotta/40 bg-terracotta/5"
+      >
         {loadingGuests ? (
           <div className="p-4 text-sm text-muted-foreground flex items-center gap-2">
             <Loader2 className="w-4 h-4 animate-spin" /> Loading confirmed RSVPs…
@@ -230,20 +286,21 @@ export function CommitteeWorkspace() {
             ))}
           </div>
         )}
-      </Card>
+      </CollapsibleSection>
 
-      <Card className="overflow-hidden">
-        <div className="p-4 border-b border-border flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-            <h2 className="font-semibold">Guest list ({guests.length})</h2>
-          </div>
-          <Button asChild variant="outline" size="sm">
+      <CollapsibleSection
+        open={openSection === "all"}
+        onToggle={() => toggleSection("all")}
+        icon={<CheckCircle2 className="w-5 h-5 text-emerald-600" />}
+        title={`Guest list (${guests.length})`}
+        action={
+          <Button asChild variant="outline" size="sm" onClick={(e) => e.stopPropagation()}>
             <Link to="/admin/upload" search={{ view: "committee" }}>
               <Upload className="w-4 h-4 mr-2" /> Add guests
             </Link>
           </Button>
-        </div>
+        }
+      >
         {loadingGuests ? (
           <div className="p-4 text-sm text-muted-foreground flex items-center gap-2">
             <Loader2 className="w-4 h-4 animate-spin" /> Loading guest list…
@@ -270,28 +327,8 @@ export function CommitteeWorkspace() {
             ))}
           </div>
         )}
-      </Card>
+      </CollapsibleSection>
 
-      <div className="space-y-2">
-        <h2 className="text-xl font-semibold tracking-tight">Watch the Welcome Video</h2>
-        <Card className="overflow-hidden border-ink/10 bg-ink/5">
-          <div className="relative aspect-[9/16] md:aspect-video mx-auto w-full max-w-sm md:max-w-none">
-            <iframe
-              src="https://fast.wistia.net/embed/iframe/cf8d380y2y?videoFoam=true"
-              title="Steering Committee welcome video"
-              allow="autoplay; fullscreen; encrypted-media"
-              allowFullScreen
-              className="absolute inset-0 h-full w-full"
-              frameBorder={0}
-              scrolling="no"
-            />
-          </div>
-        </Card>
-      </div>
-
-      <p className="text-muted-foreground">
-        See the following where you can add your guests, chat with others, choose what to volunteer for, etc. If you have any issues with the platform, please screenshot it and text it to 808.278.7562.
-      </p>
       <div className="grid gap-3 sm:grid-cols-2">
         <Button asChild className="bg-ink text-cream hover:bg-ink/90 justify-start h-14">
           <Link to="/admin/categories" search={{ view: "committee" }}>
@@ -326,6 +363,47 @@ export function CommitteeWorkspace() {
         </Button>
       </div>
     </div>
+  );
+}
+
+function CollapsibleSection({
+  open,
+  onToggle,
+  icon,
+  title,
+  action,
+  cardClassName,
+  children,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  icon: React.ReactNode;
+  title: string;
+  action?: React.ReactNode;
+  cardClassName?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card className={`overflow-hidden ${cardClassName ?? ""}`}>
+      <Collapsible open={open} onOpenChange={onToggle}>
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className="w-full p-4 border-b border-border flex items-center justify-between gap-3 text-left cursor-pointer hover:bg-muted/40 transition-colors"
+          >
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              {icon}
+              <h2 className="font-semibold truncate">{title}</h2>
+            </div>
+            <div className="flex items-center gap-2">
+              {action}
+              <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+            </div>
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>{children}</CollapsibleContent>
+      </Collapsible>
+    </Card>
   );
 }
 
