@@ -27,6 +27,7 @@ const WELCOME_HIDE_KEY = "toc.committee.welcomeVideoHidden";
 export function CommitteeWorkspace() {
   const { user } = useAuth();
   const [guests, setGuests] = useState<CommitteeGuest[]>([]);
+  const [myHostIds, setMyHostIds] = useState<string[]>([]);
   const [loadingGuests, setLoadingGuests] = useState(true);
   const [settingRsvpId, setSettingRsvpId] = useState<string | null>(null);
   const [hideWelcome, setHideWelcome] = useState(false);
