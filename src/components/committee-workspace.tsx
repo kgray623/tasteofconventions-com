@@ -80,9 +80,8 @@ export function CommitteeWorkspace() {
               host_id: row.host_id,
             };
           }),
-
-          }),
         );
+
       } catch (error) {
         console.error("[committee] guest list load failed", error);
         if (alive) setGuests([]);
