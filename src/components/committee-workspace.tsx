@@ -11,6 +11,7 @@ type CommitteeGuest = {
   guest_name: string;
   guest_phone: string | null;
   rsvp_status: string | null;
+  party_size: number;
   invited_by: string | null;
 };
 
@@ -35,7 +36,7 @@ export function CommitteeWorkspace() {
         }
         const { data, error } = await supabase
           .from("invitations")
-          .select("id,guest_name,guest_phone,host_id,rsvps(status)")
+          .select("id,guest_name,guest_phone,host_id,rsvps(status,party_size)")
           .eq("event_id", eventId)
           .order("created_at", { ascending: false });
         if (error) throw error;
@@ -44,7 +45,7 @@ export function CommitteeWorkspace() {
           guest_name: string;
           guest_phone: string | null;
           host_id: string;
-          rsvps: { status: string }[] | { status: string } | null;
+          rsvps: { status: string; party_size: number | null }[] | { status: string; party_size: number | null } | null;
         }[];
         const hostIds = Array.from(new Set(rows.map((r) => r.host_id).filter(Boolean)));
         const hostNames = new Map<string, string>();
@@ -67,6 +68,7 @@ export function CommitteeWorkspace() {
               guest_name: row.guest_name,
               guest_phone: row.guest_phone,
               rsvp_status: rsvp?.status ?? null,
+              party_size: rsvp?.party_size ?? 1,
               invited_by: hostNames.get(row.host_id) ?? null,
             };
           }),
@@ -83,8 +85,37 @@ export function CommitteeWorkspace() {
     };
   }, []);
 
+  const confirmedGuests = guests.filter((guest) => guest.rsvp_status === "yes");
+  const confirmedPeople = confirmedGuests.reduce((total, guest) => total + guest.party_size, 0);
+
   return (
     <div className="space-y-6">
+      <Card className="overflow-hidden border-terracotta/40 bg-terracotta/5">
+        <div className="p-4 border-b border-border flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-terracotta" />
+            <h2 className="font-semibold">Confirmed RSVPs ({confirmedPeople} people / {confirmedGuests.length} responses)</h2>
+          </div>
+        </div>
+        {loadingGuests ? (
+          <div className="p-4 text-sm text-muted-foreground flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" /> Loading confirmed RSVPs…
+          </div>
+        ) : confirmedGuests.length === 0 ? (
+          <div className="p-4 text-sm text-muted-foreground">No confirmed RSVPs yet.</div>
+        ) : (
+          <div className="divide-y divide-border max-h-[360px] overflow-auto">
+            {confirmedGuests.map((guest) => (
+              <div key={guest.id} className="p-4 flex flex-wrap items-center gap-3 text-sm">
+                <p className="font-medium flex-1 min-w-[160px]">{guest.guest_name}</p>
+                <Badge className="bg-gold text-ink hover:bg-gold">{guest.party_size} attending</Badge>
+                {guest.invited_by && <span className="text-muted-foreground">Invited by {guest.invited_by}</span>}
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
       <Card className="overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
