@@ -242,6 +242,7 @@ function UploadPage() {
   const [editingSavedValue, setEditingSavedValue] = useState("");
   const [updatingSavedId, setUpdatingSavedId] = useState<string | null>(null);
   const [markingSentId, setMarkingSentId] = useState<string | null>(null);
+  const [settingRsvpId, setSettingRsvpId] = useState<string | null>(null);
   const [inviterName, setInviterName] = useState<string>("");
   const [myQuota, setMyQuota] = useState<number | null>(null);
   const [myRsvpSeats, setMyRsvpSeats] = useState(0);
