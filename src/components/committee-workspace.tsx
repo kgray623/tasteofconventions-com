@@ -23,76 +23,121 @@ type CommitteeGuest = {
 
 
 export function CommitteeWorkspace() {
+  const { user } = useAuth();
   const [guests, setGuests] = useState<CommitteeGuest[]>([]);
   const [loadingGuests, setLoadingGuests] = useState(true);
+  const [settingRsvpId, setSettingRsvpId] = useState<string | null>(null);
+
+  const loadGuests = async (alive: () => boolean = () => true) => {
+    if (alive()) setLoadingGuests(true);
+    try {
+      const { data: events } = await supabase
+        .from("events")
+        .select("id")
+        .order("starts_at")
+        .limit(1);
+      const eventId = events?.[0]?.id;
+      if (!eventId) {
+        if (alive()) setGuests([]);
+        return;
+      }
+      const { data, error } = await supabase
+        .from("invitations")
+        .select("id,guest_name,guest_phone,host_id,rsvps(status,party_size)")
+        .eq("event_id", eventId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      const rows = (data ?? []) as unknown as {
+        id: string;
+        guest_name: string;
+        guest_phone: string | null;
+        host_id: string;
+        rsvps: { status: string; party_size: number | null }[] | { status: string; party_size: number | null } | null;
+      }[];
+      const hostIds = Array.from(new Set(rows.map((r) => r.host_id).filter(Boolean)));
+      const hostNames = new Map<string, string>();
+      if (hostIds.length) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id,display_name,email")
+          .in("id", hostIds);
+        for (const profile of profiles ?? []) {
+          const name = (profile.display_name ?? "").trim() || (profile.email ?? "").split("@")[0] || "";
+          if (name) hostNames.set(profile.id, name);
+        }
+      }
+      if (!alive()) return;
+      setGuests(
+        rows.map((row) => {
+          const rsvp = Array.isArray(row.rsvps) ? row.rsvps[0] : row.rsvps;
+          return {
+            id: row.id,
+            guest_name: row.guest_name,
+            guest_phone: row.guest_phone,
+            rsvp_status: rsvp?.status ?? null,
+            party_size: rsvp?.party_size ?? 1,
+            invited_by: hostNames.get(row.host_id) ?? null,
+            host_id: row.host_id,
+          };
+        }),
+      );
+    } catch (error) {
+      console.error("[committee] guest list load failed", error);
+      if (alive()) setGuests([]);
+    } finally {
+      if (alive()) setLoadingGuests(false);
+    }
+  };
 
   useEffect(() => {
     let alive = true;
-    void (async () => {
-      setLoadingGuests(true);
-      try {
-        const { data: events } = await supabase
-          .from("events")
-          .select("id")
-          .order("starts_at")
-          .limit(1);
-        const eventId = events?.[0]?.id;
-        if (!eventId) {
-          if (alive) setGuests([]);
-          return;
-        }
-        const { data, error } = await supabase
-          .from("invitations")
-          .select("id,guest_name,guest_phone,host_id,rsvps(status,party_size)")
-          .eq("event_id", eventId)
-          .order("created_at", { ascending: false });
-        if (error) throw error;
-        const rows = (data ?? []) as unknown as {
-          id: string;
-          guest_name: string;
-          guest_phone: string | null;
-          host_id: string;
-          rsvps: { status: string; party_size: number | null }[] | { status: string; party_size: number | null } | null;
-        }[];
-        const hostIds = Array.from(new Set(rows.map((r) => r.host_id).filter(Boolean)));
-        const hostNames = new Map<string, string>();
-        if (hostIds.length) {
-          const { data: profiles } = await supabase
-            .from("profiles")
-            .select("id,display_name,email")
-            .in("id", hostIds);
-          for (const profile of profiles ?? []) {
-            const name = (profile.display_name ?? "").trim() || (profile.email ?? "").split("@")[0] || "";
-            if (name) hostNames.set(profile.id, name);
-          }
-        }
-        if (!alive) return;
-        setGuests(
-          rows.map((row) => {
-            const rsvp = Array.isArray(row.rsvps) ? row.rsvps[0] : row.rsvps;
-            return {
-              id: row.id,
-              guest_name: row.guest_name,
-              guest_phone: row.guest_phone,
-              rsvp_status: rsvp?.status ?? null,
-              party_size: rsvp?.party_size ?? 1,
-              invited_by: hostNames.get(row.host_id) ?? null,
-              host_id: row.host_id,
-            };
-          }),
-        );
-
-      } catch (error) {
-        console.error("[committee] guest list load failed", error);
-        if (alive) setGuests([]);
-      } finally {
-        if (alive) setLoadingGuests(false);
-      }
-    })();
+    void loadGuests(() => alive);
     return () => {
       alive = false;
     };
   }, []);
+
+  const setRsvpFor = async (
+    guest: CommitteeGuest,
+    value: "yes1" | "yes2" | "yes3" | "yes4" | "no" | "clear",
+  ) => {
+    setSettingRsvpId(guest.id);
+    try {
+      if (value === "clear") {
+        const { error } = await supabase.from("rsvps").delete().eq("invitation_id", guest.id);
+        if (error) throw error;
+        toast.success(`Cleared RSVP for ${guest.guest_name}.`);
+      } else {
+        const status = value === "no" ? "no" : "yes";
+        const partySize = value === "no" ? 1 : Number(value.replace("yes", ""));
+        const { error } = await supabase.from("rsvps").upsert(
+          {
+            invitation_id: guest.id,
+            status,
+            party_size: partySize,
+            attendance_mode: "in_person",
+            responded_at: new Date().toISOString(),
+          },
+          { onConflict: "invitation_id" },
+        );
+        if (error) throw error;
+        toast.success(
+          status === "no"
+            ? `Marked ${guest.guest_name} as declined.`
+            : `Marked ${guest.guest_name} attending (${partySize}).`,
+        );
+      }
+      await loadGuests();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error("Couldn't save RSVP", { description: msg });
+    } finally {
+      setSettingRsvpId(null);
+    }
+  };
+
+  const myGuests = user ? guests.filter((g) => g.host_id === user.id) : [];
+
 
   const confirmedGuests = guests.filter((guest) => guest.rsvp_status === "yes");
   const confirmedPeople = confirmedGuests.reduce((total, guest) => total + guest.party_size, 0);
