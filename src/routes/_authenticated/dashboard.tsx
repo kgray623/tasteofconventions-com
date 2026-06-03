@@ -8,6 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { AlertCircle, Plus, Calendar as CalendarIcon, Mail, Phone, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
