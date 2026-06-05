@@ -48,6 +48,14 @@ function PreorderPage() {
     return list.filter((s) => s.restaurant);
   }, [content]);
 
+  const cuisineLabel = (country: string): string => {
+    const c = country.toLowerCase();
+    if (c.includes("myanmar")) return "Burmese — Myanmar";
+    if (c.includes("mozambique")) return "African — Mozambique";
+    if (c.includes("indonesia")) return "Indonesian — Indonesia";
+    return country;
+  };
+
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [counts, setCounts] = useState<Record<string, number>>({});
