@@ -48,6 +48,14 @@ function PreorderPage() {
     return list.filter((s) => s.restaurant);
   }, [content]);
 
+  const cuisineLabel = (country: string): string => {
+    const c = country.toLowerCase();
+    if (c.includes("myanmar")) return "Burmese — Myanmar";
+    if (c.includes("mozambique")) return "African — Mozambique";
+    if (c.includes("indonesia")) return "Indonesian — Indonesia";
+    return country;
+  };
+
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [counts, setCounts] = useState<Record<string, number>>({});
@@ -148,7 +156,7 @@ function PreorderPage() {
                   return (
                     <div key={stop.country} className="flex items-center justify-between gap-4 p-4">
                       <div className="min-w-0">
-                        <Label htmlFor={qtyId} className="font-display text-lg text-ink truncate block">{stop.country}</Label>
+                        <Label htmlFor={qtyId} className="font-display text-lg text-ink truncate block">{cuisineLabel(stop.country)}</Label>
                         {stop.restaurant ? (
                           <p className="text-xs text-muted-foreground truncate">{stop.restaurant}</p>
                         ) : null}
