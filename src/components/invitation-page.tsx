@@ -202,7 +202,7 @@ export function InvitationPage() {
           </p>
           <h2 className="font-display text-5xl sm:text-6xl text-ink">A Journey Together</h2>
           <p className="mt-4 text-muted-foreground">
-            You may choose to pre-order a cultural meal. Cultural meals are not required. They are in the twenty to twenty-five dollar range per meal. Click below to pre-order so we can negotiate with the restaurant once we have a meal count total. You will be updated with the menu to confirm in the coming weeks and to pay the restaurant direct.
+            Join us through the following conventions.
           </p>
         </div>
 
@@ -219,20 +219,25 @@ export function InvitationPage() {
                 <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">{stop.when}</p>
                 <h3 className="font-display text-2xl text-ink">{stop.country}</h3>
                 <p className="text-sm text-muted-foreground mt-1">{stop.note}</p>
-                {stop.restaurant ? (
-                  <Link to="/preorder" className="inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full bg-gradient-sunset text-white text-[10px] uppercase tracking-widest shadow-glow hover:opacity-90 transition">
-                    <UtensilsCrossed className="w-3 h-3" />
-                    Pre-order the cuisine
-                  </Link>
-                ) : (
-                  <span className="inline-flex items-center gap-2 mt-2 px-3 py-1 rounded-full border border-border text-muted-foreground text-[10px] uppercase tracking-widest">
-                    Savor the moment
-                  </span>
-                )}
               </li>
             ))}
 
           </ol>
+        </div>
+
+        <div className="mt-8 rounded-3xl border border-border bg-card shadow-elegant p-6 sm:p-8 text-center">
+          <p className="text-xs uppercase tracking-[0.35em] text-magenta mb-3 flex items-center justify-center gap-2">
+            <UtensilsCrossed className="w-4 h-4" /> Optional cultural meal
+          </p>
+          <p className="text-muted-foreground max-w-xl mx-auto">
+            Cultural meals are not required to attend. You may choose to pre-order a cultural meal at your discretion. They will be in the twenty dollar range per meal. Click to pre-order so we can negotiate with the restaurant once we have a meal count total. You will be updated with the menu to confirm in the coming weeks and to pay the restaurant direct.
+          </p>
+          <Link to="/preorder" className="inline-block mt-5">
+            <Button size="lg" className="bg-gradient-sunset text-white hover:opacity-90 px-8 shadow-glow border-0">
+              <UtensilsCrossed className="mr-2 w-4 h-4" />
+              Pre-order a cultural meal
+            </Button>
+          </Link>
         </div>
       </section>
 
