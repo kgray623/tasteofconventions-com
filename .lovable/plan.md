@@ -1,8 +1,5 @@
-I found the issue: `/admin/upload?view=committee` is showing a placeholder that says “A short video will be placed here…” instead of the real walkthrough video.
+Replace the intro paragraph under the "A Journey Together" heading in `src/components/invitation-page.tsx` (line 205) with:
 
-Plan:
-1. Update `src/routes/_authenticated/admin/upload.tsx` so the top walkthrough area embeds the existing Wistia video currently used by the committee workspace: `https://fast.wistia.net/embed/iframe/cf8d380y2y?videoFoam=true`.
-2. Keep the existing page layout and quota cards unchanged.
-3. Add the same iframe attributes used elsewhere so it can play fullscreen and render responsively on desktop and mobile.
-4. Remove the unused placeholder-only `PlayCircle` import if it’s no longer needed.
-5. Verify the upload page shows the real video area instead of the placeholder.
+> You may choose to pre-order a cultural meal. Cultural meals are not required. They are in the twenty to twenty-five dollar range per meal. Click below to pre-order so we can negotiate with the restaurant once we have a meal count total. You will be updated with the menu to confirm in the coming weeks and to pay the restaurant direct.
+
+No other changes.
