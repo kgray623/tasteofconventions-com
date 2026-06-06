@@ -161,7 +161,7 @@ function TeamPage() {
           <h2 className="font-display text-lg">Steering Committee</h2>
         </div>
         <p className="text-sm text-muted-foreground">
-          Everyone added as a committee member or flagged as committee on the guest list. People show as "Pending signup" until they log in with their phone number.
+          Everyone added as a committee member or flagged as committee on the guest list is on the team. People show as "Pending signup" until they log in with their phone number.
         </p>
         {(() => {
           const seen = new Set<string>();
@@ -171,7 +171,7 @@ function TeamPage() {
             name: string;
             contact: string;
             status: string;
-            role?: string;
+            role: string;
             userId?: string;
           };
           const rows: Row[] = [];
@@ -196,7 +196,8 @@ function TeamPage() {
               key: `cg-${g.id}`,
               name: g.guest_name,
               contact: g.guest_phone || g.guest_email || "No contact on file",
-              status: "On guest list",
+              status: "Pending signup",
+              role: "team",
             });
           }
           // Include signed-up users who weren't represented by an invite (e.g. admins added directly).
@@ -216,28 +217,32 @@ function TeamPage() {
             });
           }
 
+          rows.sort((a, b) => a.name.localeCompare(b.name));
+
           if (rows.length === 0) {
             return <p className="text-sm text-muted-foreground italic">No committee members yet.</p>;
           }
           return (
-            <div className="grid sm:grid-cols-2 gap-2">
-              {rows.map((r) => (
-                <div key={r.key} className="rounded-lg border border-border bg-background px-3 py-2 flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="font-medium text-sm truncate">{r.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{r.contact}</p>
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground/80 mt-0.5">{r.status}</p>
-                  </div>
-                  {r.role && (
+            <>
+              <p className="text-xs text-muted-foreground">{rows.length} committee {rows.length === 1 ? "member" : "members"}</p>
+              <div className="grid sm:grid-cols-2 gap-2">
+                {rows.map((r) => (
+                  <div key={r.key} className="rounded-lg border border-border bg-background px-3 py-2 flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm truncate">{r.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{r.contact}</p>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground/80 mt-0.5">{r.status}</p>
+                    </div>
                     <Badge variant={r.role === "admin" ? "default" : "secondary"} className="shrink-0">
                       {r.role === "admin" && <ShieldCheck className="w-3 h-3 mr-1" />}{r.role}
                     </Badge>
-                  )}
-                </div>
-              ))}
-            </div>
+                  </div>
+                ))}
+              </div>
+            </>
           );
         })()}
+
       </Card>
 
       {isAdmin && (
