@@ -989,7 +989,7 @@ function InvitersPage() {
                   const guests = guestsForInviter(i);
                   const used = confirmedSeatCount(guests);
                   const invited = guests.length || (i.host_id ? (invitedCounts[i.host_id] ?? 0) : 0);
-                  const remaining = i.quota - used;
+                  const remaining = Math.max(0, invited - used);
                   const isOpen = expandedHost === i.id;
                   const rows: ReactNode[] = [];
                   rows.push(
