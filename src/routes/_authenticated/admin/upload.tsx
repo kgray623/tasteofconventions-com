@@ -285,7 +285,7 @@ function UploadPage() {
         invite_sent_at: string | null;
         is_committee: boolean | null;
         host_id: string;
-        rsvps: { status: string; party_size: number | null }[] | { status: string; party_size: number | null } | null;
+        rsvps: { status: string; party_size: number | null; attendance_mode: string | null }[] | { status: string; party_size: number | null; attendance_mode: string | null } | null;
       };
       const rows = (data ?? []) as unknown as Row[];
 
@@ -315,6 +315,7 @@ function UploadPage() {
             invite_sent_at: r.invite_sent_at,
             rsvp_status: rsvp?.status ?? null,
             party_size: rsvp?.party_size ?? 1,
+            attendance_mode: rsvp?.attendance_mode === "zoom" ? "zoom" : "in_person",
             is_committee: !!r.is_committee,
             invited_by: hostNames.get(r.host_id) ?? null,
           };
