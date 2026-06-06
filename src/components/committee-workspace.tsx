@@ -288,25 +288,27 @@ export function CommitteeWorkspace() {
                   )}
                 </div>
                 <RsvpStatusBadge status={guest.rsvp_status} />
-                <Select
-                  value=""
-                  disabled={settingRsvpId === guest.id}
-                  onValueChange={(v) =>
-                    void setRsvpFor(guest, v as "yes1" | "yes2" | "yes3" | "yes4" | "no" | "clear")
-                  }
-                >
-                  <SelectTrigger className="h-8 w-[160px] text-xs">
-                    <SelectValue placeholder={settingRsvpId === guest.id ? "Saving…" : "Record RSVP"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="no">No / declined</SelectItem>
-                    <SelectItem value="yes1">Yes — 1 person</SelectItem>
-                    <SelectItem value="yes2">Yes — 2 people</SelectItem>
-                    <SelectItem value="yes3">Yes — 3 people</SelectItem>
-                    <SelectItem value="yes4">Yes — 4 people</SelectItem>
-                    <SelectItem value="clear">Clear RSVP</SelectItem>
-                  </SelectContent>
-                </Select>
+                {!guest.rsvp_status && (
+                  <Select
+                    value=""
+                    disabled={settingRsvpId === guest.id}
+                    onValueChange={(v) =>
+                      void setRsvpFor(guest, v as "yes1" | "yes2" | "yes3" | "yes4" | "no" | "clear")
+                    }
+                  >
+                    <SelectTrigger className="h-8 w-[160px] text-xs">
+                      <SelectValue placeholder={settingRsvpId === guest.id ? "Saving…" : "Record RSVP"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="no">No / declined</SelectItem>
+                      <SelectItem value="yes1">Yes — 1 person</SelectItem>
+                      <SelectItem value="yes2">Yes — 2 people</SelectItem>
+                      <SelectItem value="yes3">Yes — 3 people</SelectItem>
+                      <SelectItem value="yes4">Yes — 4 people</SelectItem>
+                      <SelectItem value="clear">Clear RSVP</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             ))}
           </div>
