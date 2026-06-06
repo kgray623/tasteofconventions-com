@@ -1,22 +1,12 @@
-Add Rhonda Wilcher as a committee member with phone 402-681-9826.
+Rhonda Wilcher already has the same access path as every other committee member — no further changes needed.
 
-## Steps
+## How committee access works today
+- `team_invites` row exists for Rhonda (added last turn, role = `team`).
+- On her first phone-only sign-in, the `apply_team_invite` trigger grants `user_roles.role = 'team'`.
+- Committee permissions everywhere in the app are gated by `has_role(auth.uid(), 'team')` — identical to all other committee members.
 
-1. Insert a row into `inviters` with:
-   - name: "Rhonda Wilcher"
-   - phone: "402-681-9826"
-   - active: true
-   - quota: 40 (default)
+## Options if you want her access active before she logs in
+1. **Do nothing** (recommended) — she gets full committee access automatically on first sign-in via her phone.
+2. **Pre-provision** — if she already has an auth user (has signed in before), insert a `user_roles` row with `role='team'` for her user id so access is live immediately.
 
-2. Insert a row into `team_invites` so she can sign in via phone-only login:
-   - name: "Rhonda Wilcher"
-   - phone: "402-681-9826"
-   - phone_normalized: "+14026819826"
-   - role: "team"
-   - invited_by: current admin user id
-
-She'll then be able to log in with her phone number and appear in the committee/team list.
-
-## Notes
-- No schema changes — data inserts only.
-- She becomes a committee member (team role); she is not added to `invitations` since she's an inviter, not a guest.
+Tell me which you want; if option 2, confirm and I'll check whether she has an auth account and add the role.
