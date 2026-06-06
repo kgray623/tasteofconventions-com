@@ -123,7 +123,7 @@ function parseVCards(text: string): ContactRow[] {
 
 function InvitersPage() {
   const { user } = useAuth();
-  const { isAdmin: isActualAdmin } = useRoles();
+  const { isAdmin: isActualAdmin, loading: rolesLoading } = useRoles();
   const search = useSearch({ from: "/_authenticated/admin" });
   const previewCommittee = isActualAdmin && search.view === "committee";
   const isAdmin = isActualAdmin && !previewCommittee;
@@ -320,7 +320,11 @@ function InvitersPage() {
   };
 
   useEffect(() => {
+    if (rolesLoading) return;
     load();
+  }, [rolesLoading, isActualAdmin]);
+
+  useEffect(() => {
     const ch = supabase
       .channel("team-workspace-chat")
       .on(
