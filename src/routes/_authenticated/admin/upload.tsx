@@ -701,7 +701,7 @@ function UploadPage() {
 
   const availableRsvps = Math.max(
     0,
-    quotaPool.total - quotaPool.allocated + (myQuota ?? 0),
+    quotaPool.total - rsvpAttendingTotal,
   );
 
   const flagDuplicates = async (parsed: Parsed[]) => {
