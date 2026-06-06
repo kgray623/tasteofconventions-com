@@ -467,6 +467,12 @@ function UploadPage() {
   const duplicateCount = duplicateGroups.dupIds.size;
   const confirmedGuests = savedGuests.filter((g) => g.rsvp_status === "yes");
   const confirmedPeople = confirmedGuests.reduce((sum, g) => sum + g.party_size, 0);
+  const inPersonPeople = confirmedGuests
+    .filter((g) => g.attendance_mode !== "zoom")
+    .reduce((sum, g) => sum + g.party_size, 0);
+  const zoomPeople = confirmedGuests
+    .filter((g) => g.attendance_mode === "zoom")
+    .reduce((sum, g) => sum + g.party_size, 0);
 
 
   const removeSavedGuest = async (id: string, name: string) => {
