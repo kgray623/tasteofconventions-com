@@ -1,23 +1,22 @@
-## Fix Available RSVPs math
+Add Rhonda Wilcher as a committee member with phone 402-681-9826.
 
-On `/admin/upload`, the top stats row currently shows:
+## Steps
 
-- Total RSVPs = 550 (cap)
-- Current RSVPs = 20 (sum of `party_size` where `rsvps.status = 'yes'`)
-- Requested RSVPs = 65 (sum of inviter quotas)
-- Available RSVPs = 550 − 65 = **485**  ← wrong
+1. Insert a row into `inviters` with:
+   - name: "Rhonda Wilcher"
+   - phone: "402-681-9826"
+   - active: true
+   - quota: 40 (default)
 
-You want **Available RSVPs to count only actual confirmed RSVPs**, not sent invites / allocated quotas. So with 550 cap and 20 confirmed, Available = **530**.
+2. Insert a row into `team_invites` so she can sign in via phone-only login:
+   - name: "Rhonda Wilcher"
+   - phone: "402-681-9826"
+   - phone_normalized: "+14026819826"
+   - role: "team"
+   - invited_by: current admin user id
 
-### Change
+She'll then be able to log in with her phone number and appear in the committee/team list.
 
-In `src/routes/_authenticated/admin/upload.tsx`:
-
-1. The Available RSVPs card (around line 1234) — change formula from
-   `quotaPool.total - quotaPool.allocated`
-   to
-   `quotaPool.total - rsvpAttendingTotal`.
-
-2. The internal `availableRsvps` value (around line 702, used for inviter-side guardrails) — change the same way: base it on `rsvpAttendingTotal` (confirmed yes RSVPs) instead of `quotaPool.allocated`, so anywhere it's used reflects the same "only counted RSVPs count" rule.
-
-No other cards change — Total, Current, and Requested stay as they are. No DB/schema changes.
+## Notes
+- No schema changes — data inserts only.
+- She becomes a committee member (team role); she is not added to `invitations` since she's an inviter, not a guest.
