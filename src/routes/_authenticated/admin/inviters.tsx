@@ -986,10 +986,10 @@ function InvitersPage() {
               </thead>
               <tbody>
                 {inviters.slice().sort((a, b) => a.name.localeCompare(b.name)).flatMap((i) => {
-                  const used = usage[i.name.toLowerCase()] ?? 0;
-                  const invited = i.host_id ? (invitedCounts[i.host_id] ?? 0) : 0;
+                  const guests = guestsForInviter(i);
+                  const used = confirmedSeatCount(guests);
+                  const invited = guests.length || (i.host_id ? (invitedCounts[i.host_id] ?? 0) : 0);
                   const remaining = i.quota - used;
-                  const guests = i.host_id ? (guestsByHost[i.host_id] ?? []) : [];
                   const isOpen = expandedHost === i.id;
                   const rows: ReactNode[] = [];
                   rows.push(
