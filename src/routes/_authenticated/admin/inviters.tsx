@@ -356,8 +356,6 @@ function InvitersPage() {
     return guests;
   };
 
-  const confirmedSeatCount = (guests: GuestRow[]) =>
-    guests.reduce((sum, guest) => sum + (guest.rsvp_status === "yes" ? guest.rsvp_party_size ?? 1 : 0), 0);
   const confirmedResponseCount = (guests: GuestRow[]) =>
     guests.filter((guest) => guest.rsvp_status === "yes").length;
 
