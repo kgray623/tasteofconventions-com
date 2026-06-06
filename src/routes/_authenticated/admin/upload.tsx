@@ -1471,30 +1471,32 @@ function UploadPage() {
                        <Trash2 className="w-4 h-4" />
                      )}
                    </Button>
-                   <Select
-                     value=""
-                     disabled={settingRsvpId === g.id}
-                     onValueChange={(v) =>
-                       void setRsvpFor(
-                         g,
-                         v as "yes1" | "yes2" | "yes3" | "yes4" | "no" | "clear",
-                       )
-                     }
-                   >
-                     <SelectTrigger className="h-8 w-[150px] text-xs">
-                       <SelectValue
-                         placeholder={settingRsvpId === g.id ? "Saving…" : "RSVP for them"}
-                       />
-                     </SelectTrigger>
-                     <SelectContent>
-                       <SelectItem value="no">No / declined</SelectItem>
-                       <SelectItem value="yes1">Yes — 1 person</SelectItem>
-                       <SelectItem value="yes2">Yes — 2 people</SelectItem>
-                       <SelectItem value="yes3">Yes — 3 people</SelectItem>
-                       <SelectItem value="yes4">Yes — 4 people</SelectItem>
-                       <SelectItem value="clear">Clear RSVP</SelectItem>
-                     </SelectContent>
-                   </Select>
+                   {!g.rsvp_status && (
+                     <Select
+                       value=""
+                       disabled={settingRsvpId === g.id}
+                       onValueChange={(v) =>
+                         void setRsvpFor(
+                           g,
+                           v as "yes1" | "yes2" | "yes3" | "yes4" | "no" | "clear",
+                         )
+                       }
+                     >
+                       <SelectTrigger className="h-8 w-[150px] text-xs">
+                         <SelectValue
+                           placeholder={settingRsvpId === g.id ? "Saving…" : "RSVP for them"}
+                         />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="no">No / declined</SelectItem>
+                         <SelectItem value="yes1">Yes — 1 person</SelectItem>
+                         <SelectItem value="yes2">Yes — 2 people</SelectItem>
+                         <SelectItem value="yes3">Yes — 3 people</SelectItem>
+                         <SelectItem value="yes4">Yes — 4 people</SelectItem>
+                         <SelectItem value="clear">Clear RSVP</SelectItem>
+                       </SelectContent>
+                     </Select>
+                   )}
                    <label className="inline-flex items-center gap-2 h-8 px-2 rounded-md border border-input text-xs cursor-pointer hover:bg-accent">
                     <Checkbox
                       checked={!!g.invite_sent_at}
