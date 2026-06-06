@@ -358,6 +358,8 @@ function InvitersPage() {
 
   const confirmedSeatCount = (guests: GuestRow[]) =>
     guests.reduce((sum, guest) => sum + (guest.rsvp_status === "yes" ? guest.rsvp_party_size ?? 1 : 0), 0);
+  const confirmedResponseCount = (guests: GuestRow[]) =>
+    guests.filter((guest) => guest.rsvp_status === "yes").length;
 
   const sendMessage = async () => {
     const text = messageBody.trim();
@@ -988,8 +990,9 @@ function InvitersPage() {
                 {inviters.slice().sort((a, b) => a.name.localeCompare(b.name)).flatMap((i) => {
                   const guests = guestsForInviter(i);
                   const used = confirmedSeatCount(guests);
+                  const responses = confirmedResponseCount(guests);
                   const invited = guests.length || (i.host_id ? (invitedCounts[i.host_id] ?? 0) : 0);
-                  const remaining = Math.max(0, invited - used);
+                  const remaining = Math.max(0, invited - responses);
                   const isOpen = expandedHost === i.id;
                   const rows: ReactNode[] = [];
                   rows.push(
