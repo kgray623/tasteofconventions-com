@@ -1232,7 +1232,7 @@ function UploadPage() {
         <Card className="p-5">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Available RSVPs</p>
           <p className="font-display text-3xl mt-2 text-terracotta">
-            {Math.max(0, quotaPool.total - quotaPool.allocated)}
+            {Math.max(0, quotaPool.total - rsvpAttendingTotal)}
           </p>
         </Card>
       </div>
