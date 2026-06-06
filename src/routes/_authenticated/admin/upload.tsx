@@ -226,6 +226,7 @@ function UploadPage() {
       invite_sent_at: string | null;
       rsvp_status: string | null;
       party_size: number;
+      attendance_mode: "in_person" | "zoom";
       is_committee: boolean;
       invited_by: string | null;
     }[]
@@ -267,7 +268,7 @@ function UploadPage() {
       let query = supabase
         .from("invitations")
         .select(
-          "id,guest_name,guest_email,guest_phone,rsvp_token,invite_sent_at,is_committee,host_id,rsvps(status,party_size)",
+          "id,guest_name,guest_email,guest_phone,rsvp_token,invite_sent_at,is_committee,host_id,rsvps(status,party_size,attendance_mode)",
         )
         .eq("event_id", evId)
         .order("created_at", { ascending: false });
@@ -284,7 +285,7 @@ function UploadPage() {
         invite_sent_at: string | null;
         is_committee: boolean | null;
         host_id: string;
-        rsvps: { status: string; party_size: number | null }[] | { status: string; party_size: number | null } | null;
+        rsvps: { status: string; party_size: number | null; attendance_mode: string | null }[] | { status: string; party_size: number | null; attendance_mode: string | null } | null;
       };
       const rows = (data ?? []) as unknown as Row[];
 
@@ -314,6 +315,7 @@ function UploadPage() {
             invite_sent_at: r.invite_sent_at,
             rsvp_status: rsvp?.status ?? null,
             party_size: rsvp?.party_size ?? 1,
+            attendance_mode: rsvp?.attendance_mode === "zoom" ? "zoom" : "in_person",
             is_committee: !!r.is_committee,
             invited_by: hostNames.get(r.host_id) ?? null,
           };
@@ -465,6 +467,12 @@ function UploadPage() {
   const duplicateCount = duplicateGroups.dupIds.size;
   const confirmedGuests = savedGuests.filter((g) => g.rsvp_status === "yes");
   const confirmedPeople = confirmedGuests.reduce((sum, g) => sum + g.party_size, 0);
+  const inPersonPeople = confirmedGuests
+    .filter((g) => g.attendance_mode !== "zoom")
+    .reduce((sum, g) => sum + g.party_size, 0);
+  const zoomPeople = confirmedGuests
+    .filter((g) => g.attendance_mode === "zoom")
+    .reduce((sum, g) => sum + g.party_size, 0);
 
 
   const removeSavedGuest = async (id: string, name: string) => {
@@ -1253,7 +1261,7 @@ function UploadPage() {
           <div className="flex items-center gap-2 flex-wrap">
             <CheckCircle2 className="w-5 h-5 text-terracotta" />
             <p className="font-medium">
-              Confirmed RSVPs ({confirmedPeople} people / {confirmedGuests.length} responses)
+              Confirmed RSVPs — {inPersonPeople} in person · {zoomPeople} on Zoom ({confirmedPeople} people / {confirmedGuests.length} responses)
             </p>
           </div>
           {savedLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
@@ -1263,19 +1271,55 @@ function UploadPage() {
             {savedLoading ? "Loading confirmed RSVPs…" : "No confirmed RSVPs yet."}
           </div>
         ) : (
-          <div className="divide-y divide-border max-h-[360px] overflow-auto">
-            {confirmedGuests.map((g) => (
-              <div key={g.id} className="px-4 py-3 flex flex-wrap items-center gap-3 text-sm">
-                <p className="font-medium flex-1 min-w-[150px]">{g.guest_name}</p>
-                <Badge className="bg-gold text-ink hover:bg-gold">{g.party_size} attending</Badge>
-                {g.guest_phone && <span className="text-muted-foreground">{g.guest_phone}</span>}
-                {g.invited_by && (
-                  <span className="inline-flex items-center text-[11px] px-2 py-0.5 rounded-full border bg-background/70 text-muted-foreground">
-                    Invited by {g.invited_by}
-                  </span>
-                )}
-              </div>
-            ))}
+          <div className="max-h-[360px] overflow-auto">
+            {confirmedGuests.filter((g) => g.attendance_mode !== "zoom").length > 0 && (
+              <>
+                <div className="px-4 py-2 bg-background/60 text-[11px] uppercase tracking-wider text-muted-foreground border-b border-border">
+                  In person ({inPersonPeople})
+                </div>
+                <div className="divide-y divide-border">
+                  {confirmedGuests
+                    .filter((g) => g.attendance_mode !== "zoom")
+                    .map((g) => (
+                      <div key={g.id} className="px-4 py-3 flex flex-wrap items-center gap-3 text-sm">
+                        <p className="font-medium flex-1 min-w-[150px]">{g.guest_name}</p>
+                        <Badge className="bg-gold text-ink hover:bg-gold">{g.party_size} attending</Badge>
+                        <Badge variant="outline">In person</Badge>
+                        {g.guest_phone && <span className="text-muted-foreground">{g.guest_phone}</span>}
+                        {g.invited_by && (
+                          <span className="inline-flex items-center text-[11px] px-2 py-0.5 rounded-full border bg-background/70 text-muted-foreground">
+                            Invited by {g.invited_by}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              </>
+            )}
+            {confirmedGuests.filter((g) => g.attendance_mode === "zoom").length > 0 && (
+              <>
+                <div className="px-4 py-2 bg-background/60 text-[11px] uppercase tracking-wider text-muted-foreground border-y border-border">
+                  Joining on Zoom ({zoomPeople})
+                </div>
+                <div className="divide-y divide-border">
+                  {confirmedGuests
+                    .filter((g) => g.attendance_mode === "zoom")
+                    .map((g) => (
+                      <div key={g.id} className="px-4 py-3 flex flex-wrap items-center gap-3 text-sm">
+                        <p className="font-medium flex-1 min-w-[150px]">{g.guest_name}</p>
+                        <Badge className="bg-gold text-ink hover:bg-gold">{g.party_size} attending</Badge>
+                        <Badge className="bg-terracotta text-cream hover:bg-terracotta">Zoom</Badge>
+                        {g.guest_phone && <span className="text-muted-foreground">{g.guest_phone}</span>}
+                        {g.invited_by && (
+                          <span className="inline-flex items-center text-[11px] px-2 py-0.5 rounded-full border bg-background/70 text-muted-foreground">
+                            Invited by {g.invited_by}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              </>
+            )}
           </div>
         )}
       </Card>
