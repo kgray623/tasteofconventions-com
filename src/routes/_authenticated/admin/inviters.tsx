@@ -964,7 +964,7 @@ function InvitersPage() {
         <div className="px-6 py-4 border-b border-border">
           <h2 className="font-display text-xl">Steering committee invitations &amp; usage</h2>
           <p className="text-sm text-muted-foreground">
-            Seats are counted from RSVPs marked attending. Unused quota stays in the open pool.
+            Remaining shows uploaded guests who have not confirmed an RSVP yet.
           </p>
         </div>
         {loading ? (
@@ -989,10 +989,9 @@ function InvitersPage() {
               <tbody>
                 {inviters.slice().sort((a, b) => a.name.localeCompare(b.name)).flatMap((i) => {
                   const guests = guestsForInviter(i);
-                  const used = confirmedSeatCount(guests);
-                  const responses = confirmedResponseCount(guests);
+                  const used = confirmedResponseCount(guests);
                   const invited = guests.length || (i.host_id ? (invitedCounts[i.host_id] ?? 0) : 0);
-                  const remaining = Math.max(0, invited - responses);
+                  const remaining = Math.max(0, invited - used);
                   const isOpen = expandedHost === i.id;
                   const rows: ReactNode[] = [];
                   rows.push(
