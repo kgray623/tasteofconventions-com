@@ -85,6 +85,7 @@ type GuestRow = {
 const TOTAL_CAP = 550;
 
 const normalizePhone = (value: string) => value.replace(/\D/g, "");
+const normalizeName = (value: string) => value.toLowerCase().replace(/[^a-z]/g, "");
 const pickContactField = (row: Record<string, unknown>, keys: string[]) => {
   for (const [key, value] of Object.entries(row)) {
     if (keys.includes(key.toLowerCase().trim())) return String(value ?? "").trim();
@@ -163,7 +164,6 @@ function InvitersPage() {
     try {
       const [
         { data: inv },
-        { data: rsvps },
         { data: invites },
         messages,
         profileRows,
@@ -175,7 +175,6 @@ function InvitersPage() {
       ] = await withTimeout(
         Promise.all([
           supabase.from("inviters").select("*").order("name"),
-          supabase.from("rsvps").select("invited_by,party_size,status"),
           supabase.from("invitations").select("host_id"),
           supabase.from("team_messages").select("*").order("created_at").limit(250),
           supabase.from("profiles").select("id,display_name,email"),
@@ -191,35 +190,19 @@ function InvitersPage() {
         10000,
       );
       const inviterRows = (inv as Inviter[]) ?? [];
+      const profileData = (profileRows.data as Profile[]) ?? [];
       setInviters(inviterRows);
       setMsgs((messages.data as TeamMsg[]) ?? []);
       setProfiles(
-        Object.fromEntries(((profileRows.data as Profile[]) ?? []).map((p) => [p.id, p])),
+        Object.fromEntries(profileData.map((p) => [p.id, p])),
       );
       setCats((catRows.data as Cat[]) ?? []);
       setAssigns((assignRows.data as Assign[]) ?? []);
       const eventData = (eventRows.data as EventRow[]) ?? [];
       setEvents(eventData);
       setEventId((current) => current || eventData[0]?.id || "");
-      const counts: Record<string, number> = {};
-      let other = 0;
-      const known = new Set(inviterRows.map((i) => i.name.toLowerCase()));
-      for (const r of rsvps ?? []) {
-        if (r.status !== "yes") continue;
-        const key = (r.invited_by ?? "").trim();
-        const seats = r.party_size ?? 1;
-        if (!key) {
-          other += seats;
-          continue;
-        }
-        if (known.has(key.toLowerCase())) {
-          counts[key.toLowerCase()] = (counts[key.toLowerCase()] ?? 0) + seats;
-        } else {
-          other += seats;
-        }
-      }
-      setUsage(counts);
-      setUnassigned(other);
+      setUsage({});
+      setUnassigned(0);
       const invByHost: Record<string, number> = {};
       for (const row of invites ?? []) {
         if (!row.host_id) continue;
@@ -346,6 +329,35 @@ function InvitersPage() {
 
   const profileLabel = (id: string) =>
     profiles[id]?.display_name || profiles[id]?.email || "Committee member";
+
+  const hostIdsForInviter = (inviter: Inviter) => {
+    const ids = new Set<string>();
+    if (inviter.host_id) ids.add(inviter.host_id);
+    const inviterName = normalizeName(inviter.name);
+    if (inviterName) {
+      for (const profile of Object.values(profiles)) {
+        if (normalizeName(profile.display_name ?? "") === inviterName) ids.add(profile.id);
+      }
+    }
+    return Array.from(ids);
+  };
+
+  const guestsForInviter = (inviter: Inviter) => {
+    const seen = new Set<string>();
+    const guests: GuestRow[] = [];
+    for (const hostId of hostIdsForInviter(inviter)) {
+      for (const guest of guestsByHost[hostId] ?? []) {
+        const key = normalizePhone(guest.guest_phone ?? "") || normalizeName(guest.guest_name) || guest.id;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        guests.push(guest);
+      }
+    }
+    return guests;
+  };
+
+  const confirmedSeatCount = (guests: GuestRow[]) =>
+    guests.reduce((sum, guest) => sum + (guest.rsvp_status === "yes" ? guest.rsvp_party_size ?? 1 : 0), 0);
 
   const sendMessage = async () => {
     const text = messageBody.trim();
@@ -601,7 +613,10 @@ function InvitersPage() {
     load();
   };
 
-  const totalUsed = Object.values(usage).reduce((a, b) => a + b, 0) + unassigned;
+  const totalUsed = Object.values(guestsByHost).flat().reduce(
+    (sum, guest) => sum + (guest.rsvp_status === "yes" ? guest.rsvp_party_size ?? 1 : 0),
+    0,
+  );
   const totalQuota = inviters.reduce((s, i) => s + (i.active ? i.quota : 0), 0);
   const openPool = Math.max(0, TOTAL_CAP - totalUsed);
 
