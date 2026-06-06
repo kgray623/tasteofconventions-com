@@ -129,12 +129,10 @@ function InvitersPage() {
   const previewCommittee = isActualAdmin && search.view === "committee";
   const isAdmin = isActualAdmin && !previewCommittee;
   const [inviters, setInviters] = useState<Inviter[]>([]);
-  const [usage, setUsage] = useState<Record<string, number>>({});
   const [invitedCounts, setInvitedCounts] = useState<Record<string, number>>({});
   const [guestsByHost, setGuestsByHost] = useState<Record<string, GuestRow[]>>({});
   const [expandedHost, setExpandedHost] = useState<string | null>(null);
   const [rowBusy, setRowBusy] = useState<string | null>(null);
-  const [unassigned, setUnassigned] = useState(0);
   const [committee, setCommittee] = useState<CommitteeRow[]>([]);
   const [msgs, setMsgs] = useState<TeamMsg[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
@@ -201,8 +199,6 @@ function InvitersPage() {
       const eventData = (eventRows.data as EventRow[]) ?? [];
       setEvents(eventData);
       setEventId((current) => current || eventData[0]?.id || "");
-      setUsage({});
-      setUnassigned(0);
       const invByHost: Record<string, number> = {};
       for (const row of invites ?? []) {
         if (!row.host_id) continue;
@@ -1151,19 +1147,6 @@ function InvitersPage() {
                   }
                   return rows;
                 })}
-
-                {unassigned > 0 && (
-                  <tr className="border-t border-border bg-muted/20">
-                    <td></td>
-                    <td className="px-2 py-3 italic text-muted-foreground">Unassigned / other</td>
-                    <td className="px-4 py-3">—</td>
-                    <td className="px-4 py-3">—</td>
-                    <td className="px-4 py-3">{unassigned}</td>
-                    <td className="px-4 py-3">—</td>
-                    <td className="px-4 py-3">—</td>
-                    <td></td>
-                  </tr>
-                )}
               </tbody>
 
             </table>
