@@ -1,33 +1,29 @@
-## Problem
+## What's missing
 
-The **Steering committee invitations & usage** card only shows 4 people (Jamie Elker, Kari Gray, Melissa Novotne, Sarah Campbell) because it renders from the `inviters` table, which currently has 4 rows.
+On `/admin/upload`, the "Confirmed RSVPs" card lists each attendee with a "{n} attending" gold badge, but it never says whether the guest is coming in person or joining over Zoom. The data exists (`rsvps.attendance_mode` is `"in_person"` or `"zoom"`) — the upload page just isn't selecting or displaying it.
 
-Your committee is actually larger:
-- 4 rows in `inviters`
-- 4 rows in `team_invites` (Jacquelyn Spears, Jamie Elker, Jen Spears, Sarah Campbell)
-- 8 invitations flagged `is_committee = true` (Betsaida Ruiz, Dewinica Salis, Jay & Rhonda Wilcher, Melissa Novotne, Michelle Shawger, Saul Morro, Shelley & Pat Monahan, Teresa Drake)
+## Changes (UI only, single file: `src/routes/_authenticated/admin/upload.tsx`)
 
-After deduping by phone/name, that's ~10 people who should be on the list but aren't.
+1. **Pull `attendance_mode` from the database**
+   - In `loadSavedGuests`, change the rsvps select to `rsvps(status,party_size,attendance_mode)`.
+   - Extend the `Row` and `savedGuests` types with `attendance_mode: "in_person" | "zoom" | null`.
+   - Map it through so each saved guest carries its mode (default `"in_person"` when missing).
 
-## Root cause
+2. **Show the mode on every confirmed RSVP row**
+   - Next to the existing "{party_size} attending" gold badge, add a second badge:
+     - In person → neutral/outline badge "In person"
+     - Zoom → terracotta badge "Zoom"
+   - Keep the rest of the row layout (name, phone, "Invited by …") unchanged.
 
-`inviters.tsx` already has a backfill block (lines 277-312) that inserts any missing committee members into `inviters` with `quota: 0`. It's guarded by `if (isActualAdmin)` and runs inside `load()`.
+3. **Split the summary count in the card header**
+   - Replace `Confirmed RSVPs ({confirmedPeople} people / {confirmedGuests.length} responses)` with a clearer breakdown:
+     - `Confirmed RSVPs — {inPersonPeople} in person · {zoomPeople} on Zoom ({confirmedGuests.length} responses)`
+   - Compute `inPersonPeople` / `zoomPeople` from `confirmedGuests` by summing `party_size` per `attendance_mode`.
 
-`useRoles()` is async, so on the first mount `isActualAdmin` is still `false`, the backfill is skipped, and `load()` is never re-run when the role resolves. That's why only the 4 manually-added inviters show up.
-
-## Fix
-
-1. **One-time backfill (data):** insert an `inviters` row for every committee member (from `team_invites` where `role='team'` and from `invitations` where `is_committee=true`) that isn't already represented in `inviters` (match on normalized phone, fall back to name). Set `quota = 0`, `active = true` so admins can allocate seats from the UI.
-
-2. **Make the auto-sync reliable going forward (code, `src/routes/_authenticated/admin/inviters.tsx`):**
-   - Wait for `useRoles()` to finish before running `load()` (don't run with stale `isAdmin=false`).
-   - Re-run `load()` when `isActualAdmin` flips to `true`.
-   - Keep the existing dedupe-by-phone-then-name behavior.
-
-3. **No UI/visual changes.** The card layout, copy, quota controls, and quota-request flow stay exactly as they are. New rows simply appear in the existing list with quota 0 until you assign a quota.
+4. **(Optional, low-risk) Group the list**
+   - Render in-person attendees first, then a thin divider labeled "Joining on Zoom", then Zoom attendees. Same row markup either way. If you'd rather keep one flat list with just the badge, say so and I'll skip the divider.
 
 ## Out of scope
 
-- No changes to how RSVPs count against quota.
-- No changes to the Steering Committee list on `/admin/team`.
-- No deletion of any existing inviter, team invite, or committee-flagged invitation.
+- No changes to RSVP capture, business logic, totals/quotas, or any other admin page (the event-detail admin page already shows the mode).
+- No schema or RLS changes.

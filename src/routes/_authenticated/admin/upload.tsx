@@ -226,6 +226,7 @@ function UploadPage() {
       invite_sent_at: string | null;
       rsvp_status: string | null;
       party_size: number;
+      attendance_mode: "in_person" | "zoom";
       is_committee: boolean;
       invited_by: string | null;
     }[]
