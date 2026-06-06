@@ -2,7 +2,7 @@ import { createFileRoute, Link, Outlet, useRouterState, useNavigate, useSearch }
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { useRoles } from "@/hooks/use-roles";
-import { useAuth } from "@/hooks/use-auth";
+import { markExplicitSignOut, useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -59,6 +59,7 @@ function AdminLayout() {
   }, [user?.id, user?.email, user?.user_metadata]);
 
   const signOut = async () => {
+    markExplicitSignOut();
     await supabase.auth.signOut();
     toast.success("Signed out.");
     navigate({ to: "/" });

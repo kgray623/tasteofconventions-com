@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useAuth } from "@/hooks/use-auth";
+import { markExplicitSignOut, useAuth } from "@/hooks/use-auth";
 import { useRoles } from "@/hooks/use-roles";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ export function SiteHeader() {
   const isCommitteeView = location.pathname.startsWith("/admin") && (location.pathname === "/admin/subcommittee" || location.search.view === "committee");
 
   const signOut = async () => {
+    markExplicitSignOut();
     await supabase.auth.signOut();
     navigate({ to: "/" });
   };

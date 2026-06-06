@@ -1,13 +1,20 @@
-import { useEffect, useState, createContext, useContext, ReactNode } from "react";
+import { useEffect, useRef, useState, createContext, useContext, ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
 type AuthCtx = { session: Session | null; user: User | null; loading: boolean };
 const Ctx = createContext<AuthCtx>({ session: null, user: null, loading: true });
 
+let explicitSignOutRequested = false;
+
+export function markExplicitSignOut() {
+  explicitSignOutRequested = true;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const sessionRef = useRef<Session | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -15,6 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const finish = (nextSession: Session | null) => {
       if (!alive) return;
       settled = true;
+      sessionRef.current = nextSession;
       setSession(nextSession);
       setLoading(false);
     };
@@ -25,7 +33,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // the Messages app after sending an SMS invite) can momentarily delay
     // the initial event, and cutting it short would flip the user to a
     // signed-out state and bounce them to /login.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
+      if (event === "SIGNED_OUT" && !explicitSignOutRequested && sessionRef.current) {
+        setLoading(false);
+        return;
+      }
+      if (event === "SIGNED_OUT") explicitSignOutRequested = false;
       finish(s);
     });
 

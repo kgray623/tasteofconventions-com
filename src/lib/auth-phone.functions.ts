@@ -134,34 +134,23 @@ export const signInWithPhoneOnly = createServerFn({ method: "POST" })
       if (!userId) throw new Error("Could not create account");
     }
 
-    // 3) Ensure the account has this phone-number login identity + a fresh
-    //    internal password, then sign in without calling the disabled phone provider.
-    const sessionPassword = randomPassword();
-    let { error: updErr } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-      email: loginAddress,
-      phone: phoneE164,
-      email_confirm: true,
-      phone_confirm: true,
-      password: sessionPassword,
-      user_metadata: { phone: data.phone },
-    });
-    if (updErr && /phone.*already/i.test(updErr.message)) {
-      // Another auth user owns this phone — find them and use that account instead.
-      const ownerId = await findAuthUserByPhoneOrLogin(phoneE164, phoneNorm, loginAddress);
-      if (ownerId && ownerId !== userId) {
-        userId = ownerId;
-        const retry = await supabaseAdmin.auth.admin.updateUserById(userId, {
-          email: loginAddress,
-          phone: phoneE164,
-          email_confirm: true,
-          phone_confirm: true,
-          password: sessionPassword,
-          user_metadata: { phone: data.phone },
-        });
-        updErr = retry.error;
-      }
+    // 3) Create a server-issued session without rotating the hidden password.
+    // Rotating passwords invalidates existing refresh tokens, which was logging
+    // people out while they were working in another tab or device.
+    const { data: authUser, error: authUserErr } = await supabaseAdmin.auth.admin.getUserById(userId);
+    if (authUserErr || !authUser.user) throw new Error(authUserErr?.message || "Could not find account");
+    let signInEmail = authUser.user.email || loginAddress;
+    if (!authUser.user.email) {
+      const { data: updated, error: updErr } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+        email: loginAddress,
+        phone: phoneE164,
+        email_confirm: true,
+        phone_confirm: true,
+        user_metadata: { ...authUser.user.user_metadata, phone: data.phone },
+      });
+      if (updErr) throw new Error(updErr.message);
+      signInEmail = updated.user?.email || loginAddress;
     }
-    if (updErr) throw new Error(updErr.message);
 
     // 3b) If this phone is on the team invite list or marked as committee on an invitation, grant the team role.
     const { data: teamInviteRow } = await supabaseAdmin
@@ -212,12 +201,19 @@ export const signInWithPhoneOnly = createServerFn({ method: "POST" })
       }
     }
 
+    const { data: link, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
+      type: "magiclink",
+      email: signInEmail,
+    });
+    const tokenHash = link.properties?.hashed_token;
+    if (linkErr || !tokenHash) throw new Error(linkErr?.message || "Sign-in failed");
+
     const url = process.env.SUPABASE_URL!;
     const anonKey = process.env.SUPABASE_PUBLISHABLE_KEY!;
     const anon = createClient(url, anonKey, { auth: { persistSession: false } });
-    const { data: signIn, error: signInErr } = await anon.auth.signInWithPassword({
-      email: loginAddress,
-      password: sessionPassword,
+    const { data: signIn, error: signInErr } = await anon.auth.verifyOtp({
+      type: "magiclink",
+      token_hash: tokenHash,
     });
     if (signInErr || !signIn.session) {
       throw new Error(signInErr?.message || "Sign-in failed");
