@@ -41,10 +41,16 @@ function AdminOverview() {
         const k = d.length >= 10 ? d.slice(-10) : (name?.trim().toLowerCase() ?? "");
         if (k) keys.add(k);
       };
-      (ti.data ?? []).forEach((r: any) => add(r.phone, r.name));
-      (cg.data ?? []).forEach((r: any) => add(r.guest_phone, r.guest_name));
-      (inv.data ?? []).forEach((r: any) => add(r.phone, r.name));
-      const respondedInvitationIds = new Set((rsvpRows.data ?? []).map((r: any) => r.invitation_id).filter(Boolean));
+      const teamInviteRows = (ti.data ?? []) as Array<{ phone?: string | null; name?: string | null }>;
+      const committeeRows = (cg.data ?? []) as Array<{ guest_phone?: string | null; guest_name?: string | null }>;
+      const inviterRows = (inv.data ?? []) as Array<{ phone?: string | null; name?: string | null }>;
+      const rsvps = (rsvpRows.data ?? []) as Array<{ invitation_id?: string | null }>;
+      teamInviteRows.forEach((r) => add(r.phone, r.name));
+      committeeRows.forEach((r) => add(r.guest_phone, r.guest_name));
+      inviterRows.forEach((r) => add(r.phone, r.name));
+      const respondedInvitationIds = new Set(
+        rsvps.map((r) => r.invitation_id).filter((id): id is string => Boolean(id)),
+      );
       const totalInvitations = i.count ?? 0;
       setCounts({
         invites: totalInvitations,
@@ -56,7 +62,6 @@ function AdminOverview() {
       });
     })();
   }, [rolesLoading, isAdmin]);
-
 
   const stats = [
     { label: "Guest invitations", value: counts.invites, to: "/admin/upload" },
