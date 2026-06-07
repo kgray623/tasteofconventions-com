@@ -68,7 +68,17 @@ function AdminOverview() {
         team: keys.size,
         pending: Math.max(0, totalInvitations - respondedInvitationIds.size),
         preorders: ((pre.data ?? []) as Array<{ selections?: unknown[] | null }>).reduce(
-          (sum, row) => sum + (Array.isArray(row.selections) ? row.selections.length : 0),
+          (sum, row) => {
+            if (!Array.isArray(row.selections)) return sum;
+            return (
+              sum +
+              row.selections.reduce((s: number, item) => {
+                if (!item || typeof item !== "object") return s;
+                const qty = Number((item as { qty?: unknown }).qty);
+                return s + (Number.isFinite(qty) && qty > 0 ? Math.round(qty) : 0);
+              }, 0)
+            );
+          },
           0,
         ),
       });
