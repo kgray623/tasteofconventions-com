@@ -140,16 +140,31 @@ function PreorderReportPage() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {totals.map((row) => (
-          <Card key={row.cuisine} className="p-5">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">{row.cuisine}</p>
-              <Utensils className="w-4 h-4 text-terracotta" />
-            </div>
-            <p className="font-display text-4xl mt-3">{row.qty}</p>
-            <p className="text-xs text-muted-foreground mt-1">dishes requested</p>
-          </Card>
-        ))}
+        {totals.map((row) => {
+          const orderers = detailedRows.filter((d) => d.cuisine === row.cuisine);
+          return (
+            <Card key={row.cuisine} className="p-5 flex flex-col">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">{row.cuisine}</p>
+                <Utensils className="w-4 h-4 text-terracotta" />
+              </div>
+              <p className="font-display text-4xl mt-3">{row.qty}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                dishes requested · {orderers.length} {orderers.length === 1 ? "person" : "people"}
+              </p>
+              {orderers.length > 0 && (
+                <ul className="mt-3 space-y-1 text-sm border-t border-border pt-3">
+                  {orderers.map((o) => (
+                    <li key={`${row.cuisine}-${o.id}`} className="flex justify-between gap-2">
+                      <span className="truncate">{o.name}</span>
+                      <span className="text-muted-foreground tabular-nums">×{o.qty}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+          );
+        })}
         <Card className="p-5 border-terracotta/30 bg-terracotta/5">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Grand total</p>
           <p className="font-display text-4xl mt-3">{totalMeals}</p>
