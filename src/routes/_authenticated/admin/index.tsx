@@ -41,9 +41,18 @@ function AdminOverview() {
         const k = d.length >= 10 ? d.slice(-10) : (name?.trim().toLowerCase() ?? "");
         if (k) keys.add(k);
       };
-      const teamInviteRows = (ti.data ?? []) as Array<{ phone?: string | null; name?: string | null }>;
-      const committeeRows = (cg.data ?? []) as Array<{ guest_phone?: string | null; guest_name?: string | null }>;
-      const inviterRows = (inv.data ?? []) as Array<{ phone?: string | null; name?: string | null }>;
+      const teamInviteRows = (ti.data ?? []) as Array<{
+        phone?: string | null;
+        name?: string | null;
+      }>;
+      const committeeRows = (cg.data ?? []) as Array<{
+        guest_phone?: string | null;
+        guest_name?: string | null;
+      }>;
+      const inviterRows = (inv.data ?? []) as Array<{
+        phone?: string | null;
+        name?: string | null;
+      }>;
       const rsvps = (rsvpRows.data ?? []) as Array<{ invitation_id?: string | null }>;
       teamInviteRows.forEach((r) => add(r.phone, r.name));
       committeeRows.forEach((r) => add(r.guest_phone, r.guest_name));
