@@ -24,14 +24,14 @@ function AdminOverview() {
   useEffect(() => {
     if (rolesLoading || !isAdmin) return;
     (async () => {
-      const [i, f, c, ti, cg, inv, p, pre] = await Promise.all([
+      const [i, f, c, ti, cg, inv, rsvpRows, pre] = await Promise.all([
         supabase.from("invitations").select("id", { count: "exact", head: true }),
         supabase.from("duplicate_flags").select("id", { count: "exact", head: true }),
         supabase.from("categories").select("id", { count: "exact", head: true }),
         supabase.from("team_invites").select("phone,name"),
         supabase.from("invitations").select("guest_phone,guest_name").eq("is_committee", true),
         supabase.from("inviters").select("phone,name").eq("active", true),
-        supabase.from("team_invites").select("id", { count: "exact", head: true }).is("accepted_at", null),
+        supabase.from("rsvps").select("invitation_id"),
         supabase.from("cuisine_preorders").select("id", { count: "exact", head: true }),
       ]);
       const norm = (v?: string | null) => (v ? v.replace(/\D/g, "") : "");
@@ -44,12 +44,14 @@ function AdminOverview() {
       (ti.data ?? []).forEach((r: any) => add(r.phone, r.name));
       (cg.data ?? []).forEach((r: any) => add(r.guest_phone, r.guest_name));
       (inv.data ?? []).forEach((r: any) => add(r.phone, r.name));
+      const respondedInvitationIds = new Set((rsvpRows.data ?? []).map((r: any) => r.invitation_id).filter(Boolean));
+      const totalInvitations = i.count ?? 0;
       setCounts({
-        invites: i.count ?? 0,
+        invites: totalInvitations,
         flags: f.count ?? 0,
         categories: c.count ?? 0,
         team: keys.size,
-        pending: p.count ?? 0,
+        pending: Math.max(0, totalInvitations - respondedInvitationIds.size),
         preorders: pre.count ?? 0,
       });
     })();
