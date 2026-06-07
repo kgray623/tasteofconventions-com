@@ -17,13 +17,16 @@ type PreorderRow = Database["public"]["Tables"]["cuisine_preorders"]["Row"];
 type Selection = { cuisine: string; qty: number };
 
 const CUISINES = ["Myanmar", "African", "Indonesian"] as const;
+const NEEDS_CUISINE = "Needs cuisine";
 
 function normalizeCuisine(value: string) {
-  const lower = value.toLowerCase();
+  const trimmed = value.trim();
+  if (!trimmed) return NEEDS_CUISINE;
+  const lower = trimmed.toLowerCase();
   if (lower.includes("burmese") || lower.includes("myanmar")) return "Myanmar";
   if (lower.includes("african") || lower.includes("africa")) return "African";
   if (lower.includes("indonesian") || lower.includes("indonesia")) return "Indonesian";
-  return value.trim() || "Other";
+  return trimmed;
 }
 
 function parseSelections(value: Json): Selection[] {
@@ -33,7 +36,7 @@ function parseSelections(value: Json): Selection[] {
     const rawCuisine = "cuisine" in item ? String(item.cuisine ?? "") : "";
     const rawQty = "qty" in item ? Number(item.qty) : 0;
     const qty = Number.isFinite(rawQty) ? Math.max(0, Math.round(rawQty)) : 0;
-    return rawCuisine && qty > 0 ? [{ cuisine: normalizeCuisine(rawCuisine), qty }] : [];
+    return qty > 0 ? [{ cuisine: normalizeCuisine(rawCuisine), qty }] : [];
   });
 }
 
@@ -94,6 +97,7 @@ function PreorderReportPage() {
   }, [detailedRows]);
 
   const totalMeals = totals.reduce((sum, row) => sum + row.qty, 0);
+  const restaurantMeals = totals.reduce((sum, row) => (CUISINES.includes(row.cuisine as (typeof CUISINES)[number]) ? sum + row.qty : sum), 0);
 
   const exportCsv = () => {
     const summaryLines = [
@@ -166,9 +170,9 @@ function PreorderReportPage() {
           );
         })}
         <Card className="p-5 border-terracotta/30 bg-terracotta/5">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Grand total</p>
-          <p className="font-display text-4xl mt-3">{totalMeals}</p>
-          <p className="text-xs text-muted-foreground mt-1">all requested dishes</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Restaurant total</p>
+          <p className="font-display text-4xl mt-3">{restaurantMeals}</p>
+          <p className="text-xs text-muted-foreground mt-1">assigned cuisine dishes · {totalMeals} including review</p>
         </Card>
       </div>
 
