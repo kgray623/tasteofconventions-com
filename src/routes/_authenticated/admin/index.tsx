@@ -74,6 +74,8 @@ function AdminOverview() {
               sum +
               row.selections.reduce((s: number, item) => {
                 if (!item || typeof item !== "object") return s;
+                const cuisine = String((item as { cuisine?: unknown }).cuisine ?? "").trim();
+                if (!cuisine) return s;
                 const qty = Number((item as { qty?: unknown }).qty);
                 return s + (Number.isFinite(qty) && qty > 0 ? Math.round(qty) : 0);
               }, 0)
