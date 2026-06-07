@@ -32,7 +32,7 @@ function AdminOverview() {
         supabase.from("invitations").select("guest_phone,guest_name").eq("is_committee", true),
         supabase.from("inviters").select("phone,name").eq("active", true),
         supabase.from("rsvps").select("invitation_id"),
-        supabase.from("cuisine_preorders").select("id", { count: "exact", head: true }),
+        supabase.from("cuisine_preorders").select("selections"),
       ]);
       const norm = (v?: string | null) => (v ? v.replace(/\D/g, "") : "");
       const keys = new Set<string>();
@@ -67,7 +67,10 @@ function AdminOverview() {
         categories: c.count ?? 0,
         team: keys.size,
         pending: Math.max(0, totalInvitations - respondedInvitationIds.size),
-        preorders: pre.count ?? 0,
+        preorders: ((pre.data ?? []) as Array<{ selections?: unknown[] | null }>).reduce(
+          (sum, row) => sum + (Array.isArray(row.selections) ? row.selections.length : 0),
+          0,
+        ),
       });
     })();
   }, [rolesLoading, isAdmin]);
@@ -78,7 +81,7 @@ function AdminOverview() {
     { label: "Categories", value: counts.categories, to: "/admin/categories" },
     { label: "Committee members", value: counts.team, to: "/admin/team" },
     { label: "Pending invites", value: counts.pending, to: "/admin/team" },
-    { label: "Food preorders", value: counts.preorders, to: "/admin/preorders" },
+    { label: "Food items ordered", value: counts.preorders, to: "/admin/preorders" },
   ] as const;
 
   if (rolesLoading) return <p className="text-muted-foreground">Loading workspace…</p>;
