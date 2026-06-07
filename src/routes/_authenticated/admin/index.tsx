@@ -24,30 +24,37 @@ function AdminOverview() {
   useEffect(() => {
     if (rolesLoading || !isAdmin) return;
     (async () => {
-      const [i, f, c, t, p, pre] = await Promise.all([
+      const [i, f, c, ti, cg, inv, p, pre] = await Promise.all([
         supabase.from("invitations").select("id", { count: "exact", head: true }),
         supabase.from("duplicate_flags").select("id", { count: "exact", head: true }),
         supabase.from("categories").select("id", { count: "exact", head: true }),
-        supabase
-          .from("user_roles")
-          .select("id", { count: "exact", head: true })
-          .in("role", ["admin", "team"]),
-        supabase
-          .from("team_invites")
-          .select("id", { count: "exact", head: true })
-          .is("accepted_at", null),
+        supabase.from("team_invites").select("phone,name"),
+        supabase.from("invitations").select("guest_phone,guest_name").eq("is_committee", true),
+        supabase.from("inviters").select("phone,name").eq("active", true),
+        supabase.from("team_invites").select("id", { count: "exact", head: true }).is("accepted_at", null),
         supabase.from("cuisine_preorders").select("id", { count: "exact", head: true }),
       ]);
+      const norm = (v?: string | null) => (v ? v.replace(/\D/g, "") : "");
+      const keys = new Set<string>();
+      const add = (phone?: string | null, name?: string | null) => {
+        const d = norm(phone);
+        const k = d.length >= 10 ? d.slice(-10) : (name?.trim().toLowerCase() ?? "");
+        if (k) keys.add(k);
+      };
+      (ti.data ?? []).forEach((r: any) => add(r.phone, r.name));
+      (cg.data ?? []).forEach((r: any) => add(r.guest_phone, r.guest_name));
+      (inv.data ?? []).forEach((r: any) => add(r.phone, r.name));
       setCounts({
         invites: i.count ?? 0,
         flags: f.count ?? 0,
         categories: c.count ?? 0,
-        team: t.count ?? 0,
+        team: keys.size,
         pending: p.count ?? 0,
         preorders: pre.count ?? 0,
       });
     })();
   }, [rolesLoading, isAdmin]);
+
 
   const stats = [
     { label: "Guest invitations", value: counts.invites, to: "/admin/upload" },
