@@ -3,7 +3,12 @@ import { useServerFn } from "@tanstack/react-start";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { signInWithPhoneOnly } from "@/lib/auth-phone.functions";
-import { forgetRememberedLoginPhone, getRememberedLoginPhone, rememberLoginPhone } from "@/lib/session-recovery";
+import {
+  forgetRememberedLoginPhone,
+  getRememberedLoginPhone,
+  rememberLoginPhone,
+  rememberLoginPhoneFromStoredSession,
+} from "@/lib/session-recovery";
 
 type AuthCtx = { session: Session | null; user: User | null; loading: boolean };
 const Ctx = createContext<AuthCtx>({ session: null, user: null, loading: true });
@@ -25,6 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let alive = true;
     let settled = false;
+    rememberLoginPhoneFromStoredSession();
     const recoverRememberedSession = async () => {
       if (recoveryAttemptedRef.current) return null;
       const phone = getRememberedLoginPhone();
