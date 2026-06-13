@@ -76,9 +76,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (settled) return;
         finish(data.session ?? await recoverRememberedSession());
       })
-      .catch(() => {
-        // Don't sign the user out on a transient read failure — wait for
-        // onAuthStateChange instead.
+      .catch(async () => {
+        if (settled) return;
+        finish(await recoverRememberedSession());
       });
 
     return () => {
