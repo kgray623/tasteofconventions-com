@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { signInWithPhoneOnly } from "@/lib/auth-phone.functions";
-import { forgetRememberedLoginPhone, getRememberedLoginPhone } from "@/lib/session-recovery";
+import { forgetRememberedLoginPhone, getRememberedLoginPhone, rememberLoginPhone } from "@/lib/session-recovery";
 
 type AuthCtx = { session: Session | null; user: User | null; loading: boolean };
 const Ctx = createContext<AuthCtx>({ session: null, user: null, loading: true });
@@ -46,6 +46,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!alive) return;
       settled = true;
       if (nextSession) recoveryAttemptedRef.current = false;
+      const phone = nextSession?.user.phone || (nextSession?.user.user_metadata?.phone as string | undefined);
+      if (phone) rememberLoginPhone(phone);
       sessionRef.current = nextSession;
       setSession(nextSession);
       setLoading(false);
@@ -83,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       alive = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [phoneLogin]);
 
   return <Ctx.Provider value={{ session, user: session?.user ?? null, loading }}>{children}</Ctx.Provider>;
 }
