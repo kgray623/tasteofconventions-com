@@ -51,7 +51,7 @@ async function findAuthUserByPhoneOrLogin(supabaseAdmin: any, phoneE164: string,
       console.error("listUsers failed:", error);
       break;
     }
-    const owner = list.users.find((u) => {
+    const owner = list.users.find((u: { phone?: string | null; email?: string | null; id: string }) => {
       const stored = (u.phone || "").replace(/\D/g, "");
       return (
         stored === phoneNorm ||
