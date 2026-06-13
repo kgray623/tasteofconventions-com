@@ -60,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // the initial event, and cutting it short would flip the user to a
     // signed-out state and bounce them to /login.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
-      if (event === "SIGNED_OUT" && !explicitSignOutRequested && sessionRef.current) {
+      if (!s && !explicitSignOutRequested && getRememberedLoginPhone()) {
         setLoading(true);
         void recoverRememberedSession().then((recovered) => finish(recovered));
         return;
@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       alive = false;
       subscription.unsubscribe();
     };
-  }, [phoneLogin]);
+  }, []);
 
   return <Ctx.Provider value={{ session, user: session?.user ?? null, loading }}>{children}</Ctx.Provider>;
 }
