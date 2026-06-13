@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const PhoneLoginInput = z.object({
   phone: z.string().min(7).max(40),
@@ -25,7 +24,7 @@ function internalPhoneLoginAddress(phoneNorm: string) {
   return `phone-${phoneNorm}@tasteofconventions.local`;
 }
 
-async function findAuthUserByPhoneOrLogin(phoneE164: string, phoneNorm: string, loginAddress: string) {
+async function findAuthUserByPhoneOrLogin(supabaseAdmin: any, phoneE164: string, phoneNorm: string, loginAddress: string) {
   // Digits-only RPC handles every stored format ("+18082787562", "18082787562", "8082787562").
   const { data: digitsId, error: digitsErr } = await supabaseAdmin.rpc(
     "get_auth_user_id_by_phone_digits",
@@ -52,7 +51,7 @@ async function findAuthUserByPhoneOrLogin(phoneE164: string, phoneNorm: string, 
       console.error("listUsers failed:", error);
       break;
     }
-    const owner = list.users.find((u) => {
+    const owner = list.users.find((u: { phone?: string | null; email?: string | null; id: string }) => {
       const stored = (u.phone || "").replace(/\D/g, "");
       return (
         stored === phoneNorm ||
@@ -80,10 +79,11 @@ export const signInWithPhoneOnly = createServerFn({ method: "POST" })
       throw new Error("Enter a valid mobile phone number");
     }
 
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const loginAddress = internalPhoneLoginAddress(phoneNorm);
 
     // 1) Find an existing auth user by phone in any stored format.
-    let userId: string | null = await findAuthUserByPhoneOrLogin(phoneE164, phoneNorm, loginAddress);
+    let userId: string | null = await findAuthUserByPhoneOrLogin(supabaseAdmin, phoneE164, phoneNorm, loginAddress);
 
     // 2) If no auth user, require the phone be tied to a known person.
     if (!userId) {
@@ -125,7 +125,7 @@ export const signInWithPhoneOnly = createServerFn({ method: "POST" })
       });
       if (createErr) {
         if (/phone.*already|email.*already|already.*registered/i.test(createErr.message)) {
-          userId = await findAuthUserByPhoneOrLogin(phoneE164, phoneNorm, loginAddress);
+          userId = await findAuthUserByPhoneOrLogin(supabaseAdmin, phoneE164, phoneNorm, loginAddress);
         }
         if (!userId) throw new Error(createErr.message);
       } else {
