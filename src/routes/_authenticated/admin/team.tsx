@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Phone, Trash2, ShieldCheck, Users, Pencil, Check, X } from "lucide-react";
-import { inviteTeamMember } from "@/lib/team.functions";
+import { inviteTeamMember, getSignedUpPhoneDigits } from "@/lib/team.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/team")({
   component: TeamPage,
@@ -40,6 +40,7 @@ function TeamPage() {
   const [invites, setInvites] = useState<Invite[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [committeeGuests, setCommitteeGuests] = useState<CommitteeGuest[]>([]);
+  const [signedUpDigits, setSignedUpDigits] = useState<Set<string>>(new Set());
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState<"team" | "admin">("team");
@@ -48,6 +49,7 @@ function TeamPage() {
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const sendInviteFn = useServerFn(inviteTeamMember);
+  const fetchSignedUpDigits = useServerFn(getSignedUpPhoneDigits);
 
   const load = async () => {
     const [inv, mem, prof, comm] = await Promise.all([
@@ -60,6 +62,12 @@ function TeamPage() {
     const profMap = new Map((prof.data ?? []).map((p) => [p.id, p]));
     setMembers((mem.data ?? []).map((m) => ({ ...m, profile: profMap.get(m.user_id) })));
     setCommitteeGuests((comm.data ?? []) as CommitteeGuest[]);
+    try {
+      const res = await fetchSignedUpDigits();
+      setSignedUpDigits(new Set(res.digits));
+    } catch {
+      // non-fatal; status will fall back to "Pending signup"
+    }
   };
   useEffect(() => { load(); }, []);
 
@@ -176,15 +184,25 @@ function TeamPage() {
           };
           const rows: Row[] = [];
 
+          const isSignedUp = (digits: string) => {
+            if (!digits || digits.length < 7) return false;
+            const tail = digits.slice(-10);
+            for (const d of signedUpDigits) {
+              if (d === digits || d.slice(-10) === tail) return true;
+            }
+            return false;
+          };
+
           for (const inv of invites) {
             const k = norm(inv.phone) || `ti-${inv.id}`;
             if (seen.has(k)) continue;
             seen.add(k);
+            const joined = inv.accepted_at || isSignedUp(norm(inv.phone));
             rows.push({
               key: `ti-${inv.id}`,
               name: inv.name || inv.phone || "—",
               contact: inv.phone || "No phone",
-              status: inv.accepted_at ? "Joined" : "Pending signup",
+              status: joined ? "Joined" : "Pending signup",
               role: inv.role,
             });
           }
@@ -196,7 +214,7 @@ function TeamPage() {
               key: `cg-${g.id}`,
               name: g.guest_name,
               contact: g.guest_phone || g.guest_email || "No contact on file",
-              status: "Pending signup",
+              status: isSignedUp(norm(g.guest_phone)) ? "Joined" : "Pending signup",
               role: "team",
             });
           }
