@@ -1,8 +1,10 @@
 import { createFileRoute, Link, Outlet, useRouterState, useNavigate, useSearch } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { useRoles } from "@/hooks/use-roles";
 import { markExplicitSignOut, useAuth } from "@/hooks/use-auth";
+import { clearPhoneLoginCookie } from "@/lib/auth-phone.functions";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -41,6 +43,7 @@ function AdminLayout() {
   const previewCommittee = isActualAdmin && (search.view === "committee" || isCommitteeRoute);
   const isAdmin = isActualAdmin && !previewCommittee;
   const navigate = useNavigate();
+  const clearRememberedLogin = useServerFn(clearPhoneLoginCookie);
   const [displayName, setDisplayName] = useState<string>("");
 
   useEffect(() => {
@@ -60,6 +63,7 @@ function AdminLayout() {
 
   const signOut = async () => {
     markExplicitSignOut();
+    await clearRememberedLogin().catch(() => null);
     await supabase.auth.signOut();
     toast.success("Signed out.");
     navigate({ to: "/" });
