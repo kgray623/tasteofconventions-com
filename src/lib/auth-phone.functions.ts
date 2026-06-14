@@ -299,3 +299,9 @@ export const recoverPhoneLoginFromCookie = createServerFn({ method: "POST" })
       return null;
     }
   });
+
+export const clearPhoneLoginCookie = createServerFn({ method: "POST" })
+  .handler(async () => {
+    clearServerRememberedPhoneCookie();
+    return { ok: true };
+  });
