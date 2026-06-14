@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useEffect, useState } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { supabase } from "@/integrations/supabase/client";
+import { getRememberedLoginPhone } from "@/lib/session-recovery";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthLayout,
@@ -26,12 +27,20 @@ function AuthLayout() {
     if (loading || user) return;
     let cancelled = false;
     setVerifying(true);
-    // Double-check via getUser() before redirecting — when returning to the
-    // tab from another app (e.g. Messages), AuthProvider may not have
-    // re-hydrated yet. Retry briefly before giving up so we don't bounce
-    // the user to /login mid-session.
+    // Double-check before redirecting. If we have a remembered phone, the
+    // AuthProvider is still allowed to rebuild the session, so don't bounce
+    // the user to /login just because the browser auth cache was cleared.
     void (async () => {
-      for (let attempt = 0; attempt < 3 && !cancelled; attempt++) {
+      for (let attempt = 0; attempt < 8 && !cancelled; attempt++) {
+        const { data: sessionData } = await supabase.auth
+          .getSession()
+          .catch(() => ({ data: { session: null } as { session: null } }));
+        if (cancelled) return;
+        if (sessionData.session || getRememberedLoginPhone()) {
+          setVerifying(false);
+          return;
+        }
+
         const { data } = await supabase.auth
           .getUser()
           .catch(() => ({ data: { user: null } as { user: null } }));
@@ -41,7 +50,7 @@ function AuthLayout() {
           return;
         }
         // Wait a moment for onAuthStateChange to hydrate from storage.
-        await new Promise((r) => setTimeout(r, 400));
+        await new Promise((r) => setTimeout(r, 500));
       }
       if (cancelled) return;
       const search = new URLSearchParams({ redirect: safeLoginRedirect(location.pathname) });

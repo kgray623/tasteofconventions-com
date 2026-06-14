@@ -26,17 +26,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const sessionRef = useRef<Session | null>(null);
   const recoveryAttemptedRef = useRef(false);
+  const recoveryPromiseRef = useRef<Promise<Session | null> | null>(null);
 
   useEffect(() => {
     let alive = true;
     let settled = false;
     rememberLoginPhoneFromStoredSession();
     const recoverRememberedSession = async () => {
-      if (recoveryAttemptedRef.current) return null;
+      if (sessionRef.current) return sessionRef.current;
+      if (recoveryPromiseRef.current) return recoveryPromiseRef.current;
       const phone = getRememberedLoginPhone();
       if (!phone) return null;
       recoveryAttemptedRef.current = true;
-      try {
+      recoveryPromiseRef.current = (async () => {
         const tokens = await phoneLogin({ data: { phone } });
         const { data, error } = await supabase.auth.setSession({
           access_token: tokens.access_token,
@@ -44,8 +46,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         if (error) throw error;
         return data.session ?? null;
+      })();
+      try {
+        return await recoveryPromiseRef.current;
       } catch {
         return null;
+      } finally {
+        recoveryPromiseRef.current = null;
       }
     };
     const finish = (nextSession: Session | null) => {
@@ -80,7 +87,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession()
       .then(async ({ data }) => {
         if (settled) return;
-        finish(data.session ?? await recoverRememberedSession());
+        const storedSession = data.session ?? await recoverRememberedSession();
+        finish(storedSession);
       })
       .catch(async () => {
         if (settled) return;

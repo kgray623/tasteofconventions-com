@@ -1,18 +1,59 @@
 const REMEMBERED_PHONE_KEY = "taste-of-conventions:last-login-phone";
+const REMEMBERED_PHONE_COOKIE = "taste_of_conventions_last_login_phone";
+const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
 function hasBrowserStorage() {
-  return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+  if (typeof window === "undefined") return false;
+  try {
+    return typeof window.localStorage !== "undefined";
+  } catch {
+    return false;
+  }
+}
+
+function hasDocumentCookie() {
+  return typeof document !== "undefined" && typeof document.cookie === "string";
+}
+
+function rememberLoginPhoneCookie(phone: string) {
+  if (!hasDocumentCookie()) return;
+  const secure = typeof window !== "undefined" && window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${REMEMBERED_PHONE_COOKIE}=${encodeURIComponent(phone)}; Path=/; Max-Age=${ONE_YEAR_SECONDS}; SameSite=Lax${secure}`;
+}
+
+function getRememberedLoginPhoneCookie() {
+  if (!hasDocumentCookie()) return null;
+  const match = document.cookie
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${REMEMBERED_PHONE_COOKIE}=`));
+  if (!match) return null;
+  const value = match.slice(REMEMBERED_PHONE_COOKIE.length + 1);
+  try {
+    return decodeURIComponent(value) || null;
+  } catch {
+    return value || null;
+  }
+}
+
+function forgetRememberedLoginPhoneCookie() {
+  if (!hasDocumentCookie()) return;
+  document.cookie = `${REMEMBERED_PHONE_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
 }
 
 export function rememberLoginPhone(phone: string) {
-  if (!hasBrowserStorage()) return;
   const cleaned = phone.trim();
-  if (cleaned) window.localStorage.setItem(REMEMBERED_PHONE_KEY, cleaned);
+  if (!cleaned) return;
+  if (hasBrowserStorage()) window.localStorage.setItem(REMEMBERED_PHONE_KEY, cleaned);
+  rememberLoginPhoneCookie(cleaned);
 }
 
 export function getRememberedLoginPhone() {
-  if (!hasBrowserStorage()) return null;
-  return window.localStorage.getItem(REMEMBERED_PHONE_KEY);
+  const stored = hasBrowserStorage() ? window.localStorage.getItem(REMEMBERED_PHONE_KEY) : null;
+  if (stored) return stored;
+  const cookiePhone = getRememberedLoginPhoneCookie();
+  if (cookiePhone && hasBrowserStorage()) window.localStorage.setItem(REMEMBERED_PHONE_KEY, cookiePhone);
+  return cookiePhone;
 }
 
 export function rememberLoginPhoneFromStoredSession() {
@@ -35,6 +76,6 @@ export function rememberLoginPhoneFromStoredSession() {
 }
 
 export function forgetRememberedLoginPhone() {
-  if (!hasBrowserStorage()) return;
-  window.localStorage.removeItem(REMEMBERED_PHONE_KEY);
+  if (hasBrowserStorage()) window.localStorage.removeItem(REMEMBERED_PHONE_KEY);
+  forgetRememberedLoginPhoneCookie();
 }
