@@ -1,10 +1,20 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest, setResponseHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 
 const PhoneLoginInput = z.object({
   phone: z.string().min(7).max(40),
 });
+const SERVER_REMEMBERED_PHONE_COOKIE = "taste_of_conventions_phone_login";
+const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
+
+type PhoneSessionResult = {
+  access_token: string;
+  refresh_token: string;
+  user_id: string;
+  phone_normalized: string;
+};
 
 function normalizeAuthPhone(value: string) {
   const digits = value.replace(/\D/g, "");
@@ -22,6 +32,49 @@ function randomPassword() {
 
 function internalPhoneLoginAddress(phoneNorm: string) {
   return `phone-${phoneNorm}@tasteofconventions.local`;
+}
+
+function serverCookieSecurityAttributes() {
+  try {
+    const protocol = new URL(getRequest().url).protocol;
+    if (protocol === "https:") return "; Secure; SameSite=None; Partitioned";
+  } catch {
+    // Fall back to localhost-friendly cookies in development.
+  }
+  return "; SameSite=Lax";
+}
+
+function setServerRememberedPhoneCookie(phoneNorm: string) {
+  if (!/^\d{7,15}$/.test(phoneNorm)) return;
+  setResponseHeader(
+    "Set-Cookie",
+    `${SERVER_REMEMBERED_PHONE_COOKIE}=${encodeURIComponent(phoneNorm)}; Path=/; Max-Age=${ONE_YEAR_SECONDS}; HttpOnly${serverCookieSecurityAttributes()}`,
+  );
+}
+
+function clearServerRememberedPhoneCookie() {
+  setResponseHeader(
+    "Set-Cookie",
+    `${SERVER_REMEMBERED_PHONE_COOKIE}=; Path=/; Max-Age=0; HttpOnly${serverCookieSecurityAttributes()}`,
+  );
+}
+
+function getServerRememberedPhoneCookie() {
+  const cookieHeader = getRequest().headers.get("cookie") || "";
+  const match = cookieHeader
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${SERVER_REMEMBERED_PHONE_COOKIE}=`));
+  if (!match) return null;
+  const raw = match.slice(SERVER_REMEMBERED_PHONE_COOKIE.length + 1);
+  let value = raw;
+  try {
+    value = decodeURIComponent(raw);
+  } catch {
+    // Keep the raw cookie value if decoding fails.
+  }
+  const digits = value.replace(/\D/g, "");
+  return /^\d{7,15}$/.test(digits) ? digits : null;
 }
 
 async function findAuthUserByPhoneOrLogin(supabaseAdmin: any, phoneE164: string, phoneNorm: string, loginAddress: string) {
@@ -66,6 +119,161 @@ async function findAuthUserByPhoneOrLogin(supabaseAdmin: any, phoneE164: string,
   return null;
 }
 
+async function issuePhoneSession(rawPhone: string): Promise<PhoneSessionResult> {
+  const phoneE164 = normalizeAuthPhone(rawPhone);
+  const phoneNorm = rawPhone.replace(/\D/g, "");
+  if (!phoneE164 || phoneNorm.length < 7) {
+    throw new Error("Enter a valid mobile phone number");
+  }
+
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const loginAddress = internalPhoneLoginAddress(phoneNorm);
+
+  // 1) Find an existing auth user by phone in any stored format.
+  let userId: string | null = await findAuthUserByPhoneOrLogin(supabaseAdmin, phoneE164, phoneNorm, loginAddress);
+
+  // 2) If no auth user, require the phone be tied to a known person.
+  if (!userId) {
+    const [{ data: inv }, { data: inviter }, { data: teamInvite }] = await Promise.all([
+      supabaseAdmin
+        .from("invitations")
+        .select("id,guest_name")
+        .eq("guest_phone_normalized", phoneNorm)
+        .limit(1)
+        .maybeSingle(),
+      supabaseAdmin
+        .from("inviters")
+        .select("id,name,host_id")
+        .eq("phone", rawPhone)
+        .limit(1)
+        .maybeSingle(),
+      supabaseAdmin
+        .from("team_invites")
+        .select("id,name")
+        .eq("phone_normalized", phoneNorm)
+        .limit(1)
+        .maybeSingle(),
+    ]);
+
+    if (!inv && !inviter && !teamInvite) {
+      throw new Error("We don't have this mobile number on the guest list yet.");
+    }
+
+    const displayName = inv?.guest_name || inviter?.name || teamInvite?.name || null;
+
+    const tempPassword = randomPassword();
+    const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
+      email: loginAddress,
+      phone: phoneE164,
+      password: tempPassword,
+      email_confirm: true,
+      phone_confirm: true,
+      user_metadata: { display_name: displayName, phone: rawPhone },
+    });
+    if (createErr) {
+      if (/phone.*already|email.*already|already.*registered/i.test(createErr.message)) {
+        userId = await findAuthUserByPhoneOrLogin(supabaseAdmin, phoneE164, phoneNorm, loginAddress);
+      }
+      if (!userId) throw new Error(createErr.message);
+    } else {
+      userId = created.user?.id ?? null;
+    }
+    if (!userId) throw new Error("Could not create account");
+  }
+
+  // 3) Create a server-issued session without rotating the hidden password.
+  // Rotating passwords invalidates existing refresh tokens, which was logging
+  // people out while they were working in another tab or device.
+  const { data: authUser, error: authUserErr } = await supabaseAdmin.auth.admin.getUserById(userId);
+  if (authUserErr || !authUser.user) throw new Error(authUserErr?.message || "Could not find account");
+  let signInEmail = authUser.user.email || loginAddress;
+  if (!authUser.user.email) {
+    const { data: updated, error: updErr } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+      email: loginAddress,
+      phone: phoneE164,
+      email_confirm: true,
+      phone_confirm: true,
+      user_metadata: { ...authUser.user.user_metadata, phone: rawPhone },
+    });
+    if (updErr) throw new Error(updErr.message);
+    signInEmail = updated.user?.email || loginAddress;
+  }
+
+  // 3b) If this phone is on the team invite list or marked as committee on an invitation, grant the team role.
+  const { data: teamInviteRow } = await supabaseAdmin
+    .from("team_invites")
+    .select("id,role,accepted_at")
+    .eq("phone_normalized", phoneNorm)
+    .maybeSingle();
+  if (teamInviteRow) {
+    const { data: existingRole } = await supabaseAdmin
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("role", teamInviteRow.role)
+      .maybeSingle();
+    if (!existingRole) {
+      await supabaseAdmin
+        .from("user_roles")
+        .insert({ user_id: userId, role: teamInviteRow.role });
+    }
+    if (!teamInviteRow.accepted_at) {
+      await supabaseAdmin
+        .from("team_invites")
+        .update({ accepted_at: new Date().toISOString() })
+        .eq("id", teamInviteRow.id);
+    }
+  }
+  const { data: committeeInvite } = await supabaseAdmin
+    .from("invitations")
+    .select("id")
+    .eq("is_committee", true)
+    .or(
+      [phoneNorm, phoneNorm.slice(-10), phoneE164.replace(/\D/g, ""), phoneE164.replace(/\D/g, "").slice(-10)]
+        .filter(Boolean)
+        .map((digits) => `guest_phone_normalized.eq.${digits}`)
+        .join(","),
+    )
+    .limit(1)
+    .maybeSingle();
+  if (committeeInvite && !teamInviteRow) {
+    const { data: existingTeamRole } = await supabaseAdmin
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("role", "team")
+      .maybeSingle();
+    if (!existingTeamRole) {
+      await supabaseAdmin.from("user_roles").insert({ user_id: userId, role: "team" });
+    }
+  }
+
+  const { data: link, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
+    type: "magiclink",
+    email: signInEmail,
+  });
+  const tokenHash = link.properties?.hashed_token;
+  if (linkErr || !tokenHash) throw new Error(linkErr?.message || "Sign-in failed");
+
+  const url = process.env.SUPABASE_URL!;
+  const anonKey = process.env.SUPABASE_PUBLISHABLE_KEY!;
+  const anon = createClient(url, anonKey, { auth: { persistSession: false } });
+  const { data: signIn, error: signInErr } = await anon.auth.verifyOtp({
+    type: "magiclink",
+    token_hash: tokenHash,
+  });
+  if (signInErr || !signIn.session) {
+    throw new Error(signInErr?.message || "Sign-in failed");
+  }
+
+  return {
+    access_token: signIn.session.access_token,
+    refresh_token: signIn.session.refresh_token,
+    user_id: userId,
+    phone_normalized: phoneNorm,
+  };
+}
+
 /**
  * Phone-only sign-in. The user enters a mobile number, and if the number
  * matches an invitation we issue them a session for that phone-number account.
@@ -73,155 +281,21 @@ async function findAuthUserByPhoneOrLogin(supabaseAdmin: any, phoneE164: string,
 export const signInWithPhoneOnly = createServerFn({ method: "POST" })
   .inputValidator((d) => PhoneLoginInput.parse(d))
   .handler(async ({ data }) => {
-    const phoneE164 = normalizeAuthPhone(data.phone);
-    const phoneNorm = data.phone.replace(/\D/g, "");
-    if (!phoneE164 || phoneNorm.length < 7) {
-      throw new Error("Enter a valid mobile phone number");
+    const session = await issuePhoneSession(data.phone);
+    setServerRememberedPhoneCookie(session.phone_normalized);
+    return session;
+  });
+
+export const recoverPhoneLoginFromCookie = createServerFn({ method: "POST" })
+  .handler(async () => {
+    const phone = getServerRememberedPhoneCookie();
+    if (!phone) return null;
+    try {
+      const session = await issuePhoneSession(phone);
+      setServerRememberedPhoneCookie(session.phone_normalized);
+      return session;
+    } catch {
+      clearServerRememberedPhoneCookie();
+      return null;
     }
-
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const loginAddress = internalPhoneLoginAddress(phoneNorm);
-
-    // 1) Find an existing auth user by phone in any stored format.
-    let userId: string | null = await findAuthUserByPhoneOrLogin(supabaseAdmin, phoneE164, phoneNorm, loginAddress);
-
-    // 2) If no auth user, require the phone be tied to a known person.
-    if (!userId) {
-      const [{ data: inv }, { data: inviter }, { data: teamInvite }] = await Promise.all([
-        supabaseAdmin
-          .from("invitations")
-          .select("id,guest_name")
-          .eq("guest_phone_normalized", phoneNorm)
-          .limit(1)
-          .maybeSingle(),
-        supabaseAdmin
-          .from("inviters")
-          .select("id,name,host_id")
-          .eq("phone", data.phone)
-          .limit(1)
-          .maybeSingle(),
-        supabaseAdmin
-          .from("team_invites")
-          .select("id,name")
-          .eq("phone_normalized", phoneNorm)
-          .limit(1)
-          .maybeSingle(),
-      ]);
-
-      if (!inv && !inviter && !teamInvite) {
-        throw new Error("We don't have this mobile number on the guest list yet.");
-      }
-
-      const displayName = inv?.guest_name || inviter?.name || teamInvite?.name || null;
-
-      const tempPassword = randomPassword();
-      const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
-        email: loginAddress,
-        phone: phoneE164,
-        password: tempPassword,
-        email_confirm: true,
-        phone_confirm: true,
-        user_metadata: { display_name: displayName, phone: data.phone },
-      });
-      if (createErr) {
-        if (/phone.*already|email.*already|already.*registered/i.test(createErr.message)) {
-          userId = await findAuthUserByPhoneOrLogin(supabaseAdmin, phoneE164, phoneNorm, loginAddress);
-        }
-        if (!userId) throw new Error(createErr.message);
-      } else {
-        userId = created.user?.id ?? null;
-      }
-      if (!userId) throw new Error("Could not create account");
-    }
-
-    // 3) Create a server-issued session without rotating the hidden password.
-    // Rotating passwords invalidates existing refresh tokens, which was logging
-    // people out while they were working in another tab or device.
-    const { data: authUser, error: authUserErr } = await supabaseAdmin.auth.admin.getUserById(userId);
-    if (authUserErr || !authUser.user) throw new Error(authUserErr?.message || "Could not find account");
-    let signInEmail = authUser.user.email || loginAddress;
-    if (!authUser.user.email) {
-      const { data: updated, error: updErr } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-        email: loginAddress,
-        phone: phoneE164,
-        email_confirm: true,
-        phone_confirm: true,
-        user_metadata: { ...authUser.user.user_metadata, phone: data.phone },
-      });
-      if (updErr) throw new Error(updErr.message);
-      signInEmail = updated.user?.email || loginAddress;
-    }
-
-    // 3b) If this phone is on the team invite list or marked as committee on an invitation, grant the team role.
-    const { data: teamInviteRow } = await supabaseAdmin
-      .from("team_invites")
-      .select("id,role,accepted_at")
-      .eq("phone_normalized", phoneNorm)
-      .maybeSingle();
-    if (teamInviteRow) {
-      const { data: existingRole } = await supabaseAdmin
-        .from("user_roles")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("role", teamInviteRow.role)
-        .maybeSingle();
-      if (!existingRole) {
-        await supabaseAdmin
-          .from("user_roles")
-          .insert({ user_id: userId, role: teamInviteRow.role });
-      }
-      if (!teamInviteRow.accepted_at) {
-        await supabaseAdmin
-          .from("team_invites")
-          .update({ accepted_at: new Date().toISOString() })
-          .eq("id", teamInviteRow.id);
-      }
-    }
-    const { data: committeeInvite } = await supabaseAdmin
-      .from("invitations")
-      .select("id")
-      .eq("is_committee", true)
-      .or(
-        [phoneNorm, phoneNorm.slice(-10), phoneE164.replace(/\D/g, ""), phoneE164.replace(/\D/g, "").slice(-10)]
-          .filter(Boolean)
-          .map((digits) => `guest_phone_normalized.eq.${digits}`)
-          .join(","),
-      )
-      .limit(1)
-      .maybeSingle();
-    if (committeeInvite && !teamInviteRow) {
-      const { data: existingTeamRole } = await supabaseAdmin
-        .from("user_roles")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("role", "team")
-        .maybeSingle();
-      if (!existingTeamRole) {
-        await supabaseAdmin.from("user_roles").insert({ user_id: userId, role: "team" });
-      }
-    }
-
-    const { data: link, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
-      type: "magiclink",
-      email: signInEmail,
-    });
-    const tokenHash = link.properties?.hashed_token;
-    if (linkErr || !tokenHash) throw new Error(linkErr?.message || "Sign-in failed");
-
-    const url = process.env.SUPABASE_URL!;
-    const anonKey = process.env.SUPABASE_PUBLISHABLE_KEY!;
-    const anon = createClient(url, anonKey, { auth: { persistSession: false } });
-    const { data: signIn, error: signInErr } = await anon.auth.verifyOtp({
-      type: "magiclink",
-      token_hash: tokenHash,
-    });
-    if (signInErr || !signIn.session) {
-      throw new Error(signInErr?.message || "Sign-in failed");
-    }
-
-    return {
-      access_token: signIn.session.access_token,
-      refresh_token: signIn.session.refresh_token,
-      user_id: userId,
-    };
   });
