@@ -97,3 +97,17 @@ export const inviteTeamMember = createServerFn({ method: "POST" })
     await syncCommitteeInviter(data);
     return { ok: true };
   });
+
+export const getSignedUpPhoneDigits = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const userId = (context as any).userId as string | undefined;
+    if (!userId) throw new Error("Not authenticated");
+    await assertAdmin(userId);
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+    if (error) throw new Error(error.message);
+    const digits = (data?.users ?? [])
+      .map((u) => normalizePhone(u.phone ?? ""))
+      .filter((d) => d.length >= 7);
+    return { digits };
+  });
