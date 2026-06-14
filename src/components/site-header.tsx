@@ -1,6 +1,8 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { markExplicitSignOut, useAuth } from "@/hooks/use-auth";
 import { useRoles } from "@/hooks/use-roles";
+import { clearPhoneLoginCookie } from "@/lib/auth-phone.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
@@ -8,11 +10,13 @@ export function SiteHeader() {
   const { user } = useAuth();
   const { isAdmin, isTeam, loading } = useRoles();
   const navigate = useNavigate();
+  const clearRememberedLogin = useServerFn(clearPhoneLoginCookie);
   const location = useRouterState({ select: (state) => state.location });
   const isCommitteeView = location.pathname.startsWith("/admin") && (location.pathname === "/admin/subcommittee" || location.search.view === "committee");
 
   const signOut = async () => {
     markExplicitSignOut();
+    await clearRememberedLogin().catch(() => null);
     await supabase.auth.signOut();
     navigate({ to: "/" });
   };
