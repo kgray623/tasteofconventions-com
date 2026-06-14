@@ -215,14 +215,10 @@ export const getInvitationByToken = createServerFn({ method: "GET" })
       .maybeSingle();
     if (error) throw publicDbError(error);
     if (!inv) return { invitation: null, rsvp: null, order: null, expired: false };
-    const [{ data: rsvp }, { data: order }, { data: preorder }] = await Promise.all([
+    const [{ data: rsvp }, { data: order }, preorder] = await Promise.all([
       supabaseAdmin.from("rsvps").select("*").eq("invitation_id", inv.id).maybeSingle(),
       supabaseAdmin.from("orders").select("*").eq("invitation_id", inv.id).maybeSingle(),
-      supabaseAdmin
-        .from("cuisine_preorders")
-        .select("selections,updated_at")
-        .eq("invitation_id", inv.id)
-        .maybeSingle(),
+      findCuisinePreorder(inv.id, inv.guest_phone),
     ]);
     return { invitation: inv, rsvp, order, preorder, expired: false };
   });
@@ -433,13 +429,7 @@ export const getPublicRsvpByPhone = createServerFn({ method: "GET" })
       .maybeSingle();
     if (!ev) return { invitation: null, rsvp: null, preorder: null };
 
-    const candidates = Array.from(
-      new Set([
-        phoneNorm,
-        phoneNorm.length === 11 && phoneNorm.startsWith("1") ? phoneNorm.slice(1) : phoneNorm,
-        phoneNorm.length === 10 ? `1${phoneNorm}` : phoneNorm,
-      ]),
-    );
+    const candidates = phoneCandidates(phoneNorm);
 
     const { data: invitation, error: invErr } = await supabaseAdmin
       .from("invitations")
@@ -452,34 +442,15 @@ export const getPublicRsvpByPhone = createServerFn({ method: "GET" })
     if (invErr) throw publicDbError(invErr);
     if (!invitation) return { invitation: null, rsvp: null, preorder: null };
 
-    const [{ data: rsvp, error: rsvpErr }, { data: preorderByInvitation, error: preorderErr }] =
-      await Promise.all([
+    const [{ data: rsvp, error: rsvpErr }, preorder] = await Promise.all([
         supabaseAdmin
           .from("rsvps")
           .select("status,party_size,attendance_mode,ordering_food,invited_by,responded_at")
           .eq("invitation_id", invitation.id)
           .maybeSingle(),
-        supabaseAdmin
-          .from("cuisine_preorders")
-          .select("selections,updated_at")
-          .eq("invitation_id", invitation.id)
-          .maybeSingle(),
+        findCuisinePreorder(invitation.id, invitation.guest_phone ?? data.phone),
       ]);
     if (rsvpErr) throw publicDbError(rsvpErr);
-    if (preorderErr) throw publicDbError(preorderErr);
-
-    let preorder = preorderByInvitation;
-    if (!preorder) {
-      const { data: preorderByPhone, error } = await supabaseAdmin
-        .from("cuisine_preorders")
-        .select("selections,updated_at")
-        .eq("phone", invitation.guest_phone ?? data.phone)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (error) throw publicDbError(error);
-      preorder = preorderByPhone;
-    }
 
     return { invitation, rsvp, preorder };
   });
@@ -561,7 +532,7 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
           .from("invitations")
           .select("id")
           .eq("event_id", ev.id)
-          .eq("guest_phone_normalized", phoneNorm)
+          .in("guest_phone_normalized", phoneCandidates(phoneNorm))
           .maybeSingle();
         if (existing) invitationId = existing.id;
       }
