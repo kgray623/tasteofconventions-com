@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, createContext, useContext, ReactNode } fro
 import { useServerFn } from "@tanstack/react-start";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { signInWithPhoneOnly } from "@/lib/auth-phone.functions";
+import { recoverPhoneLoginFromCookie, signInWithPhoneOnly } from "@/lib/auth-phone.functions";
 import {
   forgetRememberedLoginPhone,
   getRememberedLoginPhone,
@@ -22,6 +22,7 @@ export function markExplicitSignOut() {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const phoneLogin = useServerFn(signInWithPhoneOnly);
+  const cookieLogin = useServerFn(recoverPhoneLoginFromCookie);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const sessionRef = useRef<Session | null>(null);
@@ -36,10 +37,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (sessionRef.current) return sessionRef.current;
       if (recoveryPromiseRef.current) return recoveryPromiseRef.current;
       const phone = getRememberedLoginPhone();
-      if (!phone) return null;
+      if (!phone && recoveryAttemptedRef.current) return null;
       recoveryAttemptedRef.current = true;
       recoveryPromiseRef.current = (async () => {
-        const tokens = await phoneLogin({ data: { phone } });
+        const tokens = phone ? await phoneLogin({ data: { phone } }) : await cookieLogin();
+        if (!tokens) return null;
         const { data, error } = await supabase.auth.setSession({
           access_token: tokens.access_token,
           refresh_token: tokens.refresh_token,
@@ -73,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // the initial event, and cutting it short would flip the user to a
     // signed-out state and bounce them to /login.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
-      if (!s && !explicitSignOutRequested && getRememberedLoginPhone()) {
+      if (!s && !explicitSignOutRequested) {
         setLoading(true);
         void recoverRememberedSession().then((recovered) => finish(recovered));
         return;
