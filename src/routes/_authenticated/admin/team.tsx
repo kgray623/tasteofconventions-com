@@ -62,6 +62,12 @@ function TeamPage() {
     const profMap = new Map((prof.data ?? []).map((p) => [p.id, p]));
     setMembers((mem.data ?? []).map((m) => ({ ...m, profile: profMap.get(m.user_id) })));
     setCommitteeGuests((comm.data ?? []) as CommitteeGuest[]);
+    try {
+      const res = await fetchSignedUpDigits();
+      setSignedUpDigits(new Set(res.digits));
+    } catch {
+      // non-fatal; status will fall back to "Pending signup"
+    }
   };
   useEffect(() => { load(); }, []);
 
