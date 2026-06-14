@@ -40,6 +40,7 @@ function TeamPage() {
   const [invites, setInvites] = useState<Invite[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [committeeGuests, setCommitteeGuests] = useState<CommitteeGuest[]>([]);
+  const [signedUpDigits, setSignedUpDigits] = useState<Set<string>>(new Set());
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState<"team" | "admin">("team");
@@ -48,6 +49,7 @@ function TeamPage() {
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const sendInviteFn = useServerFn(inviteTeamMember);
+  const fetchSignedUpDigits = useServerFn(getSignedUpPhoneDigits);
 
   const load = async () => {
     const [inv, mem, prof, comm] = await Promise.all([
