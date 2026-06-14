@@ -103,7 +103,12 @@ export const getSignedUpPhoneDigits = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const userId = (context as any).userId as string | undefined;
     if (!userId) throw new Error("Not authenticated");
-    await assertAdmin(userId);
+    const { data: roles } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    const ok = (roles ?? []).some((r) => r.role === "admin" || r.role === "team");
+    if (!ok) throw new Error("Forbidden");
     const { data, error } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
     if (error) throw new Error(error.message);
     const digits = (data?.users ?? [])
