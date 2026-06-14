@@ -17,8 +17,10 @@ function hasDocumentCookie() {
 
 function rememberLoginPhoneCookie(phone: string) {
   if (!hasDocumentCookie()) return;
-  const secure = typeof window !== "undefined" && window.location.protocol === "https:" ? "; Secure" : "";
-  document.cookie = `${REMEMBERED_PHONE_COOKIE}=${encodeURIComponent(phone)}; Path=/; Max-Age=${ONE_YEAR_SECONDS}; SameSite=Lax${secure}`;
+  const crossSiteAttrs = typeof window !== "undefined" && window.location.protocol === "https:"
+    ? "; Secure; SameSite=None; Partitioned"
+    : "; SameSite=Lax";
+  document.cookie = `${REMEMBERED_PHONE_COOKIE}=${encodeURIComponent(phone)}; Path=/; Max-Age=${ONE_YEAR_SECONDS}${crossSiteAttrs}`;
 }
 
 function getRememberedLoginPhoneCookie() {
@@ -39,6 +41,7 @@ function getRememberedLoginPhoneCookie() {
 function forgetRememberedLoginPhoneCookie() {
   if (!hasDocumentCookie()) return;
   document.cookie = `${REMEMBERED_PHONE_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
+  document.cookie = `${REMEMBERED_PHONE_COOKIE}=; Path=/; Max-Age=0; Secure; SameSite=None; Partitioned`;
 }
 
 export function rememberLoginPhone(phone: string) {
