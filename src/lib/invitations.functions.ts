@@ -9,6 +9,87 @@ function publicDbError(error: { message?: string } | null | undefined, fallback 
   return new Error(fallback);
 }
 
+type PreorderRecord = {
+  id?: string;
+  invitation_id?: string | null;
+  phone?: string | null;
+  selections?: unknown;
+  updated_at?: string | null;
+  created_at?: string | null;
+};
+
+function phoneCandidates(phone: string) {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length < 7) return [];
+  return Array.from(
+    new Set([
+      digits,
+      digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits,
+      digits.length === 10 ? `1${digits}` : digits,
+    ]),
+  );
+}
+
+function normalizeCuisineName(value: string) {
+  const lower = value.toLowerCase();
+  if (lower.includes("myanmar") || lower.includes("burmese")) return "Myanmar";
+  if (lower.includes("african") || lower.includes("africa") || lower.includes("mozambique")) return "African";
+  if (lower.includes("indonesia")) return "Indonesian";
+  return value.trim();
+}
+
+function normalizePreorder(row: PreorderRecord | null) {
+  if (!row) return null;
+  const selections = Array.isArray(row.selections)
+    ? row.selections.flatMap((item) => {
+        if (!item || typeof item !== "object" || Array.isArray(item)) return [];
+        const rawCuisine = "cuisine" in item ? item.cuisine : "country" in item ? item.country : "";
+        const rawQty = "qty" in item ? Number(item.qty) : 0;
+        const qty = Number.isFinite(rawQty) ? Math.max(0, Math.round(rawQty)) : 0;
+        const cuisine = normalizeCuisineName(String(rawCuisine ?? ""));
+        return qty > 0 && cuisine ? [{ cuisine, qty }] : [];
+      })
+    : [];
+  return { selections, updated_at: row.updated_at ?? null };
+}
+
+async function findCuisinePreorder(invitationId: string, phone?: string | null) {
+  const { data: byInvitation, error: invitationErr } = await supabaseAdmin
+    .from("cuisine_preorders")
+    .select("id,invitation_id,phone,selections,updated_at,created_at")
+    .eq("invitation_id", invitationId)
+    .maybeSingle();
+  if (invitationErr) throw publicDbError(invitationErr);
+  if (byInvitation) return normalizePreorder(byInvitation as PreorderRecord);
+
+  const candidates = new Set(phoneCandidates(phone ?? ""));
+  if (candidates.size === 0) return null;
+
+  const { data: preorders, error } = await supabaseAdmin
+    .from("cuisine_preorders")
+    .select("id,invitation_id,phone,selections,updated_at,created_at")
+    .order("updated_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+    .limit(500);
+  if (error) throw publicDbError(error);
+
+  const match = ((preorders ?? []) as PreorderRecord[]).find((row) => {
+    if (row.invitation_id && row.invitation_id !== invitationId) return false;
+    const rowDigits = row.phone?.replace(/\D/g, "") ?? "";
+    return phoneCandidates(rowDigits).some((candidate) => candidates.has(candidate));
+  });
+
+  if (match?.id && !match.invitation_id) {
+    await supabaseAdmin
+      .from("cuisine_preorders")
+      .update({ invitation_id: invitationId })
+      .eq("id", match.id)
+      .is("invitation_id", null);
+  }
+
+  return normalizePreorder(match ?? null);
+}
+
 
 // Lookup the currently signed-in guest's most recent invitation (by phone number).
 export const getMyInvitation = createServerFn({ method: "GET" })
@@ -25,13 +106,7 @@ export const getMyInvitation = createServerFn({ method: "GET" })
     // guest_phone_normalized is a generated column that strips non-digits from
     // whatever was typed, so the same US number can be stored as "8082787562"
     // (10) or "18082787562" (11). Match both.
-    const candidates = Array.from(
-      new Set([
-        phoneNorm,
-        phoneNorm.length === 11 && phoneNorm.startsWith("1") ? phoneNorm.slice(1) : phoneNorm,
-        phoneNorm.length === 10 ? `1${phoneNorm}` : phoneNorm,
-      ]),
-    );
+    const candidates = phoneCandidates(phoneNorm);
 
     const { data: inv, error } = await supabaseAdmin
       .from("invitations")
@@ -44,14 +119,10 @@ export const getMyInvitation = createServerFn({ method: "GET" })
       .maybeSingle();
     if (error) throw publicDbError(error);
     if (!inv) return { invitation: null, rsvp: null, order: null };
-    const [{ data: rsvp }, { data: order }, { data: preorder }] = await Promise.all([
+    const [{ data: rsvp }, { data: order }, preorder] = await Promise.all([
       supabaseAdmin.from("rsvps").select("*").eq("invitation_id", inv.id).maybeSingle(),
       supabaseAdmin.from("orders").select("*").eq("invitation_id", inv.id).maybeSingle(),
-      supabaseAdmin
-        .from("cuisine_preorders")
-        .select("selections,updated_at")
-        .eq("invitation_id", inv.id)
-        .maybeSingle(),
+      findCuisinePreorder(inv.id, inv.guest_phone ?? rawPhone),
     ]);
     return { invitation: inv, rsvp, order, preorder };
   });
