@@ -184,15 +184,25 @@ function TeamPage() {
           };
           const rows: Row[] = [];
 
+          const isSignedUp = (digits: string) => {
+            if (!digits || digits.length < 7) return false;
+            const tail = digits.slice(-10);
+            for (const d of signedUpDigits) {
+              if (d === digits || d.slice(-10) === tail) return true;
+            }
+            return false;
+          };
+
           for (const inv of invites) {
             const k = norm(inv.phone) || `ti-${inv.id}`;
             if (seen.has(k)) continue;
             seen.add(k);
+            const joined = inv.accepted_at || isSignedUp(norm(inv.phone));
             rows.push({
               key: `ti-${inv.id}`,
               name: inv.name || inv.phone || "—",
               contact: inv.phone || "No phone",
-              status: inv.accepted_at ? "Joined" : "Pending signup",
+              status: joined ? "Joined" : "Pending signup",
               role: inv.role,
             });
           }
@@ -204,7 +214,7 @@ function TeamPage() {
               key: `cg-${g.id}`,
               name: g.guest_name,
               contact: g.guest_phone || g.guest_email || "No contact on file",
-              status: "Pending signup",
+              status: isSignedUp(norm(g.guest_phone)) ? "Joined" : "Pending signup",
               role: "team",
             });
           }
