@@ -46,9 +46,14 @@ export function SiteHeader() {
             </>
 
           ) : (
-            <Link to="/login">
-              <Button size="sm" className="bg-ink text-cream hover:bg-ink/90">Log in</Button>
-            </Link>
+            <>
+              <Link to="/share" className="px-3 py-2 rounded-md hover:bg-secondary transition text-sm">
+                Share
+              </Link>
+              <Link to="/login">
+                <Button size="sm" className="bg-ink text-cream hover:bg-ink/90">Log in</Button>
+              </Link>
+            </>
           )}
         </nav>
       </div>

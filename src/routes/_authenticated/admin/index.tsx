@@ -94,6 +94,7 @@ function AdminOverview() {
     { label: "Committee members", value: counts.team, to: "/admin/team" },
     { label: "Pending invites", value: counts.pending, to: "/admin/team" },
     { label: "Food items ordered", value: counts.preorders, to: "/admin/preorders" },
+    { label: "Audit log", value: 0, to: "/admin/audit-log" },
   ] as const;
 
   if (rolesLoading) return <p className="text-muted-foreground">Loading workspace…</p>;

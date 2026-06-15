@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as Char91indexChar93RouteImport } from './routes/[index]'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as ShareRouteImport } from './routes/share'
 import { Route as RestaurantsRouteImport } from './routes/restaurants'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PreorderRouteImport } from './routes/preorder'
@@ -40,6 +41,7 @@ import { Route as AuthenticatedAdminDonationsRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminCommitteeMessageRouteImport } from './routes/_authenticated/admin/committee-message'
 import { Route as AuthenticatedAdminChatRouteImport } from './routes/_authenticated/admin/chat'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin/categories'
+import { Route as AuthenticatedAdminAuditLogRouteImport } from './routes/_authenticated/admin/audit-log'
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
@@ -54,6 +56,11 @@ const Char91indexChar93Route = Char91indexChar93RouteImport.update({
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShareRoute = ShareRouteImport.update({
+  id: '/share',
+  path: '/share',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RestaurantsRoute = RestaurantsRouteImport.update({
@@ -211,6 +218,12 @@ const AuthenticatedAdminCategoriesRoute =
     path: '/categories',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminAuditLogRoute =
+  AuthenticatedAdminAuditLogRouteImport.update({
+    id: '/audit-log',
+    path: '/audit-log',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const LovableEmailTransactionalSendRoute =
   LovableEmailTransactionalSendRouteImport.update({
     id: '/lovable/email/transactional/send',
@@ -249,12 +262,14 @@ export interface FileRoutesByFullPath {
   '/preorder': typeof PreorderRoute
   '/reset-password': typeof ResetPasswordRoute
   '/restaurants': typeof RestaurantsRoute
+  '/share': typeof ShareRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/rsvp/$token': typeof RsvpTokenRoute
   '/rsvp/': typeof RsvpIndexRoute
+  '/admin/audit-log': typeof AuthenticatedAdminAuditLogRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/chat': typeof AuthenticatedAdminChatRoute
   '/admin/committee-message': typeof AuthenticatedAdminCommitteeMessageRoute
@@ -286,11 +301,13 @@ export interface FileRoutesByTo {
   '/preorder': typeof PreorderRoute
   '/reset-password': typeof ResetPasswordRoute
   '/restaurants': typeof RestaurantsRoute
+  '/share': typeof ShareRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/rsvp/$token': typeof RsvpTokenRoute
   '/rsvp': typeof RsvpIndexRoute
+  '/admin/audit-log': typeof AuthenticatedAdminAuditLogRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/chat': typeof AuthenticatedAdminChatRoute
   '/admin/committee-message': typeof AuthenticatedAdminCommitteeMessageRoute
@@ -324,12 +341,14 @@ export interface FileRoutesById {
   '/preorder': typeof PreorderRoute
   '/reset-password': typeof ResetPasswordRoute
   '/restaurants': typeof RestaurantsRoute
+  '/share': typeof ShareRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/rsvp/$token': typeof RsvpTokenRoute
   '/rsvp/': typeof RsvpIndexRoute
+  '/_authenticated/admin/audit-log': typeof AuthenticatedAdminAuditLogRoute
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/chat': typeof AuthenticatedAdminChatRoute
   '/_authenticated/admin/committee-message': typeof AuthenticatedAdminCommitteeMessageRoute
@@ -363,12 +382,14 @@ export interface FileRouteTypes {
     | '/preorder'
     | '/reset-password'
     | '/restaurants'
+    | '/share'
     | '/sitemap.xml'
     | '/admin'
     | '/dashboard'
     | '/email/unsubscribe'
     | '/rsvp/$token'
     | '/rsvp/'
+    | '/admin/audit-log'
     | '/admin/categories'
     | '/admin/chat'
     | '/admin/committee-message'
@@ -400,11 +421,13 @@ export interface FileRouteTypes {
     | '/preorder'
     | '/reset-password'
     | '/restaurants'
+    | '/share'
     | '/sitemap.xml'
     | '/dashboard'
     | '/email/unsubscribe'
     | '/rsvp/$token'
     | '/rsvp'
+    | '/admin/audit-log'
     | '/admin/categories'
     | '/admin/chat'
     | '/admin/committee-message'
@@ -437,12 +460,14 @@ export interface FileRouteTypes {
     | '/preorder'
     | '/reset-password'
     | '/restaurants'
+    | '/share'
     | '/sitemap.xml'
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
     | '/email/unsubscribe'
     | '/rsvp/$token'
     | '/rsvp/'
+    | '/_authenticated/admin/audit-log'
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/chat'
     | '/_authenticated/admin/committee-message'
@@ -476,6 +501,7 @@ export interface RootRouteChildren {
   PreorderRoute: typeof PreorderRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   RestaurantsRoute: typeof RestaurantsRoute
+  ShareRoute: typeof ShareRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   RsvpTokenRoute: typeof RsvpTokenRoute
@@ -502,6 +528,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/share': {
+      id: '/share'
+      path: '/share'
+      fullPath: '/share'
+      preLoaderRoute: typeof ShareRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/restaurants': {
@@ -707,6 +740,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminCategoriesRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/audit-log': {
+      id: '/_authenticated/admin/audit-log'
+      path: '/audit-log'
+      fullPath: '/admin/audit-log'
+      preLoaderRoute: typeof AuthenticatedAdminAuditLogRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/lovable/email/transactional/send': {
       id: '/lovable/email/transactional/send'
       path: '/lovable/email/transactional/send'
@@ -746,6 +786,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminAuditLogRoute: typeof AuthenticatedAdminAuditLogRoute
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedAdminChatRoute: typeof AuthenticatedAdminChatRoute
   AuthenticatedAdminCommitteeMessageRoute: typeof AuthenticatedAdminCommitteeMessageRoute
@@ -763,6 +804,7 @@ interface AuthenticatedAdminRouteChildren {
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminAuditLogRoute: AuthenticatedAdminAuditLogRoute,
   AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
   AuthenticatedAdminChatRoute: AuthenticatedAdminChatRoute,
   AuthenticatedAdminCommitteeMessageRoute:
@@ -809,6 +851,7 @@ const rootRouteChildren: RootRouteChildren = {
   PreorderRoute: PreorderRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   RestaurantsRoute: RestaurantsRoute,
+  ShareRoute: ShareRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   RsvpTokenRoute: RsvpTokenRoute,

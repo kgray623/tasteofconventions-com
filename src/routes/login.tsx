@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 import { signInWithPhoneOnly } from "@/lib/auth-phone.functions";
-import { rememberLoginPhone } from "@/lib/session-recovery";
+import { rememberLoginName, rememberLoginPhone, getRememberedLoginName } from "@/lib/session-recovery";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -71,6 +71,7 @@ function HelperLogin() {
   const navigate = useNavigate();
   const phoneLogin = useServerFn(signInWithPhoneOnly);
   const [phone, setPhone] = useState("");
+  const [name, setName] = useState(() => getRememberedLoginName() ?? "");
   const [busy, setBusy] = useState(false);
   const navigatingRef = useRef(false);
 
@@ -103,9 +104,10 @@ function HelperLogin() {
   const signIn = async (event?: FormEvent) => {
     event?.preventDefault();
     if (!normalizeMobilePhone(phone)) return toast.error("Enter a valid mobile phone number");
+    if (name.trim().length < 2) return toast.error("Enter your name as it appears on the invitation");
     setBusy(true);
     try {
-      const session = await withTimeout(phoneLogin({ data: { phone } }), 15000);
+      const session = await withTimeout(phoneLogin({ data: { phone, name: name.trim() } }), 15000);
       const { error: setErr } = await supabase.auth.setSession({
         access_token: session.access_token,
         refresh_token: session.refresh_token,
@@ -115,6 +117,7 @@ function HelperLogin() {
         return toast.error(setErr.message);
       }
       rememberLoginPhone(phone);
+      rememberLoginName(name.trim());
       toast.success("Signed in.");
       // Navigate using the user_id from the server response directly — don't
       // wait on getUser() (which has hung for some users) or rely solely on
@@ -146,10 +149,21 @@ function HelperLogin() {
           <div className="text-center space-y-1">
             <h1 className="font-display text-2xl text-ink">Log in to your RSVP</h1>
             <p className="text-xs text-muted-foreground">
-              Enter your mobile number. We'll recognize you from your invitation.
+              Enter your mobile number and the name on your invitation. Both must match.
             </p>
           </div>
           <form onSubmit={signIn} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Your name (as it appears on the invitation)</Label>
+              <Input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                autoComplete="name"
+                placeholder="First Last"
+              />
+            </div>
             <div className="space-y-1.5">
               <Label>Mobile phone number</Label>
               <Input

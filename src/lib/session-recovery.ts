@@ -1,4 +1,5 @@
 const REMEMBERED_PHONE_KEY = "taste-of-conventions:last-login-phone";
+const REMEMBERED_NAME_KEY = "taste-of-conventions:last-login-name";
 const REMEMBERED_PHONE_COOKIE = "taste_of_conventions_last_login_phone";
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
@@ -79,6 +80,20 @@ export function rememberLoginPhoneFromStoredSession() {
 }
 
 export function forgetRememberedLoginPhone() {
-  if (hasBrowserStorage()) window.localStorage.removeItem(REMEMBERED_PHONE_KEY);
+  if (hasBrowserStorage()) {
+    window.localStorage.removeItem(REMEMBERED_PHONE_KEY);
+    window.localStorage.removeItem(REMEMBERED_NAME_KEY);
+  }
   forgetRememberedLoginPhoneCookie();
+}
+
+export function rememberLoginName(name: string) {
+  const cleaned = name.trim();
+  if (!cleaned || !hasBrowserStorage()) return;
+  window.localStorage.setItem(REMEMBERED_NAME_KEY, cleaned);
+}
+
+export function getRememberedLoginName() {
+  if (!hasBrowserStorage()) return null;
+  return window.localStorage.getItem(REMEMBERED_NAME_KEY);
 }

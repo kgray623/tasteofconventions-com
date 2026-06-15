@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { recoverPhoneLoginFromCookie, signInWithPhoneOnly } from "@/lib/auth-phone.functions";
 import {
   forgetRememberedLoginPhone,
+  getRememberedLoginName,
   getRememberedLoginPhone,
   rememberLoginPhone,
   rememberLoginPhoneFromStoredSession,
@@ -37,10 +38,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (sessionRef.current) return sessionRef.current;
       if (recoveryPromiseRef.current) return recoveryPromiseRef.current;
       const phone = getRememberedLoginPhone();
-      if (!phone && recoveryAttemptedRef.current) return null;
+      const name = getRememberedLoginName();
+      if ((!phone || !name) && recoveryAttemptedRef.current) return null;
       recoveryAttemptedRef.current = true;
       recoveryPromiseRef.current = (async () => {
-        const tokens = phone ? await phoneLogin({ data: { phone } }) : await cookieLogin();
+        if (!name) return null;
+        const tokens = phone
+          ? await phoneLogin({ data: { phone, name } })
+          : await cookieLogin({ data: { name } });
         if (!tokens) return null;
         const { data, error } = await supabase.auth.setSession({
           access_token: tokens.access_token,
