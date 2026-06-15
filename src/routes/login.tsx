@@ -104,9 +104,10 @@ function HelperLogin() {
   const signIn = async (event?: FormEvent) => {
     event?.preventDefault();
     if (!normalizeMobilePhone(phone)) return toast.error("Enter a valid mobile phone number");
+    if (name.trim().length < 2) return toast.error("Enter your name as it appears on the invitation");
     setBusy(true);
     try {
-      const session = await withTimeout(phoneLogin({ data: { phone } }), 15000);
+      const session = await withTimeout(phoneLogin({ data: { phone, name: name.trim() } }), 15000);
       const { error: setErr } = await supabase.auth.setSession({
         access_token: session.access_token,
         refresh_token: session.refresh_token,
@@ -116,6 +117,7 @@ function HelperLogin() {
         return toast.error(setErr.message);
       }
       rememberLoginPhone(phone);
+      rememberLoginName(name.trim());
       toast.success("Signed in.");
       // Navigate using the user_id from the server response directly — don't
       // wait on getUser() (which has hung for some users) or rely solely on
