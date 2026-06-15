@@ -105,6 +105,27 @@ export type Database = {
           },
         ]
       }
+      chat_last_seen: {
+        Row: {
+          chat_id: string
+          chat_kind: string
+          last_seen_at: string
+          user_id: string
+        }
+        Insert: {
+          chat_id: string
+          chat_kind: string
+          last_seen_at?: string
+          user_id: string
+        }
+        Update: {
+          chat_id?: string
+          chat_kind?: string
+          last_seen_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cuisine_preorders: {
         Row: {
           created_at: string
@@ -881,6 +902,7 @@ export type Database = {
         Args: { _digits: string }
         Returns: string
       }
+      get_my_chat_unread: { Args: never; Returns: Json }
       get_public_inviters: {
         Args: never
         Returns: {

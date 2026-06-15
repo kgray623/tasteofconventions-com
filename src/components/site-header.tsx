@@ -5,6 +5,8 @@ import { useRoles } from "@/hooks/use-roles";
 import { clearPhoneLoginCookie } from "@/lib/auth-phone.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { NotificationBell } from "@/components/notification-bell";
+
 
 export function SiteHeader() {
   const { user } = useAuth();
@@ -27,6 +29,7 @@ export function SiteHeader() {
         <nav className="flex items-center gap-2 text-sm">
           {user ? (
             <>
+              <NotificationBell />
               {loading ? null : isTeam ? (
                 <Link
                   to={isCommitteeView ? "/admin/subcommittee" : "/admin"}
@@ -41,6 +44,7 @@ export function SiteHeader() {
               )}
               <Button variant="ghost" size="sm" onClick={signOut}>Log out</Button>
             </>
+
           ) : (
             <Link to="/login">
               <Button size="sm" className="bg-ink text-cream hover:bg-ink/90">Log in</Button>

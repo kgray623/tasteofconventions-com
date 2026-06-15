@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Send } from "lucide-react";
 import { toast } from "sonner";
 import { useDraftState } from "@/hooks/use-draft-state";
+import { markChatSeen } from "@/hooks/use-chat-unread";
+
 
 export const Route = createFileRoute("/_authenticated/admin/chat")({
   component: ChatPage,
@@ -34,14 +36,18 @@ function ChatPage() {
 
   useEffect(() => {
     load();
+    markChatSeen(user?.id, "team", null);
     const ch = supabase
       .channel("team-chat")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "team_messages" }, (payload) => {
         setMsgs((prev) => [...prev, payload.new as Msg]);
+        markChatSeen(user?.id, "team", null);
       })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
