@@ -71,6 +71,7 @@ function HelperLogin() {
   const navigate = useNavigate();
   const phoneLogin = useServerFn(signInWithPhoneOnly);
   const [phone, setPhone] = useState("");
+  const [name, setName] = useState(() => getRememberedLoginName() ?? "");
   const [busy, setBusy] = useState(false);
   const navigatingRef = useRef(false);
 
