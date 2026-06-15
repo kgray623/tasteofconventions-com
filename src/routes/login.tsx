@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 import { signInWithPhoneOnly } from "@/lib/auth-phone.functions";
-import { rememberLoginPhone } from "@/lib/session-recovery";
+import { rememberLoginName, rememberLoginPhone, getRememberedLoginName } from "@/lib/session-recovery";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
