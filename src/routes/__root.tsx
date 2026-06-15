@@ -77,6 +77,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "theme-color", content: "#58141C" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "Taste" },
+      { name: "mobile-web-app-capable", content: "yes" },
       { title: "A Taste of Special Conventions — Invitations & RSVP" },
       { name: "description", content: "RSVP this event includes cultural restaurant ordering for an unforgettable evening of conventions, cultures and cuisine." },
       { property: "og:title", content: "A Taste of Special Conventions — Invitations & RSVP" },
@@ -92,10 +97,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "icon", href: "/favicon.ico", sizes: "any" },
+      { rel: "icon", type: "image/png", sizes: "32x32", href: "/icon-32.png" },
+      { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192.png" },
+      { rel: "apple-touch-icon", sizes: "180x180", href: "/icon-180.png" },
+      { rel: "apple-touch-icon", sizes: "167x167", href: "/icon-167.png" },
+      { rel: "apple-touch-icon", sizes: "152x152", href: "/icon-152.png" },
+      { rel: "apple-touch-icon", sizes: "120x120", href: "/icon-120.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Work+Sans:wght@400;500;600;700&display=swap" },
     ],
+
     scripts: [
       {
         type: "application/ld+json",
