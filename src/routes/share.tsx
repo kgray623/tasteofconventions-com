@@ -77,7 +77,14 @@ function SharePage() {
 
   return (
     <div className="min-h-screen bg-gradient-warm flex items-center justify-center px-6 py-12">
-      <div className="w-full max-w-md bg-card border border-border rounded-xl p-8 shadow-elegant text-center space-y-6">
+      <div className="w-full max-w-md bg-card border border-border rounded-xl p-8 shadow-elegant text-center space-y-6 relative">
+        <Link
+          to="/"
+          className="absolute left-4 top-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-ink"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </Link>
         <div>
           <p className="text-xs uppercase tracking-[0.3em] text-terracotta">A Taste of</p>
           <h1 className="font-display text-3xl text-ink">Special Conventions</h1>
