@@ -9,8 +9,6 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
 
-const DISMISS_KEY = "toc:install-app-dismissed-until";
-const DISMISS_DAYS = 7;
 
 function isStandalone(): boolean {
   if (typeof window === "undefined") return false;
@@ -29,19 +27,13 @@ export function InstallAppCard() {
   const { isAdmin, isTeam } = useRoles();
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
   const [showIosSheet, setShowIosSheet] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     setInstalled(isStandalone());
 
-    try {
-      const until = Number(localStorage.getItem(DISMISS_KEY) || 0);
-      if (until && Date.now() < until) setDismissed(true);
-    } catch {
-      /* ignore */
-    }
+
 
     const onPrompt = (e: Event) => {
       e.preventDefault();
@@ -56,7 +48,7 @@ export function InstallAppCard() {
     };
   }, []);
 
-  if (installed || dismissed) return null;
+  if (installed) return null;
 
   const subtitle = isAdmin
     ? "One-tap access to admin tools and chat."
@@ -84,17 +76,6 @@ export function InstallAppCard() {
     setShowIosSheet(true);
   };
 
-  const handleDismiss = () => {
-    try {
-      localStorage.setItem(
-        DISMISS_KEY,
-        String(Date.now() + DISMISS_DAYS * 24 * 60 * 60 * 1000),
-      );
-    } catch {
-      /* ignore */
-    }
-    setDismissed(true);
-  };
 
   return (
     <>
@@ -108,16 +89,13 @@ export function InstallAppCard() {
               Install the Taste of Conventions app
             </h2>
             <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
-            <div className="flex flex-wrap gap-2 mt-4">
+            <div className="mt-4">
               <Button
                 type="button"
                 onClick={handleInstall}
                 className="bg-ink text-cream hover:bg-ink/90"
               >
                 Install app
-              </Button>
-              <Button type="button" variant="ghost" onClick={handleDismiss}>
-                Maybe later
               </Button>
             </div>
           </div>
