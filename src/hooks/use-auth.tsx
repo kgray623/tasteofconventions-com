@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { recoverPhoneLoginFromCookie, signInWithPhoneOnly } from "@/lib/auth-phone.functions";
 import {
   forgetRememberedLoginPhone,
+  getRememberedLoginName,
   getRememberedLoginPhone,
   rememberLoginPhone,
   rememberLoginPhoneFromStoredSession,
