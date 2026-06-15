@@ -338,6 +338,14 @@ async function issuePhoneSession(rawPhone: string, rawName: string): Promise<Pho
     throw new Error(signInErr?.message || "Sign-in failed");
   }
 
+  await recordAuthAudit(supabaseAdmin, {
+    userId,
+    phoneNorm,
+    displayName,
+    success: true,
+    action: "auth.login.success",
+  });
+
   return {
     access_token: signIn.session.access_token,
     refresh_token: signIn.session.refresh_token,
@@ -347,23 +355,26 @@ async function issuePhoneSession(rawPhone: string, rawName: string): Promise<Pho
 }
 
 /**
- * Phone-only sign-in. The user enters a mobile number, and if the number
- * matches an invitation we issue them a session for that phone-number account.
+ * Phone + name sign-in. The user enters a mobile number and their name as it
+ * appears on the invitation; both must match an invited person.
  */
 export const signInWithPhoneOnly = createServerFn({ method: "POST" })
   .inputValidator((d) => PhoneLoginInput.parse(d))
   .handler(async ({ data }) => {
-    const session = await issuePhoneSession(data.phone);
+    const session = await issuePhoneSession(data.phone, data.name);
     setServerRememberedPhoneCookie(session.phone_normalized);
     return session;
   });
 
+const RecoveryInput = z.object({ name: z.string().min(2).max(120) });
+
 export const recoverPhoneLoginFromCookie = createServerFn({ method: "POST" })
-  .handler(async () => {
+  .inputValidator((d) => RecoveryInput.parse(d))
+  .handler(async ({ data }) => {
     const phone = getServerRememberedPhoneCookie();
     if (!phone) return null;
     try {
-      const session = await issuePhoneSession(phone);
+      const session = await issuePhoneSession(phone, data.name);
       setServerRememberedPhoneCookie(session.phone_normalized);
       return session;
     } catch {
