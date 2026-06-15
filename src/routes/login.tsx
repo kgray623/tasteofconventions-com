@@ -149,10 +149,21 @@ function HelperLogin() {
           <div className="text-center space-y-1">
             <h1 className="font-display text-2xl text-ink">Log in to your RSVP</h1>
             <p className="text-xs text-muted-foreground">
-              Enter your mobile number. We'll recognize you from your invitation.
+              Enter your mobile number and the name on your invitation. Both must match.
             </p>
           </div>
           <form onSubmit={signIn} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Your name (as it appears on the invitation)</Label>
+              <Input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                autoComplete="name"
+                placeholder="First Last"
+              />
+            </div>
             <div className="space-y-1.5">
               <Label>Mobile phone number</Label>
               <Input
