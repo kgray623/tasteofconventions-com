@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const PhoneLoginInput = z.object({
   phone: z.string().min(7).max(40),
+  name: z.string().min(2).max(120),
 });
 const SERVER_REMEMBERED_PHONE_COOKIE = "taste_of_conventions_phone_login";
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
