@@ -6,6 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Send, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { markChatSeen } from "@/hooks/use-chat-unread";
+
 
 type Msg = {
   id: string;
@@ -45,19 +47,24 @@ export function CategoryChat({ open, onOpenChange, categoryId, categoryName, can
   useEffect(() => {
     if (!open) return;
     load();
+    markChatSeen(user?.id, "category", categoryId);
     const ch = supabase
       .channel(`category_messages:${categoryId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "category_messages", filter: `category_id=eq.${categoryId}` },
-        () => load(),
+        () => {
+          load();
+          markChatSeen(user?.id, "category", categoryId);
+        },
       )
       .subscribe();
     return () => {
       supabase.removeChannel(ch);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, categoryId]);
+  }, [open, categoryId, user?.id]);
+
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
