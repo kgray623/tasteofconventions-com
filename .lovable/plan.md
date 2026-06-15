@@ -1,12 +1,46 @@
-Rhonda Wilcher already has the same access path as every other committee member — no further changes needed.
 
-## How committee access works today
-- `team_invites` row exists for Rhonda (added last turn, role = `team`).
-- On her first phone-only sign-in, the `apply_team_invite` trigger grants `user_roles.role = 'team'`.
-- Committee permissions everywhere in the app are gated by `has_role(auth.uid(), 'team')` — identical to all other committee members.
+## Goal
 
-## Options if you want her access active before she logs in
-1. **Do nothing** (recommended) — she gets full committee access automatically on first sign-in via her phone.
-2. **Pre-provision** — if she already has an auth user (has signed in before), insert a `user_roles` row with `role='team'` for her user id so access is live immediately.
+Once someone RSVPs, surface a clear "Install the Taste of Conventions app" call-to-action on the post-RSVP screen. Anyone who has not RSVP'd does not see the install prompt. Role (guest / committee / admin) only changes the copy, not the gate.
 
-Tell me which you want; if option 2, confirm and I'll check whether she has an auth account and add the role.
+## What you'll see
+
+1. **After RSVP submit** — on the confirmation/my-RSVP screen, a new card appears:
+   - Title: "Install the Taste of Conventions app"
+   - Subtitle varies by role:
+     - Guest: "Get event updates, menu, and your RSVP in one tap."
+     - Committee: "Open your committee workspace from your home screen."
+     - Admin: "One-tap access to admin tools and chat."
+   - Primary button: **Install app**
+   - Secondary: **Maybe later** (dismisses for 7 days via localStorage)
+
+2. **Install behavior**
+   - Android/Chrome/Edge: triggers the native install prompt (`beforeinstallprompt`).
+   - iOS Safari: opens a short in-page sheet with the Share → "Add to Home Screen" instructions and a small illustration of the share icon.
+   - If already installed (display-mode: standalone) → card is hidden automatically.
+
+3. **Where it shows**
+   - `/my-rsvp` (the page everyone lands on after RSVP, and the page committee/admin see in the workspace).
+   - `/rsvp/$token` confirmation state (right after a guest submits via their invite link).
+   - **Nowhere else** — not on `/`, not on `/login`, not on `/share`. Pre-RSVP visitors never see it.
+
+## How the gate works
+
+- Gate = "current user has an `rsvps` row for this event" (any status: yes / no / maybe / waitlist counts as having RSVP'd).
+- For the token RSVP flow, gate = "submission just succeeded in this session".
+- Role badge (guest vs committee vs admin) read from existing `useAuth` / `useRoles` — only swaps the subtitle string.
+
+## Technical notes
+
+- No new dependencies. Manifest + icons already exist in `public/`.
+- New component: `src/components/install-app-card.tsx` — handles `beforeinstallprompt` capture, iOS detection, standalone detection, and the dismiss-for-7-days flag.
+- Mount it in `src/components/my-rsvp-content.tsx` (top of the page, above existing RSVP details) and in the post-submit success state of `src/routes/rsvp.$token.tsx`.
+- No service worker added — manifest-only installability per the PWA skill (user only asked for "install / save the app", not offline).
+- No DB or auth changes. No new routes.
+
+## Out of scope
+
+- No service worker / offline mode.
+- No push notifications.
+- No App Store / Play Store wrapper.
+- No changes to the public homepage or `/share` page.
