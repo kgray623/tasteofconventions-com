@@ -41,6 +41,7 @@ import { Route as AuthenticatedAdminDonationsRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminCommitteeMessageRouteImport } from './routes/_authenticated/admin/committee-message'
 import { Route as AuthenticatedAdminChatRouteImport } from './routes/_authenticated/admin/chat'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin/categories'
+import { Route as AuthenticatedAdminAuditLogRouteImport } from './routes/_authenticated/admin/audit-log'
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
@@ -217,6 +218,12 @@ const AuthenticatedAdminCategoriesRoute =
     path: '/categories',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminAuditLogRoute =
+  AuthenticatedAdminAuditLogRouteImport.update({
+    id: '/audit-log',
+    path: '/audit-log',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const LovableEmailTransactionalSendRoute =
   LovableEmailTransactionalSendRouteImport.update({
     id: '/lovable/email/transactional/send',
@@ -262,6 +269,7 @@ export interface FileRoutesByFullPath {
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/rsvp/$token': typeof RsvpTokenRoute
   '/rsvp/': typeof RsvpIndexRoute
+  '/admin/audit-log': typeof AuthenticatedAdminAuditLogRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/chat': typeof AuthenticatedAdminChatRoute
   '/admin/committee-message': typeof AuthenticatedAdminCommitteeMessageRoute
@@ -299,6 +307,7 @@ export interface FileRoutesByTo {
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/rsvp/$token': typeof RsvpTokenRoute
   '/rsvp': typeof RsvpIndexRoute
+  '/admin/audit-log': typeof AuthenticatedAdminAuditLogRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/chat': typeof AuthenticatedAdminChatRoute
   '/admin/committee-message': typeof AuthenticatedAdminCommitteeMessageRoute
@@ -339,6 +348,7 @@ export interface FileRoutesById {
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/rsvp/$token': typeof RsvpTokenRoute
   '/rsvp/': typeof RsvpIndexRoute
+  '/_authenticated/admin/audit-log': typeof AuthenticatedAdminAuditLogRoute
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/chat': typeof AuthenticatedAdminChatRoute
   '/_authenticated/admin/committee-message': typeof AuthenticatedAdminCommitteeMessageRoute
@@ -379,6 +389,7 @@ export interface FileRouteTypes {
     | '/email/unsubscribe'
     | '/rsvp/$token'
     | '/rsvp/'
+    | '/admin/audit-log'
     | '/admin/categories'
     | '/admin/chat'
     | '/admin/committee-message'
@@ -416,6 +427,7 @@ export interface FileRouteTypes {
     | '/email/unsubscribe'
     | '/rsvp/$token'
     | '/rsvp'
+    | '/admin/audit-log'
     | '/admin/categories'
     | '/admin/chat'
     | '/admin/committee-message'
@@ -455,6 +467,7 @@ export interface FileRouteTypes {
     | '/email/unsubscribe'
     | '/rsvp/$token'
     | '/rsvp/'
+    | '/_authenticated/admin/audit-log'
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/chat'
     | '/_authenticated/admin/committee-message'
@@ -727,6 +740,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminCategoriesRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/audit-log': {
+      id: '/_authenticated/admin/audit-log'
+      path: '/audit-log'
+      fullPath: '/admin/audit-log'
+      preLoaderRoute: typeof AuthenticatedAdminAuditLogRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/lovable/email/transactional/send': {
       id: '/lovable/email/transactional/send'
       path: '/lovable/email/transactional/send'
@@ -766,6 +786,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminAuditLogRoute: typeof AuthenticatedAdminAuditLogRoute
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedAdminChatRoute: typeof AuthenticatedAdminChatRoute
   AuthenticatedAdminCommitteeMessageRoute: typeof AuthenticatedAdminCommitteeMessageRoute
@@ -783,6 +804,7 @@ interface AuthenticatedAdminRouteChildren {
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminAuditLogRoute: AuthenticatedAdminAuditLogRoute,
   AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
   AuthenticatedAdminChatRoute: AuthenticatedAdminChatRoute,
   AuthenticatedAdminCommitteeMessageRoute:
