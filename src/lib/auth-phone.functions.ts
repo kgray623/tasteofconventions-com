@@ -120,48 +120,119 @@ async function findAuthUserByPhoneOrLogin(supabaseAdmin: any, phoneE164: string,
   return null;
 }
 
-async function issuePhoneSession(rawPhone: string): Promise<PhoneSessionResult> {
+function nameTokens(value: string | null | undefined): string[] {
+  if (!value) return [];
+  return value
+    .toLowerCase()
+    .split(/[^a-z]+/)
+    .filter((t) => t.length >= 2);
+}
+
+function namesMatch(input: string, candidates: Array<string | null | undefined>): boolean {
+  const inputTokens = new Set(nameTokens(input));
+  if (inputTokens.size === 0) return false;
+  for (const c of candidates) {
+    const cand = nameTokens(c);
+    for (const t of cand) if (inputTokens.has(t)) return true;
+  }
+  return false;
+}
+
+async function recordAuthAudit(
+  supabaseAdmin: any,
+  params: {
+    userId?: string | null;
+    phoneNorm: string;
+    displayName: string | null;
+    success: boolean;
+    reason?: string;
+    action?: string;
+  },
+) {
+  try {
+    const req = getRequest();
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("cf-connecting-ip") ||
+      null;
+    const ua = req.headers.get("user-agent") || null;
+    await supabaseAdmin.from("audit_log").insert({
+      user_id: params.userId ?? null,
+      phone_normalized: params.phoneNorm,
+      display_name: params.displayName,
+      action: params.action ?? (params.success ? "auth.login.success" : "auth.login.failure"),
+      target_type: "auth",
+      ip,
+      user_agent: ua,
+      success: params.success,
+      metadata: params.reason ? { reason: params.reason } : {},
+    });
+  } catch (err) {
+    console.error("audit_log insert failed:", err);
+  }
+}
+
+async function issuePhoneSession(rawPhone: string, rawName: string): Promise<PhoneSessionResult> {
   const phoneE164 = normalizeAuthPhone(rawPhone);
   const phoneNorm = rawPhone.replace(/\D/g, "");
   if (!phoneE164 || phoneNorm.length < 7) {
     throw new Error("Enter a valid mobile phone number");
   }
+  if (nameTokens(rawName).length === 0) {
+    throw new Error("Enter your name as it appears on the invitation");
+  }
 
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const loginAddress = internalPhoneLoginAddress(phoneNorm);
 
+  // Look up every record tied to this phone so we can verify the name matches.
+  const [{ data: inv }, { data: inviter }, { data: teamInvite }] = await Promise.all([
+    supabaseAdmin
+      .from("invitations")
+      .select("id,guest_name")
+      .eq("guest_phone_normalized", phoneNorm)
+      .limit(1)
+      .maybeSingle(),
+    supabaseAdmin
+      .from("inviters")
+      .select("id,name,host_id")
+      .eq("phone", rawPhone)
+      .limit(1)
+      .maybeSingle(),
+    supabaseAdmin
+      .from("team_invites")
+      .select("id,name")
+      .eq("phone_normalized", phoneNorm)
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  const candidateNames = [inv?.guest_name, inviter?.name, teamInvite?.name];
+  if (!inv && !inviter && !teamInvite) {
+    await recordAuthAudit(supabaseAdmin, {
+      phoneNorm,
+      displayName: rawName,
+      success: false,
+      reason: "phone_not_on_list",
+    });
+    throw new Error("We don't have this mobile number on the guest list yet.");
+  }
+  if (!namesMatch(rawName, candidateNames)) {
+    await recordAuthAudit(supabaseAdmin, {
+      phoneNorm,
+      displayName: rawName,
+      success: false,
+      reason: "name_mismatch",
+    });
+    throw new Error("That name doesn't match the invitation for this phone number.");
+  }
+  const displayName = inv?.guest_name || inviter?.name || teamInvite?.name || rawName;
+
   // 1) Find an existing auth user by phone in any stored format.
   let userId: string | null = await findAuthUserByPhoneOrLogin(supabaseAdmin, phoneE164, phoneNorm, loginAddress);
 
-  // 2) If no auth user, require the phone be tied to a known person.
+  // 2) If no auth user, create one (phone is on the guest list and name matched).
   if (!userId) {
-    const [{ data: inv }, { data: inviter }, { data: teamInvite }] = await Promise.all([
-      supabaseAdmin
-        .from("invitations")
-        .select("id,guest_name")
-        .eq("guest_phone_normalized", phoneNorm)
-        .limit(1)
-        .maybeSingle(),
-      supabaseAdmin
-        .from("inviters")
-        .select("id,name,host_id")
-        .eq("phone", rawPhone)
-        .limit(1)
-        .maybeSingle(),
-      supabaseAdmin
-        .from("team_invites")
-        .select("id,name")
-        .eq("phone_normalized", phoneNorm)
-        .limit(1)
-        .maybeSingle(),
-    ]);
-
-    if (!inv && !inviter && !teamInvite) {
-      throw new Error("We don't have this mobile number on the guest list yet.");
-    }
-
-    const displayName = inv?.guest_name || inviter?.name || teamInvite?.name || null;
-
     const tempPassword = randomPassword();
     const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
       email: loginAddress,
