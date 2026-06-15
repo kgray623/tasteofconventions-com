@@ -56,7 +56,6 @@ export function NotificationBell() {
             <Link
               key={c.category_id}
               to="/admin/categories"
-              search={{ open: c.category_id }}
               className="flex items-center justify-between px-4 py-3 hover:bg-secondary transition border-b last:border-b-0"
             >
               <div>
@@ -68,6 +67,7 @@ export function NotificationBell() {
               </span>
             </Link>
           ))}
+
         </div>
       </PopoverContent>
     </Popover>
