@@ -1,4 +1,5 @@
 const REMEMBERED_PHONE_KEY = "taste-of-conventions:last-login-phone";
+const REMEMBERED_NAME_KEY = "taste-of-conventions:last-login-name";
 const REMEMBERED_PHONE_COOKIE = "taste_of_conventions_last_login_phone";
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
