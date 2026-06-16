@@ -7,6 +7,7 @@ import { markExplicitSignOut, useAuth } from "@/hooks/use-auth";
 import { clearPhoneLoginCookie } from "@/lib/auth-phone.functions";
 import { Button } from "@/components/ui/button";
 import { InstallAppButton } from "@/components/install-app-button";
+import { NewBadge } from "@/components/new-badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlus, UtensilsCrossed, Mail, HandCoins, MessageSquare, Ticket, ArrowLeft } from "lucide-react";
@@ -135,7 +136,11 @@ function AdminLayout() {
           <h1 className="font-display text-3xl mt-1">{headingTitle}</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <InstallAppButton />
+          <div className="relative inline-flex items-center">
+            <InstallAppButton />
+            <NewBadge target="admin:install-button" className="absolute -top-2 -right-2" />
+          </div>
+
           {isActualAdmin && !previewCommittee && (
             <Button asChild variant="outline" size="sm">
               <Link to="/admin/subcommittee">

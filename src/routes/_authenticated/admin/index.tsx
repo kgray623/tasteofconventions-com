@@ -4,6 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { useRoles } from "@/hooks/use-roles";
 import { CommitteeWorkspace } from "@/components/committee-workspace";
+import { NewBadge } from "@/components/new-badge";
+import { markSeen } from "@/lib/whats-new";
+
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: AdminOverview,
@@ -92,15 +95,16 @@ function AdminOverview() {
   }, [rolesLoading, isAdmin]);
 
   const stats = [
-    { label: "Guest invitations", value: counts.invites, to: "/admin/upload" },
-    { label: "Duplicate flags", value: counts.flags, to: "/dashboard" },
-    { label: "Volunteer categories", value: counts.categories, to: "/admin/categories" },
-    { label: "Committee members", value: counts.team, to: "/admin/team" },
-    { label: "Pending invites", value: counts.pending, to: "/admin/team" },
-    { label: "RSVPs", value: counts.rsvps, to: "/admin/my-rsvp" },
-    { label: "Food items ordered", value: counts.preorders, to: "/admin/preorders" },
-    { label: "Audit log", value: 0, to: "/admin/audit-log" },
+    { label: "Guest invitations", value: counts.invites, to: "/admin/upload", newKey: undefined },
+    { label: "Duplicate flags", value: counts.flags, to: "/dashboard", newKey: undefined },
+    { label: "Volunteer categories", value: counts.categories, to: "/admin/categories", newKey: undefined },
+    { label: "Committee members", value: counts.team, to: "/admin/team", newKey: undefined },
+    { label: "Pending invites", value: counts.pending, to: "/admin/team", newKey: undefined },
+    { label: "RSVPs", value: counts.rsvps, to: "/admin/my-rsvp", newKey: "admin:rsvps-tile" as const },
+    { label: "Food items ordered", value: counts.preorders, to: "/admin/preorders", newKey: undefined },
+    { label: "Audit log", value: 0, to: "/admin/audit-log", newKey: undefined },
   ] as const;
+
 
   if (rolesLoading) return <p className="text-muted-foreground">Loading workspace…</p>;
 
@@ -110,7 +114,13 @@ function AdminOverview() {
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {stats.map((s) => (
-          <Link key={s.label} to={s.to}>
+          <Link
+            key={s.label}
+            to={s.to}
+            onClick={() => s.newKey && markSeen(s.newKey)}
+            className="relative block"
+          >
+            {s.newKey && <NewBadge target={s.newKey} className="absolute -top-2 -right-2 z-10" />}
             <Card className="p-5 hover:border-terracotta transition">
               <p className="text-xs uppercase tracking-wider text-muted-foreground">{s.label}</p>
               <p className="font-display text-3xl mt-2">{s.value}</p>
@@ -118,6 +128,7 @@ function AdminOverview() {
           </Link>
         ))}
       </div>
+
     </div>
   );
 }
