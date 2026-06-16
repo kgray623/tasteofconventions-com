@@ -340,7 +340,10 @@ export function CommitteeWorkspace() {
   });
 
   const confirmedGuests = guests.filter((guest) => guest.rsvp_status === "yes");
-  const confirmedPeople = confirmedGuests.reduce((total, guest) => total + guest.party_size, 0);
+  const confirmedInPersonGuests = confirmedGuests.filter((g) => g.attendance_mode !== "zoom");
+  const confirmedVirtualGuests = confirmedGuests.filter((g) => g.attendance_mode === "zoom");
+  const confirmedInPersonPeople = confirmedInPersonGuests.reduce((t, g) => t + g.party_size, 0);
+  const confirmedVirtualPeople = confirmedVirtualGuests.reduce((t, g) => t + g.party_size, 0);
 
 
   const toggleSection = (key: string) => setOpenSection((prev) => (prev === key ? null : key));
