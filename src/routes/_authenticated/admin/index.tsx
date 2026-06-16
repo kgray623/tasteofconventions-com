@@ -165,13 +165,14 @@ function AdminOverview() {
             <ExternalLink className="w-3 h-3 ml-2 opacity-60" />
           </Button>
           <Button
+            asChild
             variant="outline"
             size="sm"
-            onClick={() => window.open("/dashboard", "_blank", "noopener")}
           >
-            <Users className="w-4 h-4 mr-2" />
-            View as Committee
-            <ExternalLink className="w-3 h-3 ml-2 opacity-60" />
+            <Link to="/admin" search={{ view: "committee" }}>
+              <Users className="w-4 h-4 mr-2" />
+              View as Committee
+            </Link>
           </Button>
           <Button
             variant="outline"
