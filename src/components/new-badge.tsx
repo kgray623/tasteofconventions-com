@@ -1,14 +1,16 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { ReactNode } from "react";
 import { useIsNew, markSeen } from "@/lib/whats-new";
 
 type Props = {
   target: string;
   className?: string;
+  /** Arrow direction. "right" (default) points at the thing to the badge's right. */
+  direction?: "right" | "left";
 };
 
-/** Bright red "NEW →" pill that sits to the LEFT of the new thing and points right at it. */
-export function NewBadge({ target, className = "" }: Props) {
+/** Bright red "NEW →" pill that sits next to the new thing and points at it. */
+export function NewBadge({ target, className = "", direction = "right" }: Props) {
   const show = useIsNew(target);
   if (!show) return null;
   return (
@@ -21,8 +23,9 @@ export function NewBadge({ target, className = "" }: Props) {
       role="status"
       aria-label="New feature"
     >
+      {direction === "left" && <ArrowLeft className="w-5 h-5" strokeWidth={3} />}
       NEW
-      <ArrowRight className="w-5 h-5" strokeWidth={3} />
+      {direction === "right" && <ArrowRight className="w-5 h-5" strokeWidth={3} />}
     </span>
   );
 }

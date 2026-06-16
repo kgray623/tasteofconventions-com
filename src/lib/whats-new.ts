@@ -7,11 +7,27 @@ import { supabase } from "@/integrations/supabase/client";
  * after `expiresInDays` (default 14) or once the user has interacted with it.
  */
 export const WHATS_NEW: Record<string, { addedAt: string; expiresInDays?: number }> = {
-  
+
   "admin:rsvps-tile": { addedAt: "2026-06-16" },
   "header:notification-bell": { addedAt: "2026-06-16" },
   "committee:hide-welcome-video": { addedAt: "2026-06-16" },
   "login:last-name": { addedAt: "2026-06-16" },
+
+  // Renamed RSVP totals labels
+  "committee:my-rsvp-label": { addedAt: "2026-06-16" },
+  "committee:my-guests-label": { addedAt: "2026-06-16" },
+  "committee:my-in-person-label": { addedAt: "2026-06-16" },
+  "committee:my-rsvps-left-label": { addedAt: "2026-06-16" },
+
+  // Committee workspace additions
+  "committee:guests-uploaded-header": { addedAt: "2026-06-16" },
+  "committee:filter-toggle": { addedAt: "2026-06-16" },
+  "committee:committee-tag": { addedAt: "2026-06-16" },
+  "committee:edit-delete-guest": { addedAt: "2026-06-16" },
+
+  // In-person confirmed totals on admin/host views
+  "admin:in-person-confirmed": { addedAt: "2026-06-16" },
+  "admin:in-person-column": { addedAt: "2026-06-16" },
 };
 
 

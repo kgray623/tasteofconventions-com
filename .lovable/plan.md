@@ -1,37 +1,34 @@
-## Goal
-On the committee workspace's **My Guests Uploaded** card, mark which uploaded guests are themselves on the committee (independent of whether they've RSVP'd), and add a **Committee** filter button. Also unify how "is on the committee" is detected so the count is consistent.
+Add bright red NEW badges (with arrow pointing at the change) to every committee-facing feature we've shipped recently, so team members can spot what's new. Badges auto-hide after 14 days or once tapped.
 
-## Why committee numbers look off today
-There are three separate places a person can be flagged as committee, and different parts of the app check only one:
+## Where badges go
 
-```
-inviters (active=true)                ── 15 rows
-team_invites (role='team')            ──  7 rows
-invitations (is_committee=true)       ──  8 rows
-user_roles (role='team')              ── 11 rows
-```
+Each entry below names the screen, the spot, and the arrow direction.
 
-`get_public_inviters` already unions inviters + team_invites + invitations.is_committee and dedupes by name. That's the right "full committee" set (~your 18). Several screens only look at `invitations.is_committee` (8), which is why they look short.
+**`src/components/rsvp-totals-card.tsx`** (committee + admin)
+- `committee:my-rsvp-label` → NEW → next to "My RSVP" tile
+- `committee:my-guests-label` → NEW → next to "My Guests" tile
+- `committee:my-in-person-label` → NEW → next to "My In-Person" tile
+- `committee:my-rsvps-left-label` → NEW → next to "My RSVPs Left" tile
 
-## Changes
+**`src/components/committee-workspace.tsx`**
+- `committee:guests-uploaded-header` → NEW → on the "My Guests Uploaded" card header
+- `committee:filter-toggle` → NEW → pointing at the All / Committee filter buttons
+- `committee:committee-badge` → NEW → next to the first row that shows the new "Committee" tag (one-time, in header area not per-row to avoid spam)
+- `committee:edit-guest` → NEW ← (arrow LEFT) next to the pencil icon column header
+- `committee:delete-guest` → NEW ← (arrow LEFT) next to the trash icon column header
 
-### 1. `src/components/committee-workspace.tsx` — My Guests Uploaded
-- Build a `committeeLookup` once on load:
-  - Query `inviters` (name, phone), `team_invites` (name, phone_normalized) where role='team', and reuse the already-loaded `invitations` rows where `is_committee=true`.
-  - Index by normalized name (lowercase, letters only) and by last-10-digit phone.
-- Tag each `myGuests` row with `isCommittee` if its normalized name OR phone tail matches the lookup.
-- Render a small **Committee** badge next to the guest name when `isCommittee` is true (next to the existing Duplicate badge).
-- Add a filter toggle row above the list: **All (n)** / **Committee (n)**. When Committee is selected, only committee-tagged guests show.
-- Update the card header count to reflect the active filter.
+**`src/routes/_authenticated/admin/inviters.tsx`** and **`src/routes/_authenticated/dashboard.tsx`**
+- `admin:in-person-confirmed-column` → NEW → next to the "In-Person Confirmed" column/stat we just added
 
-### 2. Same lookup, applied to the existing "Confirmed RSVPs" and "Guest list" sections
-- Show the same Committee badge there so the marker is consistent across the page. No filter buttons added to those (only My Guests Uploaded), per request.
+## Implementation details
 
-### 3. Out of scope
-- No DB/migration changes — the union logic stays in the component.
-- No edits to admin screens (`admin/inviters`, `admin/team`, `admin/subcommittee`, dashboard). If you want those reconciled to the same 18-person union next, that's a separate pass — say the word and I'll do it.
+1. Extend `NewBadge` in `src/components/new-badge.tsx` to accept a `direction?: "right" | "left"` prop (default `"right"`). When `"left"`, render `ArrowLeft` before the word NEW instead of `ArrowRight` after it. Add `ArrowLeft` import.
 
-## Technical notes
-- Normalization helpers already exist locally (`normName`, `normPhoneTail`); reuse them.
-- Lookup loads in parallel with `loadGuests`; stored in component state.
-- No new dependencies, no schema changes.
+2. Register all keys above in `WHATS_NEW` in `src/lib/whats-new.ts` with `addedAt: "2026-06-16"`.
+
+3. Drop `<NewBadge target="..." />` (or `direction="left"` variant) inline beside each target element in the four files listed. No layout restructuring — badges are inline-flex and sit adjacent.
+
+## Out of scope
+- No changes to badge dismissal logic, expiry window, or storage.
+- No new pages or business logic — purely visual annotation of existing UI.
+- Admin-only screens that team members can't see get no badge.

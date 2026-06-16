@@ -499,8 +499,9 @@ export function CommitteeWorkspace() {
 
       <Card className="overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <CheckCircle2 className="w-5 h-5 text-ink" />
+            <NewBadge target="committee:guests-uploaded-header" />
             <h2 className="font-semibold">My Guests Uploaded ({myGuests.length}{myGuestsFilter === "committee" ? ` of ${myGuestsSorted.length}` : ""})</h2>
           </div>
           <Button asChild variant="outline" size="sm">
@@ -510,6 +511,7 @@ export function CommitteeWorkspace() {
           </Button>
         </div>
         <div className="px-4 pt-3 flex flex-wrap items-center gap-2">
+          <NewBadge target="committee:filter-toggle" />
           <Button
             type="button"
             size="sm"
@@ -527,9 +529,12 @@ export function CommitteeWorkspace() {
             Committee ({committeeIds.size})
           </Button>
         </div>
-        <p className="px-4 pt-3 text-xs text-muted-foreground">
-          Guests you've invited. If someone texts you back to decline (or accept), record their RSVP here.
+        <p className="px-4 pt-3 text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+          <span>Guests you've invited. If someone texts you back to decline (or accept), record their RSVP here.</span>
+          <NewBadge target="committee:edit-delete-guest" direction="left" />
+          <span className="text-xs">Use the pencil to edit and the trash to delete.</span>
         </p>
+
         {loadingGuests ? (
           <div className="p-4 text-sm text-muted-foreground flex items-center gap-2">
             <Loader2 className="w-4 h-4 animate-spin" /> Loading your guests…
@@ -546,9 +551,12 @@ export function CommitteeWorkspace() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="font-medium">{guest.guest_name}</p>
                     {isCommitteeGuest(guest) && (
-                      <span className="inline-flex items-center rounded-full bg-ink px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cream">
-                        Committee
-                      </span>
+                      <>
+                        <NewBadge target="committee:committee-tag" direction="left" className="px-2 py-0.5 text-[10px] gap-1" />
+                        <span className="inline-flex items-center rounded-full bg-ink px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cream">
+                          Committee
+                        </span>
+                      </>
                     )}
                     {duplicateIds.has(guest.id) && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-brand-red px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
