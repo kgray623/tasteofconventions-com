@@ -990,6 +990,7 @@ function InvitersPage() {
                 {inviters.slice().sort((a, b) => a.name.localeCompare(b.name)).flatMap((i) => {
                   const guests = guestsForInviter(i);
                   const used = confirmedResponseCount(guests);
+                  const virtual = virtualResponseCount(guests);
                   const invited = guests.length || (i.host_id ? (invitedCounts[i.host_id] ?? 0) : 0);
                   const remaining = Math.max(0, invited - used);
                   const isOpen = expandedHost === i.id;
