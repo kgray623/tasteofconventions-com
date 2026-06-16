@@ -39,7 +39,7 @@ function Dashboard() {
   const load = async () => {
     const [{ data: e }, { data: i }, { data: f }] = await Promise.all([
       supabase.from("events").select("id,title,starts_at,location").order("starts_at"),
-      supabase.from("invitations").select("id,event_id,guest_name,guest_email,guest_phone,rsvp_token,created_at,host_id,is_committee,rsvps(status,party_size)").order("guest_name", { ascending: true }),
+      supabase.from("invitations").select("id,event_id,guest_name,guest_email,guest_phone,rsvp_token,created_at,host_id,is_committee,rsvps(status,party_size,attendance_mode)").order("guest_name", { ascending: true }),
       supabase.from("duplicate_flags").select("*"),
     ]);
     setEvents(e ?? []);
