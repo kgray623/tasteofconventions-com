@@ -206,6 +206,49 @@ export function CommitteeWorkspace() {
     };
   }, []);
 
+  // Load the full committee roster from all three sources and index by
+  // normalized name + last-10-digit phone so we can tag guests consistently.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const normName = (s: string | null) => (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
+      const normTail = (s: string | null) => {
+        const d = (s ?? "").replace(/\D/g, "");
+        return d.length >= 10 ? d.slice(-10) : "";
+      };
+      const names = new Set<string>();
+      const phones = new Set<string>();
+      const push = (name: string | null, phone: string | null) => {
+        const n = normName(name);
+        if (n.length >= 2) names.add(n);
+        const p = normTail(phone);
+        if (p) phones.add(p);
+      };
+      try {
+        const [inviters, teamInvites, committeeInvs] = await Promise.all([
+          supabase.from("inviters").select("name,phone").eq("active", true),
+          supabase.from("team_invites").select("name,phone,phone_normalized").eq("role", "team"),
+          supabase.from("invitations").select("guest_name,guest_phone,guest_phone_normalized").eq("is_committee", true),
+        ]);
+        for (const r of (inviters.data ?? []) as { name: string | null; phone: string | null }[]) {
+          push(r.name, r.phone);
+        }
+        for (const r of (teamInvites.data ?? []) as { name: string | null; phone: string | null; phone_normalized: string | null }[]) {
+          push(r.name, r.phone_normalized || r.phone);
+        }
+        for (const r of (committeeInvs.data ?? []) as { guest_name: string | null; guest_phone: string | null; guest_phone_normalized: string | null }[]) {
+          push(r.guest_name, r.guest_phone_normalized || r.guest_phone);
+        }
+      } catch (e) {
+        console.warn("[committee] committee roster load failed", e);
+      }
+      if (!alive) return;
+      setCommitteeNames(names);
+      setCommitteePhones(phones);
+    })();
+    return () => { alive = false; };
+  }, []);
+
   useEffect(() => {
     if (!user) {
       setMyCats([]);
