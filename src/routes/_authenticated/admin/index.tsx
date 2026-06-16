@@ -131,6 +131,47 @@ function AdminOverview() {
 
   return (
     <div className="space-y-6">
+      <Card className="p-4">
+        <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">
+          Preview dashboards
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!sampleGuestToken}
+            title={sampleGuestToken ? "Opens a real guest's RSVP page" : "No guest invitations yet"}
+            onClick={() => {
+              if (sampleGuestToken) {
+                window.open(`/rsvp/${sampleGuestToken}`, "_blank", "noopener");
+              }
+            }}
+          >
+            <User className="w-4 h-4 mr-2" />
+            View as Guest
+            <ExternalLink className="w-3 h-3 ml-2 opacity-60" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.open("/dashboard", "_blank", "noopener")}
+          >
+            <Users className="w-4 h-4 mr-2" />
+            View as Committee
+            <ExternalLink className="w-3 h-3 ml-2 opacity-60" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.open("/admin", "_blank", "noopener")}
+          >
+            <Shield className="w-4 h-4 mr-2" />
+            View as Admin
+            <ExternalLink className="w-3 h-3 ml-2 opacity-60" />
+          </Button>
+        </div>
+      </Card>
+
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {stats.map((s) => (
           <div key={s.label} className="flex items-center gap-2">
