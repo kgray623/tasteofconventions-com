@@ -501,12 +501,30 @@ export function CommitteeWorkspace() {
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-ink" />
-            <h2 className="font-semibold">My Guests Uploaded ({myGuests.length})</h2>
+            <h2 className="font-semibold">My Guests Uploaded ({myGuests.length}{myGuestsFilter === "committee" ? ` of ${myGuestsSorted.length}` : ""})</h2>
           </div>
           <Button asChild variant="outline" size="sm">
             <Link to="/invitations/new">
               <UserPlus className="w-4 h-4 mr-2" /> Add guest
             </Link>
+          </Button>
+        </div>
+        <div className="px-4 pt-3 flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant={myGuestsFilter === "all" ? "default" : "outline"}
+            onClick={() => setMyGuestsFilter("all")}
+          >
+            All ({myGuestsSorted.length})
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={myGuestsFilter === "committee" ? "default" : "outline"}
+            onClick={() => setMyGuestsFilter("committee")}
+          >
+            Committee ({committeeIds.size})
           </Button>
         </div>
         <p className="px-4 pt-3 text-xs text-muted-foreground">
