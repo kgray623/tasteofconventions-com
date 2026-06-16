@@ -1,109 +1,65 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Download, Copy, Image as ImageIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Download, ExternalLink, Share, Smartphone } from "lucide-react";
+import { useEffect, useSyncExternalStore, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import {
+  getInstallPromptSnapshot,
+  isStandaloneApp,
+  promptToInstallApp,
+  subscribeToInstallPrompt,
+} from "@/pwa-install";
 
 export const Route = createFileRoute("/install")({
   head: () => ({
     meta: [
-      { title: "A Taste Desktop Shortcut" },
+      { title: "Save A Taste App" },
       {
         name: "description",
         content:
-          "Save a desktop shortcut for A Taste of Special Conventions that opens directly to login.",
+          "Save A Taste of Special Conventions to your computer, tablet, or phone home screen.",
       },
-      { property: "og:title", content: "A Taste Desktop Shortcut" },
+      { property: "og:title", content: "Save A Taste App" },
       {
         property: "og:description",
-        content: "Save a clickable shortcut that opens the login page.",
+        content: "Open A Taste directly from an app icon to the login page.",
       },
     ],
   }),
   component: InstallPage,
 });
 
-type Platform = "chromeos" | "mac" | "windows" | "other";
+type Platform = "ios" | "android" | "chromeos" | "desktop" | "other";
 
 function detectPlatform(): Platform {
   if (typeof navigator === "undefined") return "other";
   const ua = navigator.userAgent;
+  const nav = navigator as Navigator & { userAgentData?: { platform?: string } };
+  const platform = nav.userAgentData?.platform || navigator.platform || "";
+  if (/iPad|iPhone|iPod/i.test(ua) || (/Mac/i.test(platform) && navigator.maxTouchPoints > 1)) return "ios";
+  if (/Android/i.test(ua)) return "android";
   if (/CrOS/i.test(ua)) return "chromeos";
-  if (/Mac/i.test(ua)) return "mac";
-  if (/Win/i.test(ua)) return "windows";
+  if (/Mac|Win|Linux/i.test(platform) || /Mac|Windows|Linux/i.test(ua)) return "desktop";
   return "other";
 }
 
 function InstallPage() {
   const [platform, setPlatform] = useState<Platform>("other");
-  const baseUrl =
-    typeof window === "undefined"
-      ? "https://tasteofconventions.com"
-      : window.location.origin;
-  const loginUrl = `${baseUrl}/login?installed=1`;
+  const installState = useSyncExternalStore(
+    subscribeToInstallPrompt,
+    getInstallPromptSnapshot,
+    getInstallPromptSnapshot,
+  );
+  const installed = installState.installed || isStandaloneApp();
 
   useEffect(() => {
     setPlatform(detectPlatform());
   }, []);
 
-  async function downloadIcon() {
-    try {
-      const res = await fetch("/icon-512.png");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "A Taste.png";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      toast.success("Icon downloaded to your Downloads folder.");
-    } catch {
-      toast.error("Could not download the icon. Long-press the image instead.");
-    }
-  }
-
-  function downloadWindowsShortcut() {
-    const contents = `[InternetShortcut]\r\nURL=${loginUrl}\r\nIconFile=${baseUrl}/icon-192.png\r\nIconIndex=0\r\n`;
-    const blob = new Blob([contents], { type: "application/octet-stream" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "A Taste Login.url";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
-
-  function downloadMacShortcut() {
-    const contents = `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>URL</key>
-  <string>${loginUrl}</string>
-</dict>
-</plist>`;
-    const blob = new Blob([contents], { type: "application/octet-stream" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "A Taste Login.webloc";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
-
-  async function copyLoginLink() {
-    try {
-      await navigator.clipboard.writeText(loginUrl);
-      toast.success("Login link copied.");
-    } catch {
-      toast.error("Could not copy. Long-press the link to copy manually.");
-    }
+  async function installApp() {
+    const prompted = await promptToInstallApp();
+    if (prompted) return;
+    toast.message("Use your browser menu to save or install this app.");
   }
 
   return (
@@ -121,52 +77,49 @@ function InstallPage() {
               className="h-28 w-28 rounded-2xl shadow-elegant transition-transform hover:scale-105"
             />
           </a>
-          <h1 className="font-display text-2xl text-ink">
-            A Taste Desktop Shortcut
-          </h1>
+          <h1 className="font-display text-2xl text-ink">Save A Taste App</h1>
           <p className="text-sm text-muted-foreground">
-            Download the icon, then drag it from your Downloads folder to your desktop.
+            Save it to your computer, tablet, or phone screen, then open straight to login.
           </p>
         </div>
 
-        <Button onClick={downloadIcon} className="w-full" size="lg">
-          <ImageIcon className="mr-2 h-5 w-5" />
-          Download icon
+        <Button onClick={installApp} className="w-full" size="lg" disabled={installed}>
+          <Download className="mr-2 h-5 w-5" />
+          {installed ? "App already saved" : installState.prompt ? "Save app" : "Save or install app"}
         </Button>
 
-        <Button onClick={copyLoginLink} variant="outline" className="w-full">
-          <Copy className="mr-2 h-4 w-4" />
-          Copy login link
+        <Button asChild variant="outline" className="w-full">
+          <a href="/login?installed=1">
+            <ExternalLink className="mr-2 h-4 w-4" />
+            Open login
+          </a>
         </Button>
 
-        {platform === "chromeos" && (
+        {(platform === "ios" || platform === "android") && (
           <div className="text-xs text-muted-foreground bg-muted/40 rounded-lg p-3 space-y-2">
-            <p className="font-semibold text-ink">On Chromebook</p>
+            <p className="font-semibold text-ink">On phone or tablet</p>
             <ol className="list-decimal pl-4 space-y-1">
-              <li>Tap <b>Download icon</b> above — it saves to Downloads.</li>
-              <li>Open the <b>Files</b> app, find <b>A Taste.png</b> in Downloads.</li>
-              <li>Drag it onto your <b>Desktop</b> shelf, or right‑click → <b>Pin to shelf</b>.</li>
-              <li>To open login from the icon: right‑click the icon → <b>Open with</b> → your browser, or use the <b>Copy login link</b> button and paste it into a bookmark.</li>
+              <li>Tap the browser <b>Share</b> or menu button.</li>
+              <li>Choose <b>Add to Home Screen</b> or <b>Install app</b>.</li>
+              <li>Tap the saved A Taste icon to open login.</li>
             </ol>
-            <p className="text-[11px]">
-              Chromebooks don’t let websites save files directly to the desktop — you have to move it from Downloads. That’s a ChromeOS rule, not something this page can override.
+          </div>
+        )}
+
+        {(platform === "chromeos" || platform === "desktop" || platform === "other") && !installState.prompt && !installed && (
+          <div className="text-xs text-muted-foreground bg-muted/40 rounded-lg p-3 space-y-2">
+            <p className="font-semibold text-ink">If the save box does not appear</p>
+            <p>
+              Use your browser menu and choose <b>Install A Taste</b>, <b>Save and share</b>, or <b>Create shortcut</b>.
             </p>
           </div>
         )}
 
-        {platform === "windows" && (
-          <Button onClick={downloadWindowsShortcut} variant="outline" className="w-full">
-            <Download className="mr-2 h-4 w-4" />
-            Download Windows shortcut (.url)
-          </Button>
-        )}
-
-        {platform === "mac" && (
-          <Button onClick={downloadMacShortcut} variant="outline" className="w-full">
-            <Download className="mr-2 h-4 w-4" />
-            Download Mac shortcut (.webloc)
-          </Button>
-        )}
+        <div className="flex items-center justify-center gap-3 text-muted-foreground">
+          <Smartphone className="h-4 w-4" />
+          <Share className="h-4 w-4" />
+          <Download className="h-4 w-4" />
+        </div>
 
         <Button asChild variant="ghost" className="w-full">
           <Link to="/">Back to A Taste</Link>

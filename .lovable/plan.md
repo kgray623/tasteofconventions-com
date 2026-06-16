@@ -1,12 +1,23 @@
-I can’t force ChromeOS to save a browser download directly to the desktop; Chromebook controls that through its Files app/download settings, and websites are not allowed to choose the final save location.
+I found the Wellness Tracker setup. It did not use a custom “download to desktop” page as the main path — it used normal web-app install metadata so the browser/phone shows the built-in save/install/add-to-screen options.
 
-What I can fix on `/install`:
+Plan:
+1. Replace the current `/install` page behavior with the Wellness Tracker-style app install flow:
+   - Restore a clear “Save / install this app” button that uses the browser’s native install prompt when Chrome/Chromebook supports it.
+   - Keep iPhone/iPad guidance for Add to Home Screen, because Apple does not expose a one-click install prompt to websites.
+   - Keep a simple fallback link to login.
 
-1. Replace the current one-size download with Chromebook-aware options.
-2. Add a primary **Download shortcut image** action that downloads the app icon as a real image file, not just navigates to `/icon-512.png`.
-3. Add a **Copy login link** action for `/login?installed=1`, so the user can pair the saved image with the login URL.
-4. On Chromebook, show the honest next step: save/move the downloaded icon from **Downloads** to **Desktop** in the Files app, because ChromeOS will not let the website force Desktop as the target.
-5. Keep Windows/macOS shortcut file downloads available as secondary options, but stop claiming they can save directly to desktop.
-6. Keep the icon itself clickable to open login immediately.
+2. Match the Wellness Tracker manifest pattern:
+   - Use a standard manifest file path/name if needed.
+   - Keep `start_url` pointed at `/login?installed=1`.
+   - Keep `display: "standalone"`, app icons, theme color, and portrait orientation.
+   - Ensure icons are declared in the same broad-compatible way Wellness Tracker used.
 
-Only `src/routes/install.tsx` changes.
+3. Keep the existing head tags that make phone/tablet screen icons work:
+   - manifest link
+   - theme color
+   - Apple touch icon
+   - mobile web app capable tags
+
+4. Remove the misleading Chromebook “download image then drag it” workflow from the main experience, because that is not what Wellness Tracker did.
+
+5. Verify the `/install` page shows the native-install path and that the manifest still points to the login page after install.
