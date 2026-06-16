@@ -31,12 +31,17 @@ const WELCOME_HIDE_KEY = "toc.committee.welcomeVideoHidden";
 
 export function CommitteeWorkspace() {
   const { user } = useAuth();
+  const { isAdmin } = useRoles();
+  const unread = useChatUnread();
   const [guests, setGuests] = useState<CommitteeGuest[]>([]);
   const [myHostIds, setMyHostIds] = useState<string[]>([]);
   const [loadingGuests, setLoadingGuests] = useState(true);
   const [settingRsvpId, setSettingRsvpId] = useState<string | null>(null);
   const [hideWelcome, setHideWelcome] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>("my");
+  const [myCats, setMyCats] = useState<{ id: string; name: string; description: string | null }[]>([]);
+  const [openChatId, setOpenChatId] = useState<string | null>(null);
+  const [profileNames, setProfileNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (typeof window === "undefined") return;
