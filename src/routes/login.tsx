@@ -10,6 +10,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 import { signInWithPhoneOnly } from "@/lib/auth-phone.functions";
 import { rememberLoginName, rememberLoginPhone, getRememberedLoginName } from "@/lib/session-recovery";
+import { NewBadge } from "@/components/new-badge";
+import { markSeen } from "@/lib/whats-new";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -154,16 +156,21 @@ function HelperLogin() {
           </div>
           <form onSubmit={signIn} className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Last name</Label>
+              <div className="flex items-center gap-2">
+                <Label>Last name</Label>
+                <NewBadge target="login:last-name" />
+              </div>
               <Input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                onFocus={() => markSeen("login:last-name")}
                 required
                 autoComplete="family-name"
                 placeholder="Gray"
               />
             </div>
+
             <div className="space-y-1.5">
               <Label>Mobile phone number</Label>
               <Input
