@@ -2,6 +2,7 @@
   "name": "A Taste of Special Conventions",
   "short_name": "Taste",
   "description": "Convention team workspace and guest RSVPs for A Taste of Special Conventions.",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
