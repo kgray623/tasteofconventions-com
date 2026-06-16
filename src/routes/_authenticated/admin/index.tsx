@@ -175,15 +175,6 @@ function AdminOverview() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => window.open("/admin", "_blank", "noopener")}
-          >
-            <Shield className="w-4 h-4 mr-2" />
-            View as Admin
-            <ExternalLink className="w-3 h-3 ml-2 opacity-60" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
             onClick={downloadReconciliation}
             disabled={downloading}
           >
