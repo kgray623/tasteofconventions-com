@@ -35,6 +35,7 @@ type CommitteeGuest = {
   rsvp_status: string | null;
   party_size: number;
   attendance_mode: string | null;
+  responded_at: string | null;
   invited_by: string | null;
   host_id: string;
 };
@@ -60,6 +61,8 @@ export function CommitteeWorkspace() {
   const [committeeNames, setCommitteeNames] = useState<Set<string>>(new Set());
   const [committeePhones, setCommitteePhones] = useState<Set<string>>(new Set());
   const [myGuestsFilter, setMyGuestsFilter] = useState<"all" | "committee">("all");
+  const [openMyGroup, setOpenMyGroup] = useState<{ yes: boolean; waiting: boolean; declined: boolean }>({ yes: true, waiting: false, declined: false });
+  const [lastSeenYesAt, setLastSeenYesAt] = useState<number | null>(null);
   const handledChatParamRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -146,7 +149,7 @@ export function CommitteeWorkspace() {
       }
       const { data, error } = await supabase
         .from("invitations")
-        .select("id,guest_name,guest_phone,guest_email,host_id,rsvps(status,party_size,attendance_mode)")
+        .select("id,guest_name,guest_phone,guest_email,host_id,rsvps(status,party_size,attendance_mode,responded_at)")
         .eq("event_id", eventId)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -157,8 +160,8 @@ export function CommitteeWorkspace() {
         guest_email: string | null;
         host_id: string;
         rsvps:
-          | { status: string; party_size: number | null; attendance_mode: string | null }[]
-          | { status: string; party_size: number | null; attendance_mode: string | null }
+          | { status: string; party_size: number | null; attendance_mode: string | null; responded_at: string | null }[]
+          | { status: string; party_size: number | null; attendance_mode: string | null; responded_at: string | null }
           | null;
       }[];
       const hostIds = Array.from(new Set(rows.map((r) => r.host_id).filter(Boolean)));
@@ -185,6 +188,7 @@ export function CommitteeWorkspace() {
             rsvp_status: rsvp?.status ?? null,
             party_size: rsvp?.party_size ?? 1,
             attendance_mode: rsvp?.attendance_mode ?? null,
+            responded_at: rsvp?.responded_at ?? null,
             invited_by: hostNames.get(row.host_id) ?? null,
             host_id: row.host_id,
           };
@@ -447,7 +451,41 @@ export function CommitteeWorkspace() {
   const confirmedVirtualPeople = confirmedVirtualGuests.reduce((t, g) => t + g.party_size, 0);
 
 
+  // Group "My Guests" by RSVP status, alphabetized within each group.
+  const byName = (a: CommitteeGuest, b: CommitteeGuest) =>
+    a.guest_name.trim().toLowerCase().localeCompare(b.guest_name.trim().toLowerCase());
+  const myYes = myGuests.filter((g) => g.rsvp_status === "yes").sort(byName);
+  const myWaiting = myGuests
+    .filter((g) => !g.rsvp_status || g.rsvp_status === "waitlist")
+    .sort(byName);
+  const myDeclined = myGuests.filter((g) => g.rsvp_status === "no").sort(byName);
+
+  // "New guests RSVP'd" since user last acknowledged.
+  useEffect(() => {
+    if (!user || typeof window === "undefined") return;
+    const raw = window.localStorage.getItem(`toc.committee.lastSeenYes:${user.id}`);
+    setLastSeenYesAt(raw ? Number(raw) || 0 : 0);
+  }, [user]);
+  const newYesGuests = lastSeenYesAt === null
+    ? []
+    : myGuestsUnsorted
+        .filter(
+          (g) =>
+            g.rsvp_status === "yes" &&
+            g.responded_at &&
+            new Date(g.responded_at).getTime() > lastSeenYesAt,
+        )
+        .sort(byName);
+  const markYesSeen = () => {
+    if (!user || typeof window === "undefined") return;
+    const now = Date.now();
+    window.localStorage.setItem(`toc.committee.lastSeenYes:${user.id}`, String(now));
+    setLastSeenYesAt(now);
+  };
+
   const toggleSection = (key: string) => setOpenSection((prev) => (prev === key ? null : key));
+
+
 
   return (
     <div className="space-y-6">
@@ -509,8 +547,29 @@ export function CommitteeWorkspace() {
             </Link>
           </Button>
         </div>
+
+        {newYesGuests.length > 0 && (
+          <div className="mx-4 mt-3 rounded-md border border-emerald-300 bg-emerald-50 p-3 text-sm flex flex-wrap items-center gap-2">
+            <NewBadge target="committee:new-yes-rsvps" />
+            <span className="font-semibold text-emerald-900">
+              {newYesGuests.length} new guest{newYesGuests.length === 1 ? "" : "s"} RSVP'd:
+            </span>
+            <span className="text-emerald-900">
+              {newYesGuests.map((g) => g.guest_name).join(", ")}
+            </span>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="ml-auto"
+              onClick={markYesSeen}
+            >
+              Mark seen
+            </Button>
+          </div>
+        )}
+
         <div className="px-4 pt-3 flex flex-wrap items-center gap-1.5">
-          <NewBadge target="committee:filter-toggle" />
           <Button
             type="button"
             size="sm"
@@ -519,6 +578,7 @@ export function CommitteeWorkspace() {
           >
             All ({myGuestsSorted.length})
           </Button>
+          <NewBadge target="committee:filter-toggle" />
           <Button
             type="button"
             size="sm"
@@ -528,10 +588,10 @@ export function CommitteeWorkspace() {
             Committee ({committeeIds.size})
           </Button>
         </div>
-        <p className="px-4 pt-3 text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
-          <span>Guests you've invited. If someone texts you back to decline (or accept), record their RSVP here.</span>
-          <NewBadge target="committee:row-actions" />
-          <span className="text-xs">Use the pencil to edit and the trash to delete.</span>
+        <p className="px-4 pt-3 text-xs text-muted-foreground">
+          Guests you've invited. If someone texts you back to decline (or accept), record their RSVP here.{" "}
+          <NewBadge target="committee:row-actions" className="align-middle" />
+          <span className="align-middle"> Use the pencil to edit and the trash to delete.</span>
         </p>
 
         {loadingGuests ? (
@@ -543,59 +603,50 @@ export function CommitteeWorkspace() {
             You haven't invited anyone yet.
           </div>
         ) : (
-          <div className="divide-y divide-border max-h-[420px] overflow-auto">
-            {myGuests.map((guest) => (
-              <div key={guest.id} className="p-4 flex flex-wrap items-center gap-3">
-                <div className="flex-1 min-w-[160px]">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-medium">{guest.guest_name}</p>
-                    {isCommitteeGuest(guest) && (
-                      <span className="inline-flex items-center rounded-full bg-ink px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cream">
-                        Committee
-                      </span>
-                    )}
-                    {duplicateIds.has(guest.id) && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-brand-red px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
-                        <AlertTriangle className="w-3 h-3" /> Duplicate
-                      </span>
-                    )}
-                  </div>
-                  {guest.guest_phone && (
-                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                      <Phone className="w-3 h-3" /> {guest.guest_phone}
-                    </span>
-                  )}
-                </div>
-
-                <RsvpStatusBadge status={guest.rsvp_status} />
-                {!guest.rsvp_status && (
-                  <Select
-                    value=""
-                    disabled={settingRsvpId === guest.id}
-                    onValueChange={(v) =>
-                      void setRsvpFor(guest, v as "yes1" | "yes2" | "yes3" | "yes4" | "no" | "clear")
-                    }
-                  >
-                    <SelectTrigger className="h-8 w-[160px] text-xs">
-                      <SelectValue placeholder={settingRsvpId === guest.id ? "Saving…" : "Record RSVP"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="no">No / declined</SelectItem>
-                      <SelectItem value="yes1">Yes — 1 person</SelectItem>
-                      <SelectItem value="yes2">Yes — 2 people</SelectItem>
-                      <SelectItem value="yes3">Yes — 3 people</SelectItem>
-                      <SelectItem value="yes4">Yes — 4 people</SelectItem>
-                      <SelectItem value="clear">Clear RSVP</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-                <EditGuestButton guest={guest} onSave={saveGuestEdits} />
-                <DeleteGuestButton guest={guest} onDelete={deleteGuest} />
-              </div>
-            ))}
+          <div className="p-4 space-y-3">
+            <MyGuestsGroup
+              label="RSVP'd"
+              tone="emerald"
+              guests={myYes}
+              open={openMyGroup.yes}
+              onToggle={() => setOpenMyGroup((p) => ({ ...p, yes: !p.yes }))}
+              isCommitteeGuest={isCommitteeGuest}
+              duplicateIds={duplicateIds}
+              settingRsvpId={settingRsvpId}
+              setRsvpFor={setRsvpFor}
+              saveGuestEdits={saveGuestEdits}
+              deleteGuest={deleteGuest}
+            />
+            <MyGuestsGroup
+              label="Awaiting RSVP"
+              tone="muted"
+              guests={myWaiting}
+              open={openMyGroup.waiting}
+              onToggle={() => setOpenMyGroup((p) => ({ ...p, waiting: !p.waiting }))}
+              isCommitteeGuest={isCommitteeGuest}
+              duplicateIds={duplicateIds}
+              settingRsvpId={settingRsvpId}
+              setRsvpFor={setRsvpFor}
+              saveGuestEdits={saveGuestEdits}
+              deleteGuest={deleteGuest}
+            />
+            <MyGuestsGroup
+              label="Declined"
+              tone="rose"
+              guests={myDeclined}
+              open={openMyGroup.declined}
+              onToggle={() => setOpenMyGroup((p) => ({ ...p, declined: !p.declined }))}
+              isCommitteeGuest={isCommitteeGuest}
+              duplicateIds={duplicateIds}
+              settingRsvpId={settingRsvpId}
+              setRsvpFor={setRsvpFor}
+              saveGuestEdits={saveGuestEdits}
+              deleteGuest={deleteGuest}
+            />
           </div>
         )}
       </Card>
+
 
       <CollapsibleSection
         open={openSection === "confirmed"}
@@ -837,6 +888,116 @@ function CollapsibleSection({
     </Card>
   );
 }
+
+function MyGuestsGroup({
+  label,
+  tone,
+  guests,
+  open,
+  onToggle,
+  isCommitteeGuest,
+  duplicateIds,
+  settingRsvpId,
+  setRsvpFor,
+  saveGuestEdits,
+  deleteGuest,
+}: {
+  label: string;
+  tone: "emerald" | "muted" | "rose";
+  guests: CommitteeGuest[];
+  open: boolean;
+  onToggle: () => void;
+  isCommitteeGuest: (g: CommitteeGuest) => boolean;
+  duplicateIds: Set<string>;
+  settingRsvpId: string | null;
+  setRsvpFor: (guest: CommitteeGuest, value: "yes1" | "yes2" | "yes3" | "yes4" | "no" | "clear") => Promise<void>;
+  saveGuestEdits: (
+    guest: CommitteeGuest,
+    edits: { guest_name: string; guest_phone: string; guest_email: string },
+  ) => Promise<boolean>;
+  deleteGuest: (guest: CommitteeGuest) => Promise<void>;
+}) {
+  const toneClasses =
+    tone === "emerald"
+      ? "border-emerald-300 bg-emerald-50/40"
+      : tone === "rose"
+        ? "border-rose-200 bg-rose-50/40"
+        : "border-border bg-muted/30";
+  return (
+    <Collapsible open={open} onOpenChange={onToggle}>
+      <div className={`rounded-md border ${toneClasses} overflow-hidden`}>
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className="w-full p-3 flex items-center justify-between gap-2 text-left cursor-pointer hover:bg-black/[0.03] transition-colors"
+          >
+            <span className="font-semibold text-sm">{label} ({guests.length})</span>
+            <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          {guests.length === 0 ? (
+            <div className="p-3 text-xs text-muted-foreground border-t border-border/60">No guests in this group.</div>
+          ) : (
+            <div className="divide-y divide-border/60 border-t border-border/60 max-h-[360px] overflow-auto bg-background">
+              {guests.map((guest) => (
+                <div key={guest.id} className="p-3 flex flex-wrap items-center gap-3">
+                  <div className="flex-1 min-w-[160px]">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-medium">{guest.guest_name}</p>
+                      {isCommitteeGuest(guest) && (
+                        <span className="inline-flex items-center rounded-full bg-ink px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cream">
+                          Committee
+                        </span>
+                      )}
+                      {duplicateIds.has(guest.id) && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-brand-red px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                          <AlertTriangle className="w-3 h-3" /> Duplicate
+                        </span>
+                      )}
+                    </div>
+                    {guest.guest_phone && (
+                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                        <Phone className="w-3 h-3" /> {guest.guest_phone}
+                      </span>
+                    )}
+                  </div>
+
+                  <RsvpStatusBadge status={guest.rsvp_status} />
+                  {!guest.rsvp_status && (
+                    <Select
+                      value=""
+                      disabled={settingRsvpId === guest.id}
+                      onValueChange={(v) =>
+                        void setRsvpFor(guest, v as "yes1" | "yes2" | "yes3" | "yes4" | "no" | "clear")
+                      }
+                    >
+                      <SelectTrigger className="h-8 w-[160px] text-xs">
+                        <SelectValue placeholder={settingRsvpId === guest.id ? "Saving…" : "Record RSVP"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="no">No / declined</SelectItem>
+                        <SelectItem value="yes1">Yes — 1 person</SelectItem>
+                        <SelectItem value="yes2">Yes — 2 people</SelectItem>
+                        <SelectItem value="yes3">Yes — 3 people</SelectItem>
+                        <SelectItem value="yes4">Yes — 4 people</SelectItem>
+                        <SelectItem value="clear">Clear RSVP</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                  <EditGuestButton guest={guest} onSave={saveGuestEdits} />
+                  <DeleteGuestButton guest={guest} onDelete={deleteGuest} />
+                </div>
+              ))}
+            </div>
+          )}
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
+  );
+}
+
+
 
 function RsvpStatusBadge({ status }: { status: string | null }) {
   if (status === "yes") {
