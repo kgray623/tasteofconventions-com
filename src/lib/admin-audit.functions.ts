@@ -7,42 +7,40 @@ async function assertAdmin(supabase: any, userId: string) {
   if (!data) throw new Error("Forbidden");
 }
 
+export type CuisineKey = "Myanmar" | "African" | "Indonesian" | "Other";
+
 export type AudienceTotals = {
   guests_uploaded: number;
   sms_sent: number;
-  confirmed_in_person_people: number;
-  confirmed_zoom_people: number;
-  confirmed_total_people: number;
-  declined_people: number;
-  maybe_people: number;
-  waitlist_people: number;
-  pending_people: number;
+  confirmed_in_person: number;
+  confirmed_zoom: number;
+  confirmed_total: number;
+  declined: number;
+  maybe: number;
+  waitlist: number;
+  pending: number;
   rsvp_records: number;
-  food_order_records_all: number;
-  food_order_records_linked: number;
-  food_order_records_unlinked: number;
-  meals_ordered_all: number;
-  meals_ordered_linked: number;
-  meals_ordered_unlinked: number;
+  preorder_rows: number;
+  meals_total: number;
+  meals_by_cuisine: Record<string, number>;
+  unlinked_preorders: number;
 };
 
 const emptyTotals = (): AudienceTotals => ({
   guests_uploaded: 0,
   sms_sent: 0,
-  confirmed_in_person_people: 0,
-  confirmed_zoom_people: 0,
-  confirmed_total_people: 0,
-  declined_people: 0,
-  maybe_people: 0,
-  waitlist_people: 0,
-  pending_people: 0,
+  confirmed_in_person: 0,
+  confirmed_zoom: 0,
+  confirmed_total: 0,
+  declined: 0,
+  maybe: 0,
+  waitlist: 0,
+  pending: 0,
   rsvp_records: 0,
-  food_order_records_all: 0,
-  food_order_records_linked: 0,
-  food_order_records_unlinked: 0,
-  meals_ordered_all: 0,
-  meals_ordered_linked: 0,
-  meals_ordered_unlinked: 0,
+  preorder_rows: 0,
+  meals_total: 0,
+  meals_by_cuisine: {},
+  unlinked_preorders: 0,
 });
 
 type InvRow = {
@@ -67,15 +65,27 @@ type PreRow = {
   selections: unknown;
 };
 
-function countMeals(selections: unknown): number {
-  if (!Array.isArray(selections)) return 0;
-  let total = 0;
+function normalizeCuisine(raw: string): string {
+  const lower = raw.toLowerCase();
+  if (lower.includes("myanmar") || lower.includes("burmese")) return "Myanmar";
+  if (lower.includes("african") || lower.includes("mozambique")) return "African";
+  if (lower.includes("indonesia") || lower.includes("jakarta")) return "Indonesian";
+  return raw.trim() || "Other";
+}
+
+function parseSelections(selections: unknown): { cuisine: string; qty: number }[] {
+  if (!Array.isArray(selections)) return [];
+  const out: { cuisine: string; qty: number }[] = [];
   for (const item of selections) {
     if (!item || typeof item !== "object") continue;
-    const qty = Number((item as { qty?: unknown }).qty);
-    if (Number.isFinite(qty) && qty > 0) total += Math.round(qty);
+    const raw = String(
+      (item as any).cuisine ?? (item as any).country ?? "",
+    );
+    const qty = Number((item as any).qty ?? (item as any).quantity);
+    if (!Number.isFinite(qty) || qty <= 0) continue;
+    out.push({ cuisine: normalizeCuisine(raw), qty: Math.round(qty) });
   }
-  return total;
+  return out;
 }
 
 export const getAdminAudit = createServerFn({ method: "GET" })
@@ -110,15 +120,12 @@ export const getAdminAudit = createServerFn({ method: "GET" })
     totals.sms_sent = invs.filter((i) => !!i.invite_sent_at).length;
     totals.rsvp_records = rsvps.length;
 
-    // Count people from RSVPs directly (party_size aware).
-    // Only count RSVPs attached to a real invitation toward people totals.
     const dupSeen = new Set<string>();
     const dupInvitationIds: string[] = [];
     for (const r of rsvps) {
       if (!invIds.has(r.invitation_id)) continue;
       if (dupSeen.has(r.invitation_id)) {
         dupInvitationIds.push(r.invitation_id);
-        // still count people? No — only count first response per invitation
         continue;
       }
       dupSeen.add(r.invitation_id);
@@ -127,59 +134,69 @@ export const getAdminAudit = createServerFn({ method: "GET" })
       const status = r.status;
       const mode = r.attendance_mode;
       if (status === "yes") {
-        totals.confirmed_total_people += party;
-        if (mode === "zoom") totals.confirmed_zoom_people += party;
-        else totals.confirmed_in_person_people += party;
+        totals.confirmed_total += party;
+        if (mode === "zoom") totals.confirmed_zoom += party;
+        else totals.confirmed_in_person += party;
       } else if (status === "no") {
-        totals.declined_people += party;
+        totals.declined += party;
       } else if (status === "maybe") {
-        totals.maybe_people += party;
+        totals.maybe += party;
       } else if (status === "waitlist") {
-        totals.waitlist_people += party;
+        totals.waitlist += party;
       }
     }
 
-    totals.pending_people = Math.max(
+    totals.pending = Math.max(
       0,
       totals.guests_uploaded
-        - totals.confirmed_total_people
-        - totals.declined_people
-        - totals.maybe_people
-        - totals.waitlist_people,
+        - totals.confirmed_total
+        - totals.declined
+        - totals.maybe
+        - totals.waitlist,
     );
 
-    // Food orders
+    // Food orders: count meals (quantities), not rows.
+    totals.preorder_rows = preorders.length;
+    const byCuisine: Record<string, number> = {};
     for (const p of preorders) {
-      const meals = countMeals(p.selections);
-      const linked = !!p.invitation_id && invIds.has(p.invitation_id);
-      totals.food_order_records_all += 1;
-      totals.meals_ordered_all += meals;
-      if (linked) {
-        totals.food_order_records_linked += 1;
-        totals.meals_ordered_linked += meals;
-      } else {
-        totals.food_order_records_unlinked += 1;
-        totals.meals_ordered_unlinked += meals;
+      const sels = parseSelections(p.selections);
+      for (const s of sels) {
+        totals.meals_total += s.qty;
+        byCuisine[s.cuisine] = (byCuisine[s.cuisine] ?? 0) + s.qty;
+      }
+      if (!p.invitation_id || !invIds.has(p.invitation_id)) {
+        totals.unlinked_preorders += 1;
       }
     }
+    totals.meals_by_cuisine = byCuisine;
 
     const orphanRsvps = rsvps.filter((r) => !invIds.has(r.invitation_id)).length;
     const unlinkedPreorders = preorders
       .filter((p) => !p.invitation_id || !invIds.has(p.invitation_id))
-      .map((p) => ({
-        id: p.id,
-        name: p.name ?? "",
-        phone: p.phone ?? "",
-        meals: countMeals(p.selections),
-      }));
+      .map((p) => {
+        const sels = parseSelections(p.selections);
+        const meals = sels.reduce((a, b) => a + b.qty, 0);
+        return { id: p.id, name: p.name ?? "", phone: p.phone ?? "", meals };
+      });
+
+    // Collapse duplicate flags to unique pairs.
+    const { data: dupRows } = await supabaseAdmin
+      .from("duplicate_flags")
+      .select("invitation_a,invitation_b");
+    const dupPairs = new Set<string>();
+    for (const d of (dupRows ?? []) as { invitation_a: string; invitation_b: string }[]) {
+      const a = d.invitation_a < d.invitation_b ? d.invitation_a : d.invitation_b;
+      const b = d.invitation_a < d.invitation_b ? d.invitation_b : d.invitation_a;
+      dupPairs.add(`${a}|${b}`);
+    }
 
     return {
       all: totals,
       reconciliation: {
         invitations_total: invs.length,
-        rsvp_records: rsvps.length,
         duplicate_rsvp_invitations: dupInvitationIds.length,
         orphan_rsvps: orphanRsvps,
+        duplicate_guest_pairs: dupPairs.size,
         unlinked_preorders: unlinkedPreorders,
       },
     };
@@ -219,16 +236,9 @@ export const getReconciliationRows = createServerFn({ method: "GET" })
     const rows = ((invRes.data ?? []) as any[]).map((inv) => {
       const r = rsvpByInv.get(inv.id);
       const p = preByInv.get(inv.id);
-      const selections = Array.isArray(p?.selections) ? p.selections : [];
-      const selectionText = selections
-        .map((s: any) => {
-          const cuisine = String(s?.cuisine ?? s?.country ?? "").trim();
-          const qty = Number(s?.qty) || 0;
-          return cuisine && qty > 0 ? `${cuisine}×${qty}` : "";
-        })
-        .filter(Boolean)
-        .join("; ");
-      const meals = countMeals(selections);
+      const sels = parseSelections(p?.selections);
+      const selectionText = sels.map((s) => `${s.cuisine}×${s.qty}`).join("; ");
+      const meals = sels.reduce((a, b) => a + b.qty, 0);
       return {
         name: inv.guest_name ?? "",
         phone: inv.guest_phone ?? "",

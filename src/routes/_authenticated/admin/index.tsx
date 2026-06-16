@@ -17,20 +17,19 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 
 const emptyTotals = (): AudienceTotals => ({
   guests_uploaded: 0, sms_sent: 0,
-  confirmed_in_person_people: 0, confirmed_zoom_people: 0, confirmed_total_people: 0,
-  declined_people: 0, maybe_people: 0, waitlist_people: 0, pending_people: 0,
+  confirmed_in_person: 0, confirmed_zoom: 0, confirmed_total: 0,
+  declined: 0, maybe: 0, waitlist: 0, pending: 0,
   rsvp_records: 0,
-  food_order_records_all: 0, food_order_records_linked: 0, food_order_records_unlinked: 0,
-  meals_ordered_all: 0, meals_ordered_linked: 0, meals_ordered_unlinked: 0,
+  preorder_rows: 0, meals_total: 0, meals_by_cuisine: {}, unlinked_preorders: 0,
 });
 
 type AuditData = {
   all: AudienceTotals;
   reconciliation: {
     invitations_total: number;
-    rsvp_records: number;
     duplicate_rsvp_invitations: number;
     orphan_rsvps: number;
+    duplicate_guest_pairs: number;
     unlinked_preorders: { id: string; name: string; phone: string; meals: number }[];
   };
 };
@@ -205,56 +204,59 @@ function AdminOverview() {
         <StatRow row={{ label: "Guests uploaded", value: all.guests_uploaded, to: "/admin/upload", emphasis: true }} />
         <StatRow row={{ label: "SMS sent", value: all.sms_sent, to: "/admin/upload" }} />
         <div className="border-t my-2" />
-        <StatRow row={{ label: "Confirmed in person (people)", value: all.confirmed_in_person_people, to: "/admin/my-rsvp", emphasis: true }} />
-        <StatRow row={{ label: "Confirmed on Zoom (people)", value: all.confirmed_zoom_people, to: "/admin/my-rsvp" }} />
-        <StatRow row={{ label: "Total confirmed (people)", value: all.confirmed_total_people, to: "/admin/my-rsvp", emphasis: true }} />
-        <StatRow row={{ label: "Declined (people)", value: all.declined_people, to: "/admin/my-rsvp" }} />
-        {all.maybe_people > 0 && <StatRow row={{ label: "Maybe (people)", value: all.maybe_people, to: "/admin/my-rsvp" }} />}
-        {all.waitlist_people > 0 && <StatRow row={{ label: "Waitlist (people)", value: all.waitlist_people, to: "/admin/my-rsvp" }} />}
-        <StatRow row={{ label: "Pending (people)", value: all.pending_people, to: "/admin/my-rsvp" }} />
-        <div className="border-t my-2" />
-        <StatRow row={{ label: "RSVP records", value: all.rsvp_records, to: "/admin/my-rsvp" }} />
-        <div className="border-t my-2" />
-        <StatRow row={{ label: "Food order records (all)", value: all.food_order_records_all, to: "/admin/preorders", emphasis: true }} />
-        <StatRow row={{ label: "Food order records (linked)", value: all.food_order_records_linked, to: "/admin/preorders" }} />
-        <StatRow row={{ label: "Food order records (unlinked)", value: all.food_order_records_unlinked, to: "/admin/preorders" }} />
-        <StatRow row={{ label: "Meals ordered (all)", value: all.meals_ordered_all, to: "/admin/preorders", emphasis: true }} />
-        <StatRow row={{ label: "Meals ordered (linked)", value: all.meals_ordered_linked, to: "/admin/preorders" }} />
-        <StatRow row={{ label: "Meals ordered (unlinked)", value: all.meals_ordered_unlinked, to: "/admin/preorders" }} />
+        <StatRow row={{ label: "Confirmed in person", value: all.confirmed_in_person, to: "/admin/my-rsvp", emphasis: true }} />
+        <StatRow row={{ label: "Confirmed on Zoom", value: all.confirmed_zoom, to: "/admin/my-rsvp" }} />
+        <StatRow row={{ label: "Total confirmed", value: all.confirmed_total, to: "/admin/my-rsvp", emphasis: true }} />
+        <StatRow row={{ label: "Declined", value: all.declined, to: "/admin/my-rsvp" }} />
+        {all.maybe > 0 && <StatRow row={{ label: "Maybe", value: all.maybe, to: "/admin/my-rsvp" }} />}
+        {all.waitlist > 0 && <StatRow row={{ label: "Waitlist", value: all.waitlist, to: "/admin/my-rsvp" }} />}
+        <StatRow row={{ label: "Pending", value: all.pending, to: "/admin/my-rsvp" }} />
+      </Card>
+
+      <Card className="p-5 space-y-1">
+        <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Food orders</p>
+        <StatRow row={{ label: "Meals ordered", value: all.meals_total, to: "/admin/preorders", emphasis: true }} />
+        {Object.entries(all.meals_by_cuisine).sort(([a],[b]) => a.localeCompare(b)).map(([cuisine, qty]) => (
+          <StatRow key={cuisine} row={{ label: cuisine, value: qty, to: "/admin/preorders" }} />
+        ))}
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="p-5 space-y-1">
           <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Reconciliation</p>
           <StatRow row={{ label: "Invitations on file", value: recon?.invitations_total ?? 0, emphasis: true }} />
-          <StatRow row={{ label: "RSVP records", value: recon?.rsvp_records ?? 0 }} />
-          <div className="border-t my-2" />
-          <StatRow row={{ label: "Duplicate RSVP rows", value: recon?.duplicate_rsvp_invitations ?? 0 }} />
-          <StatRow row={{ label: "Orphan RSVPs (no invitation)", value: recon?.orphan_rsvps ?? 0 }} />
-          <StatRow row={{ label: "Unlinked food orders", value: recon?.unlinked_preorders.length ?? 0, to: "/admin/preorders" }} />
+          <StatRow row={{ label: "RSVP records", value: all.rsvp_records, to: "/admin/my-rsvp" }} />
+          <StatRow row={{ label: "Duplicate guest pairs", value: recon?.duplicate_guest_pairs ?? 0, to: "/dashboard" }} />
+          {(recon?.duplicate_rsvp_invitations ?? 0) > 0 && (
+            <StatRow row={{ label: "Duplicate RSVP rows", value: recon?.duplicate_rsvp_invitations ?? 0 }} />
+          )}
+          {(recon?.orphan_rsvps ?? 0) > 0 && (
+            <StatRow row={{ label: "Orphan RSVPs (no invitation)", value: recon?.orphan_rsvps ?? 0 }} />
+          )}
           {recon && recon.unlinked_preorders.length > 0 && (
-            <div className="mt-3 pt-3 border-t space-y-2">
-              <div className="flex items-center gap-2 text-xs text-amber-700">
-                <AlertTriangle className="w-3.5 h-3.5" />
-                These food orders are not linked to an invitation
+            <>
+              <StatRow row={{ label: "Unlinked food orders", value: recon.unlinked_preorders.length, to: "/admin/preorders" }} />
+              <div className="mt-3 pt-3 border-t space-y-2">
+                <div className="flex items-center gap-2 text-xs text-amber-700">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  These food orders are not linked to an invitation
+                </div>
+                <ul className="text-sm space-y-1">
+                  {recon.unlinked_preorders.map((p) => (
+                    <li key={p.id} className="flex justify-between gap-2">
+                      <span className="truncate">{p.name} <span className="text-muted-foreground">· {p.phone}</span></span>
+                      <span className="tabular-nums text-muted-foreground">{p.meals} meal{p.meals === 1 ? "" : "s"}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <ul className="text-sm space-y-1">
-                {recon.unlinked_preorders.map((p) => (
-                  <li key={p.id} className="flex justify-between gap-2">
-                    <span className="truncate">{p.name} <span className="text-muted-foreground">· {p.phone}</span></span>
-                    <span className="tabular-nums text-muted-foreground">{p.meals} meal{p.meals === 1 ? "" : "s"}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            </>
           )}
         </Card>
 
         <Card className="p-5 space-y-1">
           <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Operations</p>
-          <StatRow row={{ label: "Duplicate flags", value: ops.flags, to: "/dashboard" }} />
           <StatRow row={{ label: "Volunteer categories", value: ops.categories, to: "/admin/categories" }} />
-          <StatRow row={{ label: "Meals ordered (linked)", value: all.meals_ordered_linked, to: "/admin/preorders" }} />
           <div className="border-t my-2" />
           <StatRow row={{ label: "Audit log", value: "→", to: "/admin/audit-log" }} />
           <StatRow row={{ label: "Recently deleted", value: "→", to: "/admin/recently-deleted" }} />
