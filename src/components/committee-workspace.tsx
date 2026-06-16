@@ -476,6 +476,7 @@ export function CommitteeWorkspace() {
             new Date(g.responded_at).getTime() > lastSeenYesAt,
         )
         .sort(byName);
+  const newYesPeople = newYesGuests.reduce((s, g) => s + (g.party_size || 1), 0);
   const markYesSeen = () => {
     if (!user || typeof window === "undefined") return;
     const now = Date.now();
