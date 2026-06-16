@@ -171,28 +171,17 @@ function InstallPage() {
         {!installed && platform === "desktop" && (
           <div className="space-y-3 rounded-lg border border-border bg-muted/40 p-4 text-sm">
             <div className="flex items-center gap-2 font-semibold text-ink">
-              <Smartphone className="h-5 w-5" /> Chromebook / Desktop (Chrome)
+              <Smartphone className="h-5 w-5" /> Open this page on your phone
             </div>
-            {canPrompt ? (
+            <p className="text-ink">
+              For the home-screen icon, open{" "}
+              <strong>tasteofconventions.com/install</strong> directly on your iPhone or Android
+              browser, then follow the prompts.
+            </p>
+            {canPrompt && (
               <Button onClick={handleInstall} disabled={busy} className="w-full">
                 {busy ? "Installing…" : "Install on this computer"}
               </Button>
-            ) : (
-              <>
-                <p className="text-ink">
-                  Look at the right edge of Chrome's address bar for a small
-                  computer-with-down-arrow icon. Click it, then click <strong>Install</strong>.
-                </p>
-                <p className="text-ink">
-                  No icon? Click the <MoreVertical className="inline h-4 w-4 align-text-bottom" />{" "}
-                  menu (top-right of Chrome) → <strong>Cast, save, and share</strong> →{" "}
-                  <strong>Install page as app…</strong> → <strong>Install</strong>.
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Also open this page on your phone at{" "}
-                  <strong>tasteofconventions.com/install</strong> to install on iPhone or Android.
-                </p>
-              </>
             )}
           </div>
         )}
