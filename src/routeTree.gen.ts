@@ -17,7 +17,6 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PreorderRouteImport } from './routes/preorder'
 import { Route as MyRsvpRouteImport } from './routes/my-rsvp'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as InstallRouteImport } from './routes/install'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
@@ -88,11 +87,6 @@ const MyRsvpRoute = MyRsvpRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const InstallRoute = InstallRouteImport.update({
-  id: '/install',
-  path: '/install',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -270,7 +264,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/index': typeof Char91indexChar93Route
-  '/install': typeof InstallRoute
   '/login': typeof LoginRoute
   '/my-rsvp': typeof MyRsvpRoute
   '/preorder': typeof PreorderRoute
@@ -311,7 +304,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/index': typeof Char91indexChar93Route
-  '/install': typeof InstallRoute
   '/login': typeof LoginRoute
   '/my-rsvp': typeof MyRsvpRoute
   '/preorder': typeof PreorderRoute
@@ -353,7 +345,6 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
   '/index': typeof Char91indexChar93Route
-  '/install': typeof InstallRoute
   '/login': typeof LoginRoute
   '/my-rsvp': typeof MyRsvpRoute
   '/preorder': typeof PreorderRoute
@@ -396,7 +387,6 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/index'
-    | '/install'
     | '/login'
     | '/my-rsvp'
     | '/preorder'
@@ -437,7 +427,6 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/index'
-    | '/install'
     | '/login'
     | '/my-rsvp'
     | '/preorder'
@@ -478,7 +467,6 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/index'
-    | '/install'
     | '/login'
     | '/my-rsvp'
     | '/preorder'
@@ -521,7 +509,6 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthRoute: typeof AuthRoute
   Char91indexChar93Route: typeof Char91indexChar93Route
-  InstallRoute: typeof InstallRoute
   LoginRoute: typeof LoginRoute
   MyRsvpRoute: typeof MyRsvpRoute
   PreorderRoute: typeof PreorderRoute
@@ -596,13 +583,6 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/install': {
-      id: '/install'
-      path: '/install'
-      fullPath: '/install'
-      preLoaderRoute: typeof InstallRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -889,7 +869,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AuthRoute: AuthRoute,
   Char91indexChar93Route: Char91indexChar93Route,
-  InstallRoute: InstallRoute,
   LoginRoute: LoginRoute,
   MyRsvpRoute: MyRsvpRoute,
   PreorderRoute: PreorderRoute,
@@ -910,3 +889,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

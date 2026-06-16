@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { getMyInvitation, submitCuisinePreorder } from "@/lib/invitations.functions";
 import { useAuth } from "@/hooks/use-auth";
 import { Card } from "@/components/ui/card";
-import { InstallAppCard } from "@/components/install-app-card";
+
 import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Users, Check, X, UtensilsCrossed, Minus, Plus } from "lucide-react";
 import { withTimeout } from "@/lib/async-safety";
@@ -154,7 +154,7 @@ export function MyRsvpContent() {
 
     return (
       <div className="mx-auto max-w-3xl space-y-6">
-        {rsvpDone && <InstallAppCard />}
+        
         <div className="text-center">
           <p className="text-xs uppercase tracking-[0.3em] text-terracotta">My RSVP</p>
           <h1 className="font-display text-4xl sm:text-5xl mt-3 text-ink">

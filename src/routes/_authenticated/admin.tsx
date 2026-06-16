@@ -6,7 +6,7 @@ import { useRoles } from "@/hooks/use-roles";
 import { markExplicitSignOut, useAuth } from "@/hooks/use-auth";
 import { clearPhoneLoginCookie } from "@/lib/auth-phone.functions";
 import { Button } from "@/components/ui/button";
-import { InstallAppButton } from "@/components/install-app-button";
+
 import { NewBadge } from "@/components/new-badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -137,8 +137,7 @@ function AdminLayout() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <NewBadge target="admin:install-button" />
-          <InstallAppButton />
+
 
 
           {isActualAdmin && !previewCommittee && (
