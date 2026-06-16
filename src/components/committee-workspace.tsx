@@ -1,12 +1,15 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { AlertTriangle, CalendarCog, CheckCircle2, ChevronDown, Clock, EyeOff, ListChecks, Loader2, MessageSquare, Phone, Upload, UserPlus, Utensils } from "lucide-react";
+import { AlertTriangle, CalendarCog, CheckCircle2, ChevronDown, Clock, EyeOff, ListChecks, Loader2, MessageCircle, MessageSquare, Phone, Upload, UserPlus, Utensils } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useRoles } from "@/hooks/use-roles";
+import { useChatUnread } from "@/hooks/use-chat-unread";
+import { CategoryChat } from "@/components/CategoryChat";
 import { toast } from "sonner";
 import { NewBadge } from "@/components/new-badge";
 import { markSeen } from "@/lib/whats-new";
