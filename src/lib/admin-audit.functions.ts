@@ -10,11 +10,11 @@ async function assertAdmin(supabase: any, userId: string) {
 export type AudienceTotals = {
   uploaded: number;
   sent: number;
-  yes: number;
+  yes_in_person_people: number;
+  yes_zoom_people: number;
   yes_people: number;
   no: number;
   maybe: number;
-  waitlist: number;
   waitlist_people: number;
   pending: number;
   responses: number;
@@ -25,11 +25,11 @@ export type AudienceTotals = {
 const emptyTotals = (): AudienceTotals => ({
   uploaded: 0,
   sent: 0,
-  yes: 0,
+  yes_in_person_people: 0,
+  yes_zoom_people: 0,
   yes_people: 0,
   no: 0,
   maybe: 0,
-  waitlist: 0,
   waitlist_people: 0,
   pending: 0,
   responses: 0,
@@ -95,8 +95,6 @@ export const getAdminAudit = createServerFn({ method: "GET" })
     const rsvps = (rsvpRes.data ?? []) as RsvpRow[];
     const preorders = (preRes.data ?? []) as PreRow[];
 
-    // Build lookup maps. RSVPs are 1:1 with invitations (unique constraint),
-    // but we still detect duplicates defensively.
     const rsvpByInv = new Map<string, RsvpRow>();
     const dupRsvps: string[] = [];
     for (const r of rsvps) {
@@ -108,35 +106,34 @@ export const getAdminAudit = createServerFn({ method: "GET" })
       if (p.invitation_id) preByInv.set(p.invitation_id, p);
     }
 
-    const guests = emptyTotals();
-    const committee = emptyTotals();
+    const all = emptyTotals();
     const invIds = new Set<string>();
 
     for (const inv of invs) {
       invIds.add(inv.id);
-      const bucket = inv.is_committee ? committee : guests;
-      bucket.uploaded += 1;
-      if (inv.invite_sent_at) bucket.sent += 1;
+      all.uploaded += 1;
+      if (inv.invite_sent_at) all.sent += 1;
 
       const r = rsvpByInv.get(inv.id);
       const status = r?.status ?? null;
       const party = r?.party_size ?? 1;
+      const mode = r?.attendance_mode ?? null;
       if (!status) {
-        bucket.pending += 1;
+        all.pending += 1;
       } else {
-        bucket.responses += 1;
+        all.responses += 1;
         if (status === "yes") {
-          bucket.yes += 1;
-          bucket.yes_people += party;
+          all.yes_people += party;
+          if (mode === "zoom") all.yes_zoom_people += party;
+          else all.yes_in_person_people += party;
         } else if (status === "no") {
-          bucket.no += 1;
+          all.no += 1;
         } else if (status === "maybe") {
-          bucket.maybe += 1;
+          all.maybe += 1;
         } else if (status === "waitlist") {
-          bucket.waitlist += 1;
-          bucket.waitlist_people += party;
+          all.waitlist_people += party;
         } else {
-          bucket.pending += 1;
+          all.pending += 1;
         }
       }
 
@@ -144,13 +141,12 @@ export const getAdminAudit = createServerFn({ method: "GET" })
       if (pre) {
         const meals = countMeals(pre.selections);
         if (meals > 0) {
-          bucket.food_orders += 1;
-          bucket.food_meals += meals;
+          all.food_orders += 1;
+          all.food_meals += meals;
         }
       }
     }
 
-    // Orphan / unlinked detection
     const orphanRsvps = rsvps.filter((r) => !invIds.has(r.invitation_id)).length;
     const unlinkedPreorders = preorders
       .filter((p) => !p.invitation_id || !invIds.has(p.invitation_id))
@@ -161,28 +157,11 @@ export const getAdminAudit = createServerFn({ method: "GET" })
         meals: countMeals(p.selections),
       }));
 
-    const all: AudienceTotals = {
-      uploaded: guests.uploaded + committee.uploaded,
-      sent: guests.sent + committee.sent,
-      yes: guests.yes + committee.yes,
-      yes_people: guests.yes_people + committee.yes_people,
-      no: guests.no + committee.no,
-      maybe: guests.maybe + committee.maybe,
-      waitlist: guests.waitlist + committee.waitlist,
-      waitlist_people: guests.waitlist_people + committee.waitlist_people,
-      pending: guests.pending + committee.pending,
-      responses: guests.responses + committee.responses,
-      food_orders: guests.food_orders + committee.food_orders,
-      food_meals: guests.food_meals + committee.food_meals,
-    };
-
     return {
-      guests,
-      committee,
       all,
       reconciliation: {
         invitations_total: invs.length,
-        accounted_for: invs.length, // every invitation is in either responded or pending
+        accounted_for: invs.length,
         duplicate_rsvp_invitations: dupRsvps.length,
         orphan_rsvps: orphanRsvps,
         unlinked_preorders: unlinkedPreorders,
