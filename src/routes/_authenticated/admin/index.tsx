@@ -16,17 +16,19 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 });
 
 const emptyTotals = (): AudienceTotals => ({
-  uploaded: 0, sent: 0,
-  yes_in_person_people: 0, yes_zoom_people: 0, yes_people: 0,
-  no: 0, maybe: 0, waitlist_people: 0, pending: 0, responses: 0,
-  food_orders: 0, food_meals: 0,
+  guests_uploaded: 0, sms_sent: 0,
+  confirmed_in_person_people: 0, confirmed_zoom_people: 0, confirmed_total_people: 0,
+  declined_people: 0, maybe_people: 0, waitlist_people: 0, pending_people: 0,
+  rsvp_records: 0,
+  food_order_records_all: 0, food_order_records_linked: 0, food_order_records_unlinked: 0,
+  meals_ordered_all: 0, meals_ordered_linked: 0, meals_ordered_unlinked: 0,
 });
 
 type AuditData = {
   all: AudienceTotals;
   reconciliation: {
     invitations_total: number;
-    accounted_for: number;
+    rsvp_records: number;
     duplicate_rsvp_invitations: number;
     orphan_rsvps: number;
     unlinked_preorders: { id: string; name: string; phone: string; meals: number }[];
