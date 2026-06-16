@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { NewBadge } from "@/components/new-badge";
+
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, Plus, Calendar as CalendarIcon, Mail, Phone, Trash2 } from "lucide-react";
@@ -168,10 +168,7 @@ function Dashboard() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {stats.map((s) => (
           <Card key={s.label} className="p-5">
-            <div className="flex items-center gap-2 flex-wrap">
-              {s.newTarget && <NewBadge target={s.newTarget} direction="right" className="px-2 py-0.5 text-[10px] gap-1" />}
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">{s.label}</p>
-            </div>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">{s.label}</p>
             <p className="font-display text-3xl mt-2">{s.value}</p>
           </Card>
         ))}
