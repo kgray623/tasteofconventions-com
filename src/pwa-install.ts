@@ -57,9 +57,6 @@ function refreshSnapshot() {
 }
 
 export function getInstallPromptSnapshot(): InstallState {
-  if (typeof window !== "undefined" && !state.installed && isStandaloneApp()) {
-    state.installed = true;
-  }
   refreshSnapshot();
   return cachedSnapshot;
 }

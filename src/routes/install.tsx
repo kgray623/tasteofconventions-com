@@ -45,21 +45,25 @@ function detectPlatform(): Platform {
 
 function InstallPage() {
   const [platform, setPlatform] = useState<Platform>("other");
+  const [standalone, setStandalone] = useState(false);
+  const [showFallback, setShowFallback] = useState(false);
   const installState = useSyncExternalStore(
     subscribeToInstallPrompt,
     getInstallPromptSnapshot,
     getInstallPromptSnapshot,
   );
-  const installed = installState.installed || isStandaloneApp();
+  const installed = installState.installed || standalone;
 
   useEffect(() => {
     setPlatform(detectPlatform());
+    setStandalone(isStandaloneApp());
   }, []);
 
   async function installApp() {
     const prompted = await promptToInstallApp();
     if (prompted) return;
-    toast.message("Use your browser menu to save or install this app.");
+    setShowFallback(true);
+    toast.message("Follow the steps below to save or install this app.");
   }
 
   return (
@@ -106,12 +110,14 @@ function InstallPage() {
           </div>
         )}
 
-        {(platform === "chromeos" || platform === "desktop" || platform === "other") && !installState.prompt && !installed && (
+        {(platform === "chromeos" || platform === "desktop" || platform === "other") && (showFallback || (!installState.prompt && !installed)) && (
           <div className="text-xs text-muted-foreground bg-muted/40 rounded-lg p-3 space-y-2">
             <p className="font-semibold text-ink">If the save box does not appear</p>
-            <p>
-              Use your browser menu and choose <b>Install A Taste</b>, <b>Save and share</b>, or <b>Create shortcut</b>.
-            </p>
+            <ol className="list-decimal pl-4 space-y-1">
+              <li>Open your browser menu (the three dots in the top-right corner).</li>
+              <li>Choose <b>Install A Taste</b>, <b>Save and share → Install page as app</b>, or <b>Create shortcut</b>.</li>
+              <li>Confirm <b>Install</b>. The A Taste icon appears in your apps / shelf / home screen.</li>
+            </ol>
           </div>
         )}
 
