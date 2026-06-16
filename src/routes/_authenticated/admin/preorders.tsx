@@ -78,8 +78,11 @@ function PreorderReportPage() {
     if (!rolesLoading && isTeam) void load();
   }, [rolesLoading, isTeam]);
 
+  const linkedRows = useMemo(() => rows.filter((r) => r.invitation_id), [rows]);
+  const unlinkedRows = useMemo(() => rows.filter((r) => !r.invitation_id), [rows]);
+
   const detailedRows = useMemo(() => {
-    return rows.flatMap((row) =>
+    return linkedRows.flatMap((row) =>
       parseSelections(row.selections).map((selection) => ({
         id: row.id,
         name: row.name,
@@ -89,7 +92,20 @@ function PreorderReportPage() {
         updatedAt: row.updated_at,
       })),
     );
-  }, [rows]);
+  }, [linkedRows]);
+
+  const unlinkedDetailed = useMemo(() => {
+    return unlinkedRows.flatMap((row) =>
+      parseSelections(row.selections).map((selection) => ({
+        id: row.id,
+        name: row.name,
+        phone: row.phone,
+        cuisine: selection.cuisine,
+        qty: selection.qty,
+        updatedAt: row.updated_at,
+      })),
+    );
+  }, [unlinkedRows]);
 
   const totals = useMemo(() => {
     const map = new Map<string, number>();
@@ -100,6 +116,7 @@ function PreorderReportPage() {
 
   const totalMeals = totals.reduce((sum, row) => sum + row.qty, 0);
   const restaurantMeals = totals.reduce((sum, row) => (CUISINES.includes(row.cuisine as (typeof CUISINES)[number]) ? sum + row.qty : sum), 0);
+  const unlinkedMeals = unlinkedDetailed.reduce((sum, r) => sum + r.qty, 0);
 
   const exportCsv = () => {
     const summaryLines = [
