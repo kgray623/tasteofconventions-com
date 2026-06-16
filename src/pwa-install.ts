@@ -45,16 +45,30 @@ export function initializeInstallPromptCapture() {
   });
 }
 
-export function getInstallPromptSnapshot(): InstallState {
-  if (typeof window !== "undefined") {
-    state.installed = state.installed || isStandaloneApp();
+let cachedSnapshot: InstallState = { ...state };
+
+function refreshSnapshot() {
+  if (
+    cachedSnapshot.prompt !== state.prompt ||
+    cachedSnapshot.installed !== state.installed
+  ) {
+    cachedSnapshot = { ...state };
   }
-  return { ...state };
+}
+
+export function getInstallPromptSnapshot(): InstallState {
+  if (typeof window !== "undefined" && !state.installed && isStandaloneApp()) {
+    state.installed = true;
+  }
+  refreshSnapshot();
+  return cachedSnapshot;
 }
 
 export function subscribeToInstallPrompt(callback: () => void) {
   subscribers.add(callback);
-  return () => subscribers.delete(callback);
+  return () => {
+    subscribers.delete(callback);
+  };
 }
 
 export async function promptToInstallApp() {
