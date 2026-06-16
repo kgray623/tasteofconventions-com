@@ -131,13 +131,11 @@ function AdminLayout() {
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <div className="flex items-center gap-3">
-          <NewBadge target="admin:clickable-tiles" />
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-terracotta">{headingEyebrow}</p>
-            <h1 className="font-display text-3xl mt-1">{headingTitle}</h1>
-          </div>
+        <div>
+          <p className="text-xs uppercase tracking-[0.3em] text-terracotta">{headingEyebrow}</p>
+          <h1 className="font-display text-3xl mt-1">{headingTitle}</h1>
         </div>
+
         <div className="flex flex-wrap items-center gap-2">
           <NewBadge target="admin:install-button" />
           <InstallAppButton />
