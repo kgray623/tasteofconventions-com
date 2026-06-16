@@ -9,6 +9,7 @@ import { CommitteeWorkspace } from "@/components/committee-workspace";
 import { NewBadge } from "@/components/new-badge";
 import { markSeen } from "@/lib/whats-new";
 import { getAdminAudit, getReconciliationRows, type AudienceTotals } from "@/lib/admin-audit.functions";
+import { RsvpTotalsCard } from "@/components/rsvp-totals-card";
 import { ExternalLink, User, Users, Download, AlertTriangle } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
@@ -189,6 +190,8 @@ function AdminOverview() {
           <p className="text-sm">Audit failed to load: {auditError}</p>
         </Card>
       )}
+
+      <RsvpTotalsCard />
 
       <Card className="p-5 space-y-1">
         <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Guests</p>

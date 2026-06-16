@@ -1,13 +1,33 @@
-Make every notification-bell item open the exact chat the user needs.
+Surface the RSVP quota tally on the admin and committee dashboards so everyone can see, at a glance, how many seats are still available.
 
-1. In the notification dropdown, category chat items currently point to `/admin/categories`. Change them to link to the committee dashboard (`/admin/subcommittee`) with a search param like `?chat=<category_id>` so the link lands on the page where that member's chats live.
-2. On the committee dashboard, read that search param on mount. If a `chat` id is present and the user has that category in their "My volunteer chats" list, auto-open that category's `CategoryChat` modal and scroll the "My volunteer chats" card into view so it's obvious where they are.
-3. If the user has the param but isn't signed up for that category (e.g. an admin opening someone else's chat link, or a stale link), fall back to scrolling to the section without opening a modal.
-4. Keep the Committee chat notification item pointing at `/admin/chat` (it already deep-links correctly).
-5. After opening a chat from a notification, clear the `chat` param from the URL so refreshing/back doesn't keep reopening it.
+## What appears
 
-Technical notes:
-- Add `validateSearch` on `/admin/subcommittee` route for an optional `chat` string.
-- `CommitteeWorkspace` already controls `openChatId` state and renders one `CategoryChat` per assigned category — wire the param into that state.
-- Use a ref on the "My volunteer chats" card for `scrollIntoView`.
-- No schema, RLS, or chat data changes.
+A new "RSVP totals" card pinned near the top of both dashboards.
+
+Event-wide totals (admin sees on `/admin`, committee members see on their dashboard):
+- Total seats requested by the committee (sum of every active committee member's quota — currently 550)
+- RSVPs confirmed so far (sum of party_size where RSVP status = yes)
+- Seats still available (requested minus confirmed; never negative)
+- A small reminder line: "Invites are not RSVPs. To get 40 RSVPs you'll usually need to text many more people — keep inviting until your quota fills."
+
+My personal totals (committee dashboard only, shown next to the event totals):
+- My quota (their inviters.quota, e.g., 40)
+- My confirmed RSVPs (yes-seat count for invitations under their host_id)
+- My remaining
+
+## Where it goes
+
+1. `/admin` (admin index) — add the new card above the existing "Guests" stats card so the admin sees the headline number first.
+2. `/admin/subcommittee` (committee dashboard) — add the same card at the top, right under the welcome video, before "My guests". Each committee member sees the event-wide numbers plus their own personal slot.
+
+## Behavior
+
+- Pulls live counts from `inviters` (quota, active) and `rsvps` (status, party_size).
+- Refreshes whenever the page loads and whenever a new RSVP is recorded (Realtime subscription on `rsvps`).
+- Visual emphasis: large numeric display for the three event totals; subtle progress bar showing % filled toward the 550 quota.
+
+## Out of scope
+
+- No schema changes.
+- No change to the existing `/admin/upload` quota tools — those keep working.
+- No change to how quotas are assigned or how RSVPs are recorded.

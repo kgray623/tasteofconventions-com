@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useRoles } from "@/hooks/use-roles";
 import { useChatUnread } from "@/hooks/use-chat-unread";
 import { CategoryChat } from "@/components/CategoryChat";
+import { RsvpTotalsCard } from "@/components/rsvp-totals-card";
 import { toast } from "sonner";
 import { NewBadge } from "@/components/new-badge";
 import { markSeen } from "@/lib/whats-new";
@@ -384,6 +385,8 @@ export function CommitteeWorkspace() {
           Show welcome video
         </Button>
       )}
+
+      <RsvpTotalsCard personalHostIds={myHostIds.length ? myHostIds : user ? [user.id] : []} />
 
       <Card className="overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">
