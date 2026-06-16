@@ -116,11 +116,11 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
 
       {showPersonal && (
         <div className="pt-3 border-t">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">My slot</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">My RSVP</p>
           <div className="grid grid-cols-3 gap-3 text-center">
-            <Stat label="My quota" value={loading ? "—" : mine.requested} />
-            <Stat label="My in-person" value={loading ? "—" : mine.confirmed} emphasis />
-            <Stat label="Mine left" value={loading ? "—" : myRemaining} />
+            <Stat label="My Guests" value={loading ? "—" : mine.requested} />
+            <Stat label="My In-Person" value={loading ? "—" : mine.confirmed} emphasis />
+            <Stat label="My RSVPs Left" value={loading ? "—" : myRemaining} />
           </div>
           <p className="text-xs text-muted-foreground mt-2">
             My virtual (Zoom):{" "}
