@@ -181,6 +181,55 @@ export function CommitteeWorkspace() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!user) {
+      setMyCats([]);
+      return;
+    }
+    let alive = true;
+    const loadMyCats = async () => {
+      const { data, error } = await supabase
+        .from("category_assignments")
+        .select("category_id, categories(id, name, description)")
+        .eq("user_id", user.id);
+      if (error || !alive) return;
+      const rows = (data ?? []) as unknown as { categories: { id: string; name: string; description: string | null } | null }[];
+      const cats = rows
+        .map((r) => r.categories)
+        .filter((c): c is { id: string; name: string; description: string | null } => !!c)
+        .sort((a, b) => a.name.localeCompare(b.name));
+      setMyCats(cats);
+    };
+    void loadMyCats();
+    const ch = supabase
+      .channel(`my-category-assignments:${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "category_assignments", filter: `user_id=eq.${user.id}` },
+        () => void loadMyCats(),
+      )
+      .subscribe();
+    return () => {
+      alive = false;
+      supabase.removeChannel(ch);
+    };
+  }, [user]);
+
+  // Load profile display names for chat author labels
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const { data } = await supabase.from("profiles").select("id,display_name,email");
+      if (!alive) return;
+      const map: Record<string, string> = {};
+      for (const p of (data ?? []) as { id: string; display_name: string | null; email: string | null }[]) {
+        map[p.id] = (p.display_name ?? "").trim() || (p.email ?? "").split("@")[0] || "Member";
+      }
+      setProfileNames(map);
+    })();
+    return () => { alive = false; };
+  }, []);
+
   const setRsvpFor = async (
     guest: CommitteeGuest,
     value: "yes1" | "yes2" | "yes3" | "yes4" | "no" | "clear",
