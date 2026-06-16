@@ -1,209 +1,63 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Share, PlusSquare, MoreVertical, Apple, Smartphone, Monitor, CheckCircle2, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  getInstallPromptSnapshot,
-  initializeInstallPromptCapture,
-  isStandaloneApp,
-  promptToInstallApp,
-  subscribeToInstallPrompt,
-} from "@/pwa-install";
 
 export const Route = createFileRoute("/install")({
   head: () => ({
     meta: [
-      { title: "Install A Taste of Special Conventions" },
+      { title: "A Taste Desktop Shortcut" },
       {
         name: "description",
         content:
-          "Add A Taste of Special Conventions to your home screen or desktop so it opens like an app — one tap, full-screen, same login.",
+          "Save a desktop shortcut for A Taste of Special Conventions that opens directly to login.",
       },
-      { property: "og:title", content: "Install A Taste of Special Conventions" },
+      { property: "og:title", content: "A Taste Desktop Shortcut" },
       {
         property: "og:description",
-        content: "Install the app on your phone, tablet, or computer in a few seconds.",
+        content: "Save a clickable desktop shortcut that opens the login page.",
       },
     ],
   }),
   component: InstallPage,
 });
 
-type Platform = "ios" | "android" | "desktop";
-
-function detectPlatform(): Platform {
-  if (typeof navigator === "undefined") return "desktop";
-  const ua = navigator.userAgent.toLowerCase();
-  if (/iphone|ipad|ipod/.test(ua)) return "ios";
-  if (/android/.test(ua)) return "android";
-  return "desktop";
-}
-
 function InstallPage() {
-  const [platform, setPlatform] = useState<Platform>("desktop");
-  const [installed, setInstalled] = useState(false);
-  const [canPrompt, setCanPrompt] = useState(false);
-  const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    initializeInstallPromptCapture();
-    setPlatform(detectPlatform());
-
-    const sync = () => {
-      const snap = getInstallPromptSnapshot();
-      setInstalled(snap.installed || isStandaloneApp());
-      setCanPrompt(Boolean(snap.prompt));
-    };
-    sync();
-    const unsub = subscribeToInstallPrompt(sync);
-    const timer = window.setTimeout(sync, 1500);
-    return () => {
-      unsub();
-      window.clearTimeout(timer);
-    };
-  }, []);
-
-  const handleInstall = async () => {
-    setBusy(true);
-    try {
-      const ok = await promptToInstallApp();
-      if (ok) setInstalled(true);
-    } finally {
-      setBusy(false);
-    }
-  };
+  const baseUrl = typeof window === "undefined" ? "https://tasteofconventions.com" : window.location.origin;
+  const loginUrl = `${baseUrl}/login?installed=1`;
+  const shortcutContents = `[InternetShortcut]\nURL=${loginUrl}\nIconFile=${baseUrl}/icon-192.png\nIconIndex=0\n`;
+  const shortcutHref = `data:application/octet-stream;charset=utf-8,${encodeURIComponent(shortcutContents)}`;
 
   return (
     <div className="min-h-screen bg-background flex items-start sm:items-center justify-center p-4 py-10">
-      <div className="w-full max-w-md bg-card border border-border rounded-2xl shadow-elegant p-6 space-y-5">
+      <div className="w-full max-w-md bg-card border border-border rounded-2xl shadow-elegant p-6 space-y-5 text-center">
         <div className="text-center space-y-3">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-            <img src="/icon-192.png" alt="A Taste app icon" className="h-12 w-12 rounded-lg" />
-          </div>
+          <a href="/login?installed=1" aria-label="Open the A Taste login page" className="mx-auto block w-fit">
+            <img
+              src="/icon-512.png"
+              alt="A Taste of Special Conventions shortcut icon"
+              className="h-28 w-28 rounded-2xl shadow-elegant transition-transform hover:scale-105"
+            />
+          </a>
           <h1 className="font-display text-2xl text-ink">
-            Install A Taste of Special Conventions
+            A Taste Desktop Shortcut
           </h1>
           <p className="text-sm text-muted-foreground">
-            Save it to your home screen or desktop so it opens with one tap — just like a real app.
+            Save this shortcut to your desktop. Opening it takes you straight to login.
           </p>
         </div>
 
-        {installed && (
-          <div className="flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/10 p-3 text-sm text-ink">
-            <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" />
-            <span>You're already using the installed app. Nice!</span>
-          </div>
-        )}
-
-        {!installed && canPrompt && (
-          <Button onClick={handleInstall} disabled={busy} className="w-full" size="lg">
+        <Button asChild className="w-full" size="lg">
+          <a href={shortcutHref} download="A Taste Login.url">
             <Download className="mr-2 h-5 w-5" />
-            {busy ? "Installing…" : "Install app now"}
-          </Button>
-        )}
+            Save desktop shortcut
+          </a>
+        </Button>
 
-        {!installed && platform === "ios" && (
-          <div className="space-y-3 rounded-lg border border-border bg-muted/40 p-4 text-sm">
-            <div className="flex items-center gap-2 font-semibold text-ink">
-              <Apple className="h-5 w-5" /> iPhone / iPad (Safari)
-            </div>
-            <ol className="space-y-2 pl-1 text-ink">
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 font-bold text-primary">1.</span>
-                <span>
-                  Tap the <Share className="inline h-4 w-4 align-text-bottom" />{" "}
-                  <strong>Share</strong> button at the bottom of Safari.
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 font-bold text-primary">2.</span>
-                <span>
-                  Scroll down and tap <PlusSquare className="inline h-4 w-4 align-text-bottom" />{" "}
-                  <strong>Add to Home Screen</strong>.
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 font-bold text-primary">3.</span>
-                <span>
-                  Tap <strong>Add</strong>. The icon now lives on your home screen.
-                </span>
-              </li>
-            </ol>
-          </div>
-        )}
-
-        {!installed && platform === "android" && !canPrompt && (
-          <div className="space-y-3 rounded-lg border border-border bg-muted/40 p-4 text-sm">
-            <div className="flex items-center gap-2 font-semibold text-ink">
-              <Smartphone className="h-5 w-5" /> Android (Chrome)
-            </div>
-            <ol className="space-y-2 pl-1 text-ink">
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 font-bold text-primary">1.</span>
-                <span>
-                  Tap the <MoreVertical className="inline h-4 w-4 align-text-bottom" /> menu in the
-                  top-right of Chrome.
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 font-bold text-primary">2.</span>
-                <span>
-                  Tap <strong>Add to Home screen</strong> (or <strong>Install app</strong>).
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 font-bold text-primary">3.</span>
-                <span>
-                  Tap <strong>Add</strong>. The icon lands on your home screen.
-                </span>
-              </li>
-            </ol>
-          </div>
-        )}
-
-        {!installed && platform === "desktop" && !canPrompt && (
-          <div className="space-y-3 rounded-lg border border-border bg-muted/40 p-4 text-sm">
-            <div className="flex items-center gap-2 font-semibold text-ink">
-              <Monitor className="h-5 w-5" /> Desktop / Chromebook (Chrome or Edge)
-            </div>
-            <ol className="space-y-2 pl-1 text-ink">
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 font-bold text-primary">1.</span>
-                <span>
-                  Look at the right edge of the address bar for a small{" "}
-                  <Download className="inline h-4 w-4 align-text-bottom" /> install icon and click it.
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 font-bold text-primary">2.</span>
-                <span>
-                  No icon? Click the <MoreVertical className="inline h-4 w-4 align-text-bottom" />{" "}
-                  menu (top-right) → <strong>Cast, save, and share</strong> →{" "}
-                  <strong>Install page as app…</strong>
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 font-bold text-primary">3.</span>
-                <span>
-                  Click <strong>Install</strong>. The app icon goes on your desktop or app drawer.
-                </span>
-              </li>
-            </ol>
-            <p className="text-xs text-muted-foreground">
-              On Safari (Mac): <strong>File → Add to Dock</strong>.
-            </p>
-          </div>
-        )}
-
-        <div className="rounded-lg border border-border p-4 text-xs text-muted-foreground">
-          <p className="font-semibold text-ink">Why install?</p>
-          <ul className="mt-2 space-y-1">
-            <li>• Opens full-screen, no browser bars</li>
-            <li>• One tap from your home screen or desktop</li>
-            <li>• Same login, same data — nothing to set up again</li>
-          </ul>
-        </div>
+        <Button asChild variant="outline" className="w-full">
+          <a href="/icon-512.png" download="A Taste icon.png">
+            Save icon image
+          </a>
+        </Button>
 
         <Button asChild variant="outline" className="w-full">
           <Link to="/">Back to A Taste</Link>
