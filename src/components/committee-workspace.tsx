@@ -422,11 +422,23 @@ export function CommitteeWorkspace() {
     if (status === "no") return 2;
     return 3;
   };
-  const myGuests = [...myGuestsUnsorted].sort((a, b) => {
+  const isCommitteeGuest = (g: CommitteeGuest) => {
+    const n = normName(g.guest_name);
+    if (n && committeeNames.has(n)) return true;
+    const p = normPhoneTail(g.guest_phone);
+    if (p && committeePhones.has(p)) return true;
+    return false;
+  };
+  const committeeIds = new Set(myGuestsUnsorted.filter(isCommitteeGuest).map((g) => g.id));
+
+  const myGuestsSorted = [...myGuestsUnsorted].sort((a, b) => {
     const r = statusRank(a.rsvp_status) - statusRank(b.rsvp_status);
     if (r !== 0) return r;
     return a.guest_name.trim().toLowerCase().localeCompare(b.guest_name.trim().toLowerCase());
   });
+  const myGuests = myGuestsFilter === "committee"
+    ? myGuestsSorted.filter((g) => committeeIds.has(g.id))
+    : myGuestsSorted;
 
   const confirmedGuests = guests.filter((guest) => guest.rsvp_status === "yes");
   const confirmedInPersonGuests = confirmedGuests.filter((g) => g.attendance_mode !== "zoom");
