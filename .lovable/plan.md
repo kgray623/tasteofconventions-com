@@ -1,46 +1,42 @@
-I verified the live data and found the real mismatch: the dashboard is showing RSVP rows, while the number you counted is people/party size.
+## Goal
 
-Current audited database totals:
-- Invitations uploaded: 94 total = 86 guests + 8 committee
-- RSVP responses: 36 total = 34 guests + 2 committee
-- Guest yes responses: 24 RSVP records
-- Guest yes people: 37 people, because those 24 yes RSVPs include party sizes
-- Committee yes responses: 2 RSVP records = 3 people
-- No responses: 10
-- Pending invitations: 58 total = 52 guests + 6 committee
-- Food preorder rows: 18 total, but 3 are older/unlinked rows not attached to any invitation; linked invitation food orders are 15 rows / 27 meals
+Make the admin overview match what you actually count, in your words.
 
-Plan to make this exact and auditable:
+## What changes on the admin page
 
-1. Replace the admin overview’s browser-side counting with one server-side audit function
-   - Count from `invitations` as the source of truth.
-   - Join each invitation to its one RSVP and one cuisine preorder.
-   - Return plain totals for guests, committee, and all invitees.
-   - Include both RSVP response counts and actual people counts from `party_size` so 24 yes responses and 37 yes people are not confused.
+Replace the three side-by-side cards (All / Guests / Committee) with **one Guests card** that reads, top to bottom:
 
-2. Update the admin overview cards to show the exact accountable numbers
-   - Keep the RSVP wording.
-   - Show uploaded, sent, yes RSVPs, yes people, no RSVPs, pending, waitlist, and food orders/meals.
-   - Add an all-invitees total card so 94 is visible without adding guests + committee manually.
+- **Guests uploaded — 94**
+- **SMS sent — 86**
+- *(divider)*
+- **Confirmed in person — 37** (people, attendance_mode = in_person, status = yes)
+- **Confirmed on Zoom — 3** (people, attendance_mode = zoom, status = yes)
+- **Total confirmed — 40** (sum of the two above, in people)
+- **Declined — 10**
+- **Waitlist — N** (single line, people count — only if > 0)
+- **Pending — N** (uploaded − responded)
+- *(divider)*
+- **Food orders — N**
+- **Meals ordered — N**
 
-3. Add an audit/reconciliation section on the admin overview
-   - Show whether every invitation is accounted for.
-   - Show duplicate RSVP count, orphan RSVP count, and unlinked preorder count.
-   - Surface the 3 unlinked food preorder entries so they cannot silently affect totals or disappear.
+Notes:
+- "94 guests" = every invitation on file (guests + committee combined), to match your count.
+- One waitlist row only (people count). The duplicate "Waitlist (RSVPs)" line goes away.
+- "Yes (RSVPs)" goes away. People counts only for confirmed totals — that's what you care about.
+- "Total responses" line goes away (it was the confusing 24/34 number).
 
-4. Update the preorder report to separate linked and unlinked orders
-   - Linked orders count toward event totals.
-   - Unlinked orders appear in a review section with name/phone/selections.
-   - This prevents old/manual rows from being mixed into official invitation totals.
+## What stays the same
 
-5. Add a downloadable reconciliation CSV
-   - One row per invitation.
-   - Columns: guest name, phone, committee/guest, sent status, RSVP status, party size, attendance mode, food ordering flag, preorder selections, preorder meal count.
-   - This gives you a file to verify every person/invitation instead of trusting cards alone.
+- Reconciliation card (invitations on file, duplicates, orphans, unlinked food orders) — unchanged.
+- Operations card — unchanged.
+- Reconciliation CSV download — unchanged.
+- Underlying data, RSVPs, and preorders — not touched.
 
-Files to change:
-- `src/lib/admin-audit.functions.ts` or equivalent new server function module
-- `src/routes/_authenticated/admin/index.tsx`
-- `src/routes/_authenticated/admin/preorders.tsx`
+## Files
 
-No guest data will be deleted. No RSVP or preorder records will be changed by this plan; it only fixes counting, reporting, and visibility.
+- `src/routes/_authenticated/admin/index.tsx` — collapse 3 cards into 1, rewrite the rows.
+- `src/lib/admin-audit.functions.ts` — add `yes_in_person_people` and `yes_zoom_people` to the totals; keep the rest. No new tables, no schema changes.
+
+## Verification
+
+After the change I'll query the DB and confirm the rendered numbers match: 94 / 86 / 37 / 3 / 10.
