@@ -1,18 +1,17 @@
 ## Change
 
-Add an **RSVPs** tile to the admin dashboard grid in `src/routes/_authenticated/admin/index.tsx`.
+Add a single "← Back to dashboard" link in the admin shell that appears on every admin sub-page (anything other than `/admin` itself).
 
-- Label: "RSVPs"
-- Value: count of rows in `rsvps` (currently 36)
-- Links to: `/admin/my-rsvp` (the existing RSVPs admin page)
+### Where
 
-### Implementation
+`src/routes/_authenticated/admin.tsx` — render the link just above `<Outlet />`, only when `path !== "/admin"`. This gives every dashboard tile destination (Guests, Volunteer categories, Committee, Pending invites, RSVPs, Food items, Duplicate flags, Audit log) a consistent way back without editing each page.
 
-1. Add `rsvps: 0` to the `counts` state shape.
-2. The `rsvps` query is already being fetched (`supabase.from("rsvps").select("invitation_id")`); use `rsvps.length` to populate `counts.rsvps` — no extra round-trip.
-3. Insert a new tile in the `stats` array, placed right after "Pending invites" so the flow reads: Guest invitations → Pending invites → RSVPs → … .
+### Note on tile clicks
+
+The 7 tiles on `/admin` are already `<Link>` components and do navigate to their respective pages. No change needed to the tiles themselves.
 
 ### Not changing
 
-- No other tiles, labels, or counts.
-- No new routes.
+- The tab nav stays.
+- Tiles, labels, counts, and destinations stay as-is.
+- "Duplicate flags" still links to `/dashboard` (that's the existing target).
