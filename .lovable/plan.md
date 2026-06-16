@@ -1,17 +1,24 @@
 ## Change
 
-Add a single "← Back to dashboard" link in the admin shell that appears on every admin sub-page (anything other than `/admin` itself).
+Add a prominent **Download the app** button to the admin/committee layout header so it's visible at the top of every signed-in admin/committee page (including the Steering Committee "Welcome, Carrie" page).
 
-### Where
+### Files
 
-`src/routes/_authenticated/admin.tsx` — render the link just above `<Outlet />`, only when `path !== "/admin"`. This gives every dashboard tile destination (Guests, Volunteer categories, Committee, Pending invites, RSVPs, Food items, Duplicate flags, Audit log) a consistent way back without editing each page.
+1. **New** `src/components/install-app-button.tsx` — a compact, bright button that reuses the same install logic as `install-app-card.tsx`:
+   - Listens for `beforeinstallprompt`, fires native install prompt when available.
+   - On iOS, opens the existing "Add to Home Screen" instructions sheet.
+   - Hides itself once `display-mode: standalone` is detected (already installed).
+   - Styled in the bright terracotta brand color so it stands out (`bg-terracotta text-cream hover:bg-terracotta/90`).
+   - Label: "Download the app" with a Download icon.
 
-### Note on tile clicks
+2. **Edit** `src/routes/_authenticated/admin.tsx` — render `<InstallAppButton />` inside the top-right header button row (next to Subcommittee / Log out), so it appears on every admin and committee subpage.
 
-The 7 tiles on `/admin` are already `<Link>` components and do navigate to their respective pages. No change needed to the tiles themselves.
+### Why a separate button (not the card)
+
+The user explicitly asked for a button at the top of the page, not the existing card. The card stays on `/my-rsvp` for guests; the button covers admin/committee.
 
 ### Not changing
 
-- The tab nav stays.
-- Tiles, labels, counts, and destinations stay as-is.
-- "Duplicate flags" still links to `/dashboard` (that's the existing target).
+- `install-app-card.tsx` (still used on `/my-rsvp`).
+- Install behavior, manifest, or PWA setup.
+- Anything outside the admin header.
