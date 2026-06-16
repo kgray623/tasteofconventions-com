@@ -1,54 +1,64 @@
-Current verified database totals:
-- Guests uploaded: 94
-- SMS sent: 85 in the database right now, not 86
-- Confirmed in person: 37 people
-- Confirmed on Zoom: 3 people
-- Total confirmed: 40 people
-- Declined: 10 people / 10 RSVP records
-- RSVP records: 36 total records, but those represent 50 people because some RSVPs have party_size > 1
-- Food preorder rows: 18
-- Linked food orders: 15 order records / 27 meals
-- Unlinked food orders: 3 order records / 3 meals
-- Total meals ordered across all preorder rows: 30
+I verified the rows directly in the database and the current dashboard code. The fix should not use assumptions.
 
-Why the dashboard math is wrong:
-- The displayed pending count of 58 is from 94 uploaded minus 36 RSVP records.
-- That mixes units: 94 is people/guest rows, while 36 is response records.
-- If pending is based on people, the current raw people math is 94 - 40 confirmed - 10 declined = 44 pending/waiting for response.
-- Food orders showing 15 is only linked preorder rows, not meals and not all preorder rows.
+Observed exact data right now:
+- Guests uploaded: 94
+- SMS sent: 85
+- Confirmed in person: 37
+- Confirmed on Zoom: 3
+- Total confirmed: 40
+- Declined: 10
+- Pending: 44
+- RSVP records: 36
+- Cuisine preorder rows: 18
+- Total meal quantities across every preorder selection line: 30
+- Cuisine totals: African 8, Indonesian 12, Myanmar 10
+- The 3 “unlinked” food orders match existing guests by phone:
+  - Kenda Andersen → Kenda Andersen
+  - MsDixie Frahm → MsDixie L. Frahm
+  - S. Carmen De La Cruz → S. Carmen De La Cruz
+- Duplicate flag table currently has 5 flag rows, but 3 duplicate pairs. Sofia/NE Sofia Barios exists as 2 uploaded rows, flagged by both name and phone. If the expected “four duplicates” means four uploaded copies of Sofia, only 2 are currently present in the database.
 
 Plan:
-1. Update `src/lib/admin-audit.functions.ts` so totals clearly separate records from people:
-   - `guests_uploaded`: invitation rows, currently 94.
-   - `sms_sent`: invitations with `invite_sent_at`, currently 85 unless one missing row is corrected in data.
-   - `confirmed_in_person_people`: 37.
-   - `confirmed_zoom_people`: 3.
-   - `confirmed_total_people`: 40.
-   - `declined_people`: sum of declined RSVP `party_size`, currently 10.
-   - `rsvp_records`: actual RSVP rows, currently 36.
-   - `pending_people`: `guests_uploaded - confirmed_total_people - declined_people - waitlist_people - maybe_people`, currently 44.
-2. Fix food math to report both order records and meal counts without hiding unlinked orders:
-   - `food_order_records_all`: 18.
-   - `food_order_records_linked`: 15.
-   - `food_order_records_unlinked`: 3.
-   - `meals_ordered_all`: 30.
-   - `meals_ordered_linked`: 27.
-   - `meals_ordered_unlinked`: 3.
-3. Update the `/admin` Guests card labels so the units are impossible to confuse:
-   - Guests uploaded
-   - SMS sent
-   - Confirmed in person
-   - Confirmed on Zoom
-   - Total confirmed
-   - Declined
-   - Pending
-   - Food order records
-   - Meals ordered
-   - Unlinked meals shown in reconciliation, not silently omitted.
-4. Update the reconciliation CSV so each invitation row shows RSVP status, party size, attendance mode, ordering_food, preorder selections, and preorder meal count; keep unlinked orders visible on the preorders page.
-5. Verify after implementation with read-only database queries and the running admin page so the rendered dashboard matches the raw totals exactly.
+1. Link the 3 matched food preorder rows to their invitation records.
+   - This removes the false “unlinked food orders” warning for Kenda, MsDixie, and Carmen.
+   - No guests or food rows will be deleted.
 
-Technical notes:
-- No schema change is needed.
-- No data will be inserted, deleted, or modified.
-- I will not rename RSVP; the change is only to correct counting units and food-order totals.
+2. Fix the admin dashboard labels and remove confusing split counts.
+   - Keep the guest card focused on guest math:
+     - Guests uploaded: 94
+     - SMS sent: 85
+     - Confirmed in person: 37
+     - Confirmed on Zoom: 3
+     - Total confirmed: 40
+     - Declined: 10
+     - Pending: 44
+   - Remove “(people)” from the labels.
+   - Remove “food order records linked/unlinked” and “meals ordered linked/unlinked” from the main dashboard.
+   - Show food as meal quantities, not preorder-row counts:
+     - Meals ordered: 30
+     - African: 8
+     - Indonesian: 12
+     - Myanmar: 10
+   - If a row contains qty 3, it counts as 3 meals.
+
+3. Clean up the reconciliation card.
+   - Do not repeat RSVP records twice.
+   - Hide orphan RSVP count when it is zero.
+   - Hide unlinked food orders when zero after linking.
+   - Show duplicates as “Duplicate guest pairs” instead of raw duplicate flag rows, so name+phone flags for the same two people do not look like separate duplicate people.
+   - Also show the raw flag count only if needed for troubleshooting, not as a headline number.
+
+4. Fix the preorder report page to include all matched orders in restaurant totals.
+   - After linking, the report should count all 30 meals in the restaurant total.
+   - Keep each selected cuisine as a separate row, with its quantity shown and summed.
+   - Remove the “not counted” unlinked warning once there are no unlinked rows.
+
+5. Update the reconciliation CSV.
+   - Include every guest with RSVP status, party size, attendance mode, ordering food, preorder selections, and total meal quantity.
+   - Include cuisine totals separately so exported food math can be checked line-by-line.
+
+Validation after implementation:
+- Re-query the database after linking to confirm unlinked preorder rows are 0.
+- Re-query meal totals to confirm African 8 + Indonesian 12 + Myanmar 10 = 30.
+- Verify the admin dashboard no longer shows conflicting linked/unlinked food metrics.
+- Verify the preorder report restaurant total is 30 and matches the database query.
