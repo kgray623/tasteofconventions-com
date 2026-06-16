@@ -977,6 +977,17 @@ function MyGuestsGroup({
                   </div>
 
                   <RsvpStatusBadge status={guest.rsvp_status} />
+                  {guest.rsvp_status === "yes" && (
+                    <Badge
+                      className={
+                        guest.attendance_mode === "zoom"
+                          ? "bg-ink/10 text-ink hover:bg-ink/10"
+                          : "bg-gold text-ink hover:bg-gold"
+                      }
+                    >
+                      {guest.party_size || 1} {guest.attendance_mode === "zoom" ? "Zoom" : "in person"}
+                    </Badge>
+                  )}
                   {!guest.rsvp_status && (
                     <Select
                       value=""
