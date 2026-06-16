@@ -133,7 +133,7 @@ export function CommitteeWorkspace() {
       }
       const { data, error } = await supabase
         .from("invitations")
-        .select("id,guest_name,guest_phone,host_id,rsvps(status,party_size)")
+        .select("id,guest_name,guest_phone,host_id,rsvps(status,party_size,attendance_mode)")
         .eq("event_id", eventId)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -142,7 +142,10 @@ export function CommitteeWorkspace() {
         guest_name: string;
         guest_phone: string | null;
         host_id: string;
-        rsvps: { status: string; party_size: number | null }[] | { status: string; party_size: number | null } | null;
+        rsvps:
+          | { status: string; party_size: number | null; attendance_mode: string | null }[]
+          | { status: string; party_size: number | null; attendance_mode: string | null }
+          | null;
       }[];
       const hostIds = Array.from(new Set(rows.map((r) => r.host_id).filter(Boolean)));
       const hostNames = new Map<string, string>();
@@ -166,6 +169,7 @@ export function CommitteeWorkspace() {
             guest_phone: row.guest_phone,
             rsvp_status: rsvp?.status ?? null,
             party_size: rsvp?.party_size ?? 1,
+            attendance_mode: rsvp?.attendance_mode ?? null,
             invited_by: hostNames.get(row.host_id) ?? null,
             host_id: row.host_id,
           };
