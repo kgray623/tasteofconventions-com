@@ -7,7 +7,7 @@ import { markExplicitSignOut, useAuth } from "@/hooks/use-auth";
 import { clearPhoneLoginCookie } from "@/lib/auth-phone.functions";
 import { Button } from "@/components/ui/button";
 
-import { NewBadge } from "@/components/new-badge";
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlus, UtensilsCrossed, Mail, HandCoins, MessageSquare, Ticket, ArrowLeft } from "lucide-react";

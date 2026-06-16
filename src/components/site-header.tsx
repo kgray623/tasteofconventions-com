@@ -6,7 +6,7 @@ import { clearPhoneLoginCookie } from "@/lib/auth-phone.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notification-bell";
-import { NewBadge } from "@/components/new-badge";
+
 
 
 export function SiteHeader() {
