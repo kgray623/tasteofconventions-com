@@ -191,6 +191,8 @@ function AdminOverview() {
         </Card>
       )}
 
+      <RsvpTotalsCard />
+
       <Card className="p-5 space-y-1">
         <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Guests</p>
         <StatRow row={{ label: "Guests uploaded", value: all.guests_uploaded, to: "/admin/upload", emphasis: true }} />
