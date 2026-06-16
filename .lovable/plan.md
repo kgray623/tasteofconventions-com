@@ -1,27 +1,15 @@
-Cleanup of the admin dashboard chrome. Only visual/navigation changes — no data or feature changes.
+Implement the volunteer chat cards on the Steering Committee member dashboard, not the admin dashboard.
 
-Remove these:
-1. The red "NEW" pill next to the notification bell (top-right header).
-2. The "Admin" link in the top-right header when the user is already on an admin page. The big "Admin" page heading covers it.
-3. The "Subcommittee" button in the admin header. It duplicates "View as Committee" in the Preview Dashboards card.
-4. The "Log out" button in the admin header. The top-right header already has "Log out".
-5. The "View as Admin" button in Preview Dashboards. The user is already viewing as admin.
+1. Update `CommitteeWorkspace` (`/admin/subcommittee`, shown as the committee member page) to load the signed-in committee member’s volunteer assignments from `category_assignments` joined to `categories`.
+2. Add a new dashboard section labeled for the member’s volunteer chats, showing only the categories that the signed-in member has personally volunteered for.
+3. Reuse the existing `CategoryChat` modal for each card’s “Open chat” action, with `canChat={true}` because the card only appears for assignments the member has joined.
+4. Reuse `useChatUnread()` so each volunteer chat card can show an unread count when there are new messages in that specific category.
+5. Add live refresh for `category_assignments` changes for the current user so a chat appears after they volunteer and disappears after they withdraw.
+6. If they have not volunteered for anything yet, show a simple empty state telling them to go to Volunteer to choose an opportunity.
+7. Do not add this to `/admin` or the admin-only dashboard; admins only see it if they intentionally view the Steering Committee page as a committee member.
 
-Keep but clarify:
-6. "Team access" tab — leave as-is (user said keep it).
-7. "Committee chat" vs "Committee message" — these are NOT the same thing:
-   - **Committee message** = the tool to compose/send the SMS invitation text to committee members from your phone.
-   - **Committee chat** = the internal team chat room where admins and committee members talk to each other in real time.
-   To remove the confusion, rename:
-   - "Committee message" → "Committee SMS"
-   - "Committee chat" → "Team chat"
-   (No code change to what each page does — only the tab label and the icon stay the same.)
-
-Files to touch:
-- `src/components/site-header.tsx` — remove the `NewBadge` for the bell; hide the "Admin" link when already on `/admin*`.
-- `src/routes/_authenticated/admin.tsx` — remove the Subcommittee button and Log out button from the admin header; rename the two tab labels.
-- `src/routes/_authenticated/admin/index.tsx` — remove the "View as Admin" button from the Preview Dashboards card.
-
-Validation:
-- Open `/admin` and confirm only one "Admin" label, one "Log out", no Subcommittee button, no "View as Admin" button, and no red NEW pill.
-- Confirm the two renamed tabs still open the same pages.
+Technical notes:
+- No schema changes.
+- No new chat system.
+- No changes to the volunteer page’s existing signup/chat behavior.
+- Reuse existing profile lookup naming logic for chat message authors.

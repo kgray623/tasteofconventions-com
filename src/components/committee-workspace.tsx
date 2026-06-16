@@ -1,12 +1,15 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { AlertTriangle, CalendarCog, CheckCircle2, ChevronDown, Clock, EyeOff, ListChecks, Loader2, MessageSquare, Phone, Upload, UserPlus, Utensils } from "lucide-react";
+import { AlertTriangle, CalendarCog, CheckCircle2, ChevronDown, Clock, EyeOff, ListChecks, Loader2, MessageCircle, MessageSquare, Phone, Upload, UserPlus, Utensils } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useRoles } from "@/hooks/use-roles";
+import { useChatUnread } from "@/hooks/use-chat-unread";
+import { CategoryChat } from "@/components/CategoryChat";
 import { toast } from "sonner";
 import { NewBadge } from "@/components/new-badge";
 import { markSeen } from "@/lib/whats-new";
@@ -28,12 +31,17 @@ const WELCOME_HIDE_KEY = "toc.committee.welcomeVideoHidden";
 
 export function CommitteeWorkspace() {
   const { user } = useAuth();
+  const { isAdmin } = useRoles();
+  const unread = useChatUnread();
   const [guests, setGuests] = useState<CommitteeGuest[]>([]);
   const [myHostIds, setMyHostIds] = useState<string[]>([]);
   const [loadingGuests, setLoadingGuests] = useState(true);
   const [settingRsvpId, setSettingRsvpId] = useState<string | null>(null);
   const [hideWelcome, setHideWelcome] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>("my");
+  const [myCats, setMyCats] = useState<{ id: string; name: string; description: string | null }[]>([]);
+  const [openChatId, setOpenChatId] = useState<string | null>(null);
+  const [profileNames, setProfileNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -171,6 +179,55 @@ export function CommitteeWorkspace() {
     return () => {
       alive = false;
     };
+  }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setMyCats([]);
+      return;
+    }
+    let alive = true;
+    const loadMyCats = async () => {
+      const { data, error } = await supabase
+        .from("category_assignments")
+        .select("category_id, categories(id, name, description)")
+        .eq("user_id", user.id);
+      if (error || !alive) return;
+      const rows = (data ?? []) as unknown as { categories: { id: string; name: string; description: string | null } | null }[];
+      const cats = rows
+        .map((r) => r.categories)
+        .filter((c): c is { id: string; name: string; description: string | null } => !!c)
+        .sort((a, b) => a.name.localeCompare(b.name));
+      setMyCats(cats);
+    };
+    void loadMyCats();
+    const ch = supabase
+      .channel(`my-category-assignments:${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "category_assignments", filter: `user_id=eq.${user.id}` },
+        () => void loadMyCats(),
+      )
+      .subscribe();
+    return () => {
+      alive = false;
+      supabase.removeChannel(ch);
+    };
+  }, [user]);
+
+  // Load profile display names for chat author labels
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const { data } = await supabase.from("profiles").select("id,display_name,email");
+      if (!alive) return;
+      const map: Record<string, string> = {};
+      for (const p of (data ?? []) as { id: string; display_name: string | null; email: string | null }[]) {
+        map[p.id] = (p.display_name ?? "").trim() || (p.email ?? "").split("@")[0] || "Member";
+      }
+      setProfileNames(map);
+    })();
+    return () => { alive = false; };
   }, []);
 
   const setRsvpFor = async (
@@ -441,6 +498,74 @@ export function CommitteeWorkspace() {
           </div>
         )}
       </CollapsibleSection>
+
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b border-border flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <MessageCircle className="w-5 h-5 text-terracotta" />
+            <h2 className="font-semibold">My volunteer chats ({myCats.length})</h2>
+          </div>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/admin/categories" search={{ view: "committee" }}>
+              <ListChecks className="w-4 h-4 mr-2" /> Volunteer
+            </Link>
+          </Button>
+        </div>
+        {myCats.length === 0 ? (
+          <div className="p-4 text-sm text-muted-foreground">
+            You haven't signed up for any volunteer opportunities yet. Tap{" "}
+            <Link to="/admin/categories" search={{ view: "committee" }} className="underline text-terracotta">
+              Volunteer
+            </Link>{" "}
+            to choose one — its chat will appear here.
+          </div>
+        ) : (
+          <div className="divide-y divide-border">
+            {myCats.map((c) => {
+              const u = unread.categories.find((x) => x.category_id === c.id);
+              const count = u?.count ?? 0;
+              return (
+                <div key={c.id} className="p-4 flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-medium truncate">{c.name}</p>
+                      {count > 0 && (
+                        <Badge className="bg-terracotta text-cream hover:bg-terracotta text-[10px]">
+                          {count} new
+                        </Badge>
+                      )}
+                    </div>
+                    {c.description && (
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{c.description}</p>
+                    )}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setOpenChatId(c.id)}
+                    className="shrink-0"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" /> Open chat
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+
+      {myCats.map((c) => (
+        <CategoryChat
+          key={`chat-${c.id}`}
+          open={openChatId === c.id}
+          onOpenChange={(v) => setOpenChatId(v ? c.id : null)}
+          categoryId={c.id}
+          categoryName={c.name}
+          canChat={true}
+          isAdmin={isAdmin}
+          nameFor={(uid) => profileNames[uid] ?? "Member"}
+        />
+      ))}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <Button asChild className="bg-ink text-cream hover:bg-ink/90 justify-start h-14">
