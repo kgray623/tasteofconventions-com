@@ -9,7 +9,7 @@ import { CommitteeWorkspace } from "@/components/committee-workspace";
 import { NewBadge } from "@/components/new-badge";
 import { markSeen } from "@/lib/whats-new";
 import { getAdminAudit, getReconciliationRows, type AudienceTotals } from "@/lib/admin-audit.functions";
-import { ExternalLink, User, Users, Shield, Download, AlertTriangle } from "lucide-react";
+import { ExternalLink, User, Users, Download, AlertTriangle } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: AdminOverview,
