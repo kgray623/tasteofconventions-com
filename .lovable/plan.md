@@ -1,27 +1,49 @@
 ## Goal
-On the admin overview (`/admin`), add a "View as…" row with three buttons so you can preview the app from each role's perspective.
+Reorganize `/admin` overview into clear columns by audience, each showing the funnel: Uploaded → Invitations sent → RSVPs (Yes / No / Maybe / Waitlist / Pending).
 
-## Buttons
+## Layout
 
-1. **View as Guest** → opens `/rsvp/<token>` in a new tab
-   - Picks the most recent non-committee invitation that has an `rsvp_token` (server-side, single query, ordered by `created_at desc limit 1`).
-   - If none exist, button is disabled with tooltip "No guest invitations yet".
-   - Read-only preview — opens in a new tab so your admin session stays intact in the current tab.
+Three vertical columns (stack on mobile, 3-up on desktop), each rendered as one `Card`:
 
-2. **View as Committee** → opens `/dashboard` in a new tab
-   - That route is the committee/host workspace (where a committee member manages their own invitations & RSVPs).
-   - No data swap — it just renders for *your* user. Since you're also a committee member, this shows the committee experience as-is.
+```text
+┌─────────────────┐  ┌──────────────────┐  ┌─────────────────┐
+│ GUESTS          │  │ COMMITTEE        │  │ OPERATIONS      │
+│ Uploaded     N  │  │ Uploaded      N  │  │ Duplicate flags │
+│ SMS sent     N  │  │ SMS sent      N  │  │ Categories      │
+│ ─────────────── │  │ ──────────────── │  │ Preorders (qty) │
+│ Yes          N  │  │ Yes           N  │  │ Audit log       │
+│ No           N  │  │ No            N  │  │ Recently deleted│
+│ Maybe        N  │  │ Maybe         N  │  │                 │
+│ Waitlist     N  │  │ Waitlist      N  │  │                 │
+│ Pending      N  │  │ Pending       N  │  │                 │
+│ ─────────────── │  │ ──────────────── │  │                 │
+│ Total RSVPs  N  │  │ Total RSVPs   N  │  │                 │
+└─────────────────┘  └──────────────────┘  └─────────────────┘
+```
 
-3. **View as Admin** → opens `/admin` in a new tab
-   - Included for symmetry / quick "open a fresh admin tab" use.
+Each numeric row links to where you'd act on it (Uploaded/Sent → `/admin/upload`, RSVP rows → `/admin/my-rsvp`, etc.). The current scattered 9-tile grid is removed.
 
-## Placement
-A new compact `Card` near the top of `/admin` titled **"Preview dashboards"**, with the three buttons in a row (icon + label). No layout shift to existing sections.
+## Definitions (so numbers are unambiguous)
 
-## What I will NOT do
-- No impersonation / session swap. Buttons 2 & 3 render as your own user; button 1 just opens a public RSVP URL (which is what the guest sees from SMS anyway).
-- No new DB columns, migrations, or server functions beyond a tiny query to fetch one guest token. If `/admin` already loads invitations, I'll reuse that instead of a new fetch.
-- No changes to `/dashboard`, `/rsvp/$token`, or any guest-facing UI.
+Split by `invitations.is_committee` (false = Guests, true = Committee):
+
+- **Uploaded** — count of `invitations` rows in the bucket.
+- **SMS sent** — count where `invite_sent_at IS NOT NULL` (the manual "Mark as sent" flag).
+- **RSVP statuses** — join `rsvps` to `invitations`, group by `rsvps.status` within the bucket.
+- **Pending** — `Uploaded − (rows with an rsvps row)`; i.e. no RSVP record at all. (Matches the current "Pending invites" tile.)
+- **Total RSVPs** — sum of Yes+No+Maybe+Waitlist (responded, excludes Pending).
+
+## Operations column
+
+Keeps the non-audience tiles that already exist: Duplicate flags, Volunteer categories, Food items ordered (qty), Audit log, Recently deleted. Committee-member headcount tile is dropped from here (Committee column replaces it).
 
 ## Files touched
-- `src/routes/_authenticated/admin/index.tsx` — add the new card + the one-row fetch for a sample guest token.
+
+- `src/routes/_authenticated/admin/index.tsx` — replace the data-fetching `useEffect` with a single query batch that returns per-bucket counts, and replace the `stats` grid with the 3-column layout. Keep the "Preview dashboards" card and `CommitteeWorkspace` branch unchanged.
+
+No DB migration, no server fn, no route changes.
+
+## What I will NOT do
+- No new tables, RPCs, or schema changes.
+- No edits to `/admin/upload`, `/admin/my-rsvp`, `/dashboard`, or any guest-facing page.
+- No change to the "team / committee headcount" semantics elsewhere (the `/admin/team` page is unchanged).
