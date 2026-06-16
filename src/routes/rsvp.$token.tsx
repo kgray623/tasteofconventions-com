@@ -507,7 +507,9 @@ function RsvpPage() {
             <div className="space-y-3">
               {cuisines.map((cuisine) => {
                 const qty = cuisineCounts[cuisine.key] ?? 0;
-                const selected = qty > 0;
+                const choice = cuisineChoice[cuisine.key];
+                const isYes = choice === "yes" || qty > 0;
+                const isNo = choice === "no";
                 return (
                   <div
                     key={cuisine.key}
@@ -518,9 +520,12 @@ function RsvpPage() {
                       <div className="grid grid-cols-2 gap-2 w-36">
                         <button
                           type="button"
-                          onClick={() => setCuisineQty(cuisine.key, qty > 0 ? qty : 1)}
+                          onClick={() => {
+                            setCuisineChoice({ ...cuisineChoice, [cuisine.key]: "yes" });
+                            setCuisineQty(cuisine.key, qty > 0 ? qty : 1);
+                          }}
                           className={`rounded-md border-2 px-3 py-2 text-sm font-medium transition ${
-                            selected
+                            isYes
                               ? "border-terracotta bg-terracotta text-cream"
                               : "border-border bg-card hover:border-terracotta/40"
                           }`}
@@ -529,9 +534,12 @@ function RsvpPage() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => setCuisineQty(cuisine.key, 0)}
+                          onClick={() => {
+                            setCuisineChoice({ ...cuisineChoice, [cuisine.key]: "no" });
+                            setCuisineQty(cuisine.key, 0);
+                          }}
                           className={`rounded-md border-2 px-3 py-2 text-sm font-medium transition ${
-                            !selected
+                            isNo
                               ? "border-ink bg-ink text-cream"
                               : "border-border bg-card hover:border-ink/40"
                           }`}
