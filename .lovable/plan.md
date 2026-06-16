@@ -1,34 +1,52 @@
-Add bright red NEW badges (with arrow pointing at the change) to every committee-facing feature we've shipped recently, so team members can spot what's new. Badges auto-hide after 14 days or once tapped.
+## Scale back NEW badges to feature-level, shrink them, remove from rows
 
-## Where badges go
+### Rule going forward
 
-Each entry below names the screen, the spot, and the arrow direction.
+A NEW badge marks a newly added/changed **feature** — never a piece of data (no NEW next to a person's name, a guest count, or any list row). One badge per feature, placed at its header/label.
 
-**`src/components/rsvp-totals-card.tsx`** (committee + admin)
-- `committee:my-rsvp-label` → NEW → next to "My RSVP" tile
-- `committee:my-guests-label` → NEW → next to "My Guests" tile
-- `committee:my-in-person-label` → NEW → next to "My In-Person" tile
-- `committee:my-rsvps-left-label` → NEW → next to "My RSVPs Left" tile
+### NEW badges to keep / add
 
-**`src/components/committee-workspace.tsx`**
-- `committee:guests-uploaded-header` → NEW → on the "My Guests Uploaded" card header
-- `committee:filter-toggle` → NEW → pointing at the All / Committee filter buttons
-- `committee:committee-badge` → NEW → next to the first row that shows the new "Committee" tag (one-time, in header area not per-row to avoid spam)
-- `committee:edit-guest` → NEW ← (arrow LEFT) next to the pencil icon column header
-- `committee:delete-guest` → NEW ← (arrow LEFT) next to the trash icon column header
+1. **RSVP Totals** card title — NEW badge
+2. **My RSVP** label (the new card on the committee workspace + matching label in the totals card) — NEW badge
+3. **All / Committee filter toggle** header — NEW badge (it's a brand-new feature)
+4. **Edit/Delete icons** — one small NEW badge near the column header for the pencil/trash actions (feature, not per row)
 
-**`src/routes/_authenticated/admin/inviters.tsx`** and **`src/routes/_authenticated/dashboard.tsx`**
-- `admin:in-person-confirmed-column` → NEW → next to the "In-Person Confirmed" column/stat we just added
+### Removals (per-row and redundant)
 
-## Implementation details
+In `src/components/rsvp-totals-card.tsx`:
+- Remove NEW badges from "My Guests", "My In-Person", "My RSVPs Left"
+- Add NEW badge on the card title "RSVP Totals" and keep one on "My RSVP"
 
-1. Extend `NewBadge` in `src/components/new-badge.tsx` to accept a `direction?: "right" | "left"` prop (default `"right"`). When `"left"`, render `ArrowLeft` before the word NEW instead of `ArrowRight` after it. Add `ArrowLeft` import.
+In `src/components/committee-workspace.tsx`:
+- Remove NEW badge from the per-row "Committee" tag in: My Guests Uploaded rows, Confirmed RSVPs rows, and the Guest list rows (this is what's putting NEW next to Jacqueline Spears, Jamie Elker, Carrie Gray, Melissa Novotne, etc.)
+- Remove NEW badge from the "My Guests Uploaded" header
+- Keep one NEW badge on the All / Committee filter toggle (header level)
+- Replace any per-row pencil/trash NEW badge with a single NEW badge on the actions column header
 
-2. Register all keys above in `WHATS_NEW` in `src/lib/whats-new.ts` with `addedAt: "2026-06-16"`.
+In `src/routes/_authenticated/dashboard.tsx`:
+- Remove NEW badge from "Confirmed in person" tile (not a new feature)
 
-3. Drop `<NewBadge target="..." />` (or `direction="left"` variant) inline beside each target element in the four files listed. No layout restructuring — badges are inline-flex and sit adjacent.
+In `src/routes/_authenticated/admin/inviters.tsx`:
+- Remove NEW badge from "In-person" column header (not a new feature)
 
-## Out of scope
-- No changes to badge dismissal logic, expiry window, or storage.
-- No new pages or business logic — purely visual annotation of existing UI.
-- Admin-only screens that team members can't see get no badge.
+### Smaller badge styling
+
+In `src/components/new-badge.tsx`:
+- Text `text-[10px]`, `leading-none`, `font-semibold`
+- Padding `px-1 py-0`, `gap-0.5`, `rounded-sm`
+- Arrow icon `h-2.5 w-2.5`
+- Keep red background, keep directional arrow (left/right) support
+
+### Registry cleanup
+
+In `src/lib/whats-new.ts`, keep only these keys:
+- `committee:rsvp-totals-card`
+- `committee:my-rsvp-label`
+- `committee:filter-toggle`
+- `committee:row-actions` (pencil/trash column header)
+
+Remove all other keys added last round so stray badges can't render.
+
+### Out of scope
+
+No logic, layout, or business-rule changes. No edits to admin-only screens beyond the two removals listed.
