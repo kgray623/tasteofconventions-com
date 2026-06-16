@@ -545,6 +545,11 @@ export function CommitteeWorkspace() {
                 <div className="flex-1 min-w-[160px]">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="font-medium">{guest.guest_name}</p>
+                    {isCommitteeGuest(guest) && (
+                      <span className="inline-flex items-center rounded-full bg-ink px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cream">
+                        Committee
+                      </span>
+                    )}
                     {duplicateIds.has(guest.id) && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-brand-red px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
                         <AlertTriangle className="w-3 h-3" /> Duplicate
