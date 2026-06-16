@@ -523,7 +523,8 @@ export function CommitteeWorkspace() {
         )}
       </CollapsibleSection>
 
-      <Card className="overflow-hidden">
+      <Card ref={chatsCardRef} className="overflow-hidden scroll-mt-20">
+
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <MessageCircle className="w-5 h-5 text-terracotta" />
