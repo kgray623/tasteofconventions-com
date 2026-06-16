@@ -24,7 +24,7 @@ type Invite = {
   id: string; event_id: string; guest_name: string; guest_email: string | null;
   guest_phone: string | null; rsvp_token: string; created_at: string; host_id: string;
   is_committee: boolean;
-  rsvps?: { status: string; party_size: number } | null;
+  rsvps?: { status: string; party_size: number; attendance_mode: string | null } | null;
 };
 type Flag = { id: string; invitation_a: string; invitation_b: string; match_type: string };
 type EventRow = { id: string; title: string; starts_at: string; location: string | null };
