@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Papa from "papaparse";
 import { supabase } from "@/integrations/supabase/client";
+import { NewBadge } from "@/components/new-badge";
 import { useAuth } from "@/hooks/use-auth";
 import { useRoles } from "@/hooks/use-roles";
 import { Card } from "@/components/ui/card";
