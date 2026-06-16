@@ -24,6 +24,7 @@ type CommitteeGuest = {
   guest_phone: string | null;
   rsvp_status: string | null;
   party_size: number;
+  attendance_mode: string | null;
   invited_by: string | null;
   host_id: string;
 };
