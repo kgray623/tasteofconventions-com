@@ -107,6 +107,11 @@ function RsvpPage() {
     "cuisineCounts",
     {},
   );
+  const [cuisineChoice, setCuisineChoice] = useDraftState<Record<string, "yes" | "no">>(
+    orderDraftScope,
+    "cuisineChoice",
+    {},
+  );
   const [savingMeals, setSavingMeals] = useState(false);
 
   useEffect(() => {
