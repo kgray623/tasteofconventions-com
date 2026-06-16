@@ -33,6 +33,9 @@ export function CommitteeWorkspace() {
   const { user } = useAuth();
   const { isAdmin } = useRoles();
   const unread = useChatUnread();
+  const search = useSearch({ strict: false }) as { chat?: string };
+  const navigate = useNavigate();
+  const chatsCardRef = useRef<HTMLDivElement>(null);
   const [guests, setGuests] = useState<CommitteeGuest[]>([]);
   const [myHostIds, setMyHostIds] = useState<string[]>([]);
   const [loadingGuests, setLoadingGuests] = useState(true);
@@ -42,6 +45,7 @@ export function CommitteeWorkspace() {
   const [myCats, setMyCats] = useState<{ id: string; name: string; description: string | null }[]>([]);
   const [openChatId, setOpenChatId] = useState<string | null>(null);
   const [profileNames, setProfileNames] = useState<Record<string, string>>({});
+  const handledChatParamRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
