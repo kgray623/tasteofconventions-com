@@ -2,10 +2,12 @@ import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useRoles } from "@/hooks/use-roles";
 import { CommitteeWorkspace } from "@/components/committee-workspace";
 import { NewBadge } from "@/components/new-badge";
 import { markSeen } from "@/lib/whats-new";
+import { ExternalLink, User, Users, Shield } from "lucide-react";
 
 
 export const Route = createFileRoute("/_authenticated/admin/")({
