@@ -35,6 +35,7 @@ type CommitteeGuest = {
   rsvp_status: string | null;
   party_size: number;
   attendance_mode: string | null;
+  responded_at: string | null;
   invited_by: string | null;
   host_id: string;
 };
@@ -146,7 +147,7 @@ export function CommitteeWorkspace() {
       }
       const { data, error } = await supabase
         .from("invitations")
-        .select("id,guest_name,guest_phone,guest_email,host_id,rsvps(status,party_size,attendance_mode)")
+        .select("id,guest_name,guest_phone,guest_email,host_id,rsvps(status,party_size,attendance_mode,responded_at)")
         .eq("event_id", eventId)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -157,8 +158,8 @@ export function CommitteeWorkspace() {
         guest_email: string | null;
         host_id: string;
         rsvps:
-          | { status: string; party_size: number | null; attendance_mode: string | null }[]
-          | { status: string; party_size: number | null; attendance_mode: string | null }
+          | { status: string; party_size: number | null; attendance_mode: string | null; responded_at: string | null }[]
+          | { status: string; party_size: number | null; attendance_mode: string | null; responded_at: string | null }
           | null;
       }[];
       const hostIds = Array.from(new Set(rows.map((r) => r.host_id).filter(Boolean)));
@@ -185,6 +186,7 @@ export function CommitteeWorkspace() {
             rsvp_status: rsvp?.status ?? null,
             party_size: rsvp?.party_size ?? 1,
             attendance_mode: rsvp?.attendance_mode ?? null,
+            responded_at: rsvp?.responded_at ?? null,
             invited_by: hostNames.get(row.host_id) ?? null,
             host_id: row.host_id,
           };
