@@ -1,40 +1,47 @@
-## Why Chrome's ⋮ menu has no "Install app"
+## 1. Point-in-time restore (the 74 missing invitations)
 
-Chrome only adds the "Install app" menu item (and fires `beforeinstallprompt` so the in-page button works one-tap) when the site has:
-1. a web app manifest (we have one), AND
-2. a registered service worker with a fetch handler (we do **not** have this).
+I cannot restore them from inside the app. Lovable Cloud takes daily backups, but initiating a restore is a support action.
 
-No service worker → no install option in Chrome's menu, and our button has nothing to trigger, so it falls back to that misleading "tap the ⋮ menu" hint.
+**What you do (manual — no code change):**
+- Open Lovable support chat from the workspace menu.
+- Send this message verbatim:
 
-## Fix
+> Project: tasteofconventions (ref `jqlrwcembabqlqoxeliq`). I need a point-in-time restore of the `public.invitations` table to **2026-06-15 12:00 UTC** (or the latest backup before that). Current row count is 94; expected ~168. Please restore into a side table (e.g. `invitations_restore_2026_06_15`) so I can diff and re-merge, not overwrite the live table.
 
-1. **Add `vite-plugin-pwa`** (`registerType: "autoUpdate"`, `injectRegister: null`, `devOptions.enabled: false`, output `/sw.js`). Runtime caching: `NetworkFirst` for HTML, `CacheFirst` for hashed same-origin assets. Exclude `/~oauth`.
-2. **Add `src/pwa-register.ts`** — a guarded registration wrapper that registers `/sw.js` only in production AND only on the real published origins. It refuses (and actively unregisters any stale `/sw.js`) when:
-   - not `import.meta.env.PROD`
-   - running inside an iframe
-   - hostname starts with `id-preview--` / `preview--`, or is on `lovableproject.com` / `lovableproject-dev.com` / `beta.lovable.dev`
-   - URL has `?sw=off`
-3. **Import it once** from `src/start.ts` (client-only) so it never runs during SSR.
-4. **Update `src/components/install-app-button.tsx`**:
-   - Android/desktop Chrome: button text "Install app" → calls `deferred.prompt()` → real OS install dialog. One tap.
-   - If `beforeinstallprompt` hasn't fired yet (first ~1s after load), show a brief spinner and retry when it arrives. After ~5s with no event, button greys out: "Install not available in this browser." No more "tap the ⋮ menu" copy.
-   - iPhone Safari: keep "Add to Home Screen" with the Share-icon one-liner (Apple offers no install API — this is the floor).
-   - In-app browsers (Instagram/Facebook/TikTok): keep "Open in Safari/Chrome" one-liner.
+I'll set up the merge script the moment they hand back the side table — that part I can do.
 
-## Important caveat
+## 2. Deletion audit + soft-delete (so this can't repeat)
 
-The service worker is intentionally disabled in the Lovable preview iframe and on `*.lovableproject.com` URLs (this is required so the editor never gets stuck on a stale cache). That means in the preview you'll still see "Install not available in this browser." 
+Migration on `public.invitations`:
 
-**Test on the live site** — https://tasteofconventions.com or https://tasteofconventions-com.lovable.app — after publishing. There:
-- Chrome's ⋮ menu will show "Install app".
-- Our in-page button will be one-tap.
+- Add `deleted_at timestamptz`, `deleted_by uuid` columns. Default queries still ignore soft-deleted rows because the existing select policies filter on owner/committee and we'll add `AND deleted_at IS NULL` to the admin list query.
+- Add a trigger `audit_invitations_change` that uses the existing `public.audit_row_change()` function for INSERT/UPDATE/DELETE on `invitations` (the function is already defined, just never attached).
+- Add the same trigger on `rsvps`, `inviters`, `team_invites`, and `cuisine_preorders` so every guest-data mutation is recorded.
+- Switch the admin "Delete invitation" action from `DELETE` to `UPDATE invitations SET deleted_at = now(), deleted_by = auth.uid()`. Add a small "Recently deleted (last 30 days)" panel on `/admin/invitation` with a one-click **Restore** button (sets `deleted_at = null`).
+- Keep hard-delete behind a separate "Purge" action for admins only, which still hits the audit trigger.
+
+That gives you: a) a complete log of every future mutation in `audit_log`, b) one-click restore for accidental deletes for 30 days, c) no breaking change for the rest of the app.
+
+## 3. Duplicate-flag count vs visible list (5 vs 2)
+
+Confirmed from the DB: there are **5 rows** in `duplicate_flags` covering **3 distinct invitation pairs** (Michelle, Shelley, Sofia). Two pairs are flagged twice (once for `phone`, once for `name`), so the badge inflates the number and the list may collapse identical pairs.
+
+Fixes:
+- `src/routes/_authenticated/admin/index.tsx` — change the badge query to count distinct `(LEAST(invitation_a, invitation_b), GREATEST(invitation_a, invitation_b))` pairs instead of raw rows. Done via a SQL view `duplicate_flag_pairs` (one row per pair, with `match_types text[]` aggregating phone/name/email).
+- Wherever the duplicates list is rendered, read from `duplicate_flag_pairs` so badge count and visible rows agree. I'll also add a "Resolved" toggle: an admin action that deletes both flag rows for a pair after they confirm they're the same person (and optionally merges into one invitation).
+- This is the only path that makes "5 flags" and "2 visible" reconcile — the answer is "3 pairs, shown as 3 cards".
 
 ## Files touched
 
-- `vite.config.ts` — add `VitePWA` plugin
-- `package.json` — add `vite-plugin-pwa` + `workbox-window` (via `bun add`)
-- `src/pwa-register.ts` — new
-- `src/start.ts` — one import line
-- `src/components/install-app-button.tsx` — remove stale Android hint, add pending state
+- New migration: soft-delete columns + audit triggers + `duplicate_flag_pairs` view.
+- `src/routes/_authenticated/admin/index.tsx` — badge query.
+- `src/routes/_authenticated/admin/invitation.tsx` (or wherever invitations are listed) — filter `deleted_at IS NULL`, add Recently Deleted panel, swap delete action to soft-delete.
+- `src/lib/invitations.functions.ts` — add `softDeleteInvitation`, `restoreInvitation`, `resolveDuplicatePair` server fns.
+- The duplicates list view — read from the new view.
 
-No backend, manifest, auth, or routing changes.
+## What you'll see when done
+
+- Admin home badge: "3 possible duplicates" (matches what you see on screen).
+- Each duplicate card shows the match reasons as chips ("phone", "name") and has a **Resolve** button.
+- Delete on an invitation moves it to a Recently Deleted list for 30 days; one click restores it.
+- Every future change to invitations/rsvps/inviters/team_invites is recorded in `audit_log` with user, IP, before/after.
