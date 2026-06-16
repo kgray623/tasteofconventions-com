@@ -606,3 +606,56 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
     await sendRsvpConfirmation(invitationId, data.status, effectivePartySize);
     return { ok: true, invitation_id: invitationId, waitlisted };
   });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Admin: list & restore archived (deleted) rows
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function assertAdmin(supabase: any, userId: string) {
+  const { data } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
+  if (!data) throw new Error("Forbidden");
+}
+
+export const listDeletedRows = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { table?: string; days?: number }) => ({
+    table: d.table ?? "invitations",
+    days: Math.min(Math.max(d.days ?? 30, 1), 365),
+  }))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const since = new Date(Date.now() - data.days * 24 * 60 * 60 * 1000).toISOString();
+    const { data: rows, error } = await supabaseAdmin
+      .from("deleted_rows_archive")
+      .select("id, table_name, row_id, row_data, deleted_by_name, deleted_by_phone, deleted_at")
+      .eq("table_name", data.table)
+      .gte("deleted_at", since)
+      .order("deleted_at", { ascending: false })
+      .limit(500);
+    if (error) throw publicDbError(error);
+    return { rows: rows ?? [] };
+  });
+
+export const restoreDeletedRow = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { archive_id: string }) => ({ archive_id: String(d.archive_id) }))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { data: arch, error: aerr } = await supabaseAdmin
+      .from("deleted_rows_archive")
+      .select("table_name, row_data")
+      .eq("id", data.archive_id)
+      .maybeSingle();
+    if (aerr || !arch) throw new Error("Archive entry not found");
+
+    const allowed = new Set(["invitations", "rsvps", "inviters", "team_invites", "cuisine_preorders"]);
+    if (!allowed.has(arch.table_name)) throw new Error("Unsupported table");
+
+    const row = arch.row_data as Record<string, unknown>;
+    const { error: insErr } = await supabaseAdmin.from(arch.table_name as any).insert(row);
+    if (insErr) throw publicDbError(insErr, `Restore failed: ${insErr.message}`);
+
+    await supabaseAdmin.from("deleted_rows_archive").delete().eq("id", data.archive_id);
+    return { ok: true };
+  });
+
