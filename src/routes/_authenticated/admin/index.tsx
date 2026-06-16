@@ -17,6 +17,7 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 function AdminOverview() {
   const { view } = useSearch({ from: "/_authenticated/admin" });
   const { isAdmin, loading: rolesLoading } = useRoles();
+  const [sampleGuestToken, setSampleGuestToken] = useState<string | null>(null);
   const [counts, setCounts] = useState({
     invites: 0,
     flags: 0,
@@ -26,6 +27,21 @@ function AdminOverview() {
     preorders: 0,
     rsvps: 0,
   });
+
+  useEffect(() => {
+    if (rolesLoading || !isAdmin) return;
+    (async () => {
+      const { data } = await supabase
+        .from("invitations")
+        .select("rsvp_token")
+        .eq("is_committee", false)
+        .not("rsvp_token", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      setSampleGuestToken((data?.rsvp_token as string | null) ?? null);
+    })();
+  }, [rolesLoading, isAdmin]);
 
   useEffect(() => {
     if (rolesLoading || !isAdmin) return;
