@@ -103,6 +103,7 @@ function AdminOverview() {
     { label: "RSVPs", value: counts.rsvps, to: "/admin/my-rsvp", newKey: "admin:rsvps-tile" as const },
     { label: "Food items ordered", value: counts.preorders, to: "/admin/preorders", newKey: undefined },
     { label: "Audit log", value: 0, to: "/admin/audit-log", newKey: undefined },
+    { label: "Recently deleted", value: 0, to: "/admin/recently-deleted", newKey: undefined },
   ] as const;
 
 
