@@ -311,6 +311,37 @@ export function CommitteeWorkspace() {
     }
   };
 
+  const deleteGuest = async (guest: CommitteeGuest) => {
+    const { error } = await supabase.from("invitations").delete().eq("id", guest.id);
+    if (error) {
+      toast.error(`Couldn't delete: ${error.message}`);
+      return;
+    }
+    toast.success(`Deleted ${guest.guest_name}.`);
+    await loadGuests();
+  };
+
+  const saveGuestEdits = async (
+    guest: CommitteeGuest,
+    edits: { guest_name: string; guest_phone: string; guest_email: string },
+  ) => {
+    const { error } = await supabase
+      .from("invitations")
+      .update({
+        guest_name: edits.guest_name.trim(),
+        guest_phone: edits.guest_phone.trim() || null,
+        guest_email: edits.guest_email.trim() || null,
+      })
+      .eq("id", guest.id);
+    if (error) {
+      toast.error(`Couldn't save: ${error.message}`);
+      return false;
+    }
+    toast.success(`Updated ${edits.guest_name.trim() || guest.guest_name}.`);
+    await loadGuests();
+    return true;
+  };
+
   const mineHostIdSet = new Set(myHostIds.length ? myHostIds : user ? [user.id] : []);
   const myGuestsUnsorted = user ? guests.filter((g) => mineHostIdSet.has(g.host_id)) : [];
 
