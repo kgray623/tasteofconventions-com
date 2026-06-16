@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Download } from "lucide-react";
+import { Download, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/install")({
@@ -9,12 +9,30 @@ export const Route = createFileRoute("/install")({
       {
         name: "description",
         content:
-          "Save the A Taste icon to your phone or computer, then tap it to open the login page.",
+          "Save a one-tap shortcut to the A Taste login page on your phone or computer.",
       },
     ],
   }),
   component: InstallPage,
 });
+
+const LOGIN_URL = "https://tasteofconventions.com/login";
+
+function downloadShortcut() {
+  // .url files are clickable shortcuts on Chromebook, Windows, and most Linux
+  // file managers. Double-tapping the saved file opens the login page in the
+  // default browser.
+  const contents = `[InternetShortcut]\r\nURL=${LOGIN_URL}\r\n`;
+  const blob = new Blob([contents], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "A Taste login.url";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 function InstallPage() {
   return (
@@ -34,13 +52,19 @@ function InstallPage() {
 
         <h1 className="font-display text-2xl text-ink">Save A Taste Shortcut</h1>
         <p className="text-sm text-muted-foreground">
-          Save the image, then tap it from your phone or computer to open the login page.
+          Save a one-tap shortcut to the login page. Tap the icon above to open
+          login right now.
         </p>
 
-        <Button asChild className="w-full" size="lg">
+        <Button onClick={downloadShortcut} className="w-full" size="lg">
+          <Download className="mr-2 h-5 w-5" />
+          Save shortcut
+        </Button>
+
+        <Button asChild variant="outline" className="w-full">
           <a href="/icon-512.png" download="a-taste-of-special-conventions.png">
-            <Download className="mr-2 h-5 w-5" />
-            Save image
+            <ImageIcon className="mr-2 h-5 w-5" />
+            Save image only (no link)
           </a>
         </Button>
 
