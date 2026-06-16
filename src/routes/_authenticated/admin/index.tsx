@@ -114,20 +114,22 @@ function AdminOverview() {
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {stats.map((s) => (
-          <Link
-            key={s.label}
-            to={s.to}
-            onClick={() => s.newKey && markSeen(s.newKey)}
-            className="relative block"
-          >
-            {s.newKey && <NewBadge target={s.newKey} className="absolute -top-2 -right-2 z-10" />}
-            <Card className="p-5 hover:border-terracotta transition">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">{s.label}</p>
-              <p className="font-display text-3xl mt-2">{s.value}</p>
-            </Card>
-          </Link>
+          <div key={s.label} className="flex items-center gap-2">
+            {s.newKey && <NewBadge target={s.newKey} />}
+            <Link
+              to={s.to}
+              onClick={() => s.newKey && markSeen(s.newKey)}
+              className="block flex-1"
+            >
+              <Card className="p-5 hover:border-terracotta transition">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">{s.label}</p>
+                <p className="font-display text-3xl mt-2">{s.value}</p>
+              </Card>
+            </Link>
+          </div>
         ))}
       </div>
+
 
     </div>
   );
