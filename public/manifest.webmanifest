@@ -3,7 +3,7 @@
   "short_name": "Taste",
   "description": "Convention team workspace and guest RSVPs for A Taste of Special Conventions.",
   "id": "/",
-  "start_url": "/",
+  "start_url": "/login?installed=1",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
