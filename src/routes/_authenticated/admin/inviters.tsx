@@ -355,7 +355,10 @@ function InvitersPage() {
   };
 
   const confirmedResponseCount = (guests: GuestRow[]) =>
-    guests.filter((guest) => guest.rsvp_status === "yes").length;
+    guests.filter((guest) => guest.rsvp_status === "yes" && guest.rsvp_attendance_mode !== "zoom").length;
+
+  const virtualResponseCount = (guests: GuestRow[]) =>
+    guests.filter((guest) => guest.rsvp_status === "yes" && guest.rsvp_attendance_mode === "zoom").length;
 
   const sendMessage = async () => {
     const text = messageBody.trim();
