@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Share, PlusSquare, MoreVertical, Apple, Smartphone, CheckCircle2 } from "lucide-react";
+import { Share, PlusSquare, MoreVertical, Apple, Smartphone, Monitor, CheckCircle2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   getInstallPromptSnapshot,
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/install")({
       { property: "og:title", content: "Install A Taste of Special Conventions" },
       {
         property: "og:description",
-        content: "Install the app on your phone, tablet, or Chromebook in a few seconds.",
+        content: "Install the app on your phone, tablet, or computer in a few seconds.",
       },
     ],
   }),
@@ -85,7 +85,7 @@ function InstallPage() {
             Install A Taste of Special Conventions
           </h1>
           <p className="text-sm text-muted-foreground">
-            Add it to your home screen or desktop so it opens with one tap — just like a real app.
+            Save it to your home screen or desktop so it opens with one tap — just like a real app.
           </p>
         </div>
 
@@ -94,6 +94,13 @@ function InstallPage() {
             <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" />
             <span>You're already using the installed app. Nice!</span>
           </div>
+        )}
+
+        {!installed && canPrompt && (
+          <Button onClick={handleInstall} disabled={busy} className="w-full" size="lg">
+            <Download className="mr-2 h-5 w-5" />
+            {busy ? "Installing…" : "Install app now"}
+          </Button>
         )}
 
         {!installed && platform === "ios" && (
@@ -126,63 +133,66 @@ function InstallPage() {
           </div>
         )}
 
-        {!installed && platform === "android" && (
+        {!installed && platform === "android" && !canPrompt && (
           <div className="space-y-3 rounded-lg border border-border bg-muted/40 p-4 text-sm">
             <div className="flex items-center gap-2 font-semibold text-ink">
               <Smartphone className="h-5 w-5" /> Android (Chrome)
             </div>
-            {canPrompt ? (
-              <Button onClick={handleInstall} disabled={busy} className="w-full">
-                {busy ? "Installing…" : "Install app now"}
-              </Button>
-            ) : (
-              <>
-                <ol className="space-y-2 pl-1 text-ink">
-                  <li className="flex items-start gap-2">
-                    <span className="mt-0.5 font-bold text-primary">1.</span>
-                    <span>
-                      Tap the <MoreVertical className="inline h-4 w-4 align-text-bottom" /> menu
-                      in the top-right of Chrome.
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="mt-0.5 font-bold text-primary">2.</span>
-                    <span>
-                      Tap <strong>Add to Home screen</strong> (or <strong>Install app</strong> if
-                      you see it).
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="mt-0.5 font-bold text-primary">3.</span>
-                    <span>
-                      Tap <strong>Add</strong>. The icon now lives on your home screen.
-                    </span>
-                  </li>
-                </ol>
-                <p className="text-xs text-muted-foreground">
-                  Don't see "Install app"? <strong>Add to Home screen</strong> works the same way
-                  and is always available.
-                </p>
-              </>
-            )}
+            <ol className="space-y-2 pl-1 text-ink">
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 font-bold text-primary">1.</span>
+                <span>
+                  Tap the <MoreVertical className="inline h-4 w-4 align-text-bottom" /> menu in the
+                  top-right of Chrome.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 font-bold text-primary">2.</span>
+                <span>
+                  Tap <strong>Add to Home screen</strong> (or <strong>Install app</strong>).
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 font-bold text-primary">3.</span>
+                <span>
+                  Tap <strong>Add</strong>. The icon lands on your home screen.
+                </span>
+              </li>
+            </ol>
           </div>
         )}
 
-        {!installed && platform === "desktop" && (
+        {!installed && platform === "desktop" && !canPrompt && (
           <div className="space-y-3 rounded-lg border border-border bg-muted/40 p-4 text-sm">
             <div className="flex items-center gap-2 font-semibold text-ink">
-              <Smartphone className="h-5 w-5" /> Open this page on your phone
+              <Monitor className="h-5 w-5" /> Desktop / Chromebook (Chrome or Edge)
             </div>
-            <p className="text-ink">
-              For the home-screen icon, open{" "}
-              <strong>tasteofconventions.com/install</strong> directly on your iPhone or Android
-              browser, then follow the prompts.
+            <ol className="space-y-2 pl-1 text-ink">
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 font-bold text-primary">1.</span>
+                <span>
+                  Look at the right edge of the address bar for a small{" "}
+                  <Download className="inline h-4 w-4 align-text-bottom" /> install icon and click it.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 font-bold text-primary">2.</span>
+                <span>
+                  No icon? Click the <MoreVertical className="inline h-4 w-4 align-text-bottom" />{" "}
+                  menu (top-right) → <strong>Cast, save, and share</strong> →{" "}
+                  <strong>Install page as app…</strong>
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 font-bold text-primary">3.</span>
+                <span>
+                  Click <strong>Install</strong>. The app icon goes on your desktop or app drawer.
+                </span>
+              </li>
+            </ol>
+            <p className="text-xs text-muted-foreground">
+              On Safari (Mac): <strong>File → Add to Dock</strong>.
             </p>
-            {canPrompt && (
-              <Button onClick={handleInstall} disabled={busy} className="w-full">
-                {busy ? "Installing…" : "Install on this computer"}
-              </Button>
-            )}
           </div>
         )}
 

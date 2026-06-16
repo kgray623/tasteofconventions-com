@@ -1,19 +1,27 @@
-I found the actual difference: Wellness Tracker is not doing a special “download image” trick. Its installed desktop/home-screen icon works because its manifest starts the app at `/login?installed=1`, and its install page only shows the desktop button if Chrome exposes the native install prompt. The current Taste app is starting installed icons at `/`, and I added too much fallback instruction text.
+Implement the install flow like the working app pattern, without extra instruction clutter:
 
-Plan:
+1. **Make the app actually installable in Chrome**
+   - Keep the manifest and app icons.
+   - Ensure the service worker setup is valid on the published site, because Chrome desktop/Android often will not show the native install prompt unless the site is installable.
+   - Keep the service worker guarded so it does not run in Lovable preview/dev.
 
-1. **Make the installed icon open the login page**
-   - Update the web app manifest so desktop/home-screen launches go to `/login?installed=1`, matching the Wellness Tracker pattern.
-   - Keep the app name/icon as “A Taste of Special Conventions.”
+2. **Installed icon opens the login page**
+   - Keep `start_url` pointed at `/login?installed=1` so the saved desktop/home-screen icon launches straight into the login page.
 
-2. **Simplify `/install` to match Wellness Tracker**
-   - Remove the Chromebook/desktop instruction block that tells you to hunt through Chrome menus.
-   - For desktop/Chromebook, show a simple “Open this page on your phone” message, and only show an “Install on this computer” button if Chrome actually allows the prompt.
-   - Keep the phone install instructions for iPhone/Android.
+3. **Replace the current `/install` page with a direct install page**
+   - Top action: show an **Install App** button when Chrome/Android exposes the native prompt.
+   - iPhone/iPad: show only the Safari Share → Add to Home Screen steps, since iOS does not provide a web install button.
+   - Desktop/Chromebook/Android without prompt: show short browser-specific fallback steps for saving the app icon, not the current “open this page on your phone” dead end.
 
-3. **Keep the Install App button simple**
-   - If Chrome provides the install prompt, clicking “Install App” opens it.
-   - If Chrome does not provide the prompt, clicking it goes to `/install` instead of showing blocked/error wording.
+4. **Keep the header Install App button simple**
+   - If install prompt exists, click opens the browser install prompt.
+   - Otherwise it opens `/install` for the right device-specific steps.
 
-4. **Do not add service workers or offline caching**
-   - This remains the same lightweight installable-app setup Wellness Tracker used: manifest + icon + install page.
+5. **Verify**
+   - Check that `/install` renders in preview.
+   - Check that the manifest still loads and points installed app launches to `/login?installed=1`.
+
+Technical notes:
+- No database changes.
+- No changes to login behavior.
+- No new offline feature promises; this is only to satisfy Chrome installability and home-screen/desktop app icons.
