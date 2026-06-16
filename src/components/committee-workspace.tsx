@@ -57,6 +57,9 @@ export function CommitteeWorkspace() {
   const [myCats, setMyCats] = useState<{ id: string; name: string; description: string | null }[]>([]);
   const [openChatId, setOpenChatId] = useState<string | null>(null);
   const [profileNames, setProfileNames] = useState<Record<string, string>>({});
+  const [committeeNames, setCommitteeNames] = useState<Set<string>>(new Set());
+  const [committeePhones, setCommitteePhones] = useState<Set<string>>(new Set());
+  const [myGuestsFilter, setMyGuestsFilter] = useState<"all" | "committee">("all");
   const handledChatParamRef = useRef<string | null>(null);
 
   useEffect(() => {
