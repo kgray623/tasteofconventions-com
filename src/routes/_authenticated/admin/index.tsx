@@ -19,6 +19,7 @@ function AdminOverview() {
     team: 0,
     pending: 0,
     preorders: 0,
+    rsvps: 0,
   });
 
   useEffect(() => {
@@ -67,6 +68,7 @@ function AdminOverview() {
         categories: c.count ?? 0,
         team: keys.size,
         pending: Math.max(0, totalInvitations - respondedInvitationIds.size),
+        rsvps: rsvps.length,
         preorders: ((pre.data ?? []) as Array<{ selections?: unknown[] | null }>).reduce(
           (sum, row) => {
             if (!Array.isArray(row.selections)) return sum;
@@ -95,6 +97,7 @@ function AdminOverview() {
     { label: "Volunteer categories", value: counts.categories, to: "/admin/categories" },
     { label: "Committee members", value: counts.team, to: "/admin/team" },
     { label: "Pending invites", value: counts.pending, to: "/admin/team" },
+    { label: "RSVPs", value: counts.rsvps, to: "/admin/my-rsvp" },
     { label: "Food items ordered", value: counts.preorders, to: "/admin/preorders" },
     { label: "Audit log", value: 0, to: "/admin/audit-log" },
   ] as const;
