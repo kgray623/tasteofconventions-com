@@ -78,6 +78,7 @@ type GuestRow = {
   
   rsvp_status: string | null;
   rsvp_party_size: number | null;
+  rsvp_attendance_mode: string | null;
   rsvp_id: string | null;
 };
 
