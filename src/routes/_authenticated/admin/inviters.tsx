@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Papa from "papaparse";
 import { supabase } from "@/integrations/supabase/client";
-import { NewBadge } from "@/components/new-badge";
+
 import { useAuth } from "@/hooks/use-auth";
 import { useRoles } from "@/hooks/use-roles";
 import { Card } from "@/components/ui/card";
@@ -980,7 +980,7 @@ function InvitersPage() {
                   <th className="px-2 py-3">Name</th>
                   <th className="px-4 py-3 w-24">Quota</th>
                   <th className="px-4 py-3 w-24">Uploaded</th>
-                  <th className="px-4 py-3 w-32"><span className="inline-flex items-center gap-1"><NewBadge target="admin:in-person-column" direction="right" className="px-1.5 py-0.5 text-[9px] gap-0.5" />In-person</span></th>
+                  <th className="px-4 py-3 w-32">In-person</th>
                   <th className="px-4 py-3 w-24">Virtual</th>
                   <th className="px-4 py-3 w-24">Remaining</th>
                   <th className="px-4 py-3 w-24">Status</th>
