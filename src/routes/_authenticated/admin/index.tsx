@@ -45,6 +45,7 @@ function AdminOverview() {
   const { isAdmin, loading: rolesLoading } = useRoles();
   const fetchAudit = useServerFn(getAdminAudit);
   const fetchRecon = useServerFn(getReconciliationRows);
+  const [showCommitteePreview, setShowCommitteePreview] = useState(view === "committee");
   const [sampleGuestToken, setSampleGuestToken] = useState<string | null>(null);
   const [audit, setAudit] = useState<AuditData | null>(null);
   const [auditError, setAuditError] = useState<string | null>(null);
@@ -84,8 +85,12 @@ function AdminOverview() {
     })();
   }, [rolesLoading, isAdmin, fetchAudit]);
 
+  useEffect(() => {
+    setShowCommitteePreview(view === "committee");
+  }, [view]);
+
   if (rolesLoading) return <p className="text-muted-foreground">Loading workspace…</p>;
-  if (!isAdmin || view === "committee") return <CommitteeWorkspace />;
+  if (!isAdmin || showCommitteePreview) return <CommitteeWorkspace />;
 
   const all = audit?.all ?? emptyTotals();
   const recon = audit?.reconciliation;
@@ -165,14 +170,12 @@ function AdminOverview() {
             <ExternalLink className="w-3 h-3 ml-2 opacity-60" />
           </Button>
           <Button
-            asChild
             variant="outline"
             size="sm"
+            onClick={() => setShowCommitteePreview(true)}
           >
-            <Link to="/admin" search={{ view: "committee" }}>
-              <Users className="w-4 h-4 mr-2" />
-              View as Committee
-            </Link>
+            <Users className="w-4 h-4 mr-2" />
+            View as Committee
           </Button>
           <Button
             variant="outline"
