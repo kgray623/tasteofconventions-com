@@ -889,6 +889,116 @@ function CollapsibleSection({
   );
 }
 
+function MyGuestsGroup({
+  label,
+  tone,
+  guests,
+  open,
+  onToggle,
+  isCommitteeGuest,
+  duplicateIds,
+  settingRsvpId,
+  setRsvpFor,
+  saveGuestEdits,
+  deleteGuest,
+}: {
+  label: string;
+  tone: "emerald" | "muted" | "rose";
+  guests: CommitteeGuest[];
+  open: boolean;
+  onToggle: () => void;
+  isCommitteeGuest: (g: CommitteeGuest) => boolean;
+  duplicateIds: Set<string>;
+  settingRsvpId: string | null;
+  setRsvpFor: (guest: CommitteeGuest, value: "yes1" | "yes2" | "yes3" | "yes4" | "no" | "clear") => Promise<void>;
+  saveGuestEdits: (
+    guest: CommitteeGuest,
+    edits: { guest_name: string; guest_phone: string; guest_email: string },
+  ) => Promise<boolean>;
+  deleteGuest: (guest: CommitteeGuest) => Promise<void>;
+}) {
+  const toneClasses =
+    tone === "emerald"
+      ? "border-emerald-300 bg-emerald-50/40"
+      : tone === "rose"
+        ? "border-rose-200 bg-rose-50/40"
+        : "border-border bg-muted/30";
+  return (
+    <Collapsible open={open} onOpenChange={onToggle}>
+      <div className={`rounded-md border ${toneClasses} overflow-hidden`}>
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className="w-full p-3 flex items-center justify-between gap-2 text-left cursor-pointer hover:bg-black/[0.03] transition-colors"
+          >
+            <span className="font-semibold text-sm">{label} ({guests.length})</span>
+            <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          {guests.length === 0 ? (
+            <div className="p-3 text-xs text-muted-foreground border-t border-border/60">No guests in this group.</div>
+          ) : (
+            <div className="divide-y divide-border/60 border-t border-border/60 max-h-[360px] overflow-auto bg-background">
+              {guests.map((guest) => (
+                <div key={guest.id} className="p-3 flex flex-wrap items-center gap-3">
+                  <div className="flex-1 min-w-[160px]">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-medium">{guest.guest_name}</p>
+                      {isCommitteeGuest(guest) && (
+                        <span className="inline-flex items-center rounded-full bg-ink px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cream">
+                          Committee
+                        </span>
+                      )}
+                      {duplicateIds.has(guest.id) && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-brand-red px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                          <AlertTriangle className="w-3 h-3" /> Duplicate
+                        </span>
+                      )}
+                    </div>
+                    {guest.guest_phone && (
+                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                        <Phone className="w-3 h-3" /> {guest.guest_phone}
+                      </span>
+                    )}
+                  </div>
+
+                  <RsvpStatusBadge status={guest.rsvp_status} />
+                  {!guest.rsvp_status && (
+                    <Select
+                      value=""
+                      disabled={settingRsvpId === guest.id}
+                      onValueChange={(v) =>
+                        void setRsvpFor(guest, v as "yes1" | "yes2" | "yes3" | "yes4" | "no" | "clear")
+                      }
+                    >
+                      <SelectTrigger className="h-8 w-[160px] text-xs">
+                        <SelectValue placeholder={settingRsvpId === guest.id ? "Saving…" : "Record RSVP"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="no">No / declined</SelectItem>
+                        <SelectItem value="yes1">Yes — 1 person</SelectItem>
+                        <SelectItem value="yes2">Yes — 2 people</SelectItem>
+                        <SelectItem value="yes3">Yes — 3 people</SelectItem>
+                        <SelectItem value="yes4">Yes — 4 people</SelectItem>
+                        <SelectItem value="clear">Clear RSVP</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                  <EditGuestButton guest={guest} onSave={saveGuestEdits} />
+                  <DeleteGuestButton guest={guest} onDelete={deleteGuest} />
+                </div>
+              ))}
+            </div>
+          )}
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
+  );
+}
+
+
+
 function RsvpStatusBadge({ status }: { status: string | null }) {
   if (status === "yes") {
     return <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100"><Clock className="w-3 h-3 mr-1" /> RSVP'd yes</Badge>;
