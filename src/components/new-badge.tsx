@@ -1,41 +1,46 @@
 import { ArrowRight } from "lucide-react";
+import type { ReactNode } from "react";
 import { useIsNew, markSeen } from "@/lib/whats-new";
 
 type Props = {
   target: string;
-  /** Direction the arrow points — toward the new thing. Default: left (badge sits to the right of the item). */
-  direction?: "left" | "right";
   className?: string;
 };
 
-/**
- * Bright "NEW →" pill that points at a recently-added feature.
- * Auto-hides after the registry window or once the user has interacted with it.
- */
-export function NewBadge({ target, direction = "left", className = "" }: Props) {
+/** Bright red "NEW →" pill that sits to the LEFT of the new thing and points right at it. */
+export function NewBadge({ target, className = "" }: Props) {
   const show = useIsNew(target);
   if (!show) return null;
-
-  const arrow = (
-    <ArrowRight
-      className={`w-3.5 h-3.5 ${direction === "left" ? "rotate-180" : ""}`}
-      strokeWidth={3}
-    />
-  );
-
   return (
     <span
       onClick={(e) => {
         e.stopPropagation();
         markSeen(target);
       }}
-      className={`inline-flex items-center gap-1 rounded-full bg-terracotta px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-md animate-pulse cursor-pointer select-none ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-full bg-brand-red px-3 py-1.5 text-sm font-extrabold uppercase tracking-wider text-white shadow-lg ring-2 ring-white animate-pulse cursor-pointer select-none ${className}`}
       role="status"
       aria-label="New feature"
     >
-      {direction === "left" && arrow}
       NEW
-      {direction === "right" && arrow}
+      <ArrowRight className="w-5 h-5" strokeWidth={3} />
     </span>
+  );
+}
+
+/** Convenience wrapper: renders [NEW →] [children] in a flex row. */
+export function NewBadgeRow({
+  target,
+  children,
+  className = "",
+}: {
+  target: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`inline-flex items-center gap-2 ${className}`}>
+      <NewBadge target={target} />
+      {children}
+    </div>
   );
 }

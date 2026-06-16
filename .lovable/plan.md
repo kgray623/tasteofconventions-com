@@ -1,47 +1,29 @@
-## What
+## Fix the NEW badge + add it to every new thing from today
 
-Show a bright **NEW →** badge on dashboard tiles (and other newly added UI) for any feature I add, until the user has seen it. No backend table needed — entirely client-side using `localStorage`.
+### Badge redesign — `src/components/new-badge.tsx`
+- **Color:** bright red (new `--brand-red` token in `src/styles.css`, e.g. `oklch(0.62 0.24 27)`), not terracotta.
+- **Size:** bigger — `text-sm`, `px-3 py-1.5`, bolder shadow, larger arrow (`w-5 h-5`, `strokeWidth={3}`).
+- **Position:** sits to the **LEFT** of the target element (inline), arrow points **RIGHT** at it. No more absolute overlay on top of the item.
+- Keeps pulse animation + click-to-dismiss + 14-day auto-hide.
+- New layout helper `<NewBadgeRow>{children}</NewBadgeRow>` that renders `[NEW →] [item]` in a flex row so callers don't have to repeat the wrapper.
 
-## How it works
+### Add the badge to every new thing from today
 
-1. **Feature registry** — a single source of truth at `src/lib/whats-new.ts`:
-   ```ts
-   export const WHATS_NEW: Record<string, { addedAt: string; expiresInDays?: number }> = {
-     "admin:install-button": { addedAt: "2026-06-16" },
-     "admin:rsvps-tile":      { addedAt: "2026-06-15" },
-     // future entries appended here every time I ship something new
-   };
-   ```
-   Each entry has a stable key + the date I shipped it. Default badge lifetime: 14 days from `addedAt`, or until the user dismisses it (whichever comes first).
+Append to `WHATS_NEW` registry and wire a `<NewBadge>` on the LEFT of each:
+1. **Notification bell** — in `src/components/site-header.tsx`, wrap `<NotificationBell />` with the badge row. Key: `header:notification-bell`.
+2. **Download the app button** — already wired in `src/routes/_authenticated/admin.tsx`, switch from absolute overlay to inline-left. Key stays `admin:install-button`.
+3. **RSVPs dashboard tile** — already wired in `src/routes/_authenticated/admin/index.tsx`, switch from absolute overlay to a small inline pill above the tile label so it sits to the left of the number. Key stays `admin:rsvps-tile`.
+4. **Clickable dashboard tiles + back button feature** — add badge to the dashboard heading area on `/admin` so users notice the whole grid is now navigable. Key: `admin:clickable-tiles`.
 
-2. **`useIsNew(key)` hook** — returns `true` when:
-   - the key exists in `WHATS_NEW`,
-   - `now − addedAt < expiresInDays`, AND
-   - `localStorage["whatsnew:seen:<userId>:<key>"]` is not set.
+### Files
+- **Edit** `src/styles.css` — add `--brand-red` token + Tailwind utility class `bg-brand-red`.
+- **Edit** `src/components/new-badge.tsx` — red, bigger, left-side layout; export `NewBadgeRow`.
+- **Edit** `src/lib/whats-new.ts` — add 2 new keys (`header:notification-bell`, `admin:clickable-tiles`).
+- **Edit** `src/components/site-header.tsx` — wrap bell with badge.
+- **Edit** `src/routes/_authenticated/admin.tsx` — replace absolute overlay with inline left badge; add `admin:clickable-tiles` badge next to the heading.
+- **Edit** `src/routes/_authenticated/admin/index.tsx` — replace absolute overlay with inline left badge on RSVPs tile.
 
-3. **`<NewBadge target={key} />` component** — renders a bright terracotta pill `NEW ←` with a small arrow icon, pointing at the thing it's attached to. Clicking the tile (or the badge's ✕) marks it seen in `localStorage` so it disappears for that user.
-
-4. **First wiring** — add badges to the two genuinely-new items on the admin dashboard right now:
-   - The **Download the app** button in the admin header
-   - The **RSVPs** tile on `/admin`
-
-## Going forward — my rule
-
-Every time I add a new tile, button, or page to the admin dashboard (or anywhere user-facing), I will:
-- append an entry to `WHATS_NEW` with today's date,
-- wrap or place a `<NewBadge target="..." />` next to the new UI.
-
-Users see a bright `NEW ←` arrow for ~2 weeks or until they interact with it, then it auto-disappears.
-
-## Files
-
-- **New** `src/lib/whats-new.ts` — feature registry + `useIsNew` hook + `markSeen` helper.
-- **New** `src/components/new-badge.tsx` — the bright pill+arrow component.
-- **Edit** `src/routes/_authenticated/admin.tsx` — add `<NewBadge target="admin:install-button" />` next to the install button.
-- **Edit** `src/routes/_authenticated/admin/index.tsx` — add `<NewBadge target="admin:rsvps-tile" />` on the RSVPs tile, and call `markSeen` when any tile is clicked.
-
-## Not changing
-
-- No database tables — no `last_seen_at` tracking on the server (you said features, not data activity).
-- No edits to features that aren't new.
-- The actual auth/last-login flow stays exactly as it is.
+### Not changing
+- Any non-new UI.
+- Dismissal/expiry logic.
+- Auth, data, server functions.
