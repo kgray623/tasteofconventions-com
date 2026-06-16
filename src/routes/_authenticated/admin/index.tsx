@@ -30,7 +30,7 @@ function AdminOverview() {
     (async () => {
       const [i, f, c, ti, cg, inv, rsvpRows, pre] = await Promise.all([
         supabase.from("invitations").select("id", { count: "exact", head: true }),
-        supabase.from("duplicate_flags").select("id", { count: "exact", head: true }),
+        supabase.from("duplicate_flag_pairs").select("invitation_a", { count: "exact", head: true }),
         supabase.from("categories").select("id", { count: "exact", head: true }),
         supabase.from("team_invites").select("phone,name"),
         supabase.from("invitations").select("guest_phone,guest_name").eq("is_committee", true),
