@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,34 +8,47 @@ import { useRoles } from "@/hooks/use-roles";
 import { CommitteeWorkspace } from "@/components/committee-workspace";
 import { NewBadge } from "@/components/new-badge";
 import { markSeen } from "@/lib/whats-new";
-import { ExternalLink, User, Users, Shield } from "lucide-react";
-
+import { getAdminAudit, getReconciliationRows, type AudienceTotals } from "@/lib/admin-audit.functions";
+import { ExternalLink, User, Users, Shield, Download, AlertTriangle } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: AdminOverview,
 });
 
-type BucketCounts = {
-  uploaded: number;
-  sent: number;
-  yes: number;
-  no: number;
-  maybe: number;
-  waitlist: number;
-  pending: number;
+const emptyTotals = (): AudienceTotals => ({
+  uploaded: 0, sent: 0, yes: 0, yes_people: 0, no: 0, maybe: 0,
+  waitlist: 0, waitlist_people: 0, pending: 0, responses: 0,
+  food_orders: 0, food_meals: 0,
+});
+
+type AuditData = {
+  guests: AudienceTotals;
+  committee: AudienceTotals;
+  all: AudienceTotals;
+  reconciliation: {
+    invitations_total: number;
+    accounted_for: number;
+    duplicate_rsvp_invitations: number;
+    orphan_rsvps: number;
+    unlinked_preorders: { id: string; name: string; phone: string; meals: number }[];
+  };
 };
 
-const emptyBucket = (): BucketCounts => ({
-  uploaded: 0, sent: 0, yes: 0, no: 0, maybe: 0, waitlist: 0, pending: 0,
-});
+function escapeCsv(value: unknown) {
+  const text = String(value ?? "");
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
 
 function AdminOverview() {
   const { view } = useSearch({ from: "/_authenticated/admin" });
   const { isAdmin, loading: rolesLoading } = useRoles();
+  const fetchAudit = useServerFn(getAdminAudit);
+  const fetchRecon = useServerFn(getReconciliationRows);
   const [sampleGuestToken, setSampleGuestToken] = useState<string | null>(null);
-  const [guests, setGuests] = useState<BucketCounts>(emptyBucket);
-  const [committee, setCommittee] = useState<BucketCounts>(emptyBucket);
-  const [ops, setOps] = useState({ flags: 0, categories: 0, preorders: 0 });
+  const [audit, setAudit] = useState<AuditData | null>(null);
+  const [auditError, setAuditError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [ops, setOps] = useState({ flags: 0, categories: 0 });
 
   useEffect(() => {
     if (rolesLoading || !isAdmin) return;
@@ -54,107 +68,102 @@ function AdminOverview() {
   useEffect(() => {
     if (rolesLoading || !isAdmin) return;
     (async () => {
-      const [invRes, rsvpRes, flagsRes, catsRes, preRes] = await Promise.all([
-        supabase.from("invitations").select("id,is_committee,invite_sent_at"),
-        supabase.from("rsvps").select("invitation_id,status"),
+      try {
+        const result = (await fetchAudit()) as AuditData;
+        setAudit(result);
+        setAuditError(null);
+      } catch (e) {
+        setAuditError(e instanceof Error ? e.message : "Could not load audit");
+      }
+      const [flagsRes, catsRes] = await Promise.all([
         supabase.from("duplicate_flag_pairs").select("invitation_a", { count: "exact", head: true }),
         supabase.from("categories").select("id", { count: "exact", head: true }),
-        supabase.from("cuisine_preorders").select("selections"),
       ]);
-
-      type InvRow = { id: string; is_committee: boolean; invite_sent_at: string | null };
-      type RsvpRow = { invitation_id: string; status: string };
-      const invs = (invRes.data ?? []) as InvRow[];
-      const rsvps = (rsvpRes.data ?? []) as RsvpRow[];
-
-      const statusByInv = new Map<string, string>();
-      rsvps.forEach((r) => statusByInv.set(r.invitation_id, r.status));
-
-      const g = emptyBucket();
-      const c = emptyBucket();
-      for (const inv of invs) {
-        const bucket = inv.is_committee ? c : g;
-        bucket.uploaded += 1;
-        if (inv.invite_sent_at) bucket.sent += 1;
-        const status = statusByInv.get(inv.id);
-        if (!status) bucket.pending += 1;
-        else if (status === "yes") bucket.yes += 1;
-        else if (status === "no") bucket.no += 1;
-        else if (status === "maybe") bucket.maybe += 1;
-        else if (status === "waitlist") bucket.waitlist += 1;
-        else bucket.pending += 1;
-      }
-      setGuests(g);
-      setCommittee(c);
-
-      const preorders = ((preRes.data ?? []) as Array<{ selections?: unknown[] | null }>).reduce(
-        (sum, row) => {
-          if (!Array.isArray(row.selections)) return sum;
-          return sum + row.selections.reduce((s: number, item) => {
-            if (!item || typeof item !== "object") return s;
-            const key =
-              String((item as { cuisine?: unknown }).cuisine ?? "").trim() ||
-              String((item as { country?: unknown }).country ?? "").trim();
-            if (!key) return s;
-            const qty = Number((item as { qty?: unknown }).qty);
-            return s + (Number.isFinite(qty) && qty > 0 ? Math.round(qty) : 0);
-          }, 0);
-        },
-        0,
-      );
-
-      setOps({
-        flags: flagsRes.count ?? 0,
-        categories: catsRes.count ?? 0,
-        preorders,
-      });
+      setOps({ flags: flagsRes.count ?? 0, categories: catsRes.count ?? 0 });
     })();
-  }, [rolesLoading, isAdmin]);
+  }, [rolesLoading, isAdmin, fetchAudit]);
 
   if (rolesLoading) return <p className="text-muted-foreground">Loading workspace…</p>;
   if (!isAdmin || view === "committee") return <CommitteeWorkspace />;
 
-  const totalRsvps = (b: BucketCounts) => b.yes + b.no + b.maybe + b.waitlist;
+  const guests = audit?.guests ?? emptyTotals();
+  const committee = audit?.committee ?? emptyTotals();
+  const all = audit?.all ?? emptyTotals();
+  const recon = audit?.reconciliation;
 
-  type Row = { label: string; value: number; to: string; newKey?: "admin:rsvps-tile" };
-  const StatRow = ({ row }: { row: Row }) => (
-    <Link
-      to={row.to}
-      onClick={() => row.newKey && markSeen(row.newKey)}
-      className="flex items-center justify-between py-1.5 px-2 -mx-2 rounded hover:bg-muted/60 transition"
-    >
-      <span className="flex items-center gap-1.5 text-sm">
-        {row.newKey && <NewBadge target={row.newKey} />}
-        {row.label}
-      </span>
-      <span className="font-display text-lg tabular-nums">{row.value}</span>
-    </Link>
-  );
+  const downloadReconciliation = async () => {
+    setDownloading(true);
+    try {
+      const { rows } = (await fetchRecon()) as { rows: Record<string, unknown>[] };
+      const headers = [
+        "name", "phone", "email", "audience", "sms_sent",
+        "rsvp_status", "party_size", "attendance_mode", "ordering_food",
+        "responded_at", "preorder_selections", "preorder_meals",
+      ];
+      const lines = [headers.join(",")];
+      for (const row of rows) {
+        lines.push(headers.map((h) => escapeCsv(row[h])).join(","));
+      }
+      const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `reconciliation-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  type Row = { label: string; value: number | string; to?: string; newKey?: "admin:rsvps-tile"; emphasis?: boolean };
+  const StatRow = ({ row }: { row: Row }) => {
+    const inner = (
+      <>
+        <span className="flex items-center gap-1.5 text-sm">
+          {row.newKey && <NewBadge target={row.newKey} />}
+          {row.label}
+        </span>
+        <span className={`font-display tabular-nums ${row.emphasis ? "text-xl" : "text-lg"}`}>{row.value}</span>
+      </>
+    );
+    if (!row.to) {
+      return <div className="flex items-center justify-between py-1.5 px-2 -mx-2">{inner}</div>;
+    }
+    return (
+      <Link
+        to={row.to}
+        onClick={() => row.newKey && markSeen(row.newKey)}
+        className="flex items-center justify-between py-1.5 px-2 -mx-2 rounded hover:bg-muted/60 transition"
+      >
+        {inner}
+      </Link>
+    );
+  };
 
   const audienceCard = (
     title: string,
-    b: BucketCounts,
+    b: AudienceTotals,
     links: { upload: string; rsvp: string },
   ) => (
     <Card className="p-5 space-y-1">
       <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">{title}</p>
-      <StatRow row={{ label: "Uploaded", value: b.uploaded, to: links.upload }} />
+      <StatRow row={{ label: "Uploaded", value: b.uploaded, to: links.upload, emphasis: true }} />
       <StatRow row={{ label: "SMS sent", value: b.sent, to: links.upload }} />
       <div className="border-t my-2" />
-      <StatRow row={{ label: "Yes", value: b.yes, to: links.rsvp }} />
+      <StatRow row={{ label: "Yes (RSVPs)", value: b.yes, to: links.rsvp }} />
+      <StatRow row={{ label: "Yes (people)", value: b.yes_people, to: links.rsvp, emphasis: true }} />
       <StatRow row={{ label: "No", value: b.no, to: links.rsvp }} />
       <StatRow row={{ label: "Maybe", value: b.maybe, to: links.rsvp }} />
-      <StatRow row={{ label: "Waitlist", value: b.waitlist, to: links.rsvp }} />
+      <StatRow row={{ label: "Waitlist (RSVPs)", value: b.waitlist, to: links.rsvp }} />
+      <StatRow row={{ label: "Waitlist (people)", value: b.waitlist_people, to: links.rsvp }} />
       <StatRow row={{ label: "Pending", value: b.pending, to: links.rsvp }} />
       <div className="border-t my-2" />
-      <StatRow
-        row={{
-          label: "Total RSVPs",
-          value: totalRsvps(b),
-          to: links.rsvp,
-          newKey: title === "Guests" ? "admin:rsvps-tile" : undefined,
-        }}
-      />
+      <StatRow row={{ label: "Total responses", value: b.responses, to: links.rsvp }} />
+      <StatRow row={{ label: "Food orders", value: b.food_orders, to: "/admin/preorders" }} />
+      <StatRow row={{ label: "Meals ordered", value: b.food_meals, to: "/admin/preorders" }} />
     </Card>
   );
 
@@ -198,21 +207,65 @@ function AdminOverview() {
             View as Admin
             <ExternalLink className="w-3 h-3 ml-2 opacity-60" />
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={downloadReconciliation}
+            disabled={downloading}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            {downloading ? "Preparing…" : "Reconciliation CSV"}
+          </Button>
         </div>
       </Card>
 
+      {auditError && (
+        <Card className="p-4 border-destructive/40 bg-destructive/5">
+          <p className="text-sm">Audit failed to load: {auditError}</p>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {audienceCard("All invitees", all, { upload: "/admin/upload", rsvp: "/admin/my-rsvp" })}
         {audienceCard("Guests", guests, { upload: "/admin/upload", rsvp: "/admin/my-rsvp" })}
         {audienceCard("Committee", committee, { upload: "/admin/team", rsvp: "/admin/my-rsvp" })}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="p-5 space-y-1">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Reconciliation</p>
+          <StatRow row={{ label: "Invitations on file", value: recon?.invitations_total ?? 0, emphasis: true }} />
+          <StatRow row={{ label: "Accounted for (responded + pending)", value: recon?.accounted_for ?? 0 }} />
+          <div className="border-t my-2" />
+          <StatRow row={{ label: "Duplicate RSVP rows", value: recon?.duplicate_rsvp_invitations ?? 0 }} />
+          <StatRow row={{ label: "Orphan RSVPs (no invitation)", value: recon?.orphan_rsvps ?? 0 }} />
+          <StatRow row={{ label: "Unlinked food orders", value: recon?.unlinked_preorders.length ?? 0, to: "/admin/preorders" }} />
+          {recon && recon.unlinked_preorders.length > 0 && (
+            <div className="mt-3 pt-3 border-t space-y-2">
+              <div className="flex items-center gap-2 text-xs text-amber-700">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                These food orders are not linked to an invitation
+              </div>
+              <ul className="text-sm space-y-1">
+                {recon.unlinked_preorders.map((p) => (
+                  <li key={p.id} className="flex justify-between gap-2">
+                    <span className="truncate">{p.name} <span className="text-muted-foreground">· {p.phone}</span></span>
+                    <span className="tabular-nums text-muted-foreground">{p.meals} meal{p.meals === 1 ? "" : "s"}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </Card>
 
         <Card className="p-5 space-y-1">
           <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Operations</p>
           <StatRow row={{ label: "Duplicate flags", value: ops.flags, to: "/dashboard" }} />
           <StatRow row={{ label: "Volunteer categories", value: ops.categories, to: "/admin/categories" }} />
-          <StatRow row={{ label: "Food items ordered", value: ops.preorders, to: "/admin/preorders" }} />
+          <StatRow row={{ label: "Meals ordered (linked)", value: all.food_meals, to: "/admin/preorders" }} />
           <div className="border-t my-2" />
-          <StatRow row={{ label: "Audit log", value: 0, to: "/admin/audit-log" }} />
-          <StatRow row={{ label: "Recently deleted", value: 0, to: "/admin/recently-deleted" }} />
+          <StatRow row={{ label: "Audit log", value: "→", to: "/admin/audit-log" }} />
+          <StatRow row={{ label: "Recently deleted", value: "→", to: "/admin/recently-deleted" }} />
         </Card>
       </div>
     </div>

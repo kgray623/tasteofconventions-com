@@ -78,8 +78,11 @@ function PreorderReportPage() {
     if (!rolesLoading && isTeam) void load();
   }, [rolesLoading, isTeam]);
 
+  const linkedRows = useMemo(() => rows.filter((r) => r.invitation_id), [rows]);
+  const unlinkedRows = useMemo(() => rows.filter((r) => !r.invitation_id), [rows]);
+
   const detailedRows = useMemo(() => {
-    return rows.flatMap((row) =>
+    return linkedRows.flatMap((row) =>
       parseSelections(row.selections).map((selection) => ({
         id: row.id,
         name: row.name,
@@ -89,7 +92,20 @@ function PreorderReportPage() {
         updatedAt: row.updated_at,
       })),
     );
-  }, [rows]);
+  }, [linkedRows]);
+
+  const unlinkedDetailed = useMemo(() => {
+    return unlinkedRows.flatMap((row) =>
+      parseSelections(row.selections).map((selection) => ({
+        id: row.id,
+        name: row.name,
+        phone: row.phone,
+        cuisine: selection.cuisine,
+        qty: selection.qty,
+        updatedAt: row.updated_at,
+      })),
+    );
+  }, [unlinkedRows]);
 
   const totals = useMemo(() => {
     const map = new Map<string, number>();
@@ -100,6 +116,7 @@ function PreorderReportPage() {
 
   const totalMeals = totals.reduce((sum, row) => sum + row.qty, 0);
   const restaurantMeals = totals.reduce((sum, row) => (CUISINES.includes(row.cuisine as (typeof CUISINES)[number]) ? sum + row.qty : sum), 0);
+  const unlinkedMeals = unlinkedDetailed.reduce((sum, r) => sum + r.qty, 0);
 
   const exportCsv = () => {
     const summaryLines = [
@@ -175,8 +192,62 @@ function PreorderReportPage() {
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Restaurant total</p>
           <p className="font-display text-4xl mt-3">{restaurantMeals}</p>
           <p className="text-xs text-muted-foreground mt-1">assigned cuisine dishes · {totalMeals} including review</p>
+          {unlinkedMeals > 0 && (
+            <p className="text-xs text-amber-700 mt-2">
+              + {unlinkedMeals} meal{unlinkedMeals === 1 ? "" : "s"} in unlinked orders (not counted)
+            </p>
+          )}
         </Card>
       </div>
+
+      {unlinkedDetailed.length > 0 && (
+        <Card className="overflow-hidden border-amber-300/50">
+          <div className="p-5 border-b border-border bg-amber-50/50">
+            <h3 className="font-display text-xl">Unlinked food orders (need review)</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              These orders were submitted before being matched to an invitation. They are NOT included
+              in the restaurant totals above. Match the person to an invitation, or delete the row.
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-secondary text-left text-xs uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Name</th>
+                  <th className="px-4 py-3 font-medium">Phone</th>
+                  <th className="px-4 py-3 font-medium">Cuisine</th>
+                  <th className="px-4 py-3 font-medium text-right">Dishes</th>
+                  <th className="px-4 py-3 font-medium">Updated</th>
+                  <th className="px-4 py-3 font-medium text-right w-16">Remove</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {unlinkedDetailed.map((row) => (
+                  <tr key={`unlinked-${row.id}-${row.cuisine}`}>
+                    <td className="px-4 py-3 font-medium">{row.name}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{row.phone}</td>
+                    <td className="px-4 py-3">{row.cuisine}</td>
+                    <td className="px-4 py-3 text-right font-display text-xl">{row.qty}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{new Date(row.updatedAt).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 text-right">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Delete preorder for ${row.name}`}
+                        onClick={() => deleteRow(row.id, row.name)}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
 
       <Card className="overflow-hidden">
         <div className="p-5 border-b border-border">
