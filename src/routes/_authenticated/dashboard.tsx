@@ -349,9 +349,15 @@ function Dashboard() {
   );
 }
 
-function RsvpBadge({ status }: { status?: string }) {
+function RsvpBadge({ status, attendanceMode }: { status?: string; attendanceMode?: string | null }) {
   if (!status || status === "pending") return <Badge variant="outline">awaiting</Badge>;
-  if (status === "yes") return <Badge className="bg-gold text-ink hover:bg-gold">attending</Badge>;
+  if (status === "yes") {
+    return attendanceMode === "zoom" ? (
+      <Badge className="bg-ink text-cream hover:bg-ink">attending virtual</Badge>
+    ) : (
+      <Badge className="bg-gold text-ink hover:bg-gold">attending in person</Badge>
+    );
+  }
   if (status === "no") return <Badge variant="secondary">declined</Badge>;
   return <Badge variant="outline">maybe</Badge>;
 }
