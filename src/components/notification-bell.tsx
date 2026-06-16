@@ -55,7 +55,8 @@ export function NotificationBell() {
           {unread.categories.map((c) => (
             <Link
               key={c.category_id}
-              to="/admin/categories"
+              to="/admin/subcommittee"
+              search={{ chat: c.category_id }}
               className="flex items-center justify-between px-4 py-3 hover:bg-secondary transition border-b last:border-b-0"
             >
               <div>

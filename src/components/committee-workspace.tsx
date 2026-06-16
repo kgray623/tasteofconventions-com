@@ -1,5 +1,5 @@
-import { Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, CalendarCog, CheckCircle2, ChevronDown, Clock, EyeOff, ListChecks, Loader2, MessageCircle, MessageSquare, Phone, Upload, UserPlus, Utensils } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -33,6 +33,9 @@ export function CommitteeWorkspace() {
   const { user } = useAuth();
   const { isAdmin } = useRoles();
   const unread = useChatUnread();
+  const search = useSearch({ strict: false }) as { chat?: string };
+  const navigate = useNavigate();
+  const chatsCardRef = useRef<HTMLDivElement>(null);
   const [guests, setGuests] = useState<CommitteeGuest[]>([]);
   const [myHostIds, setMyHostIds] = useState<string[]>([]);
   const [loadingGuests, setLoadingGuests] = useState(true);
@@ -42,6 +45,7 @@ export function CommitteeWorkspace() {
   const [myCats, setMyCats] = useState<{ id: string; name: string; description: string | null }[]>([]);
   const [openChatId, setOpenChatId] = useState<string | null>(null);
   const [profileNames, setProfileNames] = useState<Record<string, string>>({});
+  const handledChatParamRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -229,6 +233,26 @@ export function CommitteeWorkspace() {
     })();
     return () => { alive = false; };
   }, []);
+
+  // Deep-link from notifications: ?chat=<categoryId>
+  useEffect(() => {
+    const chatId = search.chat;
+    if (!chatId || handledChatParamRef.current === chatId) return;
+    if (myCats.length === 0) return; // wait until assignments load
+    handledChatParamRef.current = chatId;
+    // Scroll the My volunteer chats card into view
+    setTimeout(() => {
+      chatsCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+    // Open the modal if the user is in that category
+    if (myCats.some((c) => c.id === chatId)) {
+      setOpenChatId(chatId);
+    }
+    // Clear the param so refresh/back doesn't keep reopening
+    navigate({ to: ".", search: (prev: Record<string, unknown>) => ({ ...prev, chat: undefined }), replace: true });
+  }, [search.chat, myCats, navigate]);
+
+
 
   const setRsvpFor = async (
     guest: CommitteeGuest,
@@ -499,7 +523,8 @@ export function CommitteeWorkspace() {
         )}
       </CollapsibleSection>
 
-      <Card className="overflow-hidden">
+      <Card ref={chatsCardRef} className="overflow-hidden scroll-mt-20">
+
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <MessageCircle className="w-5 h-5 text-terracotta" />
