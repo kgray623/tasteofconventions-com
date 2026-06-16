@@ -1,33 +1,19 @@
-Surface the RSVP quota tally on the admin and committee dashboards so everyone can see, at a glance, how many seats are still available.
+## Problem
 
-## What appears
+On the My RSVPs page, the "RSVP totals" card counts every `yes` RSVP — including virtual (Zoom) ones — against the requested seat quota. The building has finite in-person seats but virtual attendance is unlimited, so virtual RSVPs should NOT eat into "Still available" or "Mine left." That's why the user's personal numbers look wrong (e.g. 52 requested, only 32 left even though many of those yeses are virtual).
 
-A new "RSVP totals" card pinned near the top of both dashboards.
+## Change
 
-Event-wide totals (admin sees on `/admin`, committee members see on their dashboard):
-- Total seats requested by the committee (sum of every active committee member's quota — currently 550)
-- RSVPs confirmed so far (sum of party_size where RSVP status = yes)
-- Seats still available (requested minus confirmed; never negative)
-- A small reminder line: "Invites are not RSVPs. To get 40 RSVPs you'll usually need to text many more people — keep inviting until your quota fills."
+Update `src/components/rsvp-totals-card.tsx` so quota math only counts in-person yes RSVPs, and surface virtual yeses as a separate read-only stat.
 
-My personal totals (committee dashboard only, shown next to the event totals):
-- My quota (their inviters.quota, e.g., 40)
-- My confirmed RSVPs (yes-seat count for invitations under their host_id)
-- My remaining
-
-## Where it goes
-
-1. `/admin` (admin index) — add the new card above the existing "Guests" stats card so the admin sees the headline number first.
-2. `/admin/subcommittee` (committee dashboard) — add the same card at the top, right under the welcome video, before "My guests". Each committee member sees the event-wide numbers plus their own personal slot.
-
-## Behavior
-
-- Pulls live counts from `inviters` (quota, active) and `rsvps` (status, party_size).
-- Refreshes whenever the page loads and whenever a new RSVP is recorded (Realtime subscription on `rsvps`).
-- Visual emphasis: large numeric display for the three event totals; subtle progress bar showing % filled toward the 550 quota.
+1. When summing `confirmed` (event-wide and personal), only include rsvps where `status = 'yes'` AND `attendance_mode != 'zoom'` (treat null/missing attendance_mode as in-person, matching how the rest of the app reads it).
+2. Track `virtual` counts in parallel — sum of `party_size` for `status = 'yes'` AND `attendance_mode = 'zoom'` — for both the event-wide block and (when shown) "My slot."
+3. Rendering:
+   - Keep the three existing tiles ("Seats requested", "RSVPs confirmed", "Still available") but have "RSVPs confirmed" and "Still available" reflect in-person only. Rename "RSVPs confirmed" → "In-person confirmed" and keep "Still available" as the in-person remainder. The progress bar uses the same in-person ratio.
+   - Add a small line under the grid: "Virtual (Zoom): N — unlimited, doesn't use seats." Same treatment under "My slot" when personal totals are shown.
+4. No DB or server-function changes; this is a pure presentation/aggregation fix in the existing client query.
 
 ## Out of scope
 
-- No schema changes.
-- No change to the existing `/admin/upload` quota tools — those keep working.
-- No change to how quotas are assigned or how RSVPs are recorded.
+- The user mentioned "I have 57 under my guest list" — that's the invitations count, separate from the totals card. Not changing guest-list rendering in this pass; if the 57 vs 52 discrepancy is actually a bug, we'll handle it in a follow-up once the in-person fix lands and the numbers are easier to compare.
+- No change to `rsvp.$token.tsx`, RSVP submission logic, or quota enforcement on the server (waitlist behavior already keys off in-person seat math via `attendance_mode`).
