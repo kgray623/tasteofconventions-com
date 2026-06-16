@@ -1,18 +1,12 @@
 import { useEffect, useState } from "react";
-import { Chrome, Download, Share, X, ArrowDown } from "lucide-react";
+import { Share, X, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-};
-
-function isStandalone(): boolean {
-  if (typeof window === "undefined") return false;
-  const mq = window.matchMedia?.("(display-mode: standalone)").matches;
-  const ios = (window.navigator as Navigator & { standalone?: boolean }).standalone;
-  return Boolean(mq || ios);
-}
+import {
+  getInstallPromptSnapshot,
+  initializeInstallPromptCapture,
+  promptToInstallApp,
+  subscribeToInstallPrompt,
+} from "@/pwa-install";
 
 function isIos(): boolean {
   if (typeof window === "undefined") return false;
@@ -27,36 +21,41 @@ function isInAppBrowser(): boolean {
 }
 
 export function InstallAppButton({ className = "" }: { className?: string }) {
-  const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(false);
-  const [showHint, setShowHint] = useState<null | "ios" | "inapp" | "chrome">(null);
+  const [canPrompt, setCanPrompt] = useState(false);
+  const [showHint, setShowHint] = useState<null | "ios" | "inapp" | "blocked">(null);
   const [ios, setIos] = useState(false);
   const [inApp, setInApp] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [checked, setChecked] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    setInstalled(isStandalone());
+    initializeInstallPromptCapture();
     const _ios = isIos();
     const _inApp = isInAppBrowser();
     setIos(_ios);
     setInApp(_inApp);
-    const onPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferred(e as BeforeInstallPromptEvent);
+
+    const syncInstallState = () => {
+      const snapshot = getInstallPromptSnapshot();
+      setInstalled(snapshot.installed);
+      setCanPrompt(Boolean(snapshot.prompt));
+      setChecked(true);
     };
-    const onInstalled = () => setInstalled(true);
-    window.addEventListener("beforeinstallprompt", onPrompt);
-    window.addEventListener("appinstalled", onInstalled);
+
+    syncInstallState();
+    const unsubscribe = subscribeToInstallPrompt(syncInstallState);
+    const timer = window.setTimeout(syncInstallState, 1500);
     return () => {
-      window.removeEventListener("beforeinstallprompt", onPrompt);
-      window.removeEventListener("appinstalled", onInstalled);
+      unsubscribe();
+      window.clearTimeout(timer);
     };
   }, []);
 
   if (installed) return null;
 
-  const label = busy ? "Installing…" : "Install App";
+  const label = busy ? "Installing…" : checked || ios || inApp || canPrompt ? "Install App" : "Preparing Install…";
 
   const handleClick = async () => {
     if (inApp) {
@@ -67,18 +66,13 @@ export function InstallAppButton({ className = "" }: { className?: string }) {
       setShowHint("ios");
       return;
     }
-    if (!deferred) {
-      setShowHint("chrome");
-      return;
-    }
     setBusy(true);
     try {
-      await deferred.prompt();
-      await deferred.userChoice;
+      const prompted = await promptToInstallApp();
+      if (!prompted) setShowHint("blocked");
     } catch {
-      /* ignore */
+      setShowHint("blocked");
     } finally {
-      setDeferred(null);
       setBusy(false);
     }
   };
@@ -144,19 +138,13 @@ export function InstallAppButton({ className = "" }: { className?: string }) {
               </div>
             )}
 
-            {showHint === "chrome" && (
+            {showHint === "blocked" && (
               <div className="space-y-3">
-                <h3 className="font-display text-xl text-ink">Install with Chrome</h3>
-                <p className="text-sm text-ink">
-                  On your Chromebook, open tasteofconventions.com in Chrome, then click
-                  <span className="inline-flex items-center gap-1 px-1 font-medium">
-                    <Download className="w-4 h-4" /> Install
-                  </span>
-                  in the address bar.
-                </p>
-                <p className="text-sm text-muted-foreground flex items-center gap-2">
-                  <Chrome className="w-4 h-4 shrink-0" /> If Chrome does not show the icon, open
-                  the ⋮ menu and choose Install app.
+                <h3 className="font-display text-xl text-ink">Chrome blocked the install prompt</h3>
+                <p className="text-sm text-ink">Reload this page in Chrome and click Install App again.</p>
+                <p className="text-sm text-muted-foreground">
+                  If it still does not open, Chrome has already dismissed or blocked installation for
+                  this site on this device.
                 </p>
               </div>
             )}
