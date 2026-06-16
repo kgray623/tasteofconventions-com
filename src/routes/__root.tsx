@@ -156,6 +156,9 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useEffect(() => {
+    registerPwa();
+  }, []);
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
