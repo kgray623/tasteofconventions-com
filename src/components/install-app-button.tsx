@@ -139,13 +139,39 @@ export function InstallAppButton({ className = "" }: { className?: string }) {
             )}
 
             {showHint === "blocked" && (
-              <div className="space-y-3">
-                <h3 className="font-display text-xl text-ink">Chrome blocked the install prompt</h3>
-                <p className="text-sm text-ink">Reload this page in Chrome and click Install App again.</p>
-                <p className="text-sm text-muted-foreground">
-                  If it still does not open, Chrome has already dismissed or blocked installation for
-                  this site on this device.
-                </p>
+              <div className="space-y-4">
+                <h3 className="font-display text-xl text-ink">Install A Taste on your Chromebook</h3>
+
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-ink">Option 1 — Address bar</p>
+                  <p className="text-sm text-ink">
+                    Look at the right edge of Chrome's address bar for a small
+                    computer-with-down-arrow icon. Click it, then click <strong>Install</strong>.
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-ink">
+                    Option 2 — Chrome menu (use this if the icon isn't there)
+                  </p>
+                  <p className="text-sm text-ink">
+                    Click the <strong>⋮</strong> menu (top-right of Chrome) →{" "}
+                    <strong>Cast, save, and share</strong> →{" "}
+                    <strong>Install page as app…</strong> → <strong>Install</strong>.
+                  </p>
+                </div>
+
+                <div className="space-y-1 border-t border-border pt-3">
+                  <p className="text-sm font-semibold text-ink">If neither option appears</p>
+                  <p className="text-sm text-ink">
+                    Chrome has remembered a previous dismissal for this site. Click{" "}
+                    <strong>⋮</strong> → <strong>Settings</strong> →{" "}
+                    <strong>Privacy and security</strong> → <strong>Site settings</strong> →{" "}
+                    <strong>View permissions and data stored across sites</strong>, search for{" "}
+                    <strong>tasteofconventions</strong>, and click <strong>Delete data</strong>.
+                    Then reload this page and click Install App again.
+                  </p>
+                </div>
               </div>
             )}
           </div>
