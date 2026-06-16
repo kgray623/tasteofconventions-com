@@ -11,6 +11,7 @@ export const WHATS_NEW: Record<string, { addedAt: string; expiresInDays?: number
   "admin:rsvps-tile": { addedAt: "2026-06-16" },
   "header:notification-bell": { addedAt: "2026-06-16" },
   "committee:hide-welcome-video": { addedAt: "2026-06-16" },
+  "login:last-name": { addedAt: "2026-06-16" },
 };
 
 

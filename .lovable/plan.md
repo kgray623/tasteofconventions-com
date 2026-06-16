@@ -1,9 +1,8 @@
-## Add NEW badge to the Hide button on the Welcome Video
+## Add NEW arrow to the Last name field on /login
 
-The committee workspace already has a **Hide** button next to "Watch the Welcome Video" (line 226 of `src/components/committee-workspace.tsx`). I'll mark it as new.
+The login page already shows a **Last name** input above the phone field. I'll add the bright red NEW → badge next to its label so returning users notice the field is new.
 
-- **Edit** `src/lib/whats-new.ts` — add `"committee:hide-welcome-video": { addedAt: "2026-06-16" }`.
-- **Edit** `src/components/committee-workspace.tsx` — import `NewBadge` and render it inline to the left of the Hide button so the bright red NEW → arrow points right at it.
-- Clicking Hide (or the badge itself) marks it seen, so it disappears once used.
+- **Edit** `src/lib/whats-new.ts` — add `"login:last-name": { addedAt: "2026-06-16" }`.
+- **Edit** `src/routes/login.tsx` — import `NewBadge` + `markSeen`; render `<NewBadge target="login:last-name" />` inline next to the **Last name** `<Label>` (in a flex row); call `markSeen("login:last-name")` on the input's first focus so it disappears once they interact.
 
 No other changes.
