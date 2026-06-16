@@ -1,16 +1,17 @@
-Do I know what the issue is? Yes.
+## Plan
 
-The `/install` page is crashing because `src/pwa-install.ts` uses `useSyncExternalStore`, but `getInstallPromptSnapshot()` returns a brand-new object every time (`{ ...state }`). React requires that snapshot to be cached/stable unless the store actually changes. Because it changes on every read, React keeps re-rendering until it hits “Maximum update depth exceeded.”
+1. **Stabilize the install prompt state**
+   - Update the install helper so it never changes internal install state while React is reading it.
+   - This prevents another "Maximum update depth exceeded" loop when the install page renders or refreshes.
 
-Plan:
-1. Fix `src/pwa-install.ts` so the install prompt snapshot is cached and only changes when the install state actually changes.
-2. Keep the current Wellness Tracker-style native save/install behavior intact: no custom desktop download workflow, still using the browser’s real install/add-to-home-screen flow.
-3. Verify `/install` loads without the error and that the Save/Open Login controls still render.
+2. **Make the Save/Install button behave like Wellness Tracker**
+   - Keep the browser-native install/add-to-home-screen flow.
+   - If Chrome/Chromebook provides the real install prompt, clicking the button will open that prompt.
+   - If the browser cannot provide a prompt, show simple platform instructions instead of failing or pretending to download to a fixed place.
 
-<presentation-actions>
-  <presentation-open-history>View History</presentation-open-history>
-</presentation-actions>
+3. **Remove the confusing toast-only fallback**
+   - Replace the vague "Use your browser menu" toast with visible instructions on the page so the user knows exactly what to tap/click next.
 
-<presentation-actions>
-<presentation-link url="https://docs.lovable.dev/tips-tricks/troubleshooting">Troubleshooting docs</presentation-link>
-</presentation-actions>
+4. **Verify the install page**
+   - Check `/install` loads without the React error.
+   - Check clicking Save/Install no longer crashes and either opens the native prompt when available or shows the fallback instructions.
