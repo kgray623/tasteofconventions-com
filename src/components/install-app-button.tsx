@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Download, Share, Plus, X } from "lucide-react";
+import { Share, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type BeforeInstallPromptEvent = Event & {
