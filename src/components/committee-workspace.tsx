@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { CalendarCog, CheckCircle2, ChevronDown, Clock, EyeOff, ListChecks, Loader2, MessageSquare, Phone, Upload, UserPlus, Utensils } from "lucide-react";
+import { AlertTriangle, CalendarCog, CheckCircle2, ChevronDown, Clock, EyeOff, ListChecks, Loader2, MessageSquare, Phone, Upload, UserPlus, Utensils } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -213,9 +213,48 @@ export function CommitteeWorkspace() {
   };
 
   const mineHostIdSet = new Set(myHostIds.length ? myHostIds : user ? [user.id] : []);
-  const myGuests = user ? guests.filter((g) => mineHostIdSet.has(g.host_id)) : [];
+  const myGuestsUnsorted = user ? guests.filter((g) => mineHostIdSet.has(g.host_id)) : [];
+
+  // Detect duplicates among my guests (same normalized name OR same last-10-digit phone)
+  const normName = (s: string) => s.toLowerCase().replace(/[^a-z]/g, "");
+  const normPhoneTail = (s: string | null) => {
+    const d = (s ?? "").replace(/\D/g, "");
+    return d.length >= 10 ? d.slice(-10) : "";
+  };
+  const nameBuckets = new Map<string, string[]>();
+  const phoneBuckets = new Map<string, string[]>();
+  for (const g of myGuestsUnsorted) {
+    const n = normName(g.guest_name);
+    if (n.length >= 2) {
+      if (!nameBuckets.has(n)) nameBuckets.set(n, []);
+      nameBuckets.get(n)!.push(g.id);
+    }
+    const p = normPhoneTail(g.guest_phone);
+    if (p) {
+      if (!phoneBuckets.has(p)) phoneBuckets.set(p, []);
+      phoneBuckets.get(p)!.push(g.id);
+    }
+  }
+  const duplicateIds = new Set<string>();
+  for (const ids of nameBuckets.values()) if (ids.length > 1) ids.forEach((id) => duplicateIds.add(id));
+  for (const ids of phoneBuckets.values()) if (ids.length > 1) ids.forEach((id) => duplicateIds.add(id));
+
+  // Sort: pending first → yes → no → other; alphabetical within each bucket
+  const statusRank = (status: string | null) => {
+    if (!status) return 0;
+    if (status === "yes") return 1;
+    if (status === "no") return 2;
+    return 3;
+  };
+  const myGuests = [...myGuestsUnsorted].sort((a, b) => {
+    const r = statusRank(a.rsvp_status) - statusRank(b.rsvp_status);
+    if (r !== 0) return r;
+    return a.guest_name.trim().toLowerCase().localeCompare(b.guest_name.trim().toLowerCase());
+  });
+
   const confirmedGuests = guests.filter((guest) => guest.rsvp_status === "yes");
   const confirmedPeople = confirmedGuests.reduce((total, guest) => total + guest.party_size, 0);
+
 
   const toggleSection = (key: string) => setOpenSection((prev) => (prev === key ? null : key));
 
@@ -293,13 +332,21 @@ export function CommitteeWorkspace() {
             {myGuests.map((guest) => (
               <div key={guest.id} className="p-4 flex flex-wrap items-center gap-3">
                 <div className="flex-1 min-w-[160px]">
-                  <p className="font-medium">{guest.guest_name}</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-medium">{guest.guest_name}</p>
+                    {duplicateIds.has(guest.id) && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-brand-red px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                        <AlertTriangle className="w-3 h-3" /> Duplicate
+                      </span>
+                    )}
+                  </div>
                   {guest.guest_phone && (
                     <span className="inline-flex items-center gap-1 text-xs text-muted-foreground mt-1">
                       <Phone className="w-3 h-3" /> {guest.guest_phone}
                     </span>
                   )}
                 </div>
+
                 <RsvpStatusBadge status={guest.rsvp_status} />
                 {!guest.rsvp_status && (
                   <Select
