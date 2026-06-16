@@ -747,3 +747,123 @@ function RsvpStatusBadge({ status }: { status: string | null }) {
   if (status === "waitlist") return <Badge variant="outline">Waitlist</Badge>;
   return <Badge variant="outline">Awaiting RSVP</Badge>;
 }
+
+function EditGuestButton({
+  guest,
+  onSave,
+}: {
+  guest: CommitteeGuest;
+  onSave: (
+    guest: CommitteeGuest,
+    edits: { guest_name: string; guest_phone: string; guest_email: string },
+  ) => Promise<boolean>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState(guest.guest_name);
+  const [phone, setPhone] = useState(guest.guest_phone ?? "");
+  const [email, setEmail] = useState(guest.guest_email ?? "");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setName(guest.guest_name);
+      setPhone(guest.guest_phone ?? "");
+      setEmail(guest.guest_email ?? "");
+    }
+  }, [open, guest]);
+
+  const handleSave = async () => {
+    if (!name.trim()) {
+      toast.error("Name can't be empty");
+      return;
+    }
+    setSaving(true);
+    const ok = await onSave(guest, { guest_name: name, guest_phone: phone, guest_email: email });
+    setSaving(false);
+    if (ok) setOpen(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-muted-foreground hover:text-ink"
+          aria-label={`Edit ${guest.guest_name}`}
+        >
+          <Pencil className="w-4 h-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit guest</DialogTitle>
+          <DialogDescription>Update {guest.guest_name}'s contact info.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <Label htmlFor="edit-guest-name">Name</Label>
+            <Input id="edit-guest-name" value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="edit-guest-phone">Phone</Label>
+            <Input id="edit-guest-phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="edit-guest-email">Email</Label>
+            <Input id="edit-guest-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? "Saving…" : "Save"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DeleteGuestButton({
+  guest,
+  onDelete,
+}: {
+  guest: CommitteeGuest;
+  onDelete: (guest: CommitteeGuest) => Promise<void>;
+}) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+          aria-label={`Delete ${guest.guest_name}`}
+        >
+          <Trash2 className="w-4 h-4" />
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete this guest?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will permanently delete <strong>{guest.guest_name}</strong>
+            {guest.guest_phone ? ` (${guest.guest_phone})` : ""} and any RSVP they've made. This cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={() => void onDelete(guest)}
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
