@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Share, Plus, X } from "lucide-react";
+import { Share, X, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type BeforeInstallPromptEvent = Event & {
@@ -20,14 +20,24 @@ function isIos(): boolean {
   return /iPad|iPhone|iPod/.test(ua) && !("MSStream" in window);
 }
 
+function isInAppBrowser(): boolean {
+  if (typeof window === "undefined") return false;
+  const ua = window.navigator.userAgent;
+  return /FBAN|FBAV|Instagram|Line|TikTok|MicroMessenger/i.test(ua);
+}
+
 export function InstallAppButton({ className = "" }: { className?: string }) {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(false);
-  const [showIosSheet, setShowIosSheet] = useState(false);
+  const [showHint, setShowHint] = useState<null | "ios" | "android-menu" | "inapp">(null);
+  const [ios, setIos] = useState(false);
+  const [inApp, setInApp] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     setInstalled(isStandalone());
+    setIos(isIos());
+    setInApp(isInAppBrowser());
     const onPrompt = (e: Event) => {
       e.preventDefault();
       setDeferred(e as BeforeInstallPromptEvent);
@@ -43,7 +53,13 @@ export function InstallAppButton({ className = "" }: { className?: string }) {
 
   if (installed) return null;
 
-  const handleInstall = async () => {
+  const label = ios ? "Add to Home Screen" : "Install app";
+
+  const handleClick = async () => {
+    if (inApp) {
+      setShowHint("inapp");
+      return;
+    }
     if (deferred) {
       try {
         await deferred.prompt();
@@ -55,7 +71,7 @@ export function InstallAppButton({ className = "" }: { className?: string }) {
       }
       return;
     }
-    setShowIosSheet(true);
+    setShowHint(ios ? "ios" : "android-menu");
   };
 
   return (
@@ -63,7 +79,7 @@ export function InstallAppButton({ className = "" }: { className?: string }) {
       <Button
         type="button"
         size="sm"
-        onClick={handleInstall}
+        onClick={handleClick}
         className={`bg-terracotta text-cream hover:bg-terracotta/90 shadow-md ${className}`}
       >
         <img
@@ -71,52 +87,61 @@ export function InstallAppButton({ className = "" }: { className?: string }) {
           alt=""
           aria-hidden="true"
           className="w-5 h-5 rounded mr-2"
-        />{" "}
-        Download the app
+        />
+        {label}
       </Button>
 
-      {showIosSheet && (
+      {showHint && (
         <div
           className="fixed inset-0 z-50 bg-ink/60 flex items-end sm:items-center justify-center p-4"
-          onClick={() => setShowIosSheet(false)}
+          onClick={() => setShowHint(null)}
         >
           <div
-            className="bg-card w-full max-w-md rounded-xl p-6 space-y-4 shadow-elegant"
+            className="bg-card w-full max-w-md rounded-xl p-6 shadow-elegant relative"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between gap-3">
-              <h3 className="font-display text-2xl text-ink">Add to Home Screen</h3>
-              <button
-                type="button"
-                aria-label="Close"
-                onClick={() => setShowIosSheet(false)}
-                className="text-muted-foreground hover:text-ink"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <ol className="text-sm text-ink space-y-3">
-              <li className="flex items-center gap-3">
-                <span className="font-display text-lg w-6">1.</span>
-                <span className="flex items-center gap-2">
-                  Tap the <Share className="w-4 h-4 inline" /> Share icon in your browser.
-                </span>
-              </li>
-              <li className="flex items-center gap-3">
-                <span className="font-display text-lg w-6">2.</span>
-                <span className="flex items-center gap-2">
-                  Choose <Plus className="w-4 h-4 inline" /> &quot;Add to Home Screen.&quot;
-                </span>
-              </li>
-              <li className="flex items-center gap-3">
-                <span className="font-display text-lg w-6">3.</span>
-                <span>Tap Add. The app opens from your home screen.</span>
-              </li>
-            </ol>
-            <p className="text-xs text-muted-foreground">
-              On Android Chrome you'll see an install prompt automatically — tap Install when it
-              appears.
-            </p>
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={() => setShowHint(null)}
+              className="absolute top-3 right-3 text-muted-foreground hover:text-ink"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {showHint === "ios" && (
+              <div className="space-y-3">
+                <h3 className="font-display text-xl text-ink">Add to Home Screen</h3>
+                <p className="text-sm text-ink flex items-center gap-2 flex-wrap">
+                  Tap the <Share className="w-4 h-4 inline" /> Share icon at the bottom of Safari,
+                  then choose &quot;Add to Home Screen.&quot;
+                </p>
+                <div className="flex justify-center pt-1 text-terracotta">
+                  <ArrowDown className="w-6 h-6 animate-bounce" />
+                </div>
+              </div>
+            )}
+
+            {showHint === "android-menu" && (
+              <div className="space-y-2">
+                <h3 className="font-display text-xl text-ink">Install app</h3>
+                <p className="text-sm text-ink">
+                  Tap the ⋮ menu in Chrome and choose &quot;Install app.&quot;
+                </p>
+              </div>
+            )}
+
+            {showHint === "inapp" && (
+              <div className="space-y-2">
+                <h3 className="font-display text-xl text-ink">
+                  Open in {ios ? "Safari" : "Chrome"}
+                </h3>
+                <p className="text-sm text-ink">
+                  Tap the ⋯ menu and choose &quot;Open in {ios ? "Safari" : "Chrome"}&quot; to
+                  install the app.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
