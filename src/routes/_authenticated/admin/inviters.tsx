@@ -184,7 +184,7 @@ function InvitersPage() {
             .from("invitations")
             .select("id,host_id,guest_name,guest_email,guest_phone,invite_sent_at")
             .order("guest_name"),
-          supabase.from("rsvps").select("id,invitation_id,status,party_size"),
+          supabase.from("rsvps").select("id,invitation_id,status,party_size,attendance_mode"),
         ]),
         10000,
       );
