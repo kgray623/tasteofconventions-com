@@ -2,10 +2,12 @@ import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useRoles } from "@/hooks/use-roles";
 import { CommitteeWorkspace } from "@/components/committee-workspace";
 import { NewBadge } from "@/components/new-badge";
 import { markSeen } from "@/lib/whats-new";
+import { ExternalLink, User, Users, Shield } from "lucide-react";
 
 
 export const Route = createFileRoute("/_authenticated/admin/")({
@@ -15,6 +17,7 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 function AdminOverview() {
   const { view } = useSearch({ from: "/_authenticated/admin" });
   const { isAdmin, loading: rolesLoading } = useRoles();
+  const [sampleGuestToken, setSampleGuestToken] = useState<string | null>(null);
   const [counts, setCounts] = useState({
     invites: 0,
     flags: 0,
@@ -24,6 +27,21 @@ function AdminOverview() {
     preorders: 0,
     rsvps: 0,
   });
+
+  useEffect(() => {
+    if (rolesLoading || !isAdmin) return;
+    (async () => {
+      const { data } = await supabase
+        .from("invitations")
+        .select("rsvp_token")
+        .eq("is_committee", false)
+        .not("rsvp_token", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      setSampleGuestToken((data?.rsvp_token as string | null) ?? null);
+    })();
+  }, [rolesLoading, isAdmin]);
 
   useEffect(() => {
     if (rolesLoading || !isAdmin) return;
@@ -113,6 +131,47 @@ function AdminOverview() {
 
   return (
     <div className="space-y-6">
+      <Card className="p-4">
+        <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">
+          Preview dashboards
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!sampleGuestToken}
+            title={sampleGuestToken ? "Opens a real guest's RSVP page" : "No guest invitations yet"}
+            onClick={() => {
+              if (sampleGuestToken) {
+                window.open(`/rsvp/${sampleGuestToken}`, "_blank", "noopener");
+              }
+            }}
+          >
+            <User className="w-4 h-4 mr-2" />
+            View as Guest
+            <ExternalLink className="w-3 h-3 ml-2 opacity-60" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.open("/dashboard", "_blank", "noopener")}
+          >
+            <Users className="w-4 h-4 mr-2" />
+            View as Committee
+            <ExternalLink className="w-3 h-3 ml-2 opacity-60" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.open("/admin", "_blank", "noopener")}
+          >
+            <Shield className="w-4 h-4 mr-2" />
+            View as Admin
+            <ExternalLink className="w-3 h-3 ml-2 opacity-60" />
+          </Button>
+        </div>
+      </Card>
+
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {stats.map((s) => (
           <div key={s.label} className="flex items-center gap-2">
