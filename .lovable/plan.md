@@ -1,58 +1,40 @@
-## Why "Install App" isn't opening Chrome's prompt
+## Goal
 
-Everything on the site side is correct — manifest, icons, service worker, HTTPS, standalone display. I verified on the live domain. The reason Chrome is silent is **device-side**, not site-side:
+Make Install App work like the Wellness Tracker: one button that either installs natively (Chrome on Chromebook / Android / desktop) or shows clear platform-specific steps (iOS Safari). No more "Chrome blocked the install prompt" dead-end message.
 
-- Chrome only fires its native install prompt once per site per device. Once you (or anyone on this Chromebook) dismissed it or installed+removed the app, Chrome puts the site on a cooldown of roughly 90 days.
-- No website code can re-trigger that prompt during the cooldown. This is a hard browser rule — Google designed it that way to stop sites from nagging.
+## What's actually happening (plain English)
 
-That's why the button now shows "Chrome blocked the install prompt." It's accurate, but the follow-up steps I gave you for the ⋮ menu were wrong for current ChromeOS, which is why nothing happened when you tried them.
+Chrome only offers its one-click native install **once per site per device**. If you (or anyone on that Chromebook) ever clicked the X on Chrome's install bubble, or installed-then-uninstalled, Chrome silently refuses to fire the native prompt again for ~90 days. **No website code can override that** — not ours, not the Wellness Tracker's. The Wellness Tracker isn't doing anything magic; it works for you there because you never dismissed it on that site. Its code path for "no native prompt available" is identical to ours: show instructions.
 
-## What I'll change
+So the fix isn't "make the prompt work every time" (impossible). The fix is to match what Wellness Tracker actually does: a friendly, always-useful page with the right instructions for each device, and the native button when the browser allows it.
 
-Make the button do the right thing **without** relying on Chrome's blocked prompt, and give correct, current ChromeOS instructions as the fallback.
+## Changes
 
-### 1. Button behavior
+**1. New route `/install`** (`src/routes/install.tsx`)
+Mirror the Wellness Tracker layout:
+- Detects platform: iOS, Android, Desktop/Chromebook.
+- Shows "You're already using the installed app" if launched standalone.
+- iOS → Safari Share → Add to Home Screen steps.
+- Android → native "Install app now" button if available; otherwise Chrome ⋮ menu → Add to Home screen steps.
+- Desktop/Chromebook → native "Install on this computer" button if available; otherwise instructions: address-bar install icon, or Chrome ⋮ → Cast, save, and share → Install page as app.
+- "Why install?" section at bottom.
+- head() with proper title/meta.
 
-- When `beforeinstallprompt` is available, clicking installs natively (already works).
-- When Chrome has blocked it (your case), the button still opens a help sheet — but with the **correct** ChromeOS menu path, not the old wording.
+**2. Simplify `src/components/install-app-button.tsx`**
+- If the native prompt is captured, clicking installs immediately (current behavior, kept).
+- If not, instead of opening the "blocked" sheet, the button navigates to `/install` where the user always sees actionable instructions for their device.
+- Remove the "Chrome blocked the install prompt" wording entirely.
 
-### 2. New "blocked" help sheet wording
-
-Replace the current blocked modal with two clear options the user can actually follow on a Chromebook:
-
-```text
-Install A Taste on your Chromebook
-
-Option 1 — Address bar
-  Look at the right edge of Chrome's address bar for a small
-  computer-with-down-arrow icon. Click it, then click Install.
-
-Option 2 — Chrome menu (use this if the icon isn't there)
-  Click the ⋮ menu (top-right of Chrome)
-  → Cast, save, and share
-  → Install page as app…
-  → Install
-
-If neither option appears
-  Chrome has remembered a previous dismissal for this site.
-  Click ⋮ → Settings → Privacy and security → Site settings
-  → View permissions and data stored across sites
-  → search "tasteofconventions" → Delete data.
-  Then reload this page and try Install App again.
-```
-
-The third block is the only thing that actually un-sticks Chrome's cooldown on a Chromebook.
-
-### 3. Keep the existing iOS/Safari and in-app-browser flows
-
-Those already work and aren't part of this complaint.
+**3. No changes** to `pwa-install.ts`, `pwa-register.ts`, `manifest.webmanifest`, or the service worker — those are already correct and verified live.
 
 ## Technical notes
 
-- Edit only `src/components/install-app-button.tsx`. No changes to `pwa-install.ts`, `pwa-register.ts`, manifest, or service worker — those are already correct and verified on the live site.
-- No new dependencies, no new files, no schema changes.
-- After the edit, the change is frontend-only, so it requires a **Publish → Update** before you'll see it on tasteofconventions.com.
+- `/install` route uses `createFileRoute('/install')`, client-only detection in `useEffect` (SSR-safe).
+- Reuses `getInstallPromptSnapshot`, `subscribeToInstallPrompt`, `promptToInstallApp`, `isStandaloneApp` from `src/pwa-install.ts`.
+- Frontend-only; no backend, no schema, no new packages.
+- Requires **Publish → Update** to test on tasteofconventions.com (service worker / install behavior does not work inside the Lovable preview iframe).
 
-## What this won't do
+## Honest expectations
 
-No website is allowed to silently install itself, and no website can override Chrome's per-site cooldown on the install prompt. The browser owns that decision. The fix above is the most direct path that actually works on a Chromebook today.
+- On a Chromebook where Chrome has **not** previously dismissed install for this site: button installs in one click.
+- On a Chromebook where Chrome **has** dismissed it: button takes you to `/install`, you click ⋮ → Cast, save, and share → Install page as app. That is the same path the Wellness Tracker users follow when their prompt is gone — it's just hidden behind a friendlier page instead of an error.
