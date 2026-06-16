@@ -104,7 +104,7 @@ function HelperLogin() {
   const signIn = async (event?: FormEvent) => {
     event?.preventDefault();
     if (!normalizeMobilePhone(phone)) return toast.error("Enter a valid mobile phone number");
-    if (name.trim().length < 2) return toast.error("Enter your name as it appears on the invitation");
+    if (name.trim().length < 2) return toast.error("Enter the last name on your invitation");
     setBusy(true);
     try {
       const session = await withTimeout(phoneLogin({ data: { phone, name: name.trim() } }), 15000);
@@ -149,19 +149,19 @@ function HelperLogin() {
           <div className="text-center space-y-1">
             <h1 className="font-display text-2xl text-ink">Log in to your RSVP</h1>
             <p className="text-xs text-muted-foreground">
-              Enter your mobile number and the name on your invitation. Both must match.
+              Enter your mobile number and the last name on your invitation. Both must match.
             </p>
           </div>
           <form onSubmit={signIn} className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Your name (as it appears on the invitation)</Label>
+              <Label>Last name</Label>
               <Input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                autoComplete="name"
-                placeholder="First Last"
+                autoComplete="family-name"
+                placeholder="Gray"
               />
             </div>
             <div className="space-y-1.5">
