@@ -451,7 +451,41 @@ export function CommitteeWorkspace() {
   const confirmedVirtualPeople = confirmedVirtualGuests.reduce((t, g) => t + g.party_size, 0);
 
 
+  // Group "My Guests" by RSVP status, alphabetized within each group.
+  const byName = (a: CommitteeGuest, b: CommitteeGuest) =>
+    a.guest_name.trim().toLowerCase().localeCompare(b.guest_name.trim().toLowerCase());
+  const myYes = myGuests.filter((g) => g.rsvp_status === "yes").sort(byName);
+  const myWaiting = myGuests
+    .filter((g) => !g.rsvp_status || g.rsvp_status === "waitlist")
+    .sort(byName);
+  const myDeclined = myGuests.filter((g) => g.rsvp_status === "no").sort(byName);
+
+  // "New guests RSVP'd" since user last acknowledged.
+  useEffect(() => {
+    if (!user || typeof window === "undefined") return;
+    const raw = window.localStorage.getItem(`toc.committee.lastSeenYes:${user.id}`);
+    setLastSeenYesAt(raw ? Number(raw) || 0 : 0);
+  }, [user]);
+  const newYesGuests = lastSeenYesAt === null
+    ? []
+    : myGuestsUnsorted
+        .filter(
+          (g) =>
+            g.rsvp_status === "yes" &&
+            g.responded_at &&
+            new Date(g.responded_at).getTime() > lastSeenYesAt,
+        )
+        .sort(byName);
+  const markYesSeen = () => {
+    if (!user || typeof window === "undefined") return;
+    const now = Date.now();
+    window.localStorage.setItem(`toc.committee.lastSeenYes:${user.id}`, String(now));
+    setLastSeenYesAt(now);
+  };
+
   const toggleSection = (key: string) => setOpenSection((prev) => (prev === key ? null : key));
+
+
 
   return (
     <div className="space-y-6">
