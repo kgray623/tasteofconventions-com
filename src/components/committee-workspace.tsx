@@ -471,7 +471,7 @@ export function CommitteeWorkspace() {
         open={openSection === "confirmed"}
         onToggle={() => toggleSection("confirmed")}
         icon={<CheckCircle2 className="w-5 h-5 text-terracotta" />}
-        title={`Confirmed RSVPs (${confirmedPeople} people / ${confirmedGuests.length} responses)`}
+        title={`Confirmed RSVPs (${confirmedInPersonPeople} in person · ${confirmedVirtualPeople} virtual / ${confirmedGuests.length} responses)`}
         cardClassName="border-terracotta/40 bg-terracotta/5"
       >
         {loadingGuests ? (
@@ -482,13 +482,26 @@ export function CommitteeWorkspace() {
           <div className="p-4 text-sm text-muted-foreground">No confirmed RSVPs yet.</div>
         ) : (
           <div className="divide-y divide-border max-h-[360px] overflow-auto">
-            {confirmedGuests.map((guest) => (
-              <div key={guest.id} className="p-4 flex flex-wrap items-center gap-3 text-sm">
-                <p className="font-medium flex-1 min-w-[160px]">{guest.guest_name}</p>
-                <Badge className="bg-gold text-ink hover:bg-gold">{guest.party_size} attending</Badge>
-                {guest.invited_by && <span className="text-muted-foreground">Invited by {guest.invited_by}</span>}
-              </div>
-            ))}
+            {confirmedGuests.map((guest) => {
+              const isVirtual = guest.attendance_mode === "zoom";
+              return (
+                <div key={guest.id} className="p-4 flex flex-wrap items-center gap-3 text-sm">
+                  <p className="font-medium flex-1 min-w-[160px]">{guest.guest_name}</p>
+                  <Badge
+                    className={
+                      isVirtual
+                        ? "bg-ink/10 text-ink hover:bg-ink/10"
+                        : "bg-gold text-ink hover:bg-gold"
+                    }
+                  >
+                    {guest.party_size} {isVirtual ? "virtual" : "in person"}
+                  </Badge>
+                  {guest.invited_by && (
+                    <span className="text-muted-foreground">Invited by {guest.invited_by}</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </CollapsibleSection>
