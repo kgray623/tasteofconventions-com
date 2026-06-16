@@ -145,7 +145,7 @@ function Dashboard() {
   const stats: { label: string; value: number; newTarget?: string }[] = [
     { label: "Your invitations", value: myInvites.length },
     { label: "Total guest list", value: invites.length },
-    { label: "Confirmed in person", value: inPersonYes.length, newTarget: "admin:in-person-confirmed" },
+    { label: "Confirmed in person", value: inPersonYes.length },
     { label: "Confirmed virtual (Zoom)", value: virtualYes.length },
     { label: "Committee RSVP'd", value: invites.filter((i) => i.is_committee && i.rsvps?.status === "yes").length },
     { label: "Duplicate flags", value: flags.length },

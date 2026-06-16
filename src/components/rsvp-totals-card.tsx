@@ -89,7 +89,10 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
   return (
     <Card className="p-5 space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">RSVP totals</p>
+        <div className="flex items-center gap-1.5">
+          <NewBadge target="committee:rsvp-totals-card" />
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">RSVP totals</p>
+        </div>
         <span className="text-xs text-muted-foreground tabular-nums">{pct}% filled</span>
       </div>
 
@@ -117,14 +120,14 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
 
       {showPersonal && (
         <div className="pt-3 border-t">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-1.5 mb-2">
             <NewBadge target="committee:my-rsvp-label" />
             <p className="text-xs uppercase tracking-wider text-muted-foreground">My RSVP</p>
           </div>
           <div className="grid grid-cols-3 gap-3 text-center">
-            <Stat label="My Guests" value={loading ? "—" : mine.requested} newTarget="committee:my-guests-label" />
-            <Stat label="My In-Person" value={loading ? "—" : mine.confirmed} emphasis newTarget="committee:my-in-person-label" />
-            <Stat label="My RSVPs Left" value={loading ? "—" : myRemaining} newTarget="committee:my-rsvps-left-label" />
+            <Stat label="My Guests" value={loading ? "—" : mine.requested} />
+            <Stat label="My In-Person" value={loading ? "—" : mine.confirmed} emphasis />
+            <Stat label="My RSVPs Left" value={loading ? "—" : myRemaining} />
           </div>
           <p className="text-xs text-muted-foreground mt-2">
             My virtual (Zoom):{" "}
@@ -149,12 +152,10 @@ function Stat({
   label,
   value,
   emphasis,
-  newTarget,
 }: {
   label: string;
   value: number | string;
   emphasis?: boolean;
-  newTarget?: string;
 }) {
   return (
     <div>
@@ -163,10 +164,7 @@ function Stat({
       >
         {value}
       </p>
-      <div className="mt-1 flex items-center justify-center gap-1 flex-wrap">
-        {newTarget && <NewBadge target={newTarget} direction="right" className="px-2 py-0.5 text-[10px] gap-1" />}
-        <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
-      </div>
+      <p className="mt-1 text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
     </div>
   );
 }

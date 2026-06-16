@@ -9,7 +9,7 @@ type Props = {
   direction?: "right" | "left";
 };
 
-/** Bright red "NEW →" pill that sits next to the new thing and points at it. */
+/** Small red "NEW →" pill that sits next to the new feature and points at it. */
 export function NewBadge({ target, className = "", direction = "right" }: Props) {
   const show = useIsNew(target);
   if (!show) return null;
@@ -19,13 +19,13 @@ export function NewBadge({ target, className = "", direction = "right" }: Props)
         e.stopPropagation();
         markSeen(target);
       }}
-      className={`inline-flex items-center gap-1.5 rounded-full bg-brand-red px-3 py-1.5 text-sm font-extrabold uppercase tracking-wider text-white shadow-lg ring-2 ring-white animate-pulse cursor-pointer select-none ${className}`}
+      className={`inline-flex items-center gap-0.5 rounded-sm bg-brand-red px-1 py-0 text-[10px] font-semibold uppercase tracking-wider leading-none text-white cursor-pointer select-none ${className}`}
       role="status"
       aria-label="New feature"
     >
-      {direction === "left" && <ArrowLeft className="w-5 h-5" strokeWidth={3} />}
+      {direction === "left" && <ArrowLeft className="h-2.5 w-2.5" strokeWidth={3} />}
       NEW
-      {direction === "right" && <ArrowRight className="w-5 h-5" strokeWidth={3} />}
+      {direction === "right" && <ArrowRight className="h-2.5 w-2.5" strokeWidth={3} />}
     </span>
   );
 }
@@ -41,7 +41,7 @@ export function NewBadgeRow({
   className?: string;
 }) {
   return (
-    <div className={`inline-flex items-center gap-2 ${className}`}>
+    <div className={`inline-flex items-center gap-1 ${className}`}>
       <NewBadge target={target} />
       {children}
     </div>
