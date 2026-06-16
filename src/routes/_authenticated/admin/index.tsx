@@ -30,7 +30,7 @@ function AdminOverview() {
     (async () => {
       const [i, f, c, ti, cg, inv, rsvpRows, pre] = await Promise.all([
         supabase.from("invitations").select("id", { count: "exact", head: true }),
-        supabase.from("duplicate_flags").select("id", { count: "exact", head: true }),
+        supabase.from("duplicate_flag_pairs").select("invitation_a", { count: "exact", head: true }),
         supabase.from("categories").select("id", { count: "exact", head: true }),
         supabase.from("team_invites").select("phone,name"),
         supabase.from("invitations").select("guest_phone,guest_name").eq("is_committee", true),
@@ -103,6 +103,7 @@ function AdminOverview() {
     { label: "RSVPs", value: counts.rsvps, to: "/admin/my-rsvp", newKey: "admin:rsvps-tile" as const },
     { label: "Food items ordered", value: counts.preorders, to: "/admin/preorders", newKey: undefined },
     { label: "Audit log", value: 0, to: "/admin/audit-log", newKey: undefined },
+    { label: "Recently deleted", value: 0, to: "/admin/recently-deleted", newKey: undefined },
   ] as const;
 
 
