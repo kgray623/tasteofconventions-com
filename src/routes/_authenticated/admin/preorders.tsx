@@ -33,7 +33,9 @@ function parseSelections(value: Json): Selection[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((item) => {
     if (!item || typeof item !== "object" || Array.isArray(item)) return [];
-    const rawCuisine = "cuisine" in item ? String(item.cuisine ?? "") : "";
+    const rawCuisine =
+      ("cuisine" in item ? String(item.cuisine ?? "") : "") ||
+      ("country" in item ? String((item as { country?: unknown }).country ?? "") : "");
     const rawQty = "qty" in item ? Number(item.qty) : 0;
     const qty = Number.isFinite(rawQty) ? Math.max(0, Math.round(rawQty)) : 0;
     return qty > 0 ? [{ cuisine: normalizeCuisine(rawCuisine), qty }] : [];
