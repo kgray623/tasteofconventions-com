@@ -157,8 +157,8 @@ function HelperLogin() {
           <form onSubmit={signIn} className="space-y-4">
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <Label>Last name</Label>
                 <NewBadge target="login:last-name" />
+                <Label>Last name</Label>
               </div>
               <Input
                 type="text"
