@@ -1,27 +1,37 @@
-## 1. Rename "My slot" labels (RsvpTotalsCard)
+## Goal
+On the committee workspace's **My Guests Uploaded** card, mark which uploaded guests are themselves on the committee (independent of whether they've RSVP'd), and add a **Committee** filter button. Also unify how "is on the committee" is detected so the count is consistent.
 
-In `src/components/rsvp-totals-card.tsx`:
-- "My slot" → **My RSVP**
-- "My quota" → **My Guests**
-- "My in-person" → **My In-Person**
-- "Mine left" → **My RSVPs Left**
+## Why committee numbers look off today
+There are three separate places a person can be flagged as committee, and different parts of the app check only one:
 
-Body copy under that block stays the same (still labels virtual + the "only in-person counts against quota" footnote).
+```
+inviters (active=true)                ── 15 rows
+team_invites (role='team')            ──  7 rows
+invitations (is_committee=true)       ──  8 rows
+user_roles (role='team')              ── 11 rows
+```
 
-## 2. Committee workspace "My guests" section
+`get_public_inviters` already unions inviters + team_invites + invitations.is_committee and dedupes by name. That's the right "full committee" set (~your 18). Several screens only look at `invitations.is_committee` (8), which is why they look short.
 
-In `src/components/committee-workspace.tsx`:
+## Changes
 
-a. Rename the card header `My guests ({myGuests.length})` → **My Guests Uploaded ({myGuests.length})**.
+### 1. `src/components/committee-workspace.tsx` — My Guests Uploaded
+- Build a `committeeLookup` once on load:
+  - Query `inviters` (name, phone), `team_invites` (name, phone_normalized) where role='team', and reuse the already-loaded `invitations` rows where `is_committee=true`.
+  - Index by normalized name (lowercase, letters only) and by last-10-digit phone.
+- Tag each `myGuests` row with `isCommittee` if its normalized name OR phone tail matches the lookup.
+- Render a small **Committee** badge next to the guest name when `isCommittee` is true (next to the existing Duplicate badge).
+- Add a filter toggle row above the list: **All (n)** / **Committee (n)**. When Committee is selected, only committee-tagged guests show.
+- Update the card header count to reflect the active filter.
 
-b. Add edit (pen) and delete (trash) buttons to each row in that list. Today the row only has the RSVP badge / record-RSVP selector. New per-row trailing controls:
-- **Pen icon button** → opens a dialog with editable fields for `guest_name`, `guest_phone`, `guest_email`. Save calls `supabase.from("invitations").update({...}).eq("id", guest.id)`, toasts on success/error, then reloads via existing `loadGuests`.
-- **Trash icon button** → confirms with the existing shadcn `AlertDialog` ("Delete this guest? …cannot be undone."), then `supabase.from("invitations").delete().eq("id", guest.id)`. Reload on success.
+### 2. Same lookup, applied to the existing "Confirmed RSVPs" and "Guest list" sections
+- Show the same Committee badge there so the marker is consistent across the page. No filter buttons added to those (only My Guests Uploaded), per request.
 
-Both controls are scoped to "My guests uploaded" only (this is the inviter's own list) — not added to the "Confirmed RSVPs" or full "Guest list" sections.
+### 3. Out of scope
+- No DB/migration changes — the union logic stays in the component.
+- No edits to admin screens (`admin/inviters`, `admin/team`, `admin/subcommittee`, dashboard). If you want those reconciled to the same 18-person union next, that's a separate pass — say the word and I'll do it.
 
-c. Extend the existing select query to also pull `guest_email`, since edit needs it: change line 135 select to `id,guest_name,guest_phone,guest_email,host_id,rsvps(status,party_size,attendance_mode)`, add `guest_email` to the `CommitteeGuest` type and row mapping.
-
-## Out of scope
-- No DB/migration changes — RLS already lets the committee member update/delete their own invitations (same path the dashboard uses).
-- No changes to the admin inviters table edit/delete (separate flow, already exists there).
+## Technical notes
+- Normalization helpers already exist locally (`normName`, `normPhoneTail`); reuse them.
+- Lookup loads in parallel with `loadGuests`; stored in component state.
+- No new dependencies, no schema changes.

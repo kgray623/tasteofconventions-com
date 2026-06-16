@@ -57,6 +57,9 @@ export function CommitteeWorkspace() {
   const [myCats, setMyCats] = useState<{ id: string; name: string; description: string | null }[]>([]);
   const [openChatId, setOpenChatId] = useState<string | null>(null);
   const [profileNames, setProfileNames] = useState<Record<string, string>>({});
+  const [committeeNames, setCommitteeNames] = useState<Set<string>>(new Set());
+  const [committeePhones, setCommitteePhones] = useState<Set<string>>(new Set());
+  const [myGuestsFilter, setMyGuestsFilter] = useState<"all" | "committee">("all");
   const handledChatParamRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -201,6 +204,49 @@ export function CommitteeWorkspace() {
     return () => {
       alive = false;
     };
+  }, []);
+
+  // Load the full committee roster from all three sources and index by
+  // normalized name + last-10-digit phone so we can tag guests consistently.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const normName = (s: string | null) => (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
+      const normTail = (s: string | null) => {
+        const d = (s ?? "").replace(/\D/g, "");
+        return d.length >= 10 ? d.slice(-10) : "";
+      };
+      const names = new Set<string>();
+      const phones = new Set<string>();
+      const push = (name: string | null, phone: string | null) => {
+        const n = normName(name);
+        if (n.length >= 2) names.add(n);
+        const p = normTail(phone);
+        if (p) phones.add(p);
+      };
+      try {
+        const [inviters, teamInvites, committeeInvs] = await Promise.all([
+          supabase.from("inviters").select("name,phone").eq("active", true),
+          supabase.from("team_invites").select("name,phone,phone_normalized").eq("role", "team"),
+          supabase.from("invitations").select("guest_name,guest_phone,guest_phone_normalized").eq("is_committee", true),
+        ]);
+        for (const r of (inviters.data ?? []) as { name: string | null; phone: string | null }[]) {
+          push(r.name, r.phone);
+        }
+        for (const r of (teamInvites.data ?? []) as { name: string | null; phone: string | null; phone_normalized: string | null }[]) {
+          push(r.name, r.phone_normalized || r.phone);
+        }
+        for (const r of (committeeInvs.data ?? []) as { guest_name: string | null; guest_phone: string | null; guest_phone_normalized: string | null }[]) {
+          push(r.guest_name, r.guest_phone_normalized || r.guest_phone);
+        }
+      } catch (e) {
+        console.warn("[committee] committee roster load failed", e);
+      }
+      if (!alive) return;
+      setCommitteeNames(names);
+      setCommitteePhones(phones);
+    })();
+    return () => { alive = false; };
   }, []);
 
   useEffect(() => {
@@ -376,11 +422,23 @@ export function CommitteeWorkspace() {
     if (status === "no") return 2;
     return 3;
   };
-  const myGuests = [...myGuestsUnsorted].sort((a, b) => {
+  const isCommitteeGuest = (g: CommitteeGuest) => {
+    const n = normName(g.guest_name);
+    if (n && committeeNames.has(n)) return true;
+    const p = normPhoneTail(g.guest_phone);
+    if (p && committeePhones.has(p)) return true;
+    return false;
+  };
+  const committeeIds = new Set(myGuestsUnsorted.filter(isCommitteeGuest).map((g) => g.id));
+
+  const myGuestsSorted = [...myGuestsUnsorted].sort((a, b) => {
     const r = statusRank(a.rsvp_status) - statusRank(b.rsvp_status);
     if (r !== 0) return r;
     return a.guest_name.trim().toLowerCase().localeCompare(b.guest_name.trim().toLowerCase());
   });
+  const myGuests = myGuestsFilter === "committee"
+    ? myGuestsSorted.filter((g) => committeeIds.has(g.id))
+    : myGuestsSorted;
 
   const confirmedGuests = guests.filter((guest) => guest.rsvp_status === "yes");
   const confirmedInPersonGuests = confirmedGuests.filter((g) => g.attendance_mode !== "zoom");
@@ -443,12 +501,30 @@ export function CommitteeWorkspace() {
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-ink" />
-            <h2 className="font-semibold">My Guests Uploaded ({myGuests.length})</h2>
+            <h2 className="font-semibold">My Guests Uploaded ({myGuests.length}{myGuestsFilter === "committee" ? ` of ${myGuestsSorted.length}` : ""})</h2>
           </div>
           <Button asChild variant="outline" size="sm">
             <Link to="/invitations/new">
               <UserPlus className="w-4 h-4 mr-2" /> Add guest
             </Link>
+          </Button>
+        </div>
+        <div className="px-4 pt-3 flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant={myGuestsFilter === "all" ? "default" : "outline"}
+            onClick={() => setMyGuestsFilter("all")}
+          >
+            All ({myGuestsSorted.length})
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={myGuestsFilter === "committee" ? "default" : "outline"}
+            onClick={() => setMyGuestsFilter("committee")}
+          >
+            Committee ({committeeIds.size})
           </Button>
         </div>
         <p className="px-4 pt-3 text-xs text-muted-foreground">
@@ -469,6 +545,11 @@ export function CommitteeWorkspace() {
                 <div className="flex-1 min-w-[160px]">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="font-medium">{guest.guest_name}</p>
+                    {isCommitteeGuest(guest) && (
+                      <span className="inline-flex items-center rounded-full bg-ink px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cream">
+                        Committee
+                      </span>
+                    )}
                     {duplicateIds.has(guest.id) && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-brand-red px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
                         <AlertTriangle className="w-3 h-3" /> Duplicate
@@ -531,7 +612,14 @@ export function CommitteeWorkspace() {
               const isVirtual = guest.attendance_mode === "zoom";
               return (
                 <div key={guest.id} className="p-4 flex flex-wrap items-center gap-3 text-sm">
-                  <p className="font-medium flex-1 min-w-[160px]">{guest.guest_name}</p>
+                  <p className="font-medium flex-1 min-w-[160px]">
+                    {guest.guest_name}
+                    {isCommitteeGuest(guest) && (
+                      <span className="ml-2 inline-flex items-center rounded-full bg-ink px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cream align-middle">
+                        Committee
+                      </span>
+                    )}
+                  </p>
                   <Badge
                     className={
                       isVirtual
@@ -575,7 +663,14 @@ export function CommitteeWorkspace() {
             {guests.map((guest) => (
               <div key={guest.id} className="p-4 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-medium flex-1 min-w-[160px]">{guest.guest_name}</p>
+                  <p className="font-medium flex-1 min-w-[160px]">
+                    {guest.guest_name}
+                    {isCommitteeGuest(guest) && (
+                      <span className="ml-2 inline-flex items-center rounded-full bg-ink px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cream align-middle">
+                        Committee
+                      </span>
+                    )}
+                  </p>
                   <RsvpStatusBadge status={guest.rsvp_status} />
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
