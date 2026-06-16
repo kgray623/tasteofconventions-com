@@ -247,7 +247,7 @@ function Dashboard() {
                     {i.guest_phone && <span className="inline-flex items-center gap-1"><Phone className="w-3 h-3" />{i.guest_phone}</span>}
                   </div>
                 </div>
-                <RsvpBadge status={i.rsvps?.status} />
+                <RsvpBadge status={i.rsvps?.status} attendanceMode={i.rsvps?.attendance_mode} />
                 <Select
                   value=""
                   disabled={settingRsvpId === i.id}
