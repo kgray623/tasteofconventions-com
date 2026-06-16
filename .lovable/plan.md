@@ -1,17 +1,19 @@
-## Plan
+Plan: make this work like a simple saved shortcut image, not a complicated install flow.
 
-1. **Stabilize the install prompt state**
-   - Update the install helper so it never changes internal install state while React is reading it.
-   - This prevents another "Maximum update depth exceeded" loop when the install page renders or refreshes.
+What I will change:
+1. Replace the current `/install` page with one simple screen:
+   - Show the Taste app image/icon.
+   - A button to save/download that image file.
+   - The image links directly to `/login` when tapped inside the page.
+   - Minimal wording only; no long platform instructions.
 
-2. **Make the Save/Install button behave like Wellness Tracker**
-   - Keep the browser-native install/add-to-home-screen flow.
-   - If Chrome/Chromebook provides the real install prompt, clicking the button will open that prompt.
-   - If the browser cannot provide a prompt, show simple platform instructions instead of failing or pretending to download to a fixed place.
+2. Remove the broken/confusing install prompt behavior from that page:
+   - No “Save or install app” browser prompt button.
+   - No fallback instruction boxes.
+   - No repeated install-state React subscription on this screen.
 
-3. **Remove the confusing toast-only fallback**
-   - Replace the vague "Use your browser menu" toast with visible instructions on the page so the user knows exactly what to tap/click next.
+3. Keep the existing website manifest/icon support in place:
+   - If someone uses browser “Add to Home Screen,” it can still open the login page.
+   - But the visible user flow will be the shortcut-image download, as requested.
 
-4. **Verify the install page**
-   - Check `/install` loads without the React error.
-   - Check clicking Save/Install no longer crashes and either opens the native prompt when available or shows the fallback instructions.
+4. Verify `/install` opens cleanly and the download link points to the image file.
