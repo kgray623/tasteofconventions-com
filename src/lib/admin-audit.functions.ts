@@ -8,33 +8,41 @@ async function assertAdmin(supabase: any, userId: string) {
 }
 
 export type AudienceTotals = {
-  uploaded: number;
-  sent: number;
-  yes_in_person_people: number;
-  yes_zoom_people: number;
-  yes_people: number;
-  no: number;
-  maybe: number;
+  guests_uploaded: number;
+  sms_sent: number;
+  confirmed_in_person_people: number;
+  confirmed_zoom_people: number;
+  confirmed_total_people: number;
+  declined_people: number;
+  maybe_people: number;
   waitlist_people: number;
-  pending: number;
-  responses: number;
-  food_orders: number;
-  food_meals: number;
+  pending_people: number;
+  rsvp_records: number;
+  food_order_records_all: number;
+  food_order_records_linked: number;
+  food_order_records_unlinked: number;
+  meals_ordered_all: number;
+  meals_ordered_linked: number;
+  meals_ordered_unlinked: number;
 };
 
 const emptyTotals = (): AudienceTotals => ({
-  uploaded: 0,
-  sent: 0,
-  yes_in_person_people: 0,
-  yes_zoom_people: 0,
-  yes_people: 0,
-  no: 0,
-  maybe: 0,
+  guests_uploaded: 0,
+  sms_sent: 0,
+  confirmed_in_person_people: 0,
+  confirmed_zoom_people: 0,
+  confirmed_total_people: 0,
+  declined_people: 0,
+  maybe_people: 0,
   waitlist_people: 0,
-  pending: 0,
-  responses: 0,
-  food_orders: 0,
-  food_meals: 0,
+  pending_people: 0,
+  rsvp_records: 0,
+  food_order_records_all: 0,
+  food_order_records_linked: 0,
+  food_order_records_unlinked: 0,
+  meals_ordered_all: 0,
+  meals_ordered_linked: 0,
+  meals_ordered_unlinked: 0,
 });
 
 type InvRow = {
@@ -95,55 +103,63 @@ export const getAdminAudit = createServerFn({ method: "GET" })
     const rsvps = (rsvpRes.data ?? []) as RsvpRow[];
     const preorders = (preRes.data ?? []) as PreRow[];
 
-    const rsvpByInv = new Map<string, RsvpRow>();
-    const dupRsvps: string[] = [];
+    const invIds = new Set(invs.map((i) => i.id));
+
+    const totals = emptyTotals();
+    totals.guests_uploaded = invs.length;
+    totals.sms_sent = invs.filter((i) => !!i.invite_sent_at).length;
+    totals.rsvp_records = rsvps.length;
+
+    // Count people from RSVPs directly (party_size aware).
+    // Only count RSVPs attached to a real invitation toward people totals.
+    const dupSeen = new Set<string>();
+    const dupInvitationIds: string[] = [];
     for (const r of rsvps) {
-      if (rsvpByInv.has(r.invitation_id)) dupRsvps.push(r.invitation_id);
-      else rsvpByInv.set(r.invitation_id, r);
-    }
-    const preByInv = new Map<string, PreRow>();
-    for (const p of preorders) {
-      if (p.invitation_id) preByInv.set(p.invitation_id, p);
-    }
-
-    const all = emptyTotals();
-    const invIds = new Set<string>();
-
-    for (const inv of invs) {
-      invIds.add(inv.id);
-      all.uploaded += 1;
-      if (inv.invite_sent_at) all.sent += 1;
-
-      const r = rsvpByInv.get(inv.id);
-      const status = r?.status ?? null;
-      const party = r?.party_size ?? 1;
-      const mode = r?.attendance_mode ?? null;
-      if (!status) {
-        all.pending += 1;
-      } else {
-        all.responses += 1;
-        if (status === "yes") {
-          all.yes_people += party;
-          if (mode === "zoom") all.yes_zoom_people += party;
-          else all.yes_in_person_people += party;
-        } else if (status === "no") {
-          all.no += 1;
-        } else if (status === "maybe") {
-          all.maybe += 1;
-        } else if (status === "waitlist") {
-          all.waitlist_people += party;
-        } else {
-          all.pending += 1;
-        }
+      if (!invIds.has(r.invitation_id)) continue;
+      if (dupSeen.has(r.invitation_id)) {
+        dupInvitationIds.push(r.invitation_id);
+        // still count people? No — only count first response per invitation
+        continue;
       }
+      dupSeen.add(r.invitation_id);
 
-      const pre = preByInv.get(inv.id);
-      if (pre) {
-        const meals = countMeals(pre.selections);
-        if (meals > 0) {
-          all.food_orders += 1;
-          all.food_meals += meals;
-        }
+      const party = r.party_size ?? 1;
+      const status = r.status;
+      const mode = r.attendance_mode;
+      if (status === "yes") {
+        totals.confirmed_total_people += party;
+        if (mode === "zoom") totals.confirmed_zoom_people += party;
+        else totals.confirmed_in_person_people += party;
+      } else if (status === "no") {
+        totals.declined_people += party;
+      } else if (status === "maybe") {
+        totals.maybe_people += party;
+      } else if (status === "waitlist") {
+        totals.waitlist_people += party;
+      }
+    }
+
+    totals.pending_people = Math.max(
+      0,
+      totals.guests_uploaded
+        - totals.confirmed_total_people
+        - totals.declined_people
+        - totals.maybe_people
+        - totals.waitlist_people,
+    );
+
+    // Food orders
+    for (const p of preorders) {
+      const meals = countMeals(p.selections);
+      const linked = !!p.invitation_id && invIds.has(p.invitation_id);
+      totals.food_order_records_all += 1;
+      totals.meals_ordered_all += meals;
+      if (linked) {
+        totals.food_order_records_linked += 1;
+        totals.meals_ordered_linked += meals;
+      } else {
+        totals.food_order_records_unlinked += 1;
+        totals.meals_ordered_unlinked += meals;
       }
     }
 
@@ -158,11 +174,11 @@ export const getAdminAudit = createServerFn({ method: "GET" })
       }));
 
     return {
-      all,
+      all: totals,
       reconciliation: {
         invitations_total: invs.length,
-        accounted_for: invs.length,
-        duplicate_rsvp_invitations: dupRsvps.length,
+        rsvp_records: rsvps.length,
+        duplicate_rsvp_invitations: dupInvitationIds.length,
         orphan_rsvps: orphanRsvps,
         unlinked_preorders: unlinkedPreorders,
       },
@@ -192,7 +208,9 @@ export const getReconciliationRows = createServerFn({ method: "GET" })
     if (preRes.error) throw new Error(preRes.error.message);
 
     const rsvpByInv = new Map<string, any>();
-    for (const r of (rsvpRes.data ?? []) as any[]) rsvpByInv.set(r.invitation_id, r);
+    for (const r of (rsvpRes.data ?? []) as any[]) {
+      if (!rsvpByInv.has(r.invitation_id)) rsvpByInv.set(r.invitation_id, r);
+    }
     const preByInv = new Map<string, any>();
     for (const p of (preRes.data ?? []) as any[]) {
       if (p.invitation_id) preByInv.set(p.invitation_id, p);
