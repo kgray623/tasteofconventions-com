@@ -207,12 +207,12 @@ function InvitersPage() {
       }
       setInvitedCounts(invByHost);
 
-      const rsvpByInvite = new Map<string, { id: string; status: string; party_size: number }>();
-      for (const r of (rsvpsFull as { id: string; invitation_id: string; status: string; party_size: number }[]) ?? []) {
+      const rsvpByInvite = new Map<string, { id: string; status: string; party_size: number; attendance_mode: string | null }>();
+      for (const r of (rsvpsFull as { id: string; invitation_id: string; status: string; party_size: number; attendance_mode: string | null }[]) ?? []) {
         rsvpByInvite.set(r.invitation_id, r);
       }
       const byHost: Record<string, GuestRow[]> = {};
-      for (const row of (invitationsFull as Omit<GuestRow, "rsvp_status" | "rsvp_party_size" | "rsvp_id">[]) ?? []) {
+      for (const row of (invitationsFull as Omit<GuestRow, "rsvp_status" | "rsvp_party_size" | "rsvp_attendance_mode" | "rsvp_id">[]) ?? []) {
         const key = row.host_id ?? "_none";
         const r = rsvpByInvite.get(row.id);
         (byHost[key] ||= []).push({
@@ -220,6 +220,7 @@ function InvitersPage() {
           rsvp_id: r?.id ?? null,
           rsvp_status: r?.status ?? null,
           rsvp_party_size: r?.party_size ?? null,
+          rsvp_attendance_mode: r?.attendance_mode ?? null,
         });
       }
       setGuestsByHost(byHost);
