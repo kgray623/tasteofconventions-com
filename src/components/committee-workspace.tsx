@@ -443,7 +443,7 @@ export function CommitteeWorkspace() {
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-ink" />
-            <h2 className="font-semibold">My guests ({myGuests.length})</h2>
+            <h2 className="font-semibold">My Guests Uploaded ({myGuests.length})</h2>
           </div>
           <Button asChild variant="outline" size="sm">
             <Link to="/invitations/new">
