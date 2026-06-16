@@ -16,14 +16,13 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 });
 
 const emptyTotals = (): AudienceTotals => ({
-  uploaded: 0, sent: 0, yes: 0, yes_people: 0, no: 0, maybe: 0,
-  waitlist: 0, waitlist_people: 0, pending: 0, responses: 0,
+  uploaded: 0, sent: 0,
+  yes_in_person_people: 0, yes_zoom_people: 0, yes_people: 0,
+  no: 0, maybe: 0, waitlist_people: 0, pending: 0, responses: 0,
   food_orders: 0, food_meals: 0,
 });
 
 type AuditData = {
-  guests: AudienceTotals;
-  committee: AudienceTotals;
   all: AudienceTotals;
   reconciliation: {
     invitations_total: number;
@@ -86,8 +85,6 @@ function AdminOverview() {
   if (rolesLoading) return <p className="text-muted-foreground">Loading workspace…</p>;
   if (!isAdmin || view === "committee") return <CommitteeWorkspace />;
 
-  const guests = audit?.guests ?? emptyTotals();
-  const committee = audit?.committee ?? emptyTotals();
   const all = audit?.all ?? emptyTotals();
   const recon = audit?.reconciliation;
 
@@ -142,30 +139,6 @@ function AdminOverview() {
       </Link>
     );
   };
-
-  const audienceCard = (
-    title: string,
-    b: AudienceTotals,
-    links: { upload: string; rsvp: string },
-  ) => (
-    <Card className="p-5 space-y-1">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">{title}</p>
-      <StatRow row={{ label: "Uploaded", value: b.uploaded, to: links.upload, emphasis: true }} />
-      <StatRow row={{ label: "SMS sent", value: b.sent, to: links.upload }} />
-      <div className="border-t my-2" />
-      <StatRow row={{ label: "Yes (RSVPs)", value: b.yes, to: links.rsvp }} />
-      <StatRow row={{ label: "Yes (people)", value: b.yes_people, to: links.rsvp, emphasis: true }} />
-      <StatRow row={{ label: "No", value: b.no, to: links.rsvp }} />
-      <StatRow row={{ label: "Maybe", value: b.maybe, to: links.rsvp }} />
-      <StatRow row={{ label: "Waitlist (RSVPs)", value: b.waitlist, to: links.rsvp }} />
-      <StatRow row={{ label: "Waitlist (people)", value: b.waitlist_people, to: links.rsvp }} />
-      <StatRow row={{ label: "Pending", value: b.pending, to: links.rsvp }} />
-      <div className="border-t my-2" />
-      <StatRow row={{ label: "Total responses", value: b.responses, to: links.rsvp }} />
-      <StatRow row={{ label: "Food orders", value: b.food_orders, to: "/admin/preorders" }} />
-      <StatRow row={{ label: "Meals ordered", value: b.food_meals, to: "/admin/preorders" }} />
-    </Card>
-  );
 
   return (
     <div className="space-y-6">
@@ -225,11 +198,22 @@ function AdminOverview() {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {audienceCard("All invitees", all, { upload: "/admin/upload", rsvp: "/admin/my-rsvp" })}
-        {audienceCard("Guests", guests, { upload: "/admin/upload", rsvp: "/admin/my-rsvp" })}
-        {audienceCard("Committee", committee, { upload: "/admin/team", rsvp: "/admin/my-rsvp" })}
-      </div>
+      <Card className="p-5 space-y-1">
+        <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Guests</p>
+        <StatRow row={{ label: "Guests uploaded", value: all.uploaded, to: "/admin/upload", emphasis: true }} />
+        <StatRow row={{ label: "SMS sent", value: all.sent, to: "/admin/upload" }} />
+        <div className="border-t my-2" />
+        <StatRow row={{ label: "Confirmed in person", value: all.yes_in_person_people, to: "/admin/my-rsvp", emphasis: true }} />
+        <StatRow row={{ label: "Confirmed on Zoom", value: all.yes_zoom_people, to: "/admin/my-rsvp" }} />
+        <StatRow row={{ label: "Total confirmed", value: all.yes_people, to: "/admin/my-rsvp", emphasis: true }} />
+        <StatRow row={{ label: "Declined", value: all.no, to: "/admin/my-rsvp" }} />
+        {all.maybe > 0 && <StatRow row={{ label: "Maybe", value: all.maybe, to: "/admin/my-rsvp" }} />}
+        {all.waitlist_people > 0 && <StatRow row={{ label: "Waitlist", value: all.waitlist_people, to: "/admin/my-rsvp" }} />}
+        <StatRow row={{ label: "Pending", value: all.pending, to: "/admin/my-rsvp" }} />
+        <div className="border-t my-2" />
+        <StatRow row={{ label: "Food orders", value: all.food_orders, to: "/admin/preorders" }} />
+        <StatRow row={{ label: "Meals ordered", value: all.food_meals, to: "/admin/preorders" }} />
+      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="p-5 space-y-1">
