@@ -612,7 +612,14 @@ export function CommitteeWorkspace() {
               const isVirtual = guest.attendance_mode === "zoom";
               return (
                 <div key={guest.id} className="p-4 flex flex-wrap items-center gap-3 text-sm">
-                  <p className="font-medium flex-1 min-w-[160px]">{guest.guest_name}</p>
+                  <p className="font-medium flex-1 min-w-[160px]">
+                    {guest.guest_name}
+                    {isCommitteeGuest(guest) && (
+                      <span className="ml-2 inline-flex items-center rounded-full bg-ink px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cream align-middle">
+                        Committee
+                      </span>
+                    )}
+                  </p>
                   <Badge
                     className={
                       isVirtual
