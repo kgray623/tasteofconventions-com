@@ -209,6 +209,39 @@ export type Database = {
           },
         ]
       }
+      deleted_rows_archive: {
+        Row: {
+          deleted_at: string
+          deleted_by: string | null
+          deleted_by_name: string | null
+          deleted_by_phone: string | null
+          id: string
+          row_data: Json
+          row_id: string
+          table_name: string
+        }
+        Insert: {
+          deleted_at?: string
+          deleted_by?: string | null
+          deleted_by_name?: string | null
+          deleted_by_phone?: string | null
+          id?: string
+          row_data: Json
+          row_id: string
+          table_name: string
+        }
+        Update: {
+          deleted_at?: string
+          deleted_by?: string | null
+          deleted_by_name?: string | null
+          deleted_by_phone?: string | null
+          id?: string
+          row_data?: Json
+          row_id?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
       donations_summary: {
         Row: {
           id: boolean
@@ -929,7 +962,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      duplicate_flag_pairs: {
+        Row: {
+          created_at: string | null
+          event_id: string | null
+          invitation_a: string | null
+          invitation_b: string | null
+          match_types: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "duplicate_flags_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       claim_admin: { Args: never; Returns: boolean }
