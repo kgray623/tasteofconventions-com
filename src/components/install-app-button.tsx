@@ -66,7 +66,13 @@ export function InstallAppButton({ className = "" }: { className?: string }) {
         onClick={handleInstall}
         className={`bg-terracotta text-cream hover:bg-terracotta/90 shadow-md ${className}`}
       >
-        <Download className="w-4 h-4 mr-2" /> Download the app
+        <img
+          src="/icon-192.png"
+          alt=""
+          aria-hidden="true"
+          className="w-5 h-5 rounded mr-2"
+        />{" "}
+        Download the app
       </Button>
 
       {showIosSheet && (
