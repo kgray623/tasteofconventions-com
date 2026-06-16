@@ -476,6 +476,7 @@ export function CommitteeWorkspace() {
             new Date(g.responded_at).getTime() > lastSeenYesAt,
         )
         .sort(byName);
+  const newYesPeople = newYesGuests.reduce((s, g) => s + (g.party_size || 1), 0);
   const markYesSeen = () => {
     if (!user || typeof window === "undefined") return;
     const now = Date.now();
@@ -549,23 +550,33 @@ export function CommitteeWorkspace() {
         </div>
 
         {newYesGuests.length > 0 && (
-          <div className="mx-4 mt-3 rounded-md border border-emerald-300 bg-emerald-50 p-3 text-sm flex flex-wrap items-center gap-2">
-            <NewBadge target="committee:new-yes-rsvps" />
-            <span className="font-semibold text-emerald-900">
-              {newYesGuests.length} new guest{newYesGuests.length === 1 ? "" : "s"} RSVP'd:
-            </span>
-            <span className="text-emerald-900">
-              {newYesGuests.map((g) => g.guest_name).join(", ")}
-            </span>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="ml-auto"
-              onClick={markYesSeen}
-            >
-              Mark seen
-            </Button>
+          <div className="mx-4 mt-3 rounded-md border border-emerald-300 bg-emerald-50 p-3 text-sm space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <NewBadge target="committee:new-yes-rsvps" />
+              <span className="font-semibold text-emerald-900">
+                {newYesPeople} new guest{newYesPeople === 1 ? "" : "s"} RSVP'd
+                {newYesPeople !== newYesGuests.length && ` (across ${newYesGuests.length} response${newYesGuests.length === 1 ? "" : "s"})`}:
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="ml-auto"
+                onClick={markYesSeen}
+              >
+                Mark seen
+              </Button>
+            </div>
+            <ul className="text-emerald-900 text-xs space-y-0.5 pl-1">
+              {newYesGuests.map((g) => {
+                const mode = g.attendance_mode === "zoom" ? "Zoom" : "in person";
+                return (
+                  <li key={g.id}>
+                    <span className="font-medium">{g.guest_name}</span> — {g.party_size || 1} {mode}
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         )}
 
@@ -589,9 +600,11 @@ export function CommitteeWorkspace() {
           </Button>
         </div>
         <p className="px-4 pt-3 text-xs text-muted-foreground">
-          Guests you've invited. If someone texts you back to decline (or accept), record their RSVP here.{" "}
-          <NewBadge target="committee:row-actions" className="align-middle" />
-          <span className="align-middle"> Use the pencil to edit and the trash to delete.</span>
+          Guests you've invited. If someone texts you back to decline (or accept), record their RSVP here.
+        </p>
+        <p className="px-4 pt-2 text-xs text-muted-foreground flex items-center gap-1.5">
+          <NewBadge target="committee:row-actions" />
+          <span>Use the pencil to edit or the trash to delete the guest.</span>
         </p>
 
         {loadingGuests ? (
@@ -964,6 +977,17 @@ function MyGuestsGroup({
                   </div>
 
                   <RsvpStatusBadge status={guest.rsvp_status} />
+                  {guest.rsvp_status === "yes" && (
+                    <Badge
+                      className={
+                        guest.attendance_mode === "zoom"
+                          ? "bg-ink/10 text-ink hover:bg-ink/10"
+                          : "bg-gold text-ink hover:bg-gold"
+                      }
+                    >
+                      {guest.party_size || 1} {guest.attendance_mode === "zoom" ? "Zoom" : "in person"}
+                    </Badge>
+                  )}
                   {!guest.rsvp_status && (
                     <Select
                       value=""

@@ -1,52 +1,64 @@
-## Scale back NEW badges to feature-level, shrink them, remove from rows
+I will update the committee view so the numbers and labels match the way you described them, and so counts are based on people/party size instead of just invitation rows.
 
-### Rule going forward
+Plan:
 
-A NEW badge marks a newly added/changed **feature** — never a piece of data (no NEW next to a person's name, a guest count, or any list row). One badge per feature, placed at its header/label.
+1. Fix the RSVP Totals card
+- Show the event-wide summary as:
+  - Total seats: 550
+  - RSVP requests: sum of active committee quotas, e.g. 280
+  - RSVPs available: requested quota minus in-person confirmed, e.g. 244
+  - In-person confirmations: sum of party sizes for in-person yes RSVPs, e.g. 36
+  - RSVP Zooms: sum of party sizes for Zoom yes RSVPs, e.g. 4
+- Keep the small NEW badge on the RSVP totals feature only.
+- Change the explanatory sentence to: “Only in-person RSVPs count.”
+- Replace the awkward “land 52” sentence with cleaner guidance: invite more guests than your request amount because not everyone will RSVP yes.
 
-### NEW badges to keep / add
+2. Fix the My RSVP section
+- Rename it to “My RSVPs”.
+- Show personal metrics using the committee member’s actual data:
+  - My RSVP request / requested amount
+  - My guests uploaded
+  - My in-person RSVP guests
+  - My RSVPs left/open
+  - My RSVP Zooms
+- If uploaded is higher than requested, make it clear, e.g. “57 uploaded · 52 requested,” so it is not confusing.
 
-1. **RSVP Totals** card title — NEW badge
-2. **My RSVP** label (the new card on the committee workspace + matching label in the totals card) — NEW badge
-3. **All / Committee filter toggle** header — NEW badge (it's a brand-new feature)
-4. **Edit/Delete icons** — one small NEW badge near the column header for the pencil/trash actions (feature, not per row)
+3. Add quota/request-change control in My RSVPs
+- Add a small “Request more RSVPs” control in the My RSVPs area.
+- It will write to the existing inviter request fields (`requested_quota`, `quota_request_note`, `quota_requested_at`) so admins can review the request instead of silently changing the approved quota.
+- If a request is already pending, show that pending request amount.
 
-### Removals (per-row and redundant)
+4. Fix “New guests RSVP’d” accuracy
+- Change this from counting RSVP rows to counting actual guests/people using `party_size`.
+- Display both clearly when needed, for example: “21 new guests across 15 RSVP responses.”
+- List each new RSVP with name, party size, and mode: “Belsaydia Ruiz — 2 in person”, “Karina Davis — Zoom”, etc.
+- Use only the committee member’s own guests.
 
-In `src/components/rsvp-totals-card.tsx`:
-- Remove NEW badges from "My Guests", "My In-Person", "My RSVPs Left"
-- Add NEW badge on the card title "RSVP Totals" and keep one on "My RSVP"
+5. Fix guest row details
+- Every RSVP row in the collapsible guest boxes will show:
+  - Guest name
+  - Committee tag when applicable
+  - RSVP status
+  - Party size, e.g. “2 in person” or “1 Zoom”
+  - Edit and delete icons
+- This fixes rows like Gloria Groves, Jamie Elker, Steve and Denise, etc. so party size and Zoom/in-person status are visible.
 
-In `src/components/committee-workspace.tsx`:
-- Remove NEW badge from the per-row "Committee" tag in: My Guests Uploaded rows, Confirmed RSVPs rows, and the Guest list rows (this is what's putting NEW next to Jacqueline Spears, Jamie Elker, Carrie Gray, Melissa Novotne, etc.)
-- Remove NEW badge from the "My Guests Uploaded" header
-- Keep one NEW badge on the All / Committee filter toggle (header level)
-- Replace any per-row pencil/trash NEW badge with a single NEW badge on the actions column header
+6. Keep the three collapsible boxes, alphabetized
+- RSVP’d
+- Awaiting RSVP
+- Declined
+- Alphabetize each box by guest name.
+- Keep each box collapsible.
 
-In `src/routes/_authenticated/dashboard.tsx`:
-- Remove NEW badge from "Confirmed in person" tile (not a new feature)
+7. Fix NEW badge placement around edit/delete help
+- Remove NEW from the end of the sentence.
+- Put it at the start of its own help line: “NEW Use the pencil to edit or the trash to delete the guest.”
 
-In `src/routes/_authenticated/admin/inviters.tsx`:
-- Remove NEW badge from "In-person" column header (not a new feature)
+8. Remove wrong NEW badges from counts/data
+- No NEW badge on “All (57)” or guest counts.
+- Keep NEW only beside the Committee filter because that feature is new.
+- Do not mark people or data values as new.
 
-### Smaller badge styling
-
-In `src/components/new-badge.tsx`:
-- Text `text-[10px]`, `leading-none`, `font-semibold`
-- Padding `px-1 py-0`, `gap-0.5`, `rounded-sm`
-- Arrow icon `h-2.5 w-2.5`
-- Keep red background, keep directional arrow (left/right) support
-
-### Registry cleanup
-
-In `src/lib/whats-new.ts`, keep only these keys:
-- `committee:rsvp-totals-card`
-- `committee:my-rsvp-label`
-- `committee:filter-toggle`
-- `committee:row-actions` (pencil/trash column header)
-
-Remove all other keys added last round so stray badges can't render.
-
-### Out of scope
-
-No logic, layout, or business-rule changes. No edits to admin-only screens beyond the two removals listed.
+9. Fix the preview runtime error if it is caused by the current route chunk
+- Clean up any JSX/runtime issue in this touched area while making the changes.
+- Verify the committee view loads after the edit.
