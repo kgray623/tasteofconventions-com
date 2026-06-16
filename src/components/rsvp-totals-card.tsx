@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 
-type Totals = { requested: number; confirmed: number };
+type Totals = { requested: number; confirmed: number; virtual: number };
 
 type Props = {
   /** When provided, also render this committee member's personal slot. */
@@ -10,8 +10,8 @@ type Props = {
 };
 
 export function RsvpTotalsCard({ personalHostIds }: Props) {
-  const [event, setEvent] = useState<Totals>({ requested: 0, confirmed: 0 });
-  const [mine, setMine] = useState<Totals>({ requested: 0, confirmed: 0 });
+  const [event, setEvent] = useState<Totals>({ requested: 0, confirmed: 0, virtual: 0 });
+  const [mine, setMine] = useState<Totals>({ requested: 0, confirmed: 0, virtual: 0 });
   const [loading, setLoading] = useState(true);
 
   const showPersonal = Array.isArray(personalHostIds) && personalHostIds.length > 0;
@@ -28,15 +28,19 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
         0,
       );
 
-      // Event-wide confirmed = sum of party_size where status = yes
+      // Yes RSVPs split by attendance mode. Anything not explicitly "zoom"
+      // counts as in-person (matches how the rest of the app reads it).
       const { data: rsvps } = await supabase
         .from("rsvps")
-        .select("party_size,status,invitation_id");
+        .select("party_size,status,invitation_id,attendance_mode");
       const yesRsvps = (rsvps ?? []).filter((r) => r.status === "yes");
-      const confirmed = yesRsvps.reduce((s, r) => s + (r.party_size ?? 1), 0);
+      const inPersonYes = yesRsvps.filter((r) => r.attendance_mode !== "zoom");
+      const virtualYes = yesRsvps.filter((r) => r.attendance_mode === "zoom");
+      const confirmed = inPersonYes.reduce((s, r) => s + (r.party_size ?? 1), 0);
+      const virtual = virtualYes.reduce((s, r) => s + (r.party_size ?? 1), 0);
 
       if (!alive) return;
-      setEvent({ requested, confirmed });
+      setEvent({ requested, confirmed, virtual });
 
       if (showPersonal) {
         const myQuota = (inviters ?? [])
@@ -49,12 +53,15 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
           .select("id,host_id")
           .in("host_id", personalHostIds!);
         const myInviteIds = new Set((myInvites ?? []).map((i) => i.id));
-        const myConfirmed = yesRsvps
+        const myConfirmed = inPersonYes
+          .filter((r) => myInviteIds.has(r.invitation_id))
+          .reduce((s, r) => s + (r.party_size ?? 1), 0);
+        const myVirtual = virtualYes
           .filter((r) => myInviteIds.has(r.invitation_id))
           .reduce((s, r) => s + (r.party_size ?? 1), 0);
 
         if (!alive) return;
-        setMine({ requested: myQuota, confirmed: myConfirmed });
+        setMine({ requested: myQuota, confirmed: myConfirmed, virtual: myVirtual });
       }
 
       if (alive) setLoading(false);
@@ -74,7 +81,8 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
   }, [showPersonal, JSON.stringify(personalHostIds ?? [])]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const remaining = Math.max(0, event.requested - event.confirmed);
-  const pct = event.requested > 0 ? Math.min(100, Math.round((event.confirmed / event.requested) * 100)) : 0;
+  const pct =
+    event.requested > 0 ? Math.min(100, Math.round((event.confirmed / event.requested) * 100)) : 0;
   const myRemaining = Math.max(0, mine.requested - mine.confirmed);
 
   return (
@@ -86,7 +94,7 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
 
       <div className="grid grid-cols-3 gap-3 text-center">
         <Stat label="Seats requested" value={loading ? "—" : event.requested} />
-        <Stat label="RSVPs confirmed" value={loading ? "—" : event.confirmed} emphasis />
+        <Stat label="In-person confirmed" value={loading ? "—" : event.confirmed} emphasis />
         <Stat label="Still available" value={loading ? "—" : remaining} />
       </div>
 
@@ -98,29 +106,57 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
         />
       </div>
 
+      <p className="text-xs text-muted-foreground">
+        Virtual (Zoom):{" "}
+        <span className="font-semibold text-ink tabular-nums">
+          {loading ? "—" : event.virtual}
+        </span>
+        {" — unlimited, doesn't use seats."}
+      </p>
+
       {showPersonal && (
         <div className="pt-3 border-t">
           <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">My slot</p>
           <div className="grid grid-cols-3 gap-3 text-center">
             <Stat label="My quota" value={loading ? "—" : mine.requested} />
-            <Stat label="My RSVPs" value={loading ? "—" : mine.confirmed} emphasis />
+            <Stat label="My in-person" value={loading ? "—" : mine.confirmed} emphasis />
             <Stat label="Mine left" value={loading ? "—" : myRemaining} />
           </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            My virtual (Zoom):{" "}
+            <span className="font-semibold text-ink tabular-nums">
+              {loading ? "—" : mine.virtual}
+            </span>
+            {" — unlimited, doesn't use seats."}
+          </p>
         </div>
       )}
 
       <p className="text-xs text-muted-foreground italic leading-relaxed">
-        Invites aren't RSVPs. To land {showPersonal && mine.requested > 0 ? mine.requested : 40} RSVPs you'll usually
-        need to text many more people — keep inviting until your quota fills.
+        Only in-person RSVPs count against your seat quota. To land{" "}
+        {showPersonal && mine.requested > 0 ? mine.requested : 40} in-person RSVPs you'll usually
+        need to text many more people — keep inviting until your in-person quota fills.
       </p>
     </Card>
   );
 }
 
-function Stat({ label, value, emphasis }: { label: string; value: number | string; emphasis?: boolean }) {
+function Stat({
+  label,
+  value,
+  emphasis,
+}: {
+  label: string;
+  value: number | string;
+  emphasis?: boolean;
+}) {
   return (
     <div>
-      <p className={`font-display tabular-nums ${emphasis ? "text-3xl text-terracotta" : "text-2xl"}`}>{value}</p>
+      <p
+        className={`font-display tabular-nums ${emphasis ? "text-3xl text-terracotta" : "text-2xl"}`}
+      >
+        {value}
+      </p>
       <p className="text-[11px] uppercase tracking-wider text-muted-foreground mt-1">{label}</p>
     </div>
   );
