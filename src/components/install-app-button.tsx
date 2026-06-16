@@ -29,49 +29,82 @@ function isInAppBrowser(): boolean {
 export function InstallAppButton({ className = "" }: { className?: string }) {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(false);
-  const [showHint, setShowHint] = useState<null | "ios" | "android-menu" | "inapp">(null);
+  const [showHint, setShowHint] = useState<null | "ios" | "inapp">(null);
   const [ios, setIos] = useState(false);
   const [inApp, setInApp] = useState(false);
+  // "waiting" until beforeinstallprompt fires (or 5s timeout marks unavailable)
+  const [readyState, setReadyState] = useState<"waiting" | "ready" | "unavailable">("waiting");
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     setInstalled(isStandalone());
-    setIos(isIos());
-    setInApp(isInAppBrowser());
+    const _ios = isIos();
+    const _inApp = isInAppBrowser();
+    setIos(_ios);
+    setInApp(_inApp);
+    // iOS Safari and in-app browsers never fire beforeinstallprompt — they're
+    // immediately "ready" (their handlers don't use the deferred event).
+    if (_ios || _inApp) {
+      setReadyState("ready");
+      return;
+    }
     const onPrompt = (e: Event) => {
       e.preventDefault();
       setDeferred(e as BeforeInstallPromptEvent);
+      setReadyState("ready");
     };
     const onInstalled = () => setInstalled(true);
     window.addEventListener("beforeinstallprompt", onPrompt);
     window.addEventListener("appinstalled", onInstalled);
+    const timer = window.setTimeout(() => {
+      setReadyState((prev) => (prev === "waiting" ? "unavailable" : prev));
+    }, 5000);
     return () => {
       window.removeEventListener("beforeinstallprompt", onPrompt);
       window.removeEventListener("appinstalled", onInstalled);
+      window.clearTimeout(timer);
     };
   }, []);
 
   if (installed) return null;
 
-  const label = ios ? "Add to Home Screen" : "Install app";
+  const label =
+    readyState === "waiting"
+      ? "Preparing install…"
+      : readyState === "unavailable"
+        ? "Install not available"
+        : ios
+          ? "Add to Home Screen"
+          : inApp
+            ? `Open in ${ios ? "Safari" : "Chrome"}`
+            : "Install app";
+
+  const disabled = readyState !== "ready" || busy;
 
   const handleClick = async () => {
     if (inApp) {
       setShowHint("inapp");
       return;
     }
-    if (deferred) {
-      try {
-        await deferred.prompt();
-        await deferred.userChoice;
-      } catch {
-        /* ignore */
-      } finally {
-        setDeferred(null);
-      }
+    if (ios) {
+      setShowHint("ios");
       return;
     }
-    setShowHint(ios ? "ios" : "android-menu");
+    if (!deferred) return;
+    setBusy(true);
+    try {
+      await deferred.prompt();
+      await deferred.userChoice;
+    } catch {
+      /* ignore */
+    } finally {
+      setDeferred(null);
+      setBusy(false);
+      // Most browsers fire the event only once; mark unavailable so the
+      // button doesn't sit forever in "ready" state with no prompt to fire.
+      setReadyState("unavailable");
+    }
   };
 
   return (
@@ -80,7 +113,8 @@ export function InstallAppButton({ className = "" }: { className?: string }) {
         type="button"
         size="sm"
         onClick={handleClick}
-        className={`bg-terracotta text-cream hover:bg-terracotta/90 shadow-md ${className}`}
+        disabled={disabled}
+        className={`bg-terracotta text-cream hover:bg-terracotta/90 shadow-md disabled:opacity-60 ${className}`}
       >
         <img
           src="/icon-192.png"
@@ -119,15 +153,6 @@ export function InstallAppButton({ className = "" }: { className?: string }) {
                 <div className="flex justify-center pt-1 text-terracotta">
                   <ArrowDown className="w-6 h-6 animate-bounce" />
                 </div>
-              </div>
-            )}
-
-            {showHint === "android-menu" && (
-              <div className="space-y-2">
-                <h3 className="font-display text-xl text-ink">Install app</h3>
-                <p className="text-sm text-ink">
-                  Tap the ⋮ menu in Chrome and choose &quot;Install app.&quot;
-                </p>
               </div>
             )}
 
