@@ -234,6 +234,26 @@ export function CommitteeWorkspace() {
     return () => { alive = false; };
   }, []);
 
+  // Deep-link from notifications: ?chat=<categoryId>
+  useEffect(() => {
+    const chatId = search.chat;
+    if (!chatId || handledChatParamRef.current === chatId) return;
+    if (myCats.length === 0) return; // wait until assignments load
+    handledChatParamRef.current = chatId;
+    // Scroll the My volunteer chats card into view
+    setTimeout(() => {
+      chatsCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+    // Open the modal if the user is in that category
+    if (myCats.some((c) => c.id === chatId)) {
+      setOpenChatId(chatId);
+    }
+    // Clear the param so refresh/back doesn't keep reopening
+    navigate({ to: ".", search: (prev: Record<string, unknown>) => ({ ...prev, chat: undefined }), replace: true });
+  }, [search.chat, myCats, navigate]);
+
+
+
   const setRsvpFor = async (
     guest: CommitteeGuest,
     value: "yes1" | "yes2" | "yes3" | "yes4" | "no" | "clear",
