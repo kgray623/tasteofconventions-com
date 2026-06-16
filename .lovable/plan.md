@@ -1,24 +1,29 @@
-## Sort the My Guests list + flag duplicates inline
+## Goal
+Show one install button, but its label and behavior adapt to the device. No numbered 3-step list anywhere.
 
-In `src/components/committee-workspace.tsx`:
+## Behavior
 
-### 1. Sort order (replace the current created_at order on render)
-Apply this comparator to `myGuests` before rendering:
-1. **Status bucket** — Pending (no RSVP) → Confirmed (`yes`) → Declined (`no`) → anything else.
-2. Within each bucket, **alphabetical by `guest_name`** (case-insensitive, trimmed).
+**Android (Chrome / Edge / Samsung Internet)**
+- Button label: "Install app"
+- Tap → fires the native `beforeinstallprompt` (already wired). One tap, OS prompt appears, done.
+- If the prompt isn't available yet (browser hasn't fired the event), button shows "Install app" and tapping it shows a one-line hint: "Tap the ⋮ menu → Install app."
 
-### 2. Duplicate flag inline
-Build a `duplicateIds: Set<string>` from `myGuests`:
-- Normalize name = lowercase + strip non-letters.
-- Normalize phone = last 10 digits.
-- For any guest whose normalized name matches another guest's, OR whose last-10 phone matches another's, add both ids.
+**iPhone / iPad Safari**
+- Button label: "Add to Home Screen"
+- Tap → opens a small popover anchored to the button with one sentence and a visual: "Tap the Share icon ⬆ at the bottom of Safari, then 'Add to Home Screen.'"
+- Popover shows the iOS Share glyph + an arrow pointing toward the Safari toolbar. Auto-dismisses on tap-outside.
+- This is the closest to one tap iOS allows — Apple does not expose any API to trigger Add to Home Screen programmatically.
 
-Next to the guest name, render a small red pill **"Duplicate"** (with `AlertTriangle` icon) when `duplicateIds.has(guest.id)`. Same look as our other red badge — `bg-brand-red text-white text-[10px] uppercase px-2 py-0.5 rounded-full`.
+**In-app browsers (Instagram, Facebook, TikTok webview)**
+- Button label: "Open in Safari" (iOS) or "Open in Chrome" (Android)
+- Tap → one-line hint: "Tap the ⋯ menu and choose 'Open in Safari/Chrome' to install."
 
-### Files
-- **Edit** `src/components/committee-workspace.tsx` — add the comparator + the duplicate set + the badge next to the guest name in the existing `myGuests.map(...)` row.
+**Already installed (standalone display-mode)**
+- Button hidden.
 
-### Not changing
-- Data fetching / server logic (sorting + dup detection are client-side over the already-loaded list).
-- Any other section of the workspace.
-- The Welcome video, the bell, etc.
+## File to edit
+- `src/components/install-app-button.tsx` — replace the current 3-step instruction block with the platform-branched UX above. Keep button styling, position, and the existing Android `beforeinstallprompt` handler.
+
+## Out of scope
+- No manifest changes, no service worker changes, no backend changes.
+- No copy changes outside this one component.
