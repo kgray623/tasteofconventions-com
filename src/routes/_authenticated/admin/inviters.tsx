@@ -979,7 +979,8 @@ function InvitersPage() {
                   <th className="px-2 py-3">Name</th>
                   <th className="px-4 py-3 w-24">Quota</th>
                   <th className="px-4 py-3 w-24">Uploaded</th>
-                  <th className="px-4 py-3 w-24">RSVPs</th>
+                  <th className="px-4 py-3 w-24">In-person</th>
+                  <th className="px-4 py-3 w-24">Virtual</th>
                   <th className="px-4 py-3 w-24">Remaining</th>
                   <th className="px-4 py-3 w-24">Status</th>
                   <th className="px-4 py-3 w-16"></th>
