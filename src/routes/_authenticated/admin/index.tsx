@@ -74,8 +74,10 @@ function AdminOverview() {
               sum +
               row.selections.reduce((s: number, item) => {
                 if (!item || typeof item !== "object") return s;
-                const cuisine = String((item as { cuisine?: unknown }).cuisine ?? "").trim();
-                if (!cuisine) return s;
+                const key =
+                  String((item as { cuisine?: unknown }).cuisine ?? "").trim() ||
+                  String((item as { country?: unknown }).country ?? "").trim();
+                if (!key) return s;
                 const qty = Number((item as { qty?: unknown }).qty);
                 return s + (Number.isFinite(qty) && qty > 0 ? Math.round(qty) : 0);
               }, 0)
@@ -90,7 +92,7 @@ function AdminOverview() {
   const stats = [
     { label: "Guest invitations", value: counts.invites, to: "/admin/upload" },
     { label: "Duplicate flags", value: counts.flags, to: "/dashboard" },
-    { label: "Categories", value: counts.categories, to: "/admin/categories" },
+    { label: "Volunteer categories", value: counts.categories, to: "/admin/categories" },
     { label: "Committee members", value: counts.team, to: "/admin/team" },
     { label: "Pending invites", value: counts.pending, to: "/admin/team" },
     { label: "Food items ordered", value: counts.preorders, to: "/admin/preorders" },
