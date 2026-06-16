@@ -6,7 +6,7 @@ import { clearPhoneLoginCookie } from "@/lib/auth-phone.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notification-bell";
-import { NewBadge } from "@/components/new-badge";
+
 
 
 export function SiteHeader() {
@@ -30,15 +30,16 @@ export function SiteHeader() {
         <nav className="flex items-center gap-2 text-sm">
           {user ? (
             <>
-              <NewBadge target="header:notification-bell" />
               <NotificationBell />
               {loading ? null : isTeam ? (
-                <Link
-                  to={isCommitteeView ? "/admin/subcommittee" : "/admin"}
-                  className="px-3 py-2 rounded-md hover:bg-secondary transition"
-                >
-                  {isAdmin && !isCommitteeView ? "Admin" : "Steering Committee"}
-                </Link>
+                location.pathname.startsWith("/admin") ? null : (
+                  <Link
+                    to={isCommitteeView ? "/admin/subcommittee" : "/admin"}
+                    className="px-3 py-2 rounded-md hover:bg-secondary transition"
+                  >
+                    {isAdmin && !isCommitteeView ? "Admin" : "Steering Committee"}
+                  </Link>
+                )
               ) : (
                 <Link to="/my-rsvp" className="px-3 py-2 rounded-md hover:bg-secondary transition">
                   My RSVP

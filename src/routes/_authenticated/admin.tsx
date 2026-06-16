@@ -7,7 +7,7 @@ import { markExplicitSignOut, useAuth } from "@/hooks/use-auth";
 import { clearPhoneLoginCookie } from "@/lib/auth-phone.functions";
 import { Button } from "@/components/ui/button";
 
-import { NewBadge } from "@/components/new-badge";
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlus, UtensilsCrossed, Mail, HandCoins, MessageSquare, Ticket, ArrowLeft } from "lucide-react";
@@ -22,13 +22,13 @@ const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boole
   { to: "/admin", label: "Overview", icon: ShieldCheck, exact: true },
   { to: "/admin/invitation", label: "Invitation page", icon: Mail },
   { to: "/admin/upload", label: "Add guests", icon: Upload, team: true, teamLabel: "Guest list" },
-  { to: "/admin/committee-message", label: "Committee message", icon: MessageSquare },
+  { to: "/admin/committee-message", label: "Committee SMS", icon: MessageSquare },
   { to: "/admin/inviters", label: "Committee", icon: UserPlus, team: true, teamLabel: "Committee" },
   { to: "/admin/restaurants", label: "Restaurants", icon: UtensilsCrossed },
   { to: "/admin/categories", label: "Assignments", icon: ListChecks, team: true, teamLabel: "Volunteer" },
   { to: "/admin/donations", label: "Donations", icon: HandCoins },
   { to: "/admin/team", label: "Team access", icon: Users },
-  { to: "/admin/chat", label: "Committee chat", icon: MessagesSquare, team: true, teamLabel: "Chat" },
+  { to: "/admin/chat", label: "Team chat", icon: MessagesSquare, team: true, teamLabel: "Team chat" },
   { to: "/admin/my-rsvp", label: "My RSVP", icon: Ticket, team: true },
 ];
 
@@ -136,21 +136,8 @@ function AdminLayout() {
           <h1 className="font-display text-3xl mt-1">{headingTitle}</h1>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2" />
 
-
-
-          {isActualAdmin && !previewCommittee && (
-            <Button asChild variant="outline" size="sm">
-              <Link to="/admin/subcommittee">
-                <Users className="w-4 h-4 mr-2" /> Subcommittee
-              </Link>
-            </Button>
-          )}
-          <Button onClick={signOut} variant="outline" size="sm">
-            <LogOut className="w-4 h-4 mr-2" /> Log out
-          </Button>
-        </div>
       </div>
       <nav className="flex flex-wrap gap-1 border-b border-border mb-8">
         {visibleTabs.map((t) => {
