@@ -385,6 +385,8 @@ export function CommitteeWorkspace() {
         </Button>
       )}
 
+      <RsvpTotalsCard personalHostIds={myHostIds.length ? myHostIds : user ? [user.id] : []} />
+
       <Card className="overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
