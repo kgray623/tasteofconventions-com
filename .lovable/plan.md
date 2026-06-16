@@ -1,23 +1,16 @@
-I found the Wellness Tracker setup. It did not use a custom “download to desktop” page as the main path — it used normal web-app install metadata so the browser/phone shows the built-in save/install/add-to-screen options.
+Do I know what the issue is? Yes.
+
+The `/install` page is crashing because `src/pwa-install.ts` uses `useSyncExternalStore`, but `getInstallPromptSnapshot()` returns a brand-new object every time (`{ ...state }`). React requires that snapshot to be cached/stable unless the store actually changes. Because it changes on every read, React keeps re-rendering until it hits “Maximum update depth exceeded.”
 
 Plan:
-1. Replace the current `/install` page behavior with the Wellness Tracker-style app install flow:
-   - Restore a clear “Save / install this app” button that uses the browser’s native install prompt when Chrome/Chromebook supports it.
-   - Keep iPhone/iPad guidance for Add to Home Screen, because Apple does not expose a one-click install prompt to websites.
-   - Keep a simple fallback link to login.
+1. Fix `src/pwa-install.ts` so the install prompt snapshot is cached and only changes when the install state actually changes.
+2. Keep the current Wellness Tracker-style native save/install behavior intact: no custom desktop download workflow, still using the browser’s real install/add-to-home-screen flow.
+3. Verify `/install` loads without the error and that the Save/Open Login controls still render.
 
-2. Match the Wellness Tracker manifest pattern:
-   - Use a standard manifest file path/name if needed.
-   - Keep `start_url` pointed at `/login?installed=1`.
-   - Keep `display: "standalone"`, app icons, theme color, and portrait orientation.
-   - Ensure icons are declared in the same broad-compatible way Wellness Tracker used.
+<presentation-actions>
+  <presentation-open-history>View History</presentation-open-history>
+</presentation-actions>
 
-3. Keep the existing head tags that make phone/tablet screen icons work:
-   - manifest link
-   - theme color
-   - Apple touch icon
-   - mobile web app capable tags
-
-4. Remove the misleading Chromebook “download image then drag it” workflow from the main experience, because that is not what Wellness Tracker did.
-
-5. Verify the `/install` page shows the native-install path and that the manifest still points to the login page after install.
+<presentation-actions>
+<presentation-link url="https://docs.lovable.dev/tips-tricks/troubleshooting">Troubleshooting docs</presentation-link>
+</presentation-actions>
