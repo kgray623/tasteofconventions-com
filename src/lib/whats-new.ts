@@ -9,7 +9,10 @@ import { supabase } from "@/integrations/supabase/client";
 export const WHATS_NEW: Record<string, { addedAt: string; expiresInDays?: number }> = {
   "admin:install-button": { addedAt: "2026-06-16" },
   "admin:rsvps-tile": { addedAt: "2026-06-16" },
+  "admin:clickable-tiles": { addedAt: "2026-06-16" },
+  "header:notification-bell": { addedAt: "2026-06-16" },
 };
+
 
 const DEFAULT_EXPIRES_DAYS = 14;
 
