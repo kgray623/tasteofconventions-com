@@ -156,10 +156,9 @@ export const getAdminAudit = createServerFn({ method: "GET" })
       .filter((p) => !p.invitation_id || !invIds.has(p.invitation_id))
       .map((p) => ({
         id: p.id,
-        name: p.name,
-        phone: p.phone,
+        name: p.name ?? "",
+        phone: p.phone ?? "",
         meals: countMeals(p.selections),
-        selections: p.selections,
       }));
 
     const all: AudienceTotals = {
