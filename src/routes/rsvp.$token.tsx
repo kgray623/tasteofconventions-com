@@ -160,13 +160,17 @@ function RsvpPage() {
 
   const handleSubmit = async () => {
     try {
-      if (status === "yes" && attendanceMode === "in_person" && orderingFood === "") {
-        return toast.error("Please tell us whether you'll be ordering food");
-      }
       const finalInvitedBy = invitedBy === "__other__" ? invitedByOther.trim() : invitedBy;
       if (!finalInvitedBy) return toast.error("Please select who invited you");
+      // Derive ordering_food from the meal pre-order: any meals = yes, none = no.
+      const mealCount = Object.values(cuisineCounts).reduce(
+        (sum, qty) => sum + (Number(qty) || 0),
+        0,
+      );
       const orderingFoodBool =
-        status === "yes" && attendanceMode === "in_person" ? orderingFood === "yes" : null;
+        status === "yes" && attendanceMode === "in_person"
+          ? mealCount > 0 || orderingFood === "yes"
+          : null;
       const res = await submit({
         data: {
           token,
@@ -582,13 +586,8 @@ function RsvpPage() {
             Save RSVP
           </Button>
           <p className="text-sm text-muted-foreground text-center">
-            If you need to modify your RSVP, use the login button with your phone number for access to your account.
+            Need to change your RSVP later? Open this same invitation link again, or sign in from the top of the page with your phone number.
           </p>
-          <Link to="/login">
-            <Button variant="outline" className="w-full">
-              Log in
-            </Button>
-          </Link>
         </Card>
       </div>
     </div>
