@@ -17,6 +17,7 @@ export const WHATS_NEW: Record<string, { addedAt: string; expiresInDays?: number
   "committee:my-rsvp-label": { addedAt: "2026-06-16" },
   "committee:filter-toggle": { addedAt: "2026-06-16" },
   "committee:row-actions": { addedAt: "2026-06-16" },
+  "committee:new-yes-rsvps": { addedAt: "2026-06-16" },
 };
 
 
