@@ -135,6 +135,7 @@ function AdminLayout() {
           <h1 className="font-display text-3xl mt-1">{headingTitle}</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <InstallAppButton />
           {isActualAdmin && !previewCommittee && (
             <Button asChild variant="outline" size="sm">
               <Link to="/admin/subcommittee">
