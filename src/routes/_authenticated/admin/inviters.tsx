@@ -1045,6 +1045,7 @@ function InvitersPage() {
                         </td>
                         <td className="px-4 py-3">{invited}</td>
                         <td className="px-4 py-3">{used}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{virtual}</td>
                         <td
                           className={`px-4 py-3 ${remaining < 0 ? "text-destructive font-medium" : ""}`}
                         >
