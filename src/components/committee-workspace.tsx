@@ -8,6 +8,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import { NewBadge } from "@/components/new-badge";
+import { markSeen } from "@/lib/whats-new";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -223,10 +225,21 @@ export function CommitteeWorkspace() {
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-xl font-semibold tracking-tight">Watch the Welcome Video</h2>
-            <Button variant="ghost" size="sm" onClick={dismissWelcome}>
-              <EyeOff className="w-4 h-4 mr-1" /> Hide
-            </Button>
+            <div className="flex items-center gap-2">
+              <NewBadge target="committee:hide-welcome-video" />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  markSeen("committee:hide-welcome-video");
+                  dismissWelcome();
+                }}
+              >
+                <EyeOff className="w-4 h-4 mr-1" /> Hide
+              </Button>
+            </div>
           </div>
+
           <Card className="overflow-hidden border-ink/10 bg-ink/5">
             <div className="relative aspect-[9/16] md:aspect-video mx-auto w-full max-w-sm md:max-w-none">
               <iframe
