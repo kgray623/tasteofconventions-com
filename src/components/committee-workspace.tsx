@@ -504,6 +504,8 @@ export function CommitteeWorkspace() {
                     </SelectContent>
                   </Select>
                 )}
+                <EditGuestButton guest={guest} onSave={saveGuestEdits} />
+                <DeleteGuestButton guest={guest} onDelete={deleteGuest} />
               </div>
             ))}
           </div>
