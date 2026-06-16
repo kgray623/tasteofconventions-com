@@ -24,7 +24,7 @@ type Invite = {
   id: string; event_id: string; guest_name: string; guest_email: string | null;
   guest_phone: string | null; rsvp_token: string; created_at: string; host_id: string;
   is_committee: boolean;
-  rsvps?: { status: string; party_size: number } | null;
+  rsvps?: { status: string; party_size: number; attendance_mode: string | null } | null;
 };
 type Flag = { id: string; invitation_a: string; invitation_b: string; match_type: string };
 type EventRow = { id: string; title: string; starts_at: string; location: string | null };
@@ -39,7 +39,7 @@ function Dashboard() {
   const load = async () => {
     const [{ data: e }, { data: i }, { data: f }] = await Promise.all([
       supabase.from("events").select("id,title,starts_at,location").order("starts_at"),
-      supabase.from("invitations").select("id,event_id,guest_name,guest_email,guest_phone,rsvp_token,created_at,host_id,is_committee,rsvps(status,party_size)").order("guest_name", { ascending: true }),
+      supabase.from("invitations").select("id,event_id,guest_name,guest_email,guest_phone,rsvp_token,created_at,host_id,is_committee,rsvps(status,party_size,attendance_mode)").order("guest_name", { ascending: true }),
       supabase.from("duplicate_flags").select("*"),
     ]);
     setEvents(e ?? []);
@@ -138,10 +138,14 @@ function Dashboard() {
     </span>
   );
 
+  const yesInvites = invites.filter((i) => i.rsvps?.status === "yes");
+  const inPersonYes = yesInvites.filter((i) => i.rsvps?.attendance_mode !== "zoom");
+  const virtualYes = yesInvites.filter((i) => i.rsvps?.attendance_mode === "zoom");
   const stats = [
     { label: "Your invitations", value: myInvites.length },
     { label: "Total guest list", value: invites.length },
-    { label: "Confirmed yes", value: invites.filter((i) => i.rsvps?.status === "yes").length },
+    { label: "Confirmed in person", value: inPersonYes.length },
+    { label: "Confirmed virtual (Zoom)", value: virtualYes.length },
     { label: "Committee RSVP'd", value: invites.filter((i) => i.is_committee && i.rsvps?.status === "yes").length },
     { label: "Duplicate flags", value: flags.length },
   ];
@@ -243,7 +247,7 @@ function Dashboard() {
                     {i.guest_phone && <span className="inline-flex items-center gap-1"><Phone className="w-3 h-3" />{i.guest_phone}</span>}
                   </div>
                 </div>
-                <RsvpBadge status={i.rsvps?.status} />
+                <RsvpBadge status={i.rsvps?.status} attendanceMode={i.rsvps?.attendance_mode} />
                 <Select
                   value=""
                   disabled={settingRsvpId === i.id}
@@ -299,7 +303,7 @@ function Dashboard() {
                       {i.guest_phone && <span className="inline-flex items-center gap-1"><Phone className="w-3 h-3" />{i.guest_phone}</span>}
                     </div>
                   </div>
-                  <RsvpBadge status={i.rsvps?.status} />
+                  <RsvpBadge status={i.rsvps?.status} attendanceMode={i.rsvps?.attendance_mode} />
                   <Link to="/rsvp/$token" params={{ token: i.rsvp_token }} className="text-xs text-terracotta hover:underline">
                     Open RSVP link →
                   </Link>
@@ -345,9 +349,15 @@ function Dashboard() {
   );
 }
 
-function RsvpBadge({ status }: { status?: string }) {
+function RsvpBadge({ status, attendanceMode }: { status?: string; attendanceMode?: string | null }) {
   if (!status || status === "pending") return <Badge variant="outline">awaiting</Badge>;
-  if (status === "yes") return <Badge className="bg-gold text-ink hover:bg-gold">attending</Badge>;
+  if (status === "yes") {
+    return attendanceMode === "zoom" ? (
+      <Badge className="bg-ink text-cream hover:bg-ink">attending virtual</Badge>
+    ) : (
+      <Badge className="bg-gold text-ink hover:bg-gold">attending in person</Badge>
+    );
+  }
   if (status === "no") return <Badge variant="secondary">declined</Badge>;
   return <Badge variant="outline">maybe</Badge>;
 }

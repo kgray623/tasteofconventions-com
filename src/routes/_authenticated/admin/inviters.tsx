@@ -78,6 +78,7 @@ type GuestRow = {
   
   rsvp_status: string | null;
   rsvp_party_size: number | null;
+  rsvp_attendance_mode: string | null;
   rsvp_id: string | null;
 };
 
@@ -183,7 +184,7 @@ function InvitersPage() {
             .from("invitations")
             .select("id,host_id,guest_name,guest_email,guest_phone,invite_sent_at")
             .order("guest_name"),
-          supabase.from("rsvps").select("id,invitation_id,status,party_size"),
+          supabase.from("rsvps").select("id,invitation_id,status,party_size,attendance_mode"),
         ]),
         10000,
       );
@@ -206,12 +207,12 @@ function InvitersPage() {
       }
       setInvitedCounts(invByHost);
 
-      const rsvpByInvite = new Map<string, { id: string; status: string; party_size: number }>();
-      for (const r of (rsvpsFull as { id: string; invitation_id: string; status: string; party_size: number }[]) ?? []) {
+      const rsvpByInvite = new Map<string, { id: string; status: string; party_size: number; attendance_mode: string | null }>();
+      for (const r of (rsvpsFull as { id: string; invitation_id: string; status: string; party_size: number; attendance_mode: string | null }[]) ?? []) {
         rsvpByInvite.set(r.invitation_id, r);
       }
       const byHost: Record<string, GuestRow[]> = {};
-      for (const row of (invitationsFull as Omit<GuestRow, "rsvp_status" | "rsvp_party_size" | "rsvp_id">[]) ?? []) {
+      for (const row of (invitationsFull as Omit<GuestRow, "rsvp_status" | "rsvp_party_size" | "rsvp_attendance_mode" | "rsvp_id">[]) ?? []) {
         const key = row.host_id ?? "_none";
         const r = rsvpByInvite.get(row.id);
         (byHost[key] ||= []).push({
@@ -219,6 +220,7 @@ function InvitersPage() {
           rsvp_id: r?.id ?? null,
           rsvp_status: r?.status ?? null,
           rsvp_party_size: r?.party_size ?? null,
+          rsvp_attendance_mode: r?.attendance_mode ?? null,
         });
       }
       setGuestsByHost(byHost);
@@ -353,7 +355,10 @@ function InvitersPage() {
   };
 
   const confirmedResponseCount = (guests: GuestRow[]) =>
-    guests.filter((guest) => guest.rsvp_status === "yes").length;
+    guests.filter((guest) => guest.rsvp_status === "yes" && guest.rsvp_attendance_mode !== "zoom").length;
+
+  const virtualResponseCount = (guests: GuestRow[]) =>
+    guests.filter((guest) => guest.rsvp_status === "yes" && guest.rsvp_attendance_mode === "zoom").length;
 
   const sendMessage = async () => {
     const text = messageBody.trim();
@@ -958,7 +963,7 @@ function InvitersPage() {
         <div className="px-6 py-4 border-b border-border">
           <h2 className="font-display text-xl">Steering committee invitations &amp; usage</h2>
           <p className="text-sm text-muted-foreground">
-            Remaining shows uploaded guests who have not confirmed an RSVP yet.
+            In-person and Remaining reflect seated guests only. Virtual (Zoom) RSVPs are unlimited and don't reduce remaining seats.
           </p>
         </div>
         {loading ? (
@@ -974,7 +979,8 @@ function InvitersPage() {
                   <th className="px-2 py-3">Name</th>
                   <th className="px-4 py-3 w-24">Quota</th>
                   <th className="px-4 py-3 w-24">Uploaded</th>
-                  <th className="px-4 py-3 w-24">RSVPs</th>
+                  <th className="px-4 py-3 w-24">In-person</th>
+                  <th className="px-4 py-3 w-24">Virtual</th>
                   <th className="px-4 py-3 w-24">Remaining</th>
                   <th className="px-4 py-3 w-24">Status</th>
                   <th className="px-4 py-3 w-16"></th>
@@ -984,6 +990,7 @@ function InvitersPage() {
                 {inviters.slice().sort((a, b) => a.name.localeCompare(b.name)).flatMap((i) => {
                   const guests = guestsForInviter(i);
                   const used = confirmedResponseCount(guests);
+                  const virtual = virtualResponseCount(guests);
                   const invited = guests.length || (i.host_id ? (invitedCounts[i.host_id] ?? 0) : 0);
                   const remaining = Math.max(0, invited - used);
                   const isOpen = expandedHost === i.id;
@@ -1038,6 +1045,7 @@ function InvitersPage() {
                         </td>
                         <td className="px-4 py-3">{invited}</td>
                         <td className="px-4 py-3">{used}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{virtual}</td>
                         <td
                           className={`px-4 py-3 ${remaining < 0 ? "text-destructive font-medium" : ""}`}
                         >
@@ -1065,7 +1073,7 @@ function InvitersPage() {
                     rows.push(
                       <tr key={`${i.id}-exp`} className="bg-muted/20 border-t border-border">
                         <td></td>
-                        <td colSpan={7} className="px-2 py-3">
+                        <td colSpan={8} className="px-2 py-3">
                           <div className="space-y-2">
                             <p className="text-xs uppercase tracking-wider text-muted-foreground">
                               Guests invited by {i.name} ({guests.length})

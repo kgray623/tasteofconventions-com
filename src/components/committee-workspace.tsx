@@ -24,6 +24,7 @@ type CommitteeGuest = {
   guest_phone: string | null;
   rsvp_status: string | null;
   party_size: number;
+  attendance_mode: string | null;
   invited_by: string | null;
   host_id: string;
 };
@@ -132,7 +133,7 @@ export function CommitteeWorkspace() {
       }
       const { data, error } = await supabase
         .from("invitations")
-        .select("id,guest_name,guest_phone,host_id,rsvps(status,party_size)")
+        .select("id,guest_name,guest_phone,host_id,rsvps(status,party_size,attendance_mode)")
         .eq("event_id", eventId)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -141,7 +142,10 @@ export function CommitteeWorkspace() {
         guest_name: string;
         guest_phone: string | null;
         host_id: string;
-        rsvps: { status: string; party_size: number | null }[] | { status: string; party_size: number | null } | null;
+        rsvps:
+          | { status: string; party_size: number | null; attendance_mode: string | null }[]
+          | { status: string; party_size: number | null; attendance_mode: string | null }
+          | null;
       }[];
       const hostIds = Array.from(new Set(rows.map((r) => r.host_id).filter(Boolean)));
       const hostNames = new Map<string, string>();
@@ -165,6 +169,7 @@ export function CommitteeWorkspace() {
             guest_phone: row.guest_phone,
             rsvp_status: rsvp?.status ?? null,
             party_size: rsvp?.party_size ?? 1,
+            attendance_mode: rsvp?.attendance_mode ?? null,
             invited_by: hostNames.get(row.host_id) ?? null,
             host_id: row.host_id,
           };
@@ -335,7 +340,10 @@ export function CommitteeWorkspace() {
   });
 
   const confirmedGuests = guests.filter((guest) => guest.rsvp_status === "yes");
-  const confirmedPeople = confirmedGuests.reduce((total, guest) => total + guest.party_size, 0);
+  const confirmedInPersonGuests = confirmedGuests.filter((g) => g.attendance_mode !== "zoom");
+  const confirmedVirtualGuests = confirmedGuests.filter((g) => g.attendance_mode === "zoom");
+  const confirmedInPersonPeople = confirmedInPersonGuests.reduce((t, g) => t + g.party_size, 0);
+  const confirmedVirtualPeople = confirmedVirtualGuests.reduce((t, g) => t + g.party_size, 0);
 
 
   const toggleSection = (key: string) => setOpenSection((prev) => (prev === key ? null : key));
@@ -463,7 +471,7 @@ export function CommitteeWorkspace() {
         open={openSection === "confirmed"}
         onToggle={() => toggleSection("confirmed")}
         icon={<CheckCircle2 className="w-5 h-5 text-terracotta" />}
-        title={`Confirmed RSVPs (${confirmedPeople} people / ${confirmedGuests.length} responses)`}
+        title={`Confirmed RSVPs (${confirmedInPersonPeople} in person · ${confirmedVirtualPeople} virtual / ${confirmedGuests.length} responses)`}
         cardClassName="border-terracotta/40 bg-terracotta/5"
       >
         {loadingGuests ? (
@@ -474,13 +482,26 @@ export function CommitteeWorkspace() {
           <div className="p-4 text-sm text-muted-foreground">No confirmed RSVPs yet.</div>
         ) : (
           <div className="divide-y divide-border max-h-[360px] overflow-auto">
-            {confirmedGuests.map((guest) => (
-              <div key={guest.id} className="p-4 flex flex-wrap items-center gap-3 text-sm">
-                <p className="font-medium flex-1 min-w-[160px]">{guest.guest_name}</p>
-                <Badge className="bg-gold text-ink hover:bg-gold">{guest.party_size} attending</Badge>
-                {guest.invited_by && <span className="text-muted-foreground">Invited by {guest.invited_by}</span>}
-              </div>
-            ))}
+            {confirmedGuests.map((guest) => {
+              const isVirtual = guest.attendance_mode === "zoom";
+              return (
+                <div key={guest.id} className="p-4 flex flex-wrap items-center gap-3 text-sm">
+                  <p className="font-medium flex-1 min-w-[160px]">{guest.guest_name}</p>
+                  <Badge
+                    className={
+                      isVirtual
+                        ? "bg-ink/10 text-ink hover:bg-ink/10"
+                        : "bg-gold text-ink hover:bg-gold"
+                    }
+                  >
+                    {guest.party_size} {isVirtual ? "virtual" : "in person"}
+                  </Badge>
+                  {guest.invited_by && (
+                    <span className="text-muted-foreground">Invited by {guest.invited_by}</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </CollapsibleSection>
