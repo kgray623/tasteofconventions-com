@@ -32,6 +32,7 @@ import { Route as AuthenticatedAdminUploadRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminTeamRouteImport } from './routes/_authenticated/admin/team'
 import { Route as AuthenticatedAdminSubcommitteeRouteImport } from './routes/_authenticated/admin/subcommittee'
 import { Route as AuthenticatedAdminRestaurantsRouteImport } from './routes/_authenticated/admin/restaurants'
+import { Route as AuthenticatedAdminRecentlyDeletedRouteImport } from './routes/_authenticated/admin/recently-deleted'
 import { Route as AuthenticatedAdminPreordersRouteImport } from './routes/_authenticated/admin/preorders'
 import { Route as AuthenticatedAdminMyRsvpRouteImport } from './routes/_authenticated/admin/my-rsvp'
 import { Route as AuthenticatedAdminInvitersRouteImport } from './routes/_authenticated/admin/inviters'
@@ -166,6 +167,12 @@ const AuthenticatedAdminRestaurantsRoute =
     path: '/restaurants',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminRecentlyDeletedRoute =
+  AuthenticatedAdminRecentlyDeletedRouteImport.update({
+    id: '/recently-deleted',
+    path: '/recently-deleted',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminPreordersRoute =
   AuthenticatedAdminPreordersRouteImport.update({
     id: '/preorders',
@@ -279,6 +286,7 @@ export interface FileRoutesByFullPath {
   '/admin/inviters': typeof AuthenticatedAdminInvitersRoute
   '/admin/my-rsvp': typeof AuthenticatedAdminMyRsvpRoute
   '/admin/preorders': typeof AuthenticatedAdminPreordersRoute
+  '/admin/recently-deleted': typeof AuthenticatedAdminRecentlyDeletedRoute
   '/admin/restaurants': typeof AuthenticatedAdminRestaurantsRoute
   '/admin/subcommittee': typeof AuthenticatedAdminSubcommitteeRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
@@ -317,6 +325,7 @@ export interface FileRoutesByTo {
   '/admin/inviters': typeof AuthenticatedAdminInvitersRoute
   '/admin/my-rsvp': typeof AuthenticatedAdminMyRsvpRoute
   '/admin/preorders': typeof AuthenticatedAdminPreordersRoute
+  '/admin/recently-deleted': typeof AuthenticatedAdminRecentlyDeletedRoute
   '/admin/restaurants': typeof AuthenticatedAdminRestaurantsRoute
   '/admin/subcommittee': typeof AuthenticatedAdminSubcommitteeRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
@@ -358,6 +367,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/inviters': typeof AuthenticatedAdminInvitersRoute
   '/_authenticated/admin/my-rsvp': typeof AuthenticatedAdminMyRsvpRoute
   '/_authenticated/admin/preorders': typeof AuthenticatedAdminPreordersRoute
+  '/_authenticated/admin/recently-deleted': typeof AuthenticatedAdminRecentlyDeletedRoute
   '/_authenticated/admin/restaurants': typeof AuthenticatedAdminRestaurantsRoute
   '/_authenticated/admin/subcommittee': typeof AuthenticatedAdminSubcommitteeRoute
   '/_authenticated/admin/team': typeof AuthenticatedAdminTeamRoute
@@ -399,6 +409,7 @@ export interface FileRouteTypes {
     | '/admin/inviters'
     | '/admin/my-rsvp'
     | '/admin/preorders'
+    | '/admin/recently-deleted'
     | '/admin/restaurants'
     | '/admin/subcommittee'
     | '/admin/team'
@@ -437,6 +448,7 @@ export interface FileRouteTypes {
     | '/admin/inviters'
     | '/admin/my-rsvp'
     | '/admin/preorders'
+    | '/admin/recently-deleted'
     | '/admin/restaurants'
     | '/admin/subcommittee'
     | '/admin/team'
@@ -477,6 +489,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/inviters'
     | '/_authenticated/admin/my-rsvp'
     | '/_authenticated/admin/preorders'
+    | '/_authenticated/admin/recently-deleted'
     | '/_authenticated/admin/restaurants'
     | '/_authenticated/admin/subcommittee'
     | '/_authenticated/admin/team'
@@ -677,6 +690,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRestaurantsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/recently-deleted': {
+      id: '/_authenticated/admin/recently-deleted'
+      path: '/recently-deleted'
+      fullPath: '/admin/recently-deleted'
+      preLoaderRoute: typeof AuthenticatedAdminRecentlyDeletedRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/preorders': {
       id: '/_authenticated/admin/preorders'
       path: '/preorders'
@@ -796,6 +816,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminInvitersRoute: typeof AuthenticatedAdminInvitersRoute
   AuthenticatedAdminMyRsvpRoute: typeof AuthenticatedAdminMyRsvpRoute
   AuthenticatedAdminPreordersRoute: typeof AuthenticatedAdminPreordersRoute
+  AuthenticatedAdminRecentlyDeletedRoute: typeof AuthenticatedAdminRecentlyDeletedRoute
   AuthenticatedAdminRestaurantsRoute: typeof AuthenticatedAdminRestaurantsRoute
   AuthenticatedAdminSubcommitteeRoute: typeof AuthenticatedAdminSubcommitteeRoute
   AuthenticatedAdminTeamRoute: typeof AuthenticatedAdminTeamRoute
@@ -815,6 +836,8 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminInvitersRoute: AuthenticatedAdminInvitersRoute,
   AuthenticatedAdminMyRsvpRoute: AuthenticatedAdminMyRsvpRoute,
   AuthenticatedAdminPreordersRoute: AuthenticatedAdminPreordersRoute,
+  AuthenticatedAdminRecentlyDeletedRoute:
+    AuthenticatedAdminRecentlyDeletedRoute,
   AuthenticatedAdminRestaurantsRoute: AuthenticatedAdminRestaurantsRoute,
   AuthenticatedAdminSubcommitteeRoute: AuthenticatedAdminSubcommitteeRoute,
   AuthenticatedAdminTeamRoute: AuthenticatedAdminTeamRoute,
