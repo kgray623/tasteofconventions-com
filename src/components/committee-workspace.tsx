@@ -61,6 +61,8 @@ export function CommitteeWorkspace() {
   const [committeeNames, setCommitteeNames] = useState<Set<string>>(new Set());
   const [committeePhones, setCommitteePhones] = useState<Set<string>>(new Set());
   const [myGuestsFilter, setMyGuestsFilter] = useState<"all" | "committee">("all");
+  const [openMyGroup, setOpenMyGroup] = useState<{ yes: boolean; waiting: boolean; declined: boolean }>({ yes: true, waiting: false, declined: false });
+  const [lastSeenYesAt, setLastSeenYesAt] = useState<number | null>(null);
   const handledChatParamRef = useRef<string | null>(null);
 
   useEffect(() => {
