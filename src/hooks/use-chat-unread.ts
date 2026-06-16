@@ -21,30 +21,31 @@ const EMPTY: ChatUnread = { team: 0, categories: [], total: 0 };
  */
 export function useChatUnread(): ChatUnread {
   const { user } = useAuth();
+  const userId = user?.id;
   const [data, setData] = useState<ChatUnread>(EMPTY);
   const refetchRef = useRef<() => void>(() => {});
 
   const fetchCounts = useCallback(async () => {
-    if (!user) {
+    if (!userId) {
       setData(EMPTY);
       return;
     }
     const { data: res, error } = await supabase.rpc("get_my_chat_unread");
     if (error || !res) return;
     setData(res as unknown as ChatUnread);
-  }, [user]);
+  }, [userId]);
 
   refetchRef.current = fetchCounts;
 
   useEffect(() => {
-    if (!user) {
+    if (!userId) {
       setData(EMPTY);
       return;
     }
     fetchCounts();
 
     const channel = supabase
-      .channel(`chat-unread:${user.id}`)
+      .channel(`chat-unread:${userId}:${Date.now()}:${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "team_messages" },
@@ -57,7 +58,7 @@ export function useChatUnread(): ChatUnread {
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "chat_last_seen", filter: `user_id=eq.${user.id}` },
+        { event: "*", schema: "public", table: "chat_last_seen", filter: `user_id=eq.${userId}` },
         () => refetchRef.current(),
       )
       .subscribe();
@@ -71,7 +72,7 @@ export function useChatUnread(): ChatUnread {
       clearInterval(interval);
       window.removeEventListener("focus", onFocus);
     };
-  }, [user, fetchCounts]);
+  }, [userId, fetchCounts]);
 
   return data;
 }
