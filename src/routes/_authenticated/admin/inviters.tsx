@@ -1073,7 +1073,7 @@ function InvitersPage() {
                     rows.push(
                       <tr key={`${i.id}-exp`} className="bg-muted/20 border-t border-border">
                         <td></td>
-                        <td colSpan={7} className="px-2 py-3">
+                        <td colSpan={8} className="px-2 py-3">
                           <div className="space-y-2">
                             <p className="text-xs uppercase tracking-wider text-muted-foreground">
                               Guests invited by {i.name} ({guests.length})
