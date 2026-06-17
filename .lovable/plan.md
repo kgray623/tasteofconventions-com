@@ -1,18 +1,33 @@
-## Fix
+I’ll fix this globally for every current and future committee member.
 
-Dixie currently has two rows in `inviters`, which is why her dashboard and the committee roster look different from everyone else's:
+Plan:
+1. **Use one committee dashboard for all committee members**
+   - Keep `/admin` as the committee workspace for every non-admin committee member.
+   - Admin preview mode will use the same component, so admin and committee views stay consistent.
 
-| id (short) | name | phone | host_id | quota |
-|---|---|---|---|---|
-| 5a2dfd54… | Dixie Frahm | 14029795214 | _null_ | 0 |
-| 428f6f14… | MsDixie L. Frahm | _null_ | f90abc4a… (her auth account) | 20 |
+2. **Make the “My Guests Uploaded” count update correctly**
+   - Refresh the committee guest data automatically every 30 seconds.
+   - Also refresh immediately when invitations or RSVPs are added, edited, or deleted.
+   - This will make deleted guests disappear from Dixie's count and list without needing a manual reload.
 
-Every other committee member has exactly one row, linked to their auth account, with a phone and a quota. I'll bring Dixie to the same shape:
+3. **Keep stats current every 30 seconds**
+   - Update the RSVP totals card polling so “My guests uploaded,” “My in-person RSVPs,” and “My RSVPs left” refresh at least every 30 seconds for every committee member.
+   - Preserve the existing realtime updates, but do not rely on realtime alone.
 
-1. Update row `428f6f14…` (the one linked to her account):
-   - `name` → `Dixie Frahm`
-   - `phone` → `14029795214`
-   - keep `quota = 20` and `host_id` as-is
-2. Delete the orphan row `5a2dfd54…` (no `host_id`, `quota = 0`).
+4. **Make the guest list always use the three requested category boxes**
+   - First box: RSVP’d guests, alphabetical.
+   - Second box: Awaiting RSVP / waiting guests, alphabetical.
+   - Third box: Declined guests, alphabetical.
+   - This will apply to every committee member’s personal guest list, not only Dixie.
 
-No code changes — the committee workspace and admin layout are already correct; the duplicate row was the only thing making Dixie's experience inconsistent. After this, her dashboard, her quota, and how she appears in the roster will match every other committee member.
+5. **Fix the “random” full guest list ordering**
+   - Sort the broader guest list consistently instead of using database-created order.
+   - Use RSVP status groups and alphabetical names so it matches the organized committee behavior.
+
+6. **Verify in the running app**
+   - Confirm `/admin` shows the committee dashboard with the three guest category boxes.
+   - Confirm totals and guest list refresh after deletion or RSVP changes.
+
+Technical notes:
+- Main files to update: `src/components/committee-workspace.tsx` and `src/components/rsvp-totals-card.tsx`.
+- No database schema change is needed.

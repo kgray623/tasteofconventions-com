@@ -205,10 +205,20 @@ export function CommitteeWorkspace() {
   useEffect(() => {
     let alive = true;
     void loadGuests(() => alive);
+    const interval = window.setInterval(() => {
+      void loadGuests(() => alive);
+    }, 30000);
+    const ch = supabase
+      .channel("committee-guest-list")
+      .on("postgres_changes", { event: "*", schema: "public", table: "invitations" }, () => void loadGuests(() => alive))
+      .on("postgres_changes", { event: "*", schema: "public", table: "rsvps" }, () => void loadGuests(() => alive))
+      .subscribe();
     return () => {
       alive = false;
+      window.clearInterval(interval);
+      supabase.removeChannel(ch);
     };
-  }, []);
+  }, [user?.id]);
 
   // Load the full committee roster from all three sources and index by
   // normalized name + last-10-digit phone so we can tag guests consistently.
@@ -444,6 +454,11 @@ export function CommitteeWorkspace() {
     ? myGuestsSorted.filter((g) => committeeIds.has(g.id))
     : myGuestsSorted;
 
+  const sortedAllGuests = [...guests].sort((a, b) => {
+    const r = statusRank(a.rsvp_status) - statusRank(b.rsvp_status);
+    if (r !== 0) return r;
+    return a.guest_name.trim().toLowerCase().localeCompare(b.guest_name.trim().toLowerCase());
+  });
   const confirmedGuests = guests.filter((guest) => guest.rsvp_status === "yes");
   const confirmedInPersonGuests = confirmedGuests.filter((g) => g.attendance_mode !== "zoom");
   const confirmedVirtualGuests = confirmedGuests.filter((g) => g.attendance_mode === "zoom");
@@ -728,7 +743,7 @@ export function CommitteeWorkspace() {
           <div className="p-4 text-sm text-muted-foreground">No guests have been added yet.</div>
         ) : (
           <div className="divide-y divide-border max-h-[520px] overflow-auto">
-            {guests.map((guest) => (
+            {sortedAllGuests.map((guest) => (
               <div key={guest.id} className="p-4 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-medium flex-1 min-w-[160px]">
