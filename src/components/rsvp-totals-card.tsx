@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,29 +11,22 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { NewBadge } from "@/components/new-badge";
 import { toast } from "sonner";
+import { getRsvpTotals, requestMoreQuota } from "@/lib/rsvp-totals.functions";
 
 const TOTAL_SEATS = 550;
 
 type EventTotals = {
-  requested: number;       // sum of active inviter quotas
-  confirmed: number;       // in-person yes (people)
-  virtual: number;         // zoom yes (people)
+  requested: number;
+  confirmed: number;
+  virtual: number;
 };
 
 type MyTotals = {
-  requested: number;       // my quota
-  uploaded: number;        // # invitations I've uploaded
-  confirmed: number;       // my in-person yes (people)
-  virtual: number;         // my zoom yes (people)
+  requested: number;
+  uploaded: number;
+  confirmed: number;
+  virtual: number;
   pendingRequest: number | null;
-};
-
-type InviterRow = {
-  id: string;
-  host_id: string | null;
-  quota: number | null;
-  active: boolean | null;
-  requested_quota: number | null;
 };
 
 type Props = {
@@ -41,6 +35,7 @@ type Props = {
 };
 
 export function RsvpTotalsCard({ personalHostIds }: Props) {
+  const fetchTotals = useServerFn(getRsvpTotals);
   const [event, setEvent] = useState<EventTotals>({ requested: 0, confirmed: 0, virtual: 0 });
   const [mine, setMine] = useState<MyTotals>({ requested: 0, uploaded: 0, confirmed: 0, virtual: 0, pendingRequest: null });
   const [myInviterIds, setMyInviterIds] = useState<string[]>([]);
@@ -51,56 +46,25 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
   useEffect(() => {
     let alive = true;
     const load = async () => {
-      const { data: inviters } = await supabase
-        .from("inviters")
-        .select("id,host_id,quota,active,requested_quota");
-      const inviterRows = (inviters ?? []) as InviterRow[];
-      const requested = inviterRows.reduce(
-        (sum, r) => sum + (r.active === false ? 0 : r.quota ?? 0),
-        0,
-      );
-
-      const { data: rsvps } = await supabase
-        .from("rsvps")
-        .select("party_size,status,invitation_id,attendance_mode");
-      const yesRsvps = (rsvps ?? []).filter((r) => r.status === "yes");
-      const inPersonYes = yesRsvps.filter((r) => r.attendance_mode !== "zoom");
-      const virtualYes = yesRsvps.filter((r) => r.attendance_mode === "zoom");
-      const confirmed = inPersonYes.reduce((s, r) => s + (r.party_size ?? 1), 0);
-      const virtual = virtualYes.reduce((s, r) => s + (r.party_size ?? 1), 0);
-
-      if (!alive) return;
-      setEvent({ requested, confirmed, virtual });
-
-      if (showPersonal) {
-        const myInviters = inviterRows.filter(
-          (r) => r.host_id && personalHostIds!.includes(r.host_id) && r.active !== false,
-        );
-        const myQuota = myInviters.reduce((s, r) => s + (r.quota ?? 0), 0);
-        const pendingRequest = myInviters
-          .map((r) => r.requested_quota)
-          .filter((v): v is number => typeof v === "number")
-          .reduce<number | null>((acc, v) => (acc == null ? v : Math.max(acc, v)), null);
-
-        const { data: myInvites } = await supabase
-          .from("invitations")
-          .select("id,host_id")
-          .in("host_id", personalHostIds!);
-        const uploaded = (myInvites ?? []).length;
-        const myInviteIds = new Set((myInvites ?? []).map((i) => i.id));
-        const myConfirmed = inPersonYes
-          .filter((r) => myInviteIds.has(r.invitation_id))
-          .reduce((s, r) => s + (r.party_size ?? 1), 0);
-        const myVirtual = virtualYes
-          .filter((r) => myInviteIds.has(r.invitation_id))
-          .reduce((s, r) => s + (r.party_size ?? 1), 0);
-
+      try {
+        const result = await fetchTotals({ data: { includePersonal: showPersonal } });
         if (!alive) return;
-        setMine({ requested: myQuota, uploaded, confirmed: myConfirmed, virtual: myVirtual, pendingRequest });
-        setMyInviterIds(myInviters.map((r) => r.id));
+        setEvent(result.event);
+        if (result.mine) {
+          setMine({
+            requested: result.mine.requested,
+            uploaded: result.mine.uploaded,
+            confirmed: result.mine.confirmed,
+            virtual: result.mine.virtual,
+            pendingRequest: result.mine.pendingRequest,
+          });
+          setMyInviterIds(result.mine.inviterIds);
+        }
+      } catch (e) {
+        console.error("[rsvp-totals] load failed", e);
+      } finally {
+        if (alive) setLoading(false);
       }
-
-      if (alive) setLoading(false);
     };
     void load();
 
@@ -115,7 +79,8 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
       alive = false;
       supabase.removeChannel(ch);
     };
-  }, [showPersonal, JSON.stringify(personalHostIds ?? [])]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [showPersonal, fetchTotals]);
+
 
   const available = Math.max(0, event.requested - event.confirmed);
   const pct =
@@ -243,6 +208,7 @@ function RequestMoreButton({
   const [amount, setAmount] = useState<number>(pendingRequest ?? currentQuota + 10);
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
+  const submitRequest = useServerFn(requestMoreQuota);
 
   useEffect(() => {
     if (open) {
@@ -258,18 +224,11 @@ function RequestMoreButton({
     }
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from("inviters")
-        .update({
-          requested_quota: amount,
-          quota_request_note: note.trim() || null,
-          quota_requested_at: new Date().toISOString(),
-        })
-        .in("id", inviterIds);
-      if (error) throw error;
+      await submitRequest({ data: { inviterIds, amount, note } });
       toast.success(`Requested ${amount} RSVPs. Admin will review.`);
       setOpen(false);
     } catch (e) {
+
       toast.error(e instanceof Error ? e.message : "Couldn't send request");
     } finally {
       setSaving(false);
