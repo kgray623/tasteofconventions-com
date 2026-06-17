@@ -17,6 +17,13 @@ type PhoneSessionResult = {
   phone_normalized: string;
 };
 
+class ExpectedPhoneLoginError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ExpectedPhoneLoginError";
+  }
+}
+
 function normalizeAuthPhone(value: string) {
   const digits = value.replace(/\D/g, "");
   if (digits.length === 10) return `+1${digits}`;
@@ -176,10 +183,10 @@ async function issuePhoneSession(rawPhone: string, rawName: string): Promise<Pho
   const phoneE164 = normalizeAuthPhone(rawPhone);
   const phoneNorm = rawPhone.replace(/\D/g, "");
   if (!phoneE164 || phoneNorm.length < 7) {
-    throw new Error("Enter a valid mobile phone number");
+    throw new ExpectedPhoneLoginError("Enter a valid mobile phone number");
   }
   if (nameTokens(rawName).length === 0) {
-    throw new Error("Enter your name as it appears on the invitation");
+    throw new ExpectedPhoneLoginError("Enter your name as it appears on the invitation");
   }
 
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -215,7 +222,7 @@ async function issuePhoneSession(rawPhone: string, rawName: string): Promise<Pho
       success: false,
       reason: "phone_not_on_list",
     });
-    throw new Error("We don't have this mobile number on the guest list yet.");
+    throw new ExpectedPhoneLoginError("We don't have this mobile number on the guest list yet.");
   }
   if (!namesMatch(rawName, candidateNames)) {
     await recordAuthAudit(supabaseAdmin, {
@@ -224,7 +231,7 @@ async function issuePhoneSession(rawPhone: string, rawName: string): Promise<Pho
       success: false,
       reason: "name_mismatch",
     });
-    throw new Error("That name doesn't match the invitation for this phone number.");
+    throw new ExpectedPhoneLoginError("That name doesn't match the invitation for this phone number.");
   }
   const displayName = inv?.guest_name || inviter?.name || teamInvite?.name || rawName;
 
