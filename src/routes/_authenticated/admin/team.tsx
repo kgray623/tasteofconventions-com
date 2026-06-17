@@ -27,7 +27,6 @@ type Invite = {
   accepted_at: string | null;
   created_at: string;
 };
-type Member = { user_id: string; role: string; profile?: { display_name: string | null; email: string | null } };
 type CommitteeGuest = { id: string; guest_name: string; guest_email: string | null; guest_phone: string | null };
 type InviterRow = { id: string; name: string | null; phone: string | null; active: boolean | null };
 
@@ -41,7 +40,6 @@ function TeamPage() {
   const { isAdmin } = useRoles();
   const [invites, setInvites] = useState<Invite[]>([]);
   const [inviters, setInviters] = useState<InviterRow[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
   const [committeeGuests, setCommitteeGuests] = useState<CommitteeGuest[]>([]);
   const [signedUpDigits, setSignedUpDigits] = useState<Set<string>>(new Set());
   const [name, setName] = useState("");
@@ -55,17 +53,13 @@ function TeamPage() {
   const fetchSignedUpDigits = useServerFn(getSignedUpPhoneDigits);
 
   const load = async () => {
-    const [inv, inviterRows, mem, prof, comm] = await Promise.all([
+    const [inv, inviterRows, comm] = await Promise.all([
       supabase.from("team_invites").select("id,name,phone,role,accepted_at,created_at").order("created_at", { ascending: false }),
       supabase.from("inviters").select("id,name,phone,active").eq("active", true).order("name"),
-      supabase.from("user_roles").select("user_id,role").in("role", ["admin", "team"]),
-      supabase.from("profiles").select("id,display_name,email"),
       supabase.from("invitations").select("id,guest_name,guest_email,guest_phone").eq("is_committee", true).order("guest_name"),
     ]);
     setInvites((inv.data ?? []) as Invite[]);
     setInviters((inviterRows.data ?? []) as InviterRow[]);
-    const profMap = new Map((prof.data ?? []).map((p) => [p.id, p]));
-    setMembers((mem.data ?? []).map((m) => ({ ...m, profile: profMap.get(m.user_id) })));
     setCommitteeGuests((comm.data ?? []) as CommitteeGuest[]);
     try {
       const res = await fetchSignedUpDigits();
@@ -210,15 +204,6 @@ function TeamPage() {
               status: isSignedUp(normalizeRosterPhone(g.guest_phone)) ? "Joined" : "Pending signup",
               role: "team",
               source: "inviter" as const,
-            })),
-            ...members.map((m) => ({
-              id: `${m.user_id}-${m.role}`,
-              name: m.profile?.display_name || m.profile?.email || m.user_id.slice(0, 8),
-              email: m.profile?.email,
-              contact: "Signed in",
-              status: "Joined",
-              role: m.role,
-              source: "member" as const,
             })),
           ]);
 
