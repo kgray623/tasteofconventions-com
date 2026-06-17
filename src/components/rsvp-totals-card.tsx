@@ -208,6 +208,7 @@ function RequestMoreButton({
   const [amount, setAmount] = useState<number>(pendingRequest ?? currentQuota + 10);
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
+  const submitRequest = useServerFn(requestMoreQuota);
 
   useEffect(() => {
     if (open) {
@@ -223,6 +224,11 @@ function RequestMoreButton({
     }
     setSaving(true);
     try {
+      await submitRequest({ data: { inviterIds, amount, note } });
+      toast.success(`Requested ${amount} RSVPs. Admin will review.`);
+      setOpen(false);
+    } catch (e) {
+
       const { error } = await supabase
         .from("inviters")
         .update({
