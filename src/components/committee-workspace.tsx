@@ -454,6 +454,11 @@ export function CommitteeWorkspace() {
     ? myGuestsSorted.filter((g) => committeeIds.has(g.id))
     : myGuestsSorted;
 
+  const sortedAllGuests = [...guests].sort((a, b) => {
+    const r = statusRank(a.rsvp_status) - statusRank(b.rsvp_status);
+    if (r !== 0) return r;
+    return a.guest_name.trim().toLowerCase().localeCompare(b.guest_name.trim().toLowerCase());
+  });
   const confirmedGuests = guests.filter((guest) => guest.rsvp_status === "yes");
   const confirmedInPersonGuests = confirmedGuests.filter((g) => g.attendance_mode !== "zoom");
   const confirmedVirtualGuests = confirmedGuests.filter((g) => g.attendance_mode === "zoom");
@@ -738,7 +743,7 @@ export function CommitteeWorkspace() {
           <div className="p-4 text-sm text-muted-foreground">No guests have been added yet.</div>
         ) : (
           <div className="divide-y divide-border max-h-[520px] overflow-auto">
-            {guests.map((guest) => (
+            {sortedAllGuests.map((guest) => (
               <div key={guest.id} className="p-4 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-medium flex-1 min-w-[160px]">
