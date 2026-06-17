@@ -47,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           ? await phoneLogin({ data: { phone, name } })
           : await cookieLogin({ data: { name } });
         if (!tokens) return null;
+        if ("error" in tokens) return null;
         const { data, error } = await supabase.auth.setSession({
           access_token: tokens.access_token,
           refresh_token: tokens.refresh_token,
