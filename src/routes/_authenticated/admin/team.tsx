@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Phone, Trash2, ShieldCheck, Users, Pencil, Check, X } from "lucide-react";
 import { inviteTeamMember, getSignedUpPhoneDigits } from "@/lib/team.functions";
+import { buildCommitteeRoster, normalizeRosterPhone } from "@/lib/committee-roster";
 
 export const Route = createFileRoute("/_authenticated/admin/team")({
   component: TeamPage,
@@ -26,8 +27,8 @@ type Invite = {
   accepted_at: string | null;
   created_at: string;
 };
-type Member = { user_id: string; role: string; profile?: { display_name: string | null; email: string | null } };
 type CommitteeGuest = { id: string; guest_name: string; guest_email: string | null; guest_phone: string | null };
+type InviterRow = { id: string; name: string | null; phone: string | null; active: boolean | null };
 
 const inviteSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(120),
@@ -38,7 +39,7 @@ function TeamPage() {
   const { user } = useAuth();
   const { isAdmin } = useRoles();
   const [invites, setInvites] = useState<Invite[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
+  const [inviters, setInviters] = useState<InviterRow[]>([]);
   const [committeeGuests, setCommitteeGuests] = useState<CommitteeGuest[]>([]);
   const [signedUpDigits, setSignedUpDigits] = useState<Set<string>>(new Set());
   const [name, setName] = useState("");
@@ -52,15 +53,13 @@ function TeamPage() {
   const fetchSignedUpDigits = useServerFn(getSignedUpPhoneDigits);
 
   const load = async () => {
-    const [inv, mem, prof, comm] = await Promise.all([
+    const [inv, inviterRows, comm] = await Promise.all([
       supabase.from("team_invites").select("id,name,phone,role,accepted_at,created_at").order("created_at", { ascending: false }),
-      supabase.from("user_roles").select("user_id,role").in("role", ["admin", "team"]),
-      supabase.from("profiles").select("id,display_name,email"),
+      supabase.from("inviters").select("id,name,phone,active").eq("active", true).order("name"),
       supabase.from("invitations").select("id,guest_name,guest_email,guest_phone").eq("is_committee", true).order("guest_name"),
     ]);
     setInvites((inv.data ?? []) as Invite[]);
-    const profMap = new Map((prof.data ?? []).map((p) => [p.id, p]));
-    setMembers((mem.data ?? []).map((m) => ({ ...m, profile: profMap.get(m.user_id) })));
+    setInviters((inviterRows.data ?? []) as InviterRow[]);
     setCommitteeGuests((comm.data ?? []) as CommitteeGuest[]);
     try {
       const res = await fetchSignedUpDigits();
@@ -172,18 +171,6 @@ function TeamPage() {
           Everyone added as a committee member or flagged as committee on the guest list is on the team. People show as "Pending signup" until they log in with their phone number.
         </p>
         {(() => {
-          const seen = new Set<string>();
-          const norm = (p?: string | null) => (p ? p.replace(/\D/g, "") : "");
-          type Row = {
-            key: string;
-            name: string;
-            contact: string;
-            status: string;
-            role: string;
-            userId?: string;
-          };
-          const rows: Row[] = [];
-
           const isSignedUp = (digits: string) => {
             if (!digits || digits.length < 7) return false;
             const tail = digits.slice(-10);
@@ -192,50 +179,33 @@ function TeamPage() {
             }
             return false;
           };
-
-          for (const inv of invites) {
-            const k = norm(inv.phone) || `ti-${inv.id}`;
-            if (seen.has(k)) continue;
-            seen.add(k);
-            const joined = inv.accepted_at || isSignedUp(norm(inv.phone));
-            rows.push({
-              key: `ti-${inv.id}`,
-              name: inv.name || inv.phone || "—",
-              contact: inv.phone || "No phone",
-              status: joined ? "Joined" : "Pending signup",
-              role: inv.role,
-            });
-          }
-          for (const g of committeeGuests) {
-            const k = norm(g.guest_phone) || `cg-${g.id}`;
-            if (seen.has(k)) continue;
-            seen.add(k);
-            rows.push({
-              key: `cg-${g.id}`,
-              name: g.guest_name,
-              contact: g.guest_phone || g.guest_email || "No contact on file",
-              status: isSignedUp(norm(g.guest_phone)) ? "Joined" : "Pending signup",
+          const rows = buildCommitteeRoster([
+            ...inviters.map((inviter) => ({
+              id: inviter.id,
+              name: inviter.name,
+              phone: inviter.phone,
+              status: isSignedUp(normalizeRosterPhone(inviter.phone)) ? "Joined" : "Pending signup",
               role: "team",
-            });
-          }
-          // Include signed-up users who weren't represented by an invite (e.g. admins added directly).
-          for (const m of members) {
-            const label = m.profile?.display_name || m.profile?.email || m.user_id.slice(0, 8);
-            const alreadyShown = rows.some(
-              (r) => r.name.toLowerCase() === (label ?? "").toLowerCase(),
-            );
-            if (alreadyShown) continue;
-            rows.push({
-              key: `ur-${m.user_id}-${m.role}`,
-              name: label,
-              contact: m.profile?.email || "Signed in",
-              status: "Joined",
-              role: m.role,
-              userId: m.user_id,
-            });
-          }
-
-          rows.sort((a, b) => a.name.localeCompare(b.name));
+              source: "inviter" as const,
+            })).filter((inviter) => normalizeRosterPhone(inviter.phone).length >= 7),
+            ...invites.map((inv) => ({
+              id: inv.id,
+              name: inv.name,
+              phone: inv.phone,
+              status: inv.accepted_at || isSignedUp(normalizeRosterPhone(inv.phone)) ? "Joined" : "Pending signup",
+              role: inv.role,
+              source: "teamInvite" as const,
+            })),
+            ...committeeGuests.map((g) => ({
+              id: g.id,
+              name: g.guest_name,
+              phone: g.guest_phone,
+              email: g.guest_email,
+              status: isSignedUp(normalizeRosterPhone(g.guest_phone)) ? "Joined" : "Pending signup",
+              role: "team",
+              source: "inviter" as const,
+            })),
+          ]);
 
           if (rows.length === 0) {
             return <p className="text-sm text-muted-foreground italic">No committee members yet.</p>;

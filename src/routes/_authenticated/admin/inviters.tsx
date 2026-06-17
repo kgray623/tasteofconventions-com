@@ -32,6 +32,7 @@ import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 
 import { inviteTeamMember } from "@/lib/team.functions";
 import { extractContactsFromImages } from "@/lib/extract-contacts.functions";
+import { buildCommitteeRoster } from "@/lib/committee-roster";
 
 export const Route = createFileRoute("/_authenticated/admin/inviters")({
   head: () => ({ meta: [{ title: "Committee — Admin" }] }),
@@ -238,35 +239,44 @@ function InvitersPage() {
           .eq("role", "team")
           .order("name"),
       ]);
-      const seenCommittee = new Set<string>();
-      const committeeRows: CommitteeRow[] = [];
-      for (const row of ((teamInviteData as TeamInviteRow[]) ?? [])) {
-        const contact = row.phone ?? null;
-        const key = normalizePhone(contact ?? "") || row.name?.trim().toLowerCase() || row.id;
-        if (seenCommittee.has(key)) continue;
-        seenCommittee.add(key);
-        committeeRows.push({ id: `team-${row.id}`, name: row.name || contact || "Committee member", contact });
-      }
-      for (const row of ((commData as { id: string; guest_name: string; guest_email: string | null; guest_phone: string | null }[]) ?? [])) {
-        const contact = row.guest_phone || row.guest_email || null;
-        const key = normalizePhone(row.guest_phone ?? "") || row.guest_name.trim().toLowerCase() || row.id;
-        if (seenCommittee.has(key)) continue;
-        seenCommittee.add(key);
-        committeeRows.push({ id: `guest-${row.id}`, name: row.guest_name, contact });
-      }
+      const committeeRows: CommitteeRow[] = buildCommitteeRoster([
+        ...inviterRows.filter((row) => row.active !== false && normalizePhone(row.phone ?? "").length >= 7).map((row) => ({
+          id: row.id,
+          name: row.name,
+          phone: row.phone,
+          source: "inviter" as const,
+        })),
+        ...(((teamInviteData as TeamInviteRow[]) ?? []).map((row) => ({
+          id: row.id,
+          name: row.name,
+          phone: row.phone,
+          source: "teamInvite" as const,
+        }))),
+        ...(((commData as { id: string; guest_name: string; guest_email: string | null; guest_phone: string | null }[]) ?? []).map((row) => ({
+          id: row.id,
+          name: row.guest_name,
+          phone: row.guest_phone,
+          email: row.guest_email,
+          source: "inviter" as const,
+        }))),
+      ]).map((member) => ({ id: member.key, name: member.name, contact: member.contact }));
       setCommittee(committeeRows);
 
       // Ensure every committee member also exists in `inviters` so admin can allocate quota.
       if (isActualAdmin) {
+        const phoneKey = (value: string | null | undefined) => {
+          const digits = normalizePhone(value ?? "");
+          return digits.length >= 7 ? digits.slice(-10) : "";
+        };
         const existingByPhone = new Set(
           inviterRows
-            .map((i) => normalizePhone(i.phone ?? ""))
+            .map((i) => phoneKey(i.phone))
             .filter((p) => p.length > 0),
         );
         const existingByName = new Set(inviterRows.map((i) => i.name.trim().toLowerCase()));
         const toCreate: { name: string; phone: string | null; quota: number; active: boolean }[] = [];
         for (const m of committeeRows) {
-          const phoneNorm = normalizePhone(m.contact ?? "");
+          const phoneNorm = phoneKey(m.contact);
           const nameKey = m.name.trim().toLowerCase();
           if (phoneNorm && existingByPhone.has(phoneNorm)) continue;
           if (!phoneNorm && existingByName.has(nameKey)) continue;
@@ -632,6 +642,11 @@ function InvitersPage() {
           <p className="text-sm text-muted-foreground mt-1">
             Anyone flagged as committee on the guest list appears here so the whole team can see who's on board.
           </p>
+          {committee.length > 0 && (
+            <p className="text-xs text-muted-foreground mt-1">
+              {committee.length} committee {committee.length === 1 ? "member" : "members"}
+            </p>
+          )}
         </div>
         {committee.length === 0 ? (
           <p className="text-sm text-muted-foreground italic">
