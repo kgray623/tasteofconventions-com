@@ -642,6 +642,11 @@ function InvitersPage() {
           <p className="text-sm text-muted-foreground mt-1">
             Anyone flagged as committee on the guest list appears here so the whole team can see who's on board.
           </p>
+          {committee.length > 0 && (
+            <p className="text-xs text-muted-foreground mt-1">
+              {committee.length} committee {committee.length === 1 ? "member" : "members"}
+            </p>
+          )}
         </div>
         {committee.length === 0 ? (
           <p className="text-sm text-muted-foreground italic">
