@@ -40,6 +40,7 @@ function isWithinWindow(key: string) {
 export function useIsNew(key: string): boolean {
   const [userId, setUserId] = useState<string | null>(null);
   const [seen, setSeen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,14 +53,17 @@ export function useIsNew(key: string): boolean {
       } catch {
         setSeen(false);
       }
+      setMounted(true);
+    }).catch(() => {
+      if (!cancelled) setMounted(true);
     });
     return () => {
       cancelled = true;
     };
   }, [key]);
 
+  if (!mounted) return false;
   if (seen) return false;
-  if (userId === null && typeof window === "undefined") return false;
   return isWithinWindow(key);
 }
 

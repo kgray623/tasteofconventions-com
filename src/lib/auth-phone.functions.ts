@@ -24,6 +24,12 @@ class ExpectedPhoneLoginError extends Error {
   }
 }
 
+function isExpectedPhoneLoginError(error: unknown): error is Error {
+  return error instanceof ExpectedPhoneLoginError || (
+    error instanceof Error && error.name === "ExpectedPhoneLoginError"
+  );
+}
+
 function normalizeAuthPhone(value: string) {
   const digits = value.replace(/\D/g, "");
   if (digits.length === 10) return `+1${digits}`;
@@ -386,7 +392,7 @@ export const signInWithPhoneOnly = createServerFn({ method: "POST" })
   .inputValidator((d) => PhoneLoginInput.parse(d))
   .handler(async ({ data }) => {
     const session = await issuePhoneSession(data.phone, data.name).catch((error) => {
-      if (error instanceof ExpectedPhoneLoginError) {
+      if (isExpectedPhoneLoginError(error)) {
         return { error: error.message } as const;
       }
       throw error;

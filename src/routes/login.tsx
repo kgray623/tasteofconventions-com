@@ -73,7 +73,7 @@ function HelperLogin() {
   const navigate = useNavigate();
   const phoneLogin = useServerFn(signInWithPhoneOnly);
   const [phone, setPhone] = useState("");
-  const [name, setName] = useState(() => getRememberedLoginName() ?? "");
+  const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const navigatingRef = useRef(false);
 
@@ -102,6 +102,10 @@ function HelperLogin() {
     void goToDestination(user.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, loading]);
+
+  useEffect(() => {
+    setName((current) => current || getRememberedLoginName() || "");
+  }, []);
 
   const signIn = async (event?: FormEvent) => {
     event?.preventDefault();
