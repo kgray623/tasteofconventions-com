@@ -368,7 +368,13 @@ async function issuePhoneSession(rawPhone: string, rawName: string): Promise<Pho
 export const signInWithPhoneOnly = createServerFn({ method: "POST" })
   .inputValidator((d) => PhoneLoginInput.parse(d))
   .handler(async ({ data }) => {
-    const session = await issuePhoneSession(data.phone, data.name);
+    const session = await issuePhoneSession(data.phone, data.name).catch((error) => {
+      if (error instanceof ExpectedPhoneLoginError) {
+        return { error: error.message } as const;
+      }
+      throw error;
+    });
+    if ("error" in session) return session;
     setServerRememberedPhoneCookie(session.phone_normalized);
     return session;
   });
