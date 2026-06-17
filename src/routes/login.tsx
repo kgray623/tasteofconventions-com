@@ -175,7 +175,7 @@ function HelperLogin() {
                 onFocus={() => markSeen("login:last-name")}
                 required
                 autoComplete="family-name"
-                placeholder="Gray"
+                placeholder="Your last name"
               />
             </div>
 
