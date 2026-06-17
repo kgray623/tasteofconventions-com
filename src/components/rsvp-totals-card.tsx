@@ -229,18 +229,6 @@ function RequestMoreButton({
       setOpen(false);
     } catch (e) {
 
-      const { error } = await supabase
-        .from("inviters")
-        .update({
-          requested_quota: amount,
-          quota_request_note: note.trim() || null,
-          quota_requested_at: new Date().toISOString(),
-        })
-        .in("id", inviterIds);
-      if (error) throw error;
-      toast.success(`Requested ${amount} RSVPs. Admin will review.`);
-      setOpen(false);
-    } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't send request");
     } finally {
       setSaving(false);
