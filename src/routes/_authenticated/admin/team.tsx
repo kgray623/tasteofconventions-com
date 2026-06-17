@@ -187,7 +187,7 @@ function TeamPage() {
               status: isSignedUp(normalizeRosterPhone(inviter.phone)) ? "Joined" : "Pending signup",
               role: "team",
               source: "inviter" as const,
-            })),
+            })).filter((inviter) => normalizeRosterPhone(inviter.phone).length >= 7),
             ...invites.map((inv) => ({
               id: inv.id,
               name: inv.name,
