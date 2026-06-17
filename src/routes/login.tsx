@@ -110,6 +110,10 @@ function HelperLogin() {
     setBusy(true);
     try {
       const session = await withTimeout(phoneLogin({ data: { phone, name: name.trim() } }), 15000);
+      if ("error" in session) {
+        setBusy(false);
+        return toast.error(session.error);
+      }
       const { error: setErr } = await supabase.auth.setSession({
         access_token: session.access_token,
         refresh_token: session.refresh_token,
