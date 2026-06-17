@@ -240,7 +240,7 @@ function InvitersPage() {
           .order("name"),
       ]);
       const committeeRows: CommitteeRow[] = buildCommitteeRoster([
-        ...inviterRows.filter((row) => row.active !== false).map((row) => ({
+        ...inviterRows.filter((row) => row.active !== false && normalizePhone(row.phone ?? "").length >= 7).map((row) => ({
           id: row.id,
           name: row.name,
           phone: row.phone,
