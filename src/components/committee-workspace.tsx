@@ -205,10 +205,20 @@ export function CommitteeWorkspace() {
   useEffect(() => {
     let alive = true;
     void loadGuests(() => alive);
+    const interval = window.setInterval(() => {
+      void loadGuests(() => alive);
+    }, 30000);
+    const ch = supabase
+      .channel("committee-guest-list")
+      .on("postgres_changes", { event: "*", schema: "public", table: "invitations" }, () => void loadGuests(() => alive))
+      .on("postgres_changes", { event: "*", schema: "public", table: "rsvps" }, () => void loadGuests(() => alive))
+      .subscribe();
     return () => {
       alive = false;
+      window.clearInterval(interval);
+      supabase.removeChannel(ch);
     };
-  }, []);
+  }, [user?.id]);
 
   // Load the full committee roster from all three sources and index by
   // normalized name + last-10-digit phone so we can tag guests consistently.

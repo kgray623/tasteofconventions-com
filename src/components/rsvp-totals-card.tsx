@@ -68,6 +68,10 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
     };
     void load();
 
+    const interval = window.setInterval(() => {
+      void load();
+    }, 30000);
+
     const ch = supabase
       .channel("rsvp-totals")
       .on("postgres_changes", { event: "*", schema: "public", table: "rsvps" }, () => void load())
@@ -77,6 +81,7 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
 
     return () => {
       alive = false;
+      window.clearInterval(interval);
       supabase.removeChannel(ch);
     };
   }, [showPersonal, fetchTotals]);
