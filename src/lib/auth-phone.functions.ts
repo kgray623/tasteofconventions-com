@@ -193,26 +193,43 @@ async function issuePhoneSession(rawPhone: string, rawName: string): Promise<Pho
   const loginAddress = internalPhoneLoginAddress(phoneNorm);
 
   // Look up every record tied to this phone so we can verify the name matches.
-  const [{ data: inv }, { data: inviter }, { data: teamInvite }] = await Promise.all([
+  // Match by full normalized digits OR by last 10 digits to tolerate stored
+  // formats like "+18082787562", "18082787562", or "8082787562".
+  const tail10 = phoneNorm.slice(-10);
+  const phoneOrFilter = [
+    `guest_phone_normalized.eq.${phoneNorm}`,
+    `guest_phone_normalized.eq.${tail10}`,
+    `guest_phone_normalized.eq.1${tail10}`,
+    `guest_phone_normalized.like.%${tail10}`,
+  ].join(",");
+  const teamOrFilter = [
+    `phone_normalized.eq.${phoneNorm}`,
+    `phone_normalized.eq.${tail10}`,
+    `phone_normalized.eq.1${tail10}`,
+    `phone_normalized.like.%${tail10}`,
+  ].join(",");
+  const [{ data: invList }, { data: inviterList }, { data: teamInviteList }] = await Promise.all([
     supabaseAdmin
       .from("invitations")
-      .select("id,guest_name")
-      .eq("guest_phone_normalized", phoneNorm)
-      .limit(1)
-      .maybeSingle(),
+      .select("id,guest_name,guest_phone_normalized")
+      .or(phoneOrFilter)
+      .limit(5),
     supabaseAdmin
       .from("inviters")
-      .select("id,name,host_id")
-      .eq("phone", rawPhone)
-      .limit(1)
-      .maybeSingle(),
+      .select("id,name,host_id,phone")
+      .limit(2000),
     supabaseAdmin
       .from("team_invites")
-      .select("id,name")
-      .eq("phone_normalized", phoneNorm)
-      .limit(1)
-      .maybeSingle(),
+      .select("id,name,phone_normalized")
+      .or(teamOrFilter)
+      .limit(5),
   ]);
+  const inv = (invList ?? [])[0] ?? null;
+  const teamInvite = (teamInviteList ?? [])[0] ?? null;
+  const inviter = (inviterList ?? []).find((r: { phone?: string | null }) => {
+    const d = (r.phone ?? "").replace(/\D/g, "");
+    return d === phoneNorm || (d.length >= 10 && tail10.length === 10 && d.slice(-10) === tail10);
+  }) ?? null;
 
   const candidateNames = [inv?.guest_name, inviter?.name, teamInvite?.name];
   if (!inv && !inviter && !teamInvite) {
