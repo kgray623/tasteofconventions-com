@@ -108,11 +108,10 @@ export function CommitteeWorkspace() {
       let myName = "";
       try {
         if (user?.id) {
-          const { data: prof } = await supabase
-            .from("profiles")
-            .select("display_name")
-            .eq("id", user.id)
-            .maybeSingle();
+          const { data: prof } = await withTimeout(
+            supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
+            LOAD_TIMEOUT_MS,
+          );
           myName = (prof?.display_name ?? "").trim().toLowerCase();
         }
       } catch (e) {
