@@ -436,7 +436,6 @@ function UploadPage() {
 
 
   const duplicateGroups = useMemo(() => {
-    const groups = new Map<string, string>(); // key -> groupId (first id)
     const norm = (s: string | null | undefined) =>
       (s ?? "").trim().toLowerCase().replace(/\s+/g, " ");
     const normPhone = (s: string | null | undefined) =>
@@ -450,7 +449,7 @@ function UploadPage() {
       const p = normPhone(g.guest_phone);
       if (n) keys.push("n:" + n);
       if (e) keys.push("e:" + e);
-      if (p && p.length >= 7) keys.push("p:" + p);
+      if (p && p.length >= 7) keys.push("p:" + p.slice(-10));
       let groupId: string | null = null;
       for (const k of keys) {
         const existing = keyToGroup.get(k);
@@ -463,25 +462,99 @@ function UploadPage() {
       for (const k of keys) keyToGroup.set(k, groupId);
       idToGroup.set(g.id, groupId);
     }
-    // count per group
     const counts = new Map<string, number>();
     for (const gid of idToGroup.values()) counts.set(gid, (counts.get(gid) ?? 0) + 1);
     const dupIds = new Set<string>();
     for (const [id, gid] of idToGroup) {
       if ((counts.get(gid) ?? 0) > 1) dupIds.add(id);
     }
-    return { dupIds, groupOf: idToGroup };
+
+    // For each duplicate group, pick the strongest RSVP from any member so a
+    // confirmation under one spelling/inviter surfaces on the sibling rows too.
+    const rank = (status: string | null) =>
+      status === "yes" ? 4 : status === "waitlist" ? 3 : status === "maybe" ? 2 : status === "no" ? 1 : 0;
+    const groupBest = new Map<
+      string,
+      { sourceId: string; sourceName: string; status: string | null; party_size: number; attendance_mode: string }
+    >();
+    for (const g of savedGuests) {
+      const gid = idToGroup.get(g.id)!;
+      const cand = {
+        sourceId: g.id,
+        sourceName: g.guest_name,
+        status: g.rsvp_status,
+        party_size: g.party_size,
+        attendance_mode: g.attendance_mode,
+      };
+      const current = groupBest.get(gid);
+      if (
+        !current ||
+        rank(cand.status) > rank(current.status) ||
+        (rank(cand.status) === rank(current.status) && cand.party_size > current.party_size)
+      ) {
+        groupBest.set(gid, cand);
+      }
+    }
+
+    const effectiveById = new Map<
+      string,
+      { status: string | null; party_size: number; attendance_mode: string; viaName: string | null }
+    >();
+    for (const g of savedGuests) {
+      if (g.rsvp_status) {
+        effectiveById.set(g.id, {
+          status: g.rsvp_status,
+          party_size: g.party_size,
+          attendance_mode: g.attendance_mode,
+          viaName: null,
+        });
+        continue;
+      }
+      const gid = idToGroup.get(g.id)!;
+      const best = groupBest.get(gid);
+      if (best && best.status && best.sourceId !== g.id) {
+        effectiveById.set(g.id, {
+          status: best.status,
+          party_size: best.party_size,
+          attendance_mode: best.attendance_mode,
+          viaName: best.sourceName,
+        });
+      } else {
+        effectiveById.set(g.id, {
+          status: null,
+          party_size: 1,
+          attendance_mode: "in_person",
+          viaName: null,
+        });
+      }
+    }
+
+    return { dupIds, groupOf: idToGroup, groupBest, effectiveById };
   }, [savedGuests]);
 
   const duplicateCount = duplicateGroups.dupIds.size;
-  const confirmedGuests = savedGuests.filter((g) => g.rsvp_status === "yes");
-  const confirmedPeople = confirmedGuests.reduce((sum, g) => sum + g.party_size, 0);
+  // Dedupe by group so a Monahan/Monaghan pair counts as one confirmation.
+  const guestById = useMemo(() => {
+    const m = new Map<string, (typeof savedGuests)[number]>();
+    for (const g of savedGuests) m.set(g.id, g);
+    return m;
+  }, [savedGuests]);
+  const confirmedGuests = useMemo(() => {
+    const out: (typeof savedGuests)[number][] = [];
+    for (const best of duplicateGroups.groupBest.values()) {
+      if (best.status !== "yes") continue;
+      const rep = guestById.get(best.sourceId);
+      if (rep) out.push({ ...rep, party_size: best.party_size, attendance_mode: best.attendance_mode === "zoom" ? "zoom" : "in_person", rsvp_status: best.status });
+    }
+    return out;
+  }, [duplicateGroups, guestById]);
+  const confirmedPeople = confirmedGuests.reduce((s, g) => s + (g.party_size ?? 1), 0);
   const inPersonPeople = confirmedGuests
     .filter((g) => g.attendance_mode !== "zoom")
-    .reduce((sum, g) => sum + g.party_size, 0);
+    .reduce((s, g) => s + (g.party_size ?? 1), 0);
   const zoomPeople = confirmedGuests
     .filter((g) => g.attendance_mode === "zoom")
-    .reduce((sum, g) => sum + g.party_size, 0);
+    .reduce((s, g) => s + (g.party_size ?? 1), 0);
 
 
   const removeSavedGuest = async (id: string, name: string) => {
@@ -552,8 +625,17 @@ function UploadPage() {
   };
 
   const guestStatus = (g: (typeof savedGuests)[number]) => {
-    if (g.rsvp_status === "yes") return { label: "RSVP'd yes", tone: "yes" as const };
-    if (g.rsvp_status === "no") return { label: "RSVP'd no", tone: "no" as const };
+    const eff = duplicateGroups.effectiveById.get(g.id);
+    const status = eff?.status ?? g.rsvp_status;
+    const via = eff?.viaName ?? null;
+    if (status === "yes") {
+      const party = eff?.party_size ?? g.party_size;
+      const label = via ? `RSVP'd yes (${party}) via ${via}` : "RSVP'd yes";
+      return { label, tone: "yes" as const };
+    }
+    if (status === "no") return { label: via ? `RSVP'd no via ${via}` : "RSVP'd no", tone: "no" as const };
+    if (status === "waitlist") return { label: via ? `Waitlist via ${via}` : "Waitlist", tone: "sent" as const };
+    if (status === "maybe") return { label: via ? `Maybe via ${via}` : "Maybe", tone: "sent" as const };
     if (!g.invite_sent_at) return { label: "Not sent", tone: "pending" as const };
     const daysAgo = Math.max(
       0,
@@ -1480,7 +1562,7 @@ function UploadPage() {
                        <Trash2 className="w-4 h-4" />
                      )}
                    </Button>
-                   {!g.rsvp_status && (
+                   {!duplicateGroups.effectiveById.get(g.id)?.status && (
                      <Select
                        value=""
                        disabled={settingRsvpId === g.id}
