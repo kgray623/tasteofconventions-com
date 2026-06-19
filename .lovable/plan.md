@@ -1,12 +1,13 @@
-## Restore the grouped guest list
+## Sort the Confirmed RSVPs list alphabetically
 
-Re-section the "Current guest list" on `/admin/upload` (in `src/routes/_authenticated/admin/upload.tsx`) into the categories you asked for, using each guest's **effective** RSVP (so duplicates inherit a sibling's RSVP as already implemented):
+In `src/routes/_authenticated/admin/upload.tsx`, the "Confirmed RSVPs" card (around lines 1355–1405) renders two sub-lists — in‑person and Zoom — by mapping `confirmedGuests` directly with no sort, so names appear in RSVP-arrival order.
 
-1. **RSVP yes** — alphabetical by guest_name
-2. **RSVP waitlist** — alphabetical by guest_name
-3. **RSVP no** — alphabetical by guest_name
-4. **No response yet** — alphabetical by guest_name (everyone else: not sent, sent-not-replied, maybe). Kept separate so pending guests don't disappear from the list. If you want this one removed or renamed, say so.
+Change: sort both sub-lists alphabetically by `guest_name` using the same case-insensitive `localeCompare` comparator already used for the grouped guest list below (`byName`). Specifically:
 
-Each section gets a small header with the count (e.g. "RSVP yes (42)") and is collapsible-like only visually — no behavior change beyond grouping + alpha sort. All existing per-row controls (edit name, mark sent, set RSVP, remove, duplicate badge) stay exactly as they are. Totals card and duplicate detection are unchanged.
+- Build a shared `byName` comparator at the top of the render (reuse the existing one if hoisted, otherwise add a local one in this card).
+- Apply `.sort(byName)` to the filtered `confirmedGuests.filter(g => g.attendance_mode !== "zoom")` list before `.map(...)`.
+- Apply `.sort(byName)` to the filtered `confirmedGuests.filter(g => g.attendance_mode === "zoom")` list before `.map(...)`.
 
-No DB or server changes.
+No changes to totals, data fetching, or any other component. Counts in the header stay as-is. The grouped guest list below (yes / waitlist / no / no response yet) is already alphabetical and is not touched.
+
+If you want, I can also do a sweep of other admin lists (Committee, Restaurants, Assignments, etc.) and force alphabetical order everywhere — say the word and I'll add that to the plan.
