@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -51,6 +51,7 @@ function AdminOverview() {
   const [auditError, setAuditError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [ops, setOps] = useState({ flags: 0, categories: 0 });
+  const loadingAdminDataRef = useRef(false);
 
   useEffect(() => {
     if (rolesLoading || !isAdmin) return;
@@ -71,6 +72,8 @@ function AdminOverview() {
     if (rolesLoading || !isAdmin) return;
     let alive = true;
     const loadAdminData = async () => {
+      if (loadingAdminDataRef.current) return;
+      loadingAdminDataRef.current = true;
       try {
         const result = (await fetchAudit()) as AuditData;
         if (!alive) return;
@@ -84,26 +87,13 @@ function AdminOverview() {
         supabase.from("categories").select("id", { count: "exact", head: true }),
       ]);
       if (alive) setOps({ flags: flagsRes.count ?? 0, categories: catsRes.count ?? 0 });
+      loadingAdminDataRef.current = false;
     };
     void loadAdminData();
     const interval = window.setInterval(() => void loadAdminData(), 30000);
-    const reloadOnFocus = () => void loadAdminData();
-    window.addEventListener("focus", reloadOnFocus);
-    document.addEventListener("visibilitychange", reloadOnFocus);
-    const channel = supabase
-      .channel("admin-overview-refresh")
-      .on("postgres_changes", { event: "*", schema: "public", table: "invitations" }, () => void loadAdminData())
-      .on("postgres_changes", { event: "*", schema: "public", table: "rsvps" }, () => void loadAdminData())
-      .on("postgres_changes", { event: "*", schema: "public", table: "cuisine_preorders" }, () => void loadAdminData())
-      .on("postgres_changes", { event: "*", schema: "public", table: "duplicate_flags" }, () => void loadAdminData())
-      .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, () => void loadAdminData())
-      .subscribe();
     return () => {
       alive = false;
       window.clearInterval(interval);
-      window.removeEventListener("focus", reloadOnFocus);
-      document.removeEventListener("visibilitychange", reloadOnFocus);
-      supabase.removeChannel(channel);
     };
   }, [rolesLoading, isAdmin, fetchAudit]);
 
