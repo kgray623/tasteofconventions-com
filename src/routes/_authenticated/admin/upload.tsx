@@ -533,18 +533,28 @@ function UploadPage() {
   }, [savedGuests]);
 
   const duplicateCount = duplicateGroups.dupIds.size;
-  // Dedupe totals by group so a Monahan/Monaghan pair counts as one confirmation.
-  const groupYesReps = Array.from(duplicateGroups.groupBest.values()).filter(
-    (b) => b.status === "yes",
-  );
-  const confirmedPeople = groupYesReps.reduce((s, b) => s + (b.party_size ?? 1), 0);
-  const inPersonPeople = groupYesReps
-    .filter((b) => b.attendance_mode !== "zoom")
-    .reduce((s, b) => s + (b.party_size ?? 1), 0);
-  const zoomPeople = groupYesReps
-    .filter((b) => b.attendance_mode === "zoom")
-    .reduce((s, b) => s + (b.party_size ?? 1), 0);
-  const confirmedGuests = groupYesReps;
+  // Dedupe by group so a Monahan/Monaghan pair counts as one confirmation.
+  const guestById = useMemo(() => {
+    const m = new Map<string, (typeof savedGuests)[number]>();
+    for (const g of savedGuests) m.set(g.id, g);
+    return m;
+  }, [savedGuests]);
+  const confirmedGuests = useMemo(() => {
+    const out: (typeof savedGuests)[number][] = [];
+    for (const best of duplicateGroups.groupBest.values()) {
+      if (best.status !== "yes") continue;
+      const rep = guestById.get(best.sourceId);
+      if (rep) out.push({ ...rep, party_size: best.party_size, attendance_mode: best.attendance_mode, rsvp_status: best.status });
+    }
+    return out;
+  }, [duplicateGroups, guestById]);
+  const confirmedPeople = confirmedGuests.reduce((s, g) => s + (g.party_size ?? 1), 0);
+  const inPersonPeople = confirmedGuests
+    .filter((g) => g.attendance_mode !== "zoom")
+    .reduce((s, g) => s + (g.party_size ?? 1), 0);
+  const zoomPeople = confirmedGuests
+    .filter((g) => g.attendance_mode === "zoom")
+    .reduce((s, g) => s + (g.party_size ?? 1), 0);
 
 
   const removeSavedGuest = async (id: string, name: string) => {
