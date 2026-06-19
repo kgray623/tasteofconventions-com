@@ -71,13 +71,8 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
     };
     void load();
 
-    const interval = window.setInterval(() => {
-      void load();
-    }, 30000);
-
     return () => {
       alive = false;
-      window.clearInterval(interval);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showPersonal]);
