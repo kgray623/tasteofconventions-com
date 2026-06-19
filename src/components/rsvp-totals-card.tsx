@@ -8,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { supabase } from "@/integrations/supabase/client";
 import { NewBadge } from "@/components/new-badge";
 import { toast } from "sonner";
 import { getRsvpTotals, requestMoreQuota } from "@/lib/rsvp-totals.functions";
@@ -80,7 +79,8 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
       alive = false;
       window.clearInterval(interval);
     };
-  }, [showPersonal, fetchTotals]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showPersonal]);
 
 
   const available = Math.max(0, event.requested - event.confirmed);
