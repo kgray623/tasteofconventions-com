@@ -221,7 +221,7 @@ export function CommitteeWorkspace() {
   }, [user?.id]);
 
   const refreshGuestsNow = async () => {
-    if (loadingGuestsRef.current) return;
+    loadingGuestsRef.current = false;
     setManualRefreshingGuests(true);
     await loadGuests();
     setManualRefreshingGuests(false);
@@ -559,7 +559,7 @@ export function CommitteeWorkspace() {
               variant="outline"
               size="sm"
               onClick={() => void refreshGuestsNow()}
-              disabled={loadingGuests || manualRefreshingGuests}
+              disabled={manualRefreshingGuests}
               aria-label="Refresh guest list"
             >
               {manualRefreshingGuests ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
