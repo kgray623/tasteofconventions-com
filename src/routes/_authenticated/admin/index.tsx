@@ -69,20 +69,42 @@ function AdminOverview() {
 
   useEffect(() => {
     if (rolesLoading || !isAdmin) return;
-    (async () => {
+    let alive = true;
+    const loadAdminData = async () => {
       try {
         const result = (await fetchAudit()) as AuditData;
+        if (!alive) return;
         setAudit(result);
         setAuditError(null);
       } catch (e) {
-        setAuditError(e instanceof Error ? e.message : "Could not load audit");
+        if (alive) setAuditError(e instanceof Error ? e.message : "Could not load audit");
       }
       const [flagsRes, catsRes] = await Promise.all([
         supabase.from("duplicate_flag_pairs").select("invitation_a", { count: "exact", head: true }),
         supabase.from("categories").select("id", { count: "exact", head: true }),
       ]);
-      setOps({ flags: flagsRes.count ?? 0, categories: catsRes.count ?? 0 });
-    })();
+      if (alive) setOps({ flags: flagsRes.count ?? 0, categories: catsRes.count ?? 0 });
+    };
+    void loadAdminData();
+    const interval = window.setInterval(() => void loadAdminData(), 30000);
+    const reloadOnFocus = () => void loadAdminData();
+    window.addEventListener("focus", reloadOnFocus);
+    document.addEventListener("visibilitychange", reloadOnFocus);
+    const channel = supabase
+      .channel("admin-overview-refresh")
+      .on("postgres_changes", { event: "*", schema: "public", table: "invitations" }, () => void loadAdminData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "rsvps" }, () => void loadAdminData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "cuisine_preorders" }, () => void loadAdminData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "duplicate_flags" }, () => void loadAdminData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, () => void loadAdminData())
+      .subscribe();
+    return () => {
+      alive = false;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", reloadOnFocus);
+      document.removeEventListener("visibilitychange", reloadOnFocus);
+      supabase.removeChannel(channel);
+    };
   }, [rolesLoading, isAdmin, fetchAudit]);
 
   useEffect(() => {
