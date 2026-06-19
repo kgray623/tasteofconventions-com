@@ -1,16 +1,7 @@
-## Fix "RSVPs available" math on the Committee RSVP totals card
+I found the admin totals card is now doing the corrected math (`550 - RSVP requests`), but the card can still get stuck showing dashes/no updated numbers because the fetch is guarded by a ref that blocks overlapping reloads and never retries visibly after a failed/slow load.
 
-**Problem:** Card shows 550 seats / 300 requests / 260 available / 40 confirmed. "Available" is currently computed as `requests − confirmed`, which is confusing — it should reflect how many seats out of the 550 total are still unallocated to a committee member's RSVP request.
-
-**Change:** Recompute the event-level "RSVPs available" as `TOTAL_SEATS − requested` (clamped to ≥ 0). With current data: 550 − 300 = **250**.
-
-### Files
-- `src/components/rsvp-totals-card.tsx` — change one line:
-  - `const available = Math.max(0, event.requested - event.confirmed);`
-  - → `const available = Math.max(0, TOTAL_SEATS - event.requested);`
-
-### Out of scope (unchanged)
-- Total seats (550), RSVP requests, In-person confirmed tiles.
-- Progress bar % (still confirmed / requested).
-- "My RSVPs left" personal tile (still my-requested − my-confirmed — that's the right meaning for a personal quota).
-- Zoom totals and request-more flow.
+Plan:
+1. Keep the corrected available-seat math as `Total seats - RSVP requests`.
+2. Make the RSVP totals load path reliable by removing the over-aggressive “already loading” guard and ensuring every load attempt updates the card when the server function returns.
+3. Add a small visible fallback state if totals fail to load, instead of silently leaving blank/dash numbers.
+4. Verify the card reads the server totals response currently shown by the backend: `requested: 300`, `confirmed: 40`, `virtual: 5`, so the displayed available value should be `250`.
