@@ -236,6 +236,7 @@ function UploadPage() {
   const [committeeFilter, setCommitteeFilter] = useState(false);
   const [togglingCommitteeId, setTogglingCommitteeId] = useState<string | null>(null);
   const [savedLoading, setSavedLoading] = useState(false);
+  const loadingSavedGuestsRef = useRef(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [editingRowIdx, setEditingRowIdx] = useState<number | null>(null);
   const [editingRowValue, setEditingRowValue] = useState("");
@@ -263,6 +264,8 @@ function UploadPage() {
       setSavedGuests([]);
       return;
     }
+    if (loadingSavedGuestsRef.current) return;
+    loadingSavedGuestsRef.current = true;
     setSavedLoading(true);
     try {
       let query = supabase
@@ -325,6 +328,7 @@ function UploadPage() {
       console.error("[upload] load saved guests failed", e);
     } finally {
       setSavedLoading(false);
+      loadingSavedGuestsRef.current = false;
     }
   };
 
@@ -337,19 +341,9 @@ function UploadPage() {
       if (alive) void loadSavedGuests(eventId);
     };
     const interval = window.setInterval(refreshSavedGuests, 30000);
-    window.addEventListener("focus", refreshSavedGuests);
-    document.addEventListener("visibilitychange", refreshSavedGuests);
-    const channel = supabase
-      .channel(`upload-guest-list-refresh:${eventId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "invitations" }, refreshSavedGuests)
-      .on("postgres_changes", { event: "*", schema: "public", table: "rsvps" }, refreshSavedGuests)
-      .subscribe();
     return () => {
       alive = false;
       window.clearInterval(interval);
-      window.removeEventListener("focus", refreshSavedGuests);
-      document.removeEventListener("visibilitychange", refreshSavedGuests);
-      supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId, isAdmin, user?.id]);
