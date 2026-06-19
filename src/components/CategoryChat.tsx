@@ -33,35 +33,28 @@ export function CategoryChat({ open, onOpenChange, categoryId, categoryName, can
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const loadingMessagesRef = useRef(false);
 
   const load = async () => {
-    const { data, error } = await supabase
-      .from("category_messages")
-      .select("*")
-      .eq("category_id", categoryId)
-      .order("created_at", { ascending: true });
-    if (error) return;
-    setMsgs(data ?? []);
+    if (loadingMessagesRef.current) return;
+    loadingMessagesRef.current = true;
+    try {
+      const { data, error } = await supabase
+        .from("category_messages")
+        .select("*")
+        .eq("category_id", categoryId)
+        .order("created_at", { ascending: true });
+      if (error) return;
+      setMsgs(data ?? []);
+    } finally {
+      loadingMessagesRef.current = false;
+    }
   };
 
   useEffect(() => {
     if (!open) return;
     load();
     markChatSeen(user?.id, "category", categoryId);
-    const ch = supabase
-      .channel(`category_messages:${categoryId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "category_messages", filter: `category_id=eq.${categoryId}` },
-        () => {
-          load();
-          markChatSeen(user?.id, "category", categoryId);
-        },
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(ch);
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, categoryId, user?.id]);
 
@@ -75,19 +68,25 @@ export function CategoryChat({ open, onOpenChange, categoryId, categoryName, can
     const body = draft.trim();
     if (!body) return;
     setLoading(true);
-    const { error } = await supabase.from("category_messages").insert({
-      category_id: categoryId,
-      user_id: user.id,
-      body,
-    });
-    setLoading(false);
-    if (error) return toast.error(error.message);
-    setDraft("");
+    try {
+      const { error } = await supabase.from("category_messages").insert({
+        category_id: categoryId,
+        user_id: user.id,
+        body,
+      });
+      if (error) return toast.error(error.message);
+      setDraft("");
+      await load();
+      markChatSeen(user?.id, "category", categoryId);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const remove = async (id: string) => {
     const { error } = await supabase.from("category_messages").delete().eq("id", id);
     if (error) return toast.error(error.message);
+    await load();
   };
 
   return (
