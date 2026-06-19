@@ -159,12 +159,20 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
       const uploaded = (myInvites ?? []).length;
       const myInviteIds = new Set((myInvites ?? []).map((i) => i.id));
 
-      const myConfirmed = inPersonYes
-        .filter((r) => myInviteIds.has(r.invitation_id))
-        .reduce((s, r) => s + (r.party_size ?? 1), 0);
-      const myVirtual = virtualYes
-        .filter((r) => myInviteIds.has(r.invitation_id))
-        .reduce((s, r) => s + (r.party_size ?? 1), 0);
+      // Dedupe my confirmations by group: a group counts as "mine" if any
+      // invitation in it belongs to one of my host ids.
+      let myConfirmed = 0;
+      let myVirtual = 0;
+      const seenGroups = new Set<string>();
+      for (const invId of myInviteIds) {
+        const gid = idToGroup.get(invId);
+        if (!gid || seenGroups.has(gid)) continue;
+        seenGroups.add(gid);
+        const best = groupBest.get(gid);
+        if (!best || best.status !== "yes") continue;
+        if (best.attendance_mode === "zoom") myVirtual += best.party_size;
+        else myConfirmed += best.party_size;
+      }
 
       // Quota = sum of active inviter rows that map to me.
       const activeMine = myInviters.filter((r) => r.active !== false);
