@@ -1477,9 +1477,35 @@ function UploadPage() {
                 : "No guests added yet for this event."
               : "Pick an event to see its guest list."}
           </div>
-        ) : (
-          <div className="divide-y divide-border max-h-[480px] overflow-auto">
-            {savedGuests.map((g) => {
+        ) : (() => {
+          const byName = (a: typeof savedGuests[number], b: typeof savedGuests[number]) =>
+            (a.guest_name ?? "").localeCompare(b.guest_name ?? "", undefined, { sensitivity: "base" });
+          const effStatus = (g: typeof savedGuests[number]) =>
+            duplicateGroups.effectiveById.get(g.id)?.status ?? g.rsvp_status ?? null;
+          const yes = savedGuests.filter((g) => effStatus(g) === "yes").sort(byName);
+          const wait = savedGuests.filter((g) => effStatus(g) === "waitlist").sort(byName);
+          const no = savedGuests.filter((g) => effStatus(g) === "no").sort(byName);
+          const pending = savedGuests
+            .filter((g) => {
+              const s = effStatus(g);
+              return s !== "yes" && s !== "waitlist" && s !== "no";
+            })
+            .sort(byName);
+          const sections: { label: string; rows: typeof savedGuests }[] = [
+            { label: "RSVP yes", rows: yes },
+            { label: "RSVP waitlist", rows: wait },
+            { label: "RSVP no", rows: no },
+            { label: "No response yet", rows: pending },
+          ];
+          return (
+          <div className="max-h-[480px] overflow-auto">
+            {sections.map((sec) => sec.rows.length === 0 ? null : (
+              <div key={sec.label}>
+                <div className="px-4 py-2 bg-background/60 text-[11px] uppercase tracking-wider text-muted-foreground border-y border-border sticky top-0 z-10">
+                  {sec.label} ({sec.rows.length})
+                </div>
+                <div className="divide-y divide-border">
+            {sec.rows.map((g) => {
               const isDup = duplicateGroups.dupIds.has(g.id);
               return (<div
                 key={g.id}

@@ -1,25 +1,12 @@
-## What's actually happening with Shelley & Pat Monahan
+## Restore the grouped guest list
 
-The RSVP is **not lost** — it's attached to a duplicate invitation row from a different inviter:
+Re-section the "Current guest list" on `/admin/upload` (in `src/routes/_authenticated/admin/upload.tsx`) into the categories you asked for, using each guest's **effective** RSVP (so duplicates inherit a sibling's RSVP as already implemented):
 
-| Invitation row | Phone | Uploaded by | RSVP |
-|---|---|---|---|
-| **Shelley & Pat Monahan** | +1 402-639-4513 | host A | (none) |
-| **Shelley Monaghan** | 4026394513 | Kari Gray | **yes, party of 2, in-person, 2026-06-14** |
+1. **RSVP yes** — alphabetical by guest_name
+2. **RSVP waitlist** — alphabetical by guest_name
+3. **RSVP no** — alphabetical by guest_name
+4. **No response yet** — alphabetical by guest_name (everyone else: not sent, sent-not-replied, maybe). Kept separate so pending guests don't disappear from the list. If you want this one removed or renamed, say so.
 
-Same phone (last 10 digits match). The DB trigger already flagged the pair in `duplicate_flags` (match_type = `phone`). The guest list page even shows a "possible duplicates" count — but each duplicate row only displays its **own** rsvp record, so the Monahan row looks blank while the Monaghan row shows the confirmation. Same thing will happen anywhere two inviters typed the same guest differently.
+Each section gets a small header with the count (e.g. "RSVP yes (42)") and is collapsible-like only visually — no behavior change beyond grouping + alpha sort. All existing per-row controls (edit name, mark sent, set RSVP, remove, duplicate badge) stay exactly as they are. Totals card and duplicate detection are unchanged.
 
-## Fix plan
-
-Make the "Current guest list" treat a duplicate group as one guest for RSVP display:
-
-1. In `src/routes/_authenticated/admin/upload.tsx`, after `duplicateGroups` is built, derive a `groupRsvp` map: for each group id, pick the strongest RSVP from any member (priority: `yes` > `waitlist` > `maybe` > `no` > none; on ties prefer the most recent / largest party).
-2. When rendering a guest row that has no RSVP of its own but belongs to a duplicate group whose representative does, show the RSVP status, party size, and attendance mode from that sibling, with a small "via duplicate: <other name>" note so it's clear where it came from.
-3. Fix double-counting in the page totals (`confirmedGuests` / `confirmedPeople` / `inPersonPeople` / `zoomPeople`): count each duplicate group at most once, using the group's representative RSVP, so adding the cross-row display doesn't inflate the numbers.
-4. No DB changes, no migration, no merge of the records. The duplicate pair is left intact so the existing "possible duplicates" workflow still lets the committee decide which row to remove.
-
-## Out of scope (ask if you want it)
-
-- Auto-merging duplicate invitations into one row.
-- Backfilling Pat's name onto the Monaghan row.
-- Applying the same group-aware RSVP logic to the public/committee-facing lists (e.g. `my-rsvp`, admin audit). Happy to extend it once you confirm the upload page behaves the way you want.
+No DB or server changes.
