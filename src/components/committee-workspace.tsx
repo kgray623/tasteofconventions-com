@@ -64,6 +64,7 @@ export function CommitteeWorkspace() {
   const [openMyGroup, setOpenMyGroup] = useState<{ yes: boolean; waiting: boolean; declined: boolean }>({ yes: true, waiting: false, declined: false });
   const [lastSeenYesAt, setLastSeenYesAt] = useState<number | null>(null);
   const handledChatParamRef = useRef<string | null>(null);
+  const loadingGuestsRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -85,6 +86,8 @@ export function CommitteeWorkspace() {
   };
 
   const loadGuests = async (alive: () => boolean = () => true) => {
+    if (loadingGuestsRef.current) return;
+    loadingGuestsRef.current = true;
     if (alive()) setLoadingGuests(true);
     try {
       // Build the set of host_ids that count as "mine":
@@ -199,6 +202,7 @@ export function CommitteeWorkspace() {
       if (alive()) setGuests([]);
     } finally {
       if (alive()) setLoadingGuests(false);
+      loadingGuestsRef.current = false;
     }
   };
 
@@ -208,15 +212,9 @@ export function CommitteeWorkspace() {
     const interval = window.setInterval(() => {
       void loadGuests(() => alive);
     }, 30000);
-    const ch = supabase
-      .channel("committee-guest-list")
-      .on("postgres_changes", { event: "*", schema: "public", table: "invitations" }, () => void loadGuests(() => alive))
-      .on("postgres_changes", { event: "*", schema: "public", table: "rsvps" }, () => void loadGuests(() => alive))
-      .subscribe();
     return () => {
       alive = false;
       window.clearInterval(interval);
-      supabase.removeChannel(ch);
     };
   }, [user?.id]);
 

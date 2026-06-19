@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { supabase } from "@/integrations/supabase/client";
 import { NewBadge } from "@/components/new-badge";
 import { toast } from "sonner";
 import { getRsvpTotals, requestMoreQuota } from "@/lib/rsvp-totals.functions";
@@ -40,12 +39,15 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
   const [mine, setMine] = useState<MyTotals>({ requested: 0, uploaded: 0, confirmed: 0, virtual: 0, pendingRequest: null });
   const [myInviterIds, setMyInviterIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const loadingTotalsRef = useRef(false);
 
   const showPersonal = Array.isArray(personalHostIds) && personalHostIds.length > 0;
 
   useEffect(() => {
     let alive = true;
     const load = async () => {
+      if (loadingTotalsRef.current) return;
+      loadingTotalsRef.current = true;
       try {
         const result = await fetchTotals({ data: { includePersonal: showPersonal } });
         if (!alive) return;
@@ -64,6 +66,7 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
         console.error("[rsvp-totals] load failed", e);
       } finally {
         if (alive) setLoading(false);
+        loadingTotalsRef.current = false;
       }
     };
     void load();
@@ -72,19 +75,12 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
       void load();
     }, 30000);
 
-    const ch = supabase
-      .channel("rsvp-totals")
-      .on("postgres_changes", { event: "*", schema: "public", table: "rsvps" }, () => void load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "inviters" }, () => void load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "invitations" }, () => void load())
-      .subscribe();
-
     return () => {
       alive = false;
       window.clearInterval(interval);
-      supabase.removeChannel(ch);
     };
-  }, [showPersonal, fetchTotals]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showPersonal]);
 
 
   const available = Math.max(0, event.requested - event.confirmed);
