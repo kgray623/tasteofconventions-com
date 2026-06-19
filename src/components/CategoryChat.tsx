@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Send, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { markChatSeen } from "@/hooks/use-chat-unread";
+import { withTimeout } from "@/lib/async-safety";
 
 
 type Msg = {
@@ -39,11 +40,13 @@ export function CategoryChat({ open, onOpenChange, categoryId, categoryName, can
     if (loadingMessagesRef.current) return;
     loadingMessagesRef.current = true;
     try {
-      const { data, error } = await supabase
-        .from("category_messages")
-        .select("*")
-        .eq("category_id", categoryId)
-        .order("created_at", { ascending: true });
+      const { data, error } = await withTimeout(
+        supabase
+          .from("category_messages")
+          .select("*")
+          .eq("category_id", categoryId)
+          .order("created_at", { ascending: true }),
+      );
       if (error) return;
       setMsgs(data ?? []);
     } finally {
@@ -54,7 +57,7 @@ export function CategoryChat({ open, onOpenChange, categoryId, categoryName, can
   useEffect(() => {
     if (!open) return;
     load();
-    markChatSeen(user?.id, "category", categoryId);
+    void markChatSeen(user?.id, "category", categoryId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, categoryId, user?.id]);
 
@@ -69,22 +72,24 @@ export function CategoryChat({ open, onOpenChange, categoryId, categoryName, can
     if (!body) return;
     setLoading(true);
     try {
-      const { error } = await supabase.from("category_messages").insert({
-        category_id: categoryId,
-        user_id: user.id,
-        body,
-      });
+      const { error } = await withTimeout(
+        supabase.from("category_messages").insert({
+          category_id: categoryId,
+          user_id: user.id,
+          body,
+        }),
+      );
       if (error) return toast.error(error.message);
       setDraft("");
       await load();
-      markChatSeen(user?.id, "category", categoryId);
+      void markChatSeen(user?.id, "category", categoryId);
     } finally {
       setLoading(false);
     }
   };
 
   const remove = async (id: string) => {
-    const { error } = await supabase.from("category_messages").delete().eq("id", id);
+    const { error } = await withTimeout(supabase.from("category_messages").delete().eq("id", id));
     if (error) return toast.error(error.message);
     await load();
   };
