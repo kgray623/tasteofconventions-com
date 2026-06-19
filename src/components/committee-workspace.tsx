@@ -23,6 +23,7 @@ import { RsvpTotalsCard } from "@/components/rsvp-totals-card";
 import { toast } from "sonner";
 import { NewBadge } from "@/components/new-badge";
 import { markSeen } from "@/lib/whats-new";
+import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -41,6 +42,7 @@ type CommitteeGuest = {
 };
 
 const WELCOME_HIDE_KEY = "toc.committee.welcomeVideoHidden";
+const LOAD_TIMEOUT_MS = 12_000;
 
 export function CommitteeWorkspace() {
   const { user } = useAuth();
@@ -117,9 +119,10 @@ export function CommitteeWorkspace() {
         console.warn("[committee] profile lookup failed", e);
       }
       try {
-        const { data: inviterRows } = await supabase
-          .from("inviters")
-          .select("host_id,phone,name");
+        const { data: inviterRows } = await withTimeout(
+          supabase.from("inviters").select("host_id,phone,name"),
+          LOAD_TIMEOUT_MS,
+        );
         for (const row of inviterRows ?? []) {
           if (!row.host_id) continue;
           if (row.host_id === user?.id) {
@@ -141,21 +144,23 @@ export function CommitteeWorkspace() {
       }
       if (alive()) setMyHostIds(Array.from(mineSet));
 
-      const { data: events } = await supabase
-        .from("events")
-        .select("id")
-        .order("starts_at")
-        .limit(1);
+      const { data: events } = await withTimeout(
+        supabase.from("events").select("id").order("starts_at").limit(1),
+        LOAD_TIMEOUT_MS,
+      );
       const eventId = events?.[0]?.id;
       if (!eventId) {
         if (alive()) setGuests([]);
         return;
       }
-      const { data, error } = await supabase
-        .from("invitations")
-        .select("id,guest_name,guest_phone,guest_email,host_id,rsvps(status,party_size,attendance_mode,responded_at)")
-        .eq("event_id", eventId)
-        .order("created_at", { ascending: false });
+      const { data, error } = await withTimeout(
+        supabase
+          .from("invitations")
+          .select("id,guest_name,guest_phone,guest_email,host_id,rsvps(status,party_size,attendance_mode,responded_at)")
+          .eq("event_id", eventId)
+          .order("created_at", { ascending: false }),
+        LOAD_TIMEOUT_MS,
+      );
       if (error) throw error;
       const rows = (data ?? []) as unknown as {
         id: string;
@@ -171,10 +176,10 @@ export function CommitteeWorkspace() {
       const hostIds = Array.from(new Set(rows.map((r) => r.host_id).filter(Boolean)));
       const hostNames = new Map<string, string>();
       if (hostIds.length) {
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id,display_name,email")
-          .in("id", hostIds);
+        const { data: profiles } = await withTimeout(
+          supabase.from("profiles").select("id,display_name,email").in("id", hostIds),
+          LOAD_TIMEOUT_MS,
+        );
         for (const profile of profiles ?? []) {
           const name = (profile.display_name ?? "").trim() || (profile.email ?? "").split("@")[0] || "";
           if (name) hostNames.set(profile.id, name);
@@ -200,6 +205,7 @@ export function CommitteeWorkspace() {
       );
     } catch (error) {
       console.error("[committee] guest list load failed", error);
+      if (alive()) toast.error(getErrorMessage(error, "Guest list refresh timed out. Try again."));
       if (alive()) setGuests([]);
     } finally {
       if (alive()) setLoadingGuests(false);
