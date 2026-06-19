@@ -92,10 +92,8 @@ function AdminOverview() {
       }
     };
     void loadAdminData();
-    const interval = window.setInterval(() => void loadAdminData(), 30000);
     return () => {
       alive = false;
-      window.clearInterval(interval);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rolesLoading, isAdmin]);

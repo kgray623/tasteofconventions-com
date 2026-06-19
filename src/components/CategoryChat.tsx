@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Send, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { markChatSeen } from "@/hooks/use-chat-unread";
+import { withTimeout } from "@/lib/async-safety";
 
 
 type Msg = {
@@ -33,35 +34,32 @@ export function CategoryChat({ open, onOpenChange, categoryId, categoryName, can
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const loadingMessagesRef = useRef(false);
 
   const load = async () => {
-    const { data, error } = await supabase
-      .from("category_messages")
-      .select("*")
-      .eq("category_id", categoryId)
-      .order("created_at", { ascending: true });
-    if (error) return;
-    setMsgs(data ?? []);
+    if (loadingMessagesRef.current) return;
+    loadingMessagesRef.current = true;
+    try {
+      const { data, error } = await withTimeout(
+        supabase
+          .from("category_messages")
+          .select("*")
+          .eq("category_id", categoryId)
+          .order("created_at", { ascending: true }),
+      );
+      if (error) return;
+      setMsgs(data ?? []);
+    } catch (error) {
+      console.error("[category-chat] load failed", error);
+    } finally {
+      loadingMessagesRef.current = false;
+    }
   };
 
   useEffect(() => {
     if (!open) return;
-    load();
-    markChatSeen(user?.id, "category", categoryId);
-    const ch = supabase
-      .channel(`category_messages:${categoryId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "category_messages", filter: `category_id=eq.${categoryId}` },
-        () => {
-          load();
-          markChatSeen(user?.id, "category", categoryId);
-        },
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(ch);
-    };
+    void load();
+    void markChatSeen(user?.id, "category", categoryId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, categoryId, user?.id]);
 
@@ -75,19 +73,33 @@ export function CategoryChat({ open, onOpenChange, categoryId, categoryName, can
     const body = draft.trim();
     if (!body) return;
     setLoading(true);
-    const { error } = await supabase.from("category_messages").insert({
-      category_id: categoryId,
-      user_id: user.id,
-      body,
-    });
-    setLoading(false);
-    if (error) return toast.error(error.message);
-    setDraft("");
+    try {
+      const { error } = await withTimeout(
+        supabase.from("category_messages").insert({
+          category_id: categoryId,
+          user_id: user.id,
+          body,
+        }),
+      );
+      if (error) return toast.error(error.message);
+      setDraft("");
+      await load();
+      void markChatSeen(user?.id, "category", categoryId);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Message failed to send. Try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const remove = async (id: string) => {
-    const { error } = await supabase.from("category_messages").delete().eq("id", id);
-    if (error) return toast.error(error.message);
+    try {
+      const { error } = await withTimeout(supabase.from("category_messages").delete().eq("id", id));
+      if (error) return toast.error(error.message);
+      await load();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Message delete failed. Try again.");
+    }
   };
 
   return (

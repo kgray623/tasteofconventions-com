@@ -17,22 +17,31 @@ const EMPTY: ChatUnread = { team: 0, categories: [], total: 0 };
  *  - team chat (only if they have team/admin role)
  *  - each category chat they're assigned to
  *
- * Live via Postgres realtime on the chat tables, plus a 60s safety poll.
+ * Kept intentionally light on mobile: one guarded fetch on mount, then a
+ * guarded 60s poll while the app is visible. No realtime sockets here —
+ * multiple sockets were locking up the mobile preview controls.
  */
 export function useChatUnread(): ChatUnread {
   const { user } = useAuth();
   const userId = user?.id;
   const [data, setData] = useState<ChatUnread>(EMPTY);
   const refetchRef = useRef<() => void>(() => {});
+  const fetchingRef = useRef(false);
 
   const fetchCounts = useCallback(async () => {
+    if (fetchingRef.current) return;
     if (!userId) {
       setData(EMPTY);
       return;
     }
-    const { data: res, error } = await supabase.rpc("get_my_chat_unread");
-    if (error || !res) return;
-    setData(res as unknown as ChatUnread);
+    fetchingRef.current = true;
+    try {
+      const { data: res, error } = await supabase.rpc("get_my_chat_unread");
+      if (error || !res) return;
+      setData(res as unknown as ChatUnread);
+    } finally {
+      fetchingRef.current = false;
+    }
   }, [userId]);
 
   refetchRef.current = fetchCounts;
@@ -42,35 +51,14 @@ export function useChatUnread(): ChatUnread {
       setData(EMPTY);
       return;
     }
-    fetchCounts();
+    void fetchCounts();
 
-    const channel = supabase
-      .channel(`chat-unread:${userId}:${Date.now()}:${Math.random().toString(36).slice(2)}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "team_messages" },
-        () => refetchRef.current(),
-      )
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "category_messages" },
-        () => refetchRef.current(),
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "chat_last_seen", filter: `user_id=eq.${userId}` },
-        () => refetchRef.current(),
-      )
-      .subscribe();
-
-    const interval = setInterval(() => refetchRef.current(), 60_000);
-    const onFocus = () => refetchRef.current();
-    window.addEventListener("focus", onFocus);
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === "visible") refetchRef.current();
+    }, 60_000);
 
     return () => {
-      supabase.removeChannel(channel);
-      clearInterval(interval);
-      window.removeEventListener("focus", onFocus);
+      window.clearInterval(interval);
     };
   }, [userId, fetchCounts]);
 

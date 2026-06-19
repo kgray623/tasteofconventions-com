@@ -1,6 +1,6 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, CalendarCog, CheckCircle2, ChevronDown, Clock, EyeOff, ListChecks, Loader2, MessageCircle, MessageSquare, Pencil, Phone, Trash2, Upload, UserPlus, Utensils } from "lucide-react";
+import { AlertTriangle, CalendarCog, CheckCircle2, ChevronDown, Clock, EyeOff, ListChecks, Loader2, MessageCircle, MessageSquare, Pencil, Phone, RefreshCw, Trash2, Upload, UserPlus, Utensils } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -23,6 +23,7 @@ import { RsvpTotalsCard } from "@/components/rsvp-totals-card";
 import { toast } from "sonner";
 import { NewBadge } from "@/components/new-badge";
 import { markSeen } from "@/lib/whats-new";
+import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -41,6 +42,7 @@ type CommitteeGuest = {
 };
 
 const WELCOME_HIDE_KEY = "toc.committee.welcomeVideoHidden";
+const LOAD_TIMEOUT_MS = 12_000;
 
 export function CommitteeWorkspace() {
   const { user } = useAuth();
@@ -63,6 +65,7 @@ export function CommitteeWorkspace() {
   const [myGuestsFilter, setMyGuestsFilter] = useState<"all" | "committee">("all");
   const [openMyGroup, setOpenMyGroup] = useState<{ yes: boolean; waiting: boolean; declined: boolean }>({ yes: true, waiting: false, declined: false });
   const [lastSeenYesAt, setLastSeenYesAt] = useState<number | null>(null);
+  const [manualRefreshingGuests, setManualRefreshingGuests] = useState(false);
   const handledChatParamRef = useRef<string | null>(null);
   const loadingGuestsRef = useRef(false);
 
@@ -105,20 +108,20 @@ export function CommitteeWorkspace() {
       let myName = "";
       try {
         if (user?.id) {
-          const { data: prof } = await supabase
-            .from("profiles")
-            .select("display_name")
-            .eq("id", user.id)
-            .maybeSingle();
+          const { data: prof } = await withTimeout(
+            supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
+            LOAD_TIMEOUT_MS,
+          );
           myName = (prof?.display_name ?? "").trim().toLowerCase();
         }
       } catch (e) {
         console.warn("[committee] profile lookup failed", e);
       }
       try {
-        const { data: inviterRows } = await supabase
-          .from("inviters")
-          .select("host_id,phone,name");
+        const { data: inviterRows } = await withTimeout(
+          supabase.from("inviters").select("host_id,phone,name"),
+          LOAD_TIMEOUT_MS,
+        );
         for (const row of inviterRows ?? []) {
           if (!row.host_id) continue;
           if (row.host_id === user?.id) {
@@ -140,21 +143,23 @@ export function CommitteeWorkspace() {
       }
       if (alive()) setMyHostIds(Array.from(mineSet));
 
-      const { data: events } = await supabase
-        .from("events")
-        .select("id")
-        .order("starts_at")
-        .limit(1);
+      const { data: events } = await withTimeout(
+        supabase.from("events").select("id").order("starts_at").limit(1),
+        LOAD_TIMEOUT_MS,
+      );
       const eventId = events?.[0]?.id;
       if (!eventId) {
         if (alive()) setGuests([]);
         return;
       }
-      const { data, error } = await supabase
-        .from("invitations")
-        .select("id,guest_name,guest_phone,guest_email,host_id,rsvps(status,party_size,attendance_mode,responded_at)")
-        .eq("event_id", eventId)
-        .order("created_at", { ascending: false });
+      const { data, error } = await withTimeout(
+        supabase
+          .from("invitations")
+          .select("id,guest_name,guest_phone,guest_email,host_id,rsvps(status,party_size,attendance_mode,responded_at)")
+          .eq("event_id", eventId)
+          .order("created_at", { ascending: false }),
+        LOAD_TIMEOUT_MS,
+      );
       if (error) throw error;
       const rows = (data ?? []) as unknown as {
         id: string;
@@ -170,10 +175,10 @@ export function CommitteeWorkspace() {
       const hostIds = Array.from(new Set(rows.map((r) => r.host_id).filter(Boolean)));
       const hostNames = new Map<string, string>();
       if (hostIds.length) {
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id,display_name,email")
-          .in("id", hostIds);
+        const { data: profiles } = await withTimeout(
+          supabase.from("profiles").select("id,display_name,email").in("id", hostIds),
+          LOAD_TIMEOUT_MS,
+        );
         for (const profile of profiles ?? []) {
           const name = (profile.display_name ?? "").trim() || (profile.email ?? "").split("@")[0] || "";
           if (name) hostNames.set(profile.id, name);
@@ -199,6 +204,7 @@ export function CommitteeWorkspace() {
       );
     } catch (error) {
       console.error("[committee] guest list load failed", error);
+      if (alive()) toast.error(getErrorMessage(error, "Guest list refresh timed out. Try again."));
       if (alive()) setGuests([]);
     } finally {
       if (alive()) setLoadingGuests(false);
@@ -209,14 +215,17 @@ export function CommitteeWorkspace() {
   useEffect(() => {
     let alive = true;
     void loadGuests(() => alive);
-    const interval = window.setInterval(() => {
-      void loadGuests(() => alive);
-    }, 30000);
     return () => {
       alive = false;
-      window.clearInterval(interval);
     };
   }, [user?.id]);
+
+  const refreshGuestsNow = async () => {
+    loadingGuestsRef.current = false;
+    setManualRefreshingGuests(true);
+    await loadGuests();
+    setManualRefreshingGuests(false);
+  };
 
   // Load the full committee roster from all three sources and index by
   // normalized name + last-10-digit phone so we can tag guests consistently.
@@ -281,17 +290,8 @@ export function CommitteeWorkspace() {
       setMyCats(cats);
     };
     void loadMyCats();
-    const ch = supabase
-      .channel(`my-category-assignments:${user.id}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "category_assignments", filter: `user_id=eq.${user.id}` },
-        () => void loadMyCats(),
-      )
-      .subscribe();
     return () => {
       alive = false;
-      supabase.removeChannel(ch);
     };
   }, [user]);
 
@@ -553,11 +553,23 @@ export function CommitteeWorkspace() {
             <CheckCircle2 className="w-5 h-5 text-ink" />
             <h2 className="font-semibold">My Guests Uploaded ({myGuests.length}{myGuestsFilter === "committee" ? ` of ${myGuestsSorted.length}` : ""})</h2>
           </div>
-          <Button asChild variant="outline" size="sm">
-            <Link to="/invitations/new">
-              <UserPlus className="w-4 h-4 mr-2" /> Add guest
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => void refreshGuestsNow()}
+              disabled={manualRefreshingGuests}
+              aria-label="Refresh guest list"
+            >
+              {manualRefreshingGuests ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/invitations/new">
+                <UserPlus className="w-4 h-4 mr-2" /> Add guest
+              </Link>
+            </Button>
+          </div>
         </div>
 
         {newYesGuests.length > 0 && (

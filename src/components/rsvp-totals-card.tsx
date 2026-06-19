@@ -11,6 +11,7 @@ import {
 import { NewBadge } from "@/components/new-badge";
 import { toast } from "sonner";
 import { getRsvpTotals, requestMoreQuota } from "@/lib/rsvp-totals.functions";
+import { withTimeout } from "@/lib/async-safety";
 
 const TOTAL_SEATS = 550;
 
@@ -49,7 +50,7 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
       if (loadingTotalsRef.current) return;
       loadingTotalsRef.current = true;
       try {
-        const result = await fetchTotals({ data: { includePersonal: showPersonal } });
+        const result = await withTimeout(fetchTotals({ data: { includePersonal: showPersonal } }), 12_000);
         if (!alive) return;
         setEvent(result.event);
         if (result.mine) {
@@ -71,13 +72,8 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
     };
     void load();
 
-    const interval = window.setInterval(() => {
-      void load();
-    }, 30000);
-
     return () => {
       alive = false;
-      window.clearInterval(interval);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showPersonal]);

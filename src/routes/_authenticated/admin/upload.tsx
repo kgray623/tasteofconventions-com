@@ -337,13 +337,8 @@ function UploadPage() {
     void loadSavedGuests(eventId);
     if (!eventId) return;
     let alive = true;
-    const refreshSavedGuests = () => {
-      if (alive) void loadSavedGuests(eventId);
-    };
-    const interval = window.setInterval(refreshSavedGuests, 30000);
     return () => {
       alive = false;
-      window.clearInterval(interval);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId, isAdmin, user?.id]);

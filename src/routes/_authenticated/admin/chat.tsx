@@ -9,6 +9,7 @@ import { Send } from "lucide-react";
 import { toast } from "sonner";
 import { useDraftState } from "@/hooks/use-draft-state";
 import { markChatSeen } from "@/hooks/use-chat-unread";
+import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 
 
 export const Route = createFileRoute("/_authenticated/admin/chat")({
@@ -23,28 +24,28 @@ function ChatPage() {
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [body, setBody] = useDraftState(`team-chat:${user?.id ?? "guest"}`, "body", "");
+  const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const loadingMessagesRef = useRef(false);
 
   const load = async () => {
-    const [m, p] = await Promise.all([
-      supabase.from("team_messages").select("*").order("created_at").limit(500),
-      supabase.from("profiles").select("id,display_name,email"),
-    ]);
-    setMsgs(m.data ?? []);
-    setProfiles(Object.fromEntries((p.data ?? []).map((x) => [x.id, x])));
+    if (loadingMessagesRef.current) return;
+    loadingMessagesRef.current = true;
+    try {
+      const [m, p] = await Promise.all([
+        withTimeout(supabase.from("team_messages").select("*").order("created_at").limit(500)),
+        withTimeout(supabase.from("profiles").select("id,display_name,email")),
+      ]);
+      setMsgs(m.data ?? []);
+      setProfiles(Object.fromEntries((p.data ?? []).map((x) => [x.id, x])));
+    } finally {
+      loadingMessagesRef.current = false;
+    }
   };
 
   useEffect(() => {
     load();
-    markChatSeen(user?.id, "team", null);
-    const ch = supabase
-      .channel("team-chat")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "team_messages" }, (payload) => {
-        setMsgs((prev) => [...prev, payload.new as Msg]);
-        markChatSeen(user?.id, "team", null);
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    void markChatSeen(user?.id, "team", null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
@@ -55,10 +56,26 @@ function ChatPage() {
 
   const send = async () => {
     const text = body.trim();
-    if (!text || !user) return;
+    if (!text || !user || sending) return;
+    setSending(true);
     setBody("");
-    const { error } = await supabase.from("team_messages").insert({ user_id: user.id, body: text });
-    if (error) { toast.error(error.message); setBody(text); }
+    try {
+      const { error } = await withTimeout(
+        supabase.from("team_messages").insert({ user_id: user.id, body: text }),
+      );
+      if (error) {
+        toast.error(error.message);
+        setBody(text);
+      } else {
+        await load();
+        void markChatSeen(user?.id, "team", null);
+      }
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Message failed to send. Try again."));
+      setBody(text);
+    } finally {
+      setSending(false);
+    }
   };
 
   const labelFor = (id: string) => {
@@ -102,7 +119,7 @@ function ChatPage() {
           rows={2}
           className="resize-none"
         />
-        <Button onClick={send} className="bg-ink text-cream hover:bg-ink/90 self-stretch">
+        <Button onClick={send} disabled={sending || !body.trim()} className="bg-ink text-cream hover:bg-ink/90 self-stretch">
           <Send className="w-4 h-4" />
         </Button>
       </div>
