@@ -548,11 +548,23 @@ export function CommitteeWorkspace() {
             <CheckCircle2 className="w-5 h-5 text-ink" />
             <h2 className="font-semibold">My Guests Uploaded ({myGuests.length}{myGuestsFilter === "committee" ? ` of ${myGuestsSorted.length}` : ""})</h2>
           </div>
-          <Button asChild variant="outline" size="sm">
-            <Link to="/invitations/new">
-              <UserPlus className="w-4 h-4 mr-2" /> Add guest
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => void refreshGuestsNow()}
+              disabled={loadingGuests || manualRefreshingGuests}
+              aria-label="Refresh guest list"
+            >
+              {manualRefreshingGuests ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/invitations/new">
+                <UserPlus className="w-4 h-4 mr-2" /> Add guest
+              </Link>
+            </Button>
+          </div>
         </div>
 
         {newYesGuests.length > 0 && (
