@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -92,8 +92,12 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
           <NewBadge target="committee:rsvp-totals-card" />
           <p className="text-xs uppercase tracking-wider text-muted-foreground">RSVP totals</p>
         </div>
-        <span className="text-xs text-muted-foreground tabular-nums">{pct}% filled</span>
+        <span className="text-xs text-muted-foreground tabular-nums">{loadError ? "error" : `${pct}% filled`}</span>
       </div>
+
+      {loadError && (
+        <p className="text-xs text-brand-red">Couldn't load totals: {loadError}</p>
+      )}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
         <Stat label="Total seats" value={TOTAL_SEATS} />
