@@ -544,7 +544,7 @@ function UploadPage() {
     for (const best of duplicateGroups.groupBest.values()) {
       if (best.status !== "yes") continue;
       const rep = guestById.get(best.sourceId);
-      if (rep) out.push({ ...rep, party_size: best.party_size, attendance_mode: best.attendance_mode, rsvp_status: best.status });
+      if (rep) out.push({ ...rep, party_size: best.party_size, attendance_mode: best.attendance_mode === "zoom" ? "zoom" : "in_person", rsvp_status: best.status });
     }
     return out;
   }, [duplicateGroups, guestById]);
