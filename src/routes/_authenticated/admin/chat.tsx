@@ -9,6 +9,7 @@ import { Send } from "lucide-react";
 import { toast } from "sonner";
 import { useDraftState } from "@/hooks/use-draft-state";
 import { markChatSeen } from "@/hooks/use-chat-unread";
+import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 
 
 export const Route = createFileRoute("/_authenticated/admin/chat")({
@@ -31,12 +32,12 @@ function ChatPage() {
     if (loadingMessagesRef.current) return;
     loadingMessagesRef.current = true;
     try {
-    const [m, p] = await Promise.all([
-      supabase.from("team_messages").select("*").order("created_at").limit(500),
-      supabase.from("profiles").select("id,display_name,email"),
-    ]);
-    setMsgs(m.data ?? []);
-    setProfiles(Object.fromEntries((p.data ?? []).map((x) => [x.id, x])));
+      const [m, p] = await Promise.all([
+        withTimeout(supabase.from("team_messages").select("*").order("created_at").limit(500)),
+        withTimeout(supabase.from("profiles").select("id,display_name,email")),
+      ]);
+      setMsgs(m.data ?? []);
+      setProfiles(Object.fromEntries((p.data ?? []).map((x) => [x.id, x])));
     } finally {
       loadingMessagesRef.current = false;
     }
@@ -44,7 +45,7 @@ function ChatPage() {
 
   useEffect(() => {
     load();
-    markChatSeen(user?.id, "team", null);
+    void markChatSeen(user?.id, "team", null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
@@ -58,15 +59,23 @@ function ChatPage() {
     if (!text || !user || sending) return;
     setSending(true);
     setBody("");
-    const { error } = await supabase.from("team_messages").insert({ user_id: user.id, body: text });
-    if (error) {
-      toast.error(error.message);
+    try {
+      const { error } = await withTimeout(
+        supabase.from("team_messages").insert({ user_id: user.id, body: text }),
+      );
+      if (error) {
+        toast.error(error.message);
+        setBody(text);
+      } else {
+        await load();
+        void markChatSeen(user?.id, "team", null);
+      }
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Message failed to send. Try again."));
       setBody(text);
-    } else {
-      await load();
-      markChatSeen(user?.id, "team", null);
+    } finally {
+      setSending(false);
     }
-    setSending(false);
   };
 
   const labelFor = (id: string) => {
