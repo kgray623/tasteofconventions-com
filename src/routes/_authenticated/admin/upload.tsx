@@ -1562,7 +1562,7 @@ function UploadPage() {
                        <Trash2 className="w-4 h-4" />
                      )}
                    </Button>
-                   {!g.rsvp_status && (
+                   {!duplicateGroups.effectiveById.get(g.id)?.status && (
                      <Select
                        value=""
                        disabled={settingRsvpId === g.id}
