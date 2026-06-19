@@ -454,11 +454,9 @@ export function CommitteeWorkspace() {
     ? myGuestsSorted.filter((g) => committeeIds.has(g.id))
     : myGuestsSorted;
 
-  const sortedAllGuests = [...guests].sort((a, b) => {
-    const r = statusRank(a.rsvp_status) - statusRank(b.rsvp_status);
-    if (r !== 0) return r;
-    return a.guest_name.trim().toLowerCase().localeCompare(b.guest_name.trim().toLowerCase());
-  });
+  const sortedAllGuests = [...guests].sort((a, b) =>
+    a.guest_name.trim().toLowerCase().localeCompare(b.guest_name.trim().toLowerCase())
+  );
   const confirmedGuests = guests.filter((guest) => guest.rsvp_status === "yes");
   const confirmedInPersonGuests = confirmedGuests.filter((g) => g.attendance_mode !== "zoom");
   const confirmedVirtualGuests = confirmedGuests.filter((g) => g.attendance_mode === "zoom");
