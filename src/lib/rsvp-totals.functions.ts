@@ -28,26 +28,104 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<RsvpTotalsResult> => {
     const { supabase, userId } = context;
 
-    const [invitersRes, rsvpsRes] = await Promise.all([
+    const [invitersRes, rsvpsRes, invitationsRes] = await Promise.all([
       supabase
         .from("inviters")
         .select("id,host_id,quota,active,requested_quota,phone,name"),
       supabase
         .from("rsvps")
         .select("party_size,status,invitation_id,attendance_mode"),
+      supabase
+        .from("invitations")
+        .select("id,host_id,guest_name,guest_email_normalized,guest_phone_normalized"),
     ]);
     const inviterRows = invitersRes.data ?? [];
     const rsvpRows = rsvpsRes.data ?? [];
+    const invitationRows = (invitationsRes.data ?? []) as Array<{
+      id: string;
+      host_id: string | null;
+      guest_name: string | null;
+      guest_email_normalized: string | null;
+      guest_phone_normalized: string | null;
+    }>;
 
     const requested = inviterRows.reduce(
       (sum, r) => sum + (r.active === false ? 0 : r.quota ?? 0),
       0,
     );
-    const yesRsvps = rsvpRows.filter((r) => r.status === "yes");
-    const inPersonYes = yesRsvps.filter((r) => r.attendance_mode !== "zoom");
-    const virtualYes = yesRsvps.filter((r) => r.attendance_mode === "zoom");
-    const confirmed = inPersonYes.reduce((s, r) => s + (r.party_size ?? 1), 0);
-    const virtual = virtualYes.reduce((s, r) => s + (r.party_size ?? 1), 0);
+
+    // Build the same duplicate groups the admin upload page uses, so
+    // Monahan/Monaghan-style pairs collapse into one confirmation.
+    const normNameKey = (s: string | null | undefined) =>
+      (s ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+    const keyToGroup = new Map<string, string>();
+    const idToGroup = new Map<string, string>();
+    for (const inv of invitationRows) {
+      const keys: string[] = [];
+      const n = normNameKey(inv.guest_name);
+      const e = (inv.guest_email_normalized ?? "").trim().toLowerCase();
+      const p = (inv.guest_phone_normalized ?? "").replace(/\D/g, "");
+      if (n) keys.push("n:" + n);
+      if (e) keys.push("e:" + e);
+      if (p && p.length >= 7) keys.push("p:" + p.slice(-10));
+      let groupId: string | null = null;
+      for (const k of keys) {
+        const existing = keyToGroup.get(k);
+        if (existing) { groupId = existing; break; }
+      }
+      if (!groupId) groupId = inv.id;
+      for (const k of keys) keyToGroup.set(k, groupId);
+      idToGroup.set(inv.id, groupId);
+    }
+
+    // Index RSVPs by invitation id (one row per invitation in practice).
+    const rsvpByInvitation = new Map<string, { status: string | null; party_size: number; attendance_mode: string | null }>();
+    for (const r of rsvpRows) {
+      if (!r.invitation_id) continue;
+      rsvpByInvitation.set(r.invitation_id, {
+        status: r.status ?? null,
+        party_size: r.party_size ?? 1,
+        attendance_mode: r.attendance_mode ?? null,
+      });
+    }
+
+    // Best RSVP per group (yes > waitlist > maybe > no; tie-break on larger party).
+    const rank = (status: string | null) =>
+      status === "yes" ? 4 : status === "waitlist" ? 3 : status === "maybe" ? 2 : status === "no" ? 1 : 0;
+    type Best = { status: string | null; party_size: number; attendance_mode: string | null; hostIds: Set<string> };
+    const groupBest = new Map<string, Best>();
+    for (const inv of invitationRows) {
+      const gid = idToGroup.get(inv.id)!;
+      const r = rsvpByInvitation.get(inv.id);
+      const cand = {
+        status: r?.status ?? null,
+        party_size: r?.party_size ?? 1,
+        attendance_mode: r?.attendance_mode ?? null,
+      };
+      const current = groupBest.get(gid);
+      if (!current) {
+        groupBest.set(gid, { ...cand, hostIds: new Set(inv.host_id ? [inv.host_id] : []) });
+      } else {
+        if (inv.host_id) current.hostIds.add(inv.host_id);
+        if (
+          rank(cand.status) > rank(current.status) ||
+          (rank(cand.status) === rank(current.status) && cand.party_size > current.party_size)
+        ) {
+          current.status = cand.status;
+          current.party_size = cand.party_size;
+          current.attendance_mode = cand.attendance_mode;
+        }
+      }
+    }
+
+    let confirmed = 0;
+    let virtual = 0;
+    for (const best of groupBest.values()) {
+      if (best.status !== "yes") continue;
+      if (best.attendance_mode === "zoom") virtual += best.party_size;
+      else confirmed += best.party_size;
+    }
+
 
     let mine: RsvpTotalsResult["mine"] = null;
     if (data.includePersonal) {
@@ -81,12 +159,20 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
       const uploaded = (myInvites ?? []).length;
       const myInviteIds = new Set((myInvites ?? []).map((i) => i.id));
 
-      const myConfirmed = inPersonYes
-        .filter((r) => myInviteIds.has(r.invitation_id))
-        .reduce((s, r) => s + (r.party_size ?? 1), 0);
-      const myVirtual = virtualYes
-        .filter((r) => myInviteIds.has(r.invitation_id))
-        .reduce((s, r) => s + (r.party_size ?? 1), 0);
+      // Dedupe my confirmations by group: a group counts as "mine" if any
+      // invitation in it belongs to one of my host ids.
+      let myConfirmed = 0;
+      let myVirtual = 0;
+      const seenGroups = new Set<string>();
+      for (const invId of myInviteIds) {
+        const gid = idToGroup.get(invId);
+        if (!gid || seenGroups.has(gid)) continue;
+        seenGroups.add(gid);
+        const best = groupBest.get(gid);
+        if (!best || best.status !== "yes") continue;
+        if (best.attendance_mode === "zoom") myVirtual += best.party_size;
+        else myConfirmed += best.party_size;
+      }
 
       // Quota = sum of active inviter rows that map to me.
       const activeMine = myInviters.filter((r) => r.active !== false);
