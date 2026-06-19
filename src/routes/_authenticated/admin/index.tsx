@@ -76,18 +76,20 @@ function AdminOverview() {
       loadingAdminDataRef.current = true;
       try {
         const result = (await fetchAudit()) as AuditData;
-        if (!alive) return;
-        setAudit(result);
-        setAuditError(null);
+        if (alive) {
+          setAudit(result);
+          setAuditError(null);
+        }
+        const [flagsRes, catsRes] = await Promise.all([
+          supabase.from("duplicate_flag_pairs").select("invitation_a", { count: "exact", head: true }),
+          supabase.from("categories").select("id", { count: "exact", head: true }),
+        ]);
+        if (alive) setOps({ flags: flagsRes.count ?? 0, categories: catsRes.count ?? 0 });
       } catch (e) {
         if (alive) setAuditError(e instanceof Error ? e.message : "Could not load audit");
+      } finally {
+        loadingAdminDataRef.current = false;
       }
-      const [flagsRes, catsRes] = await Promise.all([
-        supabase.from("duplicate_flag_pairs").select("invitation_a", { count: "exact", head: true }),
-        supabase.from("categories").select("id", { count: "exact", head: true }),
-      ]);
-      if (alive) setOps({ flags: flagsRes.count ?? 0, categories: catsRes.count ?? 0 });
-      loadingAdminDataRef.current = false;
     };
     void loadAdminData();
     const interval = window.setInterval(() => void loadAdminData(), 30000);
@@ -95,7 +97,8 @@ function AdminOverview() {
       alive = false;
       window.clearInterval(interval);
     };
-  }, [rolesLoading, isAdmin, fetchAudit]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rolesLoading, isAdmin]);
 
   useEffect(() => {
     setShowCommitteePreview(view === "committee");
