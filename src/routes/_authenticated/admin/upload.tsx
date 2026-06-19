@@ -331,6 +331,26 @@ function UploadPage() {
 
   useEffect(() => {
     void loadSavedGuests(eventId);
+    if (!eventId) return;
+    let alive = true;
+    const refreshSavedGuests = () => {
+      if (alive) void loadSavedGuests(eventId);
+    };
+    const interval = window.setInterval(refreshSavedGuests, 30000);
+    window.addEventListener("focus", refreshSavedGuests);
+    document.addEventListener("visibilitychange", refreshSavedGuests);
+    const channel = supabase
+      .channel(`upload-guest-list-refresh:${eventId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "invitations" }, refreshSavedGuests)
+      .on("postgres_changes", { event: "*", schema: "public", table: "rsvps" }, refreshSavedGuests)
+      .subscribe();
+    return () => {
+      alive = false;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refreshSavedGuests);
+      document.removeEventListener("visibilitychange", refreshSavedGuests);
+      supabase.removeChannel(channel);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId, isAdmin, user?.id]);
 
