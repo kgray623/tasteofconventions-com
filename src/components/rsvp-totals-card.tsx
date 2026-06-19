@@ -79,7 +79,7 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
   }, [showPersonal]);
 
 
-  const available = Math.max(0, event.requested - event.confirmed);
+  const available = Math.max(0, TOTAL_SEATS - event.requested);
   const pct =
     event.requested > 0 ? Math.min(100, Math.round((event.confirmed / event.requested) * 100)) : 0;
   const myAvailable = Math.max(0, mine.requested - mine.confirmed);
