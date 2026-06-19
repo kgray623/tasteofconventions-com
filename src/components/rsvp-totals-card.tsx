@@ -40,15 +40,15 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
   const [mine, setMine] = useState<MyTotals>({ requested: 0, uploaded: 0, confirmed: 0, virtual: 0, pendingRequest: null });
   const [myInviterIds, setMyInviterIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const loadingTotalsRef = useRef(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const showPersonal = Array.isArray(personalHostIds) && personalHostIds.length > 0;
 
   useEffect(() => {
     let alive = true;
     const load = async () => {
-      if (loadingTotalsRef.current) return;
-      loadingTotalsRef.current = true;
+      setLoading(true);
+      setLoadError(null);
       try {
         const result = await withTimeout(fetchTotals({ data: { includePersonal: showPersonal } }), 12_000);
         if (!alive) return;
@@ -65,9 +65,9 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
         }
       } catch (e) {
         console.error("[rsvp-totals] load failed", e);
+        if (alive) setLoadError(e instanceof Error ? e.message : "Couldn't load totals");
       } finally {
         if (alive) setLoading(false);
-        loadingTotalsRef.current = false;
       }
     };
     void load();
