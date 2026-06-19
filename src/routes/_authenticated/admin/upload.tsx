@@ -625,8 +625,17 @@ function UploadPage() {
   };
 
   const guestStatus = (g: (typeof savedGuests)[number]) => {
-    if (g.rsvp_status === "yes") return { label: "RSVP'd yes", tone: "yes" as const };
-    if (g.rsvp_status === "no") return { label: "RSVP'd no", tone: "no" as const };
+    const eff = duplicateGroups.effectiveById.get(g.id);
+    const status = eff?.status ?? g.rsvp_status;
+    const via = eff?.viaName ?? null;
+    if (status === "yes") {
+      const party = eff?.party_size ?? g.party_size;
+      const label = via ? `RSVP'd yes (${party}) via ${via}` : "RSVP'd yes";
+      return { label, tone: "yes" as const };
+    }
+    if (status === "no") return { label: via ? `RSVP'd no via ${via}` : "RSVP'd no", tone: "no" as const };
+    if (status === "waitlist") return { label: via ? `Waitlist via ${via}` : "Waitlist", tone: "sent" as const };
+    if (status === "maybe") return { label: via ? `Maybe via ${via}` : "Maybe", tone: "sent" as const };
     if (!g.invite_sent_at) return { label: "Not sent", tone: "pending" as const };
     const daysAgo = Math.max(
       0,
