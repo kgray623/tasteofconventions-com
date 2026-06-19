@@ -1371,6 +1371,8 @@ function UploadPage() {
                 <div className="divide-y divide-border">
                   {confirmedGuests
                     .filter((g) => g.attendance_mode !== "zoom")
+                    .slice()
+                    .sort((a, b) => (a.guest_name ?? "").localeCompare(b.guest_name ?? "", undefined, { sensitivity: "base" }))
                     .map((g) => (
                       <div key={g.id} className="px-4 py-3 flex flex-wrap items-center gap-3 text-sm">
                         <p className="font-medium flex-1 min-w-[150px]">{g.guest_name}</p>
