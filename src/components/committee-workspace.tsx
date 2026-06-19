@@ -1,6 +1,6 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, CalendarCog, CheckCircle2, ChevronDown, Clock, EyeOff, ListChecks, Loader2, MessageCircle, MessageSquare, Pencil, Phone, Trash2, Upload, UserPlus, Utensils } from "lucide-react";
+import { AlertTriangle, CalendarCog, CheckCircle2, ChevronDown, Clock, EyeOff, ListChecks, Loader2, MessageCircle, MessageSquare, Pencil, Phone, RefreshCw, Trash2, Upload, UserPlus, Utensils } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -63,6 +63,7 @@ export function CommitteeWorkspace() {
   const [myGuestsFilter, setMyGuestsFilter] = useState<"all" | "committee">("all");
   const [openMyGroup, setOpenMyGroup] = useState<{ yes: boolean; waiting: boolean; declined: boolean }>({ yes: true, waiting: false, declined: false });
   const [lastSeenYesAt, setLastSeenYesAt] = useState<number | null>(null);
+  const [manualRefreshingGuests, setManualRefreshingGuests] = useState(false);
   const handledChatParamRef = useRef<string | null>(null);
   const loadingGuestsRef = useRef(false);
 
@@ -209,14 +210,17 @@ export function CommitteeWorkspace() {
   useEffect(() => {
     let alive = true;
     void loadGuests(() => alive);
-    const interval = window.setInterval(() => {
-      void loadGuests(() => alive);
-    }, 30000);
     return () => {
       alive = false;
-      window.clearInterval(interval);
     };
   }, [user?.id]);
+
+  const refreshGuestsNow = async () => {
+    if (loadingGuestsRef.current) return;
+    setManualRefreshingGuests(true);
+    await loadGuests();
+    setManualRefreshingGuests(false);
+  };
 
   // Load the full committee roster from all three sources and index by
   // normalized name + last-10-digit phone so we can tag guests consistently.
@@ -281,17 +285,8 @@ export function CommitteeWorkspace() {
       setMyCats(cats);
     };
     void loadMyCats();
-    const ch = supabase
-      .channel(`my-category-assignments:${user.id}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "category_assignments", filter: `user_id=eq.${user.id}` },
-        () => void loadMyCats(),
-      )
-      .subscribe();
     return () => {
       alive = false;
-      supabase.removeChannel(ch);
     };
   }, [user]);
 
