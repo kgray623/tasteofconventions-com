@@ -49,6 +49,8 @@ export function CategoryChat({ open, onOpenChange, categoryId, categoryName, can
       );
       if (error) return;
       setMsgs(data ?? []);
+    } catch (error) {
+      console.error("[category-chat] load failed", error);
     } finally {
       loadingMessagesRef.current = false;
     }
@@ -56,7 +58,7 @@ export function CategoryChat({ open, onOpenChange, categoryId, categoryName, can
 
   useEffect(() => {
     if (!open) return;
-    load();
+    void load();
     void markChatSeen(user?.id, "category", categoryId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, categoryId, user?.id]);
@@ -83,15 +85,21 @@ export function CategoryChat({ open, onOpenChange, categoryId, categoryName, can
       setDraft("");
       await load();
       void markChatSeen(user?.id, "category", categoryId);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Message failed to send. Try again.");
     } finally {
       setLoading(false);
     }
   };
 
   const remove = async (id: string) => {
-    const { error } = await withTimeout(supabase.from("category_messages").delete().eq("id", id));
-    if (error) return toast.error(error.message);
-    await load();
+    try {
+      const { error } = await withTimeout(supabase.from("category_messages").delete().eq("id", id));
+      if (error) return toast.error(error.message);
+      await load();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Message delete failed. Try again.");
+    }
   };
 
   return (
