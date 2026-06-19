@@ -1634,8 +1634,12 @@ function UploadPage() {
               </div>
               );
             })}
+                </div>
+              </div>
+            ))}
           </div>
-        )}
+          );
+        })()}
       </Card>
 
       <Card className="p-6 space-y-4 border-terracotta/40 bg-terracotta/5">
