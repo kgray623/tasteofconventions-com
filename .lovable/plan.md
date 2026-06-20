@@ -1,25 +1,13 @@
-Reorganize the admin top navigation into two grouped rows so personal/event tabs sit together and committee tabs sit together.
+Trim the Team page and rename two tabs.
 
-## Row 1 — Event & personal
-Order:
-1. Overview
-2. Invitation page
-3. Donations
-4. My RSVP
-5. Restaurants
+## Tab renames (src/routes/_authenticated/admin.tsx)
+- "Team access" → "Add Team"
+- "Assignments" → "Volunteer" (admin label; the committee teamLabel is already "Volunteer")
 
-## Row 2 — Committee
-Everything else, in this order:
-1. Add guests (Guest list for committee view)
-2. Committee SMS
-3. Committee (the inviters/roster page)
-4. Assignments (Volunteer for committee view)
-5. Team access
-6. Team chat
-
-## Implementation notes (technical)
-- Edit `src/routes/_authenticated/admin.tsx`.
-- Tag each entry in the existing `tabs` array with `group: "main" | "committee"` in the order above.
-- Replace the single `<nav>` with two stacked nav rows that share the same active-tab styling. Both rows render only the tabs visible to the current user (admin sees all; team sees the `team: true` subset, just like today).
-- Keep the underline/active styling, icons, `search={{ view }}` passthrough, and "Back to dashboard" link unchanged.
-- No route files are added, removed, or renamed; this is nav layout only.
+## Team page cleanup (src/routes/_authenticated/admin/team.tsx)
+- Remove the entire "Steering Committee" roster card (already shown on the Committee tab).
+- Keep the "Add Steering Committee Member" form at the top (admin only).
+- Rename the lower card "Pending & past invites" → "Pending invites".
+- In that list, hide anyone already accepted: filter out invites where `accepted_at` is set OR their phone number is in `signedUpDigits` (matched by last-10-digit tail, same logic used above). Only people still awaiting signup remain — e.g. Jen Spears, Rhonda Wilcher.
+- Drop now-unused state/fetches: `inviters`, `committeeGuests`, the roster-building imports (`buildCommitteeRoster`, `normalizeRosterPhone` if no longer used after the filter — keep `normalizeRosterPhone` since the pending filter still needs it), and the related Supabase queries in `load()`.
+- Keep `signedUpDigits` and `fetchSignedUpDigits` so the pending filter can exclude people who've already signed up.
