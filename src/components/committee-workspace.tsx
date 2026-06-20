@@ -427,13 +427,13 @@ export function CommitteeWorkspace() {
   for (const ids of nameBuckets.values()) if (ids.length > 1) ids.forEach((id) => duplicateIds.add(id));
   for (const ids of phoneBuckets.values()) if (ids.length > 1) ids.forEach((id) => duplicateIds.add(id));
 
-  // Sort: pending first → yes → no → other; alphabetical within each bucket
-  const statusRank = (status: string | null) => {
-    if (!status) return 0;
-    if (status === "yes") return 1;
-    if (status === "no") return 2;
-    return 3;
-  };
+  // Single shared alphabetical comparator — every list on this dashboard uses it.
+  const byName = (a: CommitteeGuest, b: CommitteeGuest) =>
+    (a.guest_name ?? "").trim().toLowerCase().localeCompare(
+      (b.guest_name ?? "").trim().toLowerCase(),
+      undefined,
+      { sensitivity: "base" },
+    );
   const isCommitteeGuest = (g: CommitteeGuest) => {
     const n = normName(g.guest_name);
     if (n && committeeNames.has(n)) return true;
@@ -443,28 +443,19 @@ export function CommitteeWorkspace() {
   };
   const committeeIds = new Set(myGuestsUnsorted.filter(isCommitteeGuest).map((g) => g.id));
 
-  const myGuestsSorted = [...myGuestsUnsorted].sort((a, b) => {
-    const r = statusRank(a.rsvp_status) - statusRank(b.rsvp_status);
-    if (r !== 0) return r;
-    return a.guest_name.trim().toLowerCase().localeCompare(b.guest_name.trim().toLowerCase());
-  });
+  const myGuestsSorted = [...myGuestsUnsorted].sort(byName);
   const myGuests = myGuestsFilter === "committee"
     ? myGuestsSorted.filter((g) => committeeIds.has(g.id))
     : myGuestsSorted;
 
-  const sortedAllGuests = [...guests].sort((a, b) =>
-    a.guest_name.trim().toLowerCase().localeCompare(b.guest_name.trim().toLowerCase())
-  );
-  const confirmedGuests = guests.filter((guest) => guest.rsvp_status === "yes");
+  const sortedAllGuests = [...guests].sort(byName);
+  const confirmedGuests = [...guests].filter((g) => g.rsvp_status === "yes").sort(byName);
   const confirmedInPersonGuests = confirmedGuests.filter((g) => g.attendance_mode !== "zoom");
   const confirmedVirtualGuests = confirmedGuests.filter((g) => g.attendance_mode === "zoom");
   const confirmedInPersonPeople = confirmedInPersonGuests.reduce((t, g) => t + g.party_size, 0);
   const confirmedVirtualPeople = confirmedVirtualGuests.reduce((t, g) => t + g.party_size, 0);
 
-
   // Group "My Guests" by RSVP status, alphabetized within each group.
-  const byName = (a: CommitteeGuest, b: CommitteeGuest) =>
-    a.guest_name.trim().toLowerCase().localeCompare(b.guest_name.trim().toLowerCase());
   const myYes = myGuests.filter((g) => g.rsvp_status === "yes").sort(byName);
   const myWaiting = myGuests
     .filter((g) => !g.rsvp_status || g.rsvp_status === "waitlist")
