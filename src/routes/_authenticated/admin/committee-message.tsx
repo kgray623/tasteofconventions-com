@@ -345,48 +345,13 @@ function CommitteeMessagePage() {
         </div>
       </Card>
 
-      <Card className="p-6 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Copy className="w-4 h-4 text-terracotta" />
-            <p className="font-medium">Bulk actions</p>
-          </div>
-          <label className="inline-flex items-center gap-2 h-8 px-2 rounded-md border border-input text-xs cursor-pointer hover:bg-accent">
-            <Checkbox
-              checked={pendingOnly}
-              onCheckedChange={(v) => setPendingOnly(v === true)}
-            />
-            <span>Show only "not delivered" committee guests</span>
-          </label>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            disabled={visible.length === 0}
-            onClick={() => {
-              const lines = visible.map(
-                (g) => `${g.guest_name}:\n${messageFor(g)}`,
-              );
-              void copy(lines.join("\n\n---\n\n"), "All personalized messages copied");
-            }}
-          >
-            <Copy className="w-4 h-4 mr-2" /> Copy all personalized messages
-          </Button>
-        </div>
-      </Card>
-
       <Card className="overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-terracotta" />
             <p className="font-medium">
-              Committee guests{visible.length > 0 ? ` (${visible.length})` : ""}
+              Committee guests ({visible.length})
             </p>
-            {pendingOnly && (
-              <Badge variant="outline" className="text-xs">
-                pending only
-              </Badge>
-            )}
           </div>
           {loading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
         </div>
@@ -394,9 +359,7 @@ function CommitteeMessagePage() {
           <div className="p-6 text-sm text-muted-foreground text-center">
             {loading
               ? "Loading…"
-              : pendingOnly
-                ? "All committee guests have been texted or have RSVP'd. Uncheck the filter to see the full list."
-                : "No committee-tagged guests yet. Tag guests as Committee on the Add guests page."}
+              : "No committee-tagged guests yet. Tag guests as Committee on the Add guests page."}
           </div>
         ) : (
           <div className="divide-y divide-border">
@@ -427,9 +390,6 @@ function CommitteeMessagePage() {
                         not delivered
                       </Badge>
                     )}
-                    <span className="text-xs text-muted-foreground ml-auto">
-                      {g.invite_sent_at ? "delivered" : "not delivered"}
-                    </span>
                   </div>
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap bg-muted/40 rounded-md p-2 border border-border">
                     {body}
