@@ -1,21 +1,25 @@
-Fix the committee roster data and display so the page shows the right people and RSVP status.
+Reorganize the admin top navigation into two grouped rows so personal/event tabs sit together and committee tabs sit together.
 
-1. Correct the roster data
-- Remove the duplicate Melissa roster entry by consolidating the misspelled `Melissa Novotne` records into one correct committee member: `Melissa Novotny`.
-- Preserve Melissa’s existing RSVP status, which is already recorded as `yes`.
-- Replace the combined `Jay & Rhonda Wilcher` committee entry with separate people:
-  - `Jay Wilcher`
-  - `Rhonda Wilcher`
-- Keep Rhonda’s existing phone/team roster record intact.
-- Add/fix Jay as his own committee roster member instead of showing the combined household name.
+## Row 1 — Event & personal
+Order:
+1. Overview
+2. Invitation page
+3. Donations
+4. My RSVP
+5. Restaurants
 
-2. Make the page harder to get wrong
-- Update the committee-message roster logic so combined names like `Jay & Rhonda Wilcher` do not appear as one committee person when separate roster records exist.
-- Improve de-duplication so small spelling differences like `Novotne` vs `Novotny` do not create duplicate visible people.
-- Keep RSVP matching by phone first, then name, so Melissa still shows RSVP’d yes after the cleanup.
+## Row 2 — Committee
+Everything else, in this order:
+1. Add guests (Guest list for committee view)
+2. Committee SMS
+3. Committee (the inviters/roster page)
+4. Assignments (Volunteer for committee view)
+5. Team access
+6. Team chat
 
-3. Verify the result
-- Re-check the committee-message page roster after changes.
-- Confirm there is only one Melissa Novotny.
-- Confirm Jay Wilcher and Rhonda Wilcher appear as separate rows.
-- Confirm Melissa’s status shows RSVP’d yes.
+## Implementation notes (technical)
+- Edit `src/routes/_authenticated/admin.tsx`.
+- Tag each entry in the existing `tabs` array with `group: "main" | "committee"` in the order above.
+- Replace the single `<nav>` with two stacked nav rows that share the same active-tab styling. Both rows render only the tabs visible to the current user (admin sees all; team sees the `team: true` subset, just like today).
+- Keep the underline/active styling, icons, `search={{ view }}` passthrough, and "Back to dashboard" link unchanged.
+- No route files are added, removed, or renamed; this is nav layout only.
