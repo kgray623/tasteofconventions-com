@@ -66,11 +66,9 @@ function CommitteeMessagePage() {
   const [loading, setLoading] = useState(false);
   const [template, setTemplate] = useState<string>(DEFAULT_TEMPLATE);
   const [senderName, setSenderName] = useState<string>("your friend");
-  const [pendingOnly, setPendingOnly] = useState(true);
   const [markingId, setMarkingId] = useState<string | null>(null);
 
-  const SITE_URL =
-    typeof window !== "undefined" ? window.location.origin : "https://tasteofconventions.com";
+  const SITE_URL = "https://tasteofconventions.com";
 
   const linkFor = (token: string) =>
     `${SITE_URL}/rsvp/${encodeURIComponent(token.trim().replace(/\+/g, "-").replace(/\//g, "_"))}`;
