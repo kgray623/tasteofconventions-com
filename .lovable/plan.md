@@ -1,14 +1,27 @@
-I found the source of the bad numbers: the Committee Message page is only counting `invitations.is_committee = true`, which currently produces 7 committee records and 4 RSVP'd yes. The broader committee roster used elsewhere includes active inviters, team invites, and committee-tagged invitations; deduped by phone/name it is 19, with 11 matched RSVP'd yes.
+Clean up the Committee SMS page to remove the noise you called out and fix the link domain. No visual-direction picker yet — this is structural cleanup. If you want a fresh visual redesign on top, tell me and I'll run the palette/type/layout round next.
 
-Plan:
-1. Create one shared committee roster/counting utility for the frontend using the same sources already used on the Committee page:
-   - active `inviters`
-   - `team_invites` with role `team`
-   - `invitations` marked `is_committee`
-2. Deduplicate committee members by normalized phone first, then normalized name, so the same person is not counted twice.
-3. Update `/admin/committee-message` so:
-   - the “Committee” stat shows the full deduped roster count, not just 7 committee-tagged invitations
-   - “RSVP'd yes” counts RSVP yes records matched to the deduped committee roster, not just the 4 flagged invitation rows
-   - the visible committee guest/message list stays alphabetical
-4. Update the committee workspace filter/count if needed so “Committee (x)” uses the same deduped committee identity rules and stays alphabetical.
-5. Verify with read-only database checks that the displayed totals match the complete deduped committee roster and RSVP data before reporting back.
+## Changes
+
+1. **RSVP link uses `tasteofconventions.com`**
+   Today the preview generates `https://id-preview--…lovable.app/rsvp/…`. Hardcode the public site to `https://tasteofconventions.com` so every copied message contains the real, brandable link — in preview, in production, everywhere.
+
+2. **Delete the "Bulk actions" card entirely**
+   Drop the whole card and the "Copy all personalized messages" button. Per-row Copy is the only action that makes sense.
+
+3. **Delete the "pending only" filter and its empty-state line**
+   Remove the checkbox, the "pending only" badge in the list header, the `pendingOnly` state, and the "All committee guests have been texted or have RSVP'd. Uncheck the filter to see the full list." message. Always show the full committee list, alphabetical.
+
+4. **Simplify each row**
+   - One button per row labeled **Copy message**.
+   - Keep the existing status badges (Committee, RSVP'd yes, delivered, not delivered) and the "Mark as delivered" checkbox.
+   - Remove the duplicate "delivered / not delivered" text on the right side of the row — the badge already says it.
+
+5. **Tighten the header**
+   - Keep the four stat tiles (Committee 19, Not delivered, Delivered, RSVP'd yes — these now use the deduped roster).
+   - Keep the message template card and preview as-is.
+   - List header becomes: "Committee guests (N)" with a small refresh affordance.
+
+## Out of scope
+- No changes to the template wording or token placeholders.
+- No changes to how RSVP'd-yes is counted (the roster fix from the last turn stays).
+- No changes to other admin pages.
