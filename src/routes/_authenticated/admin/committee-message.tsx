@@ -7,15 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import {
-  MessageSquare,
-  Copy,
-  Users,
-  Loader2,
-  RotateCcw,
-} from "lucide-react";
+import { MessageSquare, Copy, Users, Loader2, RotateCcw } from "lucide-react";
 import { getErrorMessage } from "@/lib/async-safety";
 
 export const Route = createFileRoute("/_authenticated/admin/committee-message")({
@@ -23,18 +16,10 @@ export const Route = createFileRoute("/_authenticated/admin/committee-message")(
   component: CommitteeMessagePage,
 });
 
-type Guest = {
-  id: string;
-  guest_name: string;
-  guest_phone: string | null;
-  rsvp_token: string;
-  invite_sent_at: string | null;
-  
-  rsvp_status: string | null;
-};
+const LOGIN_URL = "https://tasteofconventions.com/login";
 
 const DEFAULT_TEMPLATE =
-  "Hi {{first}}, it's {{sender}}. You're on the Steering Committee for A Taste of Special Conventions on Sunday, August 30, 2026. Please RSVP here: {{link}}";
+  "Hi {{first}}, it's {{sender}}. You're now on the Steering Committee for A Taste of Special Conventions on Sunday, August 30, 2026. Click below to log in to your new dashboard: {{link}}";
 
 const templateKey = (uid?: string) => `committee-sms-template:${uid ?? "unknown"}`;
 
@@ -48,7 +33,15 @@ function renderTemplate(
     .replaceAll("{{link}}", ctx.link);
 }
 
-type RosterMember = { name: string; phoneKey: string; nameKey: string };
+type RsvpStatus = "yes" | "waitlist" | "no" | null;
+
+type RosterMember = {
+  name: string;
+  phoneKey: string;
+  nameKey: string;
+  key: string;
+  rsvpStatus: RsvpStatus;
+};
 
 const normNameKey = (s: string | null | undefined) =>
   (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
@@ -60,33 +53,22 @@ const normPhoneKey = (s: string | null | undefined) => {
 function CommitteeMessagePage() {
   const { user } = useAuth();
   const { isTeam, loading: rolesLoading } = useRoles();
-  const [guests, setGuests] = useState<Guest[]>([]);
   const [roster, setRoster] = useState<RosterMember[]>([]);
-  const [rosterYesCount, setRosterYesCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [template, setTemplate] = useState<string>(DEFAULT_TEMPLATE);
   const [senderName, setSenderName] = useState<string>("your friend");
-  const [markingId, setMarkingId] = useState<string | null>(null);
 
-  const SITE_URL = "https://tasteofconventions.com";
-
-  const linkFor = (token: string) =>
-    `${SITE_URL}/rsvp/${encodeURIComponent(token.trim().replace(/\+/g, "-").replace(/\//g, "_"))}`;
-
-  // Load saved template
   useEffect(() => {
     if (!user?.id || typeof window === "undefined") return;
     const saved = window.localStorage.getItem(templateKey(user.id));
     if (saved) setTemplate(saved);
   }, [user?.id]);
 
-  // Persist template
   useEffect(() => {
     if (!user?.id || typeof window === "undefined") return;
     window.localStorage.setItem(templateKey(user.id), template);
   }, [user?.id, template]);
 
-  // Load sender name
   useEffect(() => {
     if (!user?.id) return;
     let alive = true;
@@ -107,10 +89,8 @@ function CommitteeMessagePage() {
     };
   }, [user?.id]);
 
-  // Load the full deduped committee roster (active inviters + team invites +
-  // committee-tagged invitations), and count how many have RSVP'd yes by
-  // matching against the full invitations/rsvps tables on phone or name.
   const loadRoster = async () => {
+    setLoading(true);
     try {
       const [inviters, teamInvites, committeeInvs, allInvs] = await Promise.all([
         supabase.from("inviters").select("name,phone").eq("active", true),
@@ -124,10 +104,9 @@ function CommitteeMessagePage() {
           .eq("is_committee", true),
         supabase
           .from("invitations")
-          .select(
-            "guest_name,guest_phone,guest_phone_normalized,rsvps(status)",
-          ),
+          .select("guest_name,guest_phone,guest_phone_normalized,rsvps(status)"),
       ]);
+
       const sources: Array<{ name: string | null; phone: string | null }> = [];
       for (const r of (inviters.data ?? []) as Array<{ name: string | null; phone: string | null }>) {
         sources.push({ name: r.name, phone: r.phone });
@@ -138,6 +117,7 @@ function CommitteeMessagePage() {
       for (const r of (committeeInvs.data ?? []) as Array<{ guest_name: string | null; guest_phone: string | null; guest_phone_normalized: string | null }>) {
         sources.push({ name: r.guest_name, phone: r.guest_phone_normalized || r.guest_phone });
       }
+
       const seen = new Set<string>();
       const dedup: RosterMember[] = [];
       for (const s of sources) {
@@ -146,69 +126,58 @@ function CommitteeMessagePage() {
         const key = phoneKey ? `p:${phoneKey}` : nameKey ? `n:${nameKey}` : "";
         if (!key || seen.has(key)) continue;
         seen.add(key);
-        dedup.push({ name: (s.name ?? "").trim() || "Committee member", phoneKey, nameKey });
+        dedup.push({
+          name: (s.name ?? "").trim() || "Committee member",
+          phoneKey,
+          nameKey,
+          key,
+          rsvpStatus: null,
+        });
       }
-      dedup.sort((a, b) =>
-        a.name.toLowerCase().localeCompare(b.name.toLowerCase(), undefined, { sensitivity: "base" }),
-      );
 
-      // Match RSVP'd yes invitations to the roster
-      const rosterPhones = new Set(dedup.map((m) => m.phoneKey).filter(Boolean));
-      const rosterNames = new Set(dedup.map((m) => m.nameKey).filter(Boolean));
-      const matchedYes = new Set<string>();
+      // Build RSVP status map by matching invitations against the roster
+      const rosterPhones = new Map<string, string>(); // phoneKey -> memberKey
+      const rosterNames = new Map<string, string>(); // nameKey -> memberKey
+      for (const m of dedup) {
+        if (m.phoneKey) rosterPhones.set(m.phoneKey, m.key);
+        if (m.nameKey) rosterNames.set(m.nameKey, m.key);
+      }
+      const statusByKey = new Map<string, RsvpStatus>();
       type InvRow = {
         guest_name: string | null;
         guest_phone: string | null;
         guest_phone_normalized: string | null;
         rsvps: { status: string }[] | { status: string } | null;
       };
+      const rank = (s: RsvpStatus): number =>
+        s === "yes" ? 3 : s === "waitlist" ? 2 : s === "no" ? 1 : 0;
       for (const r of ((allInvs.data ?? []) as unknown) as InvRow[]) {
         const rsvp = Array.isArray(r.rsvps) ? r.rsvps[0] : r.rsvps;
-        if (rsvp?.status !== "yes") continue;
+        const raw = rsvp?.status ?? null;
+        const status: RsvpStatus =
+          raw === "yes" || raw === "waitlist" || raw === "no" ? raw : null;
+        if (!status) continue;
         const phoneKey = normPhoneKey(r.guest_phone_normalized || r.guest_phone);
         const nameKey = normNameKey(r.guest_name);
-        let memberKey = "";
-        if (phoneKey && rosterPhones.has(phoneKey)) memberKey = `p:${phoneKey}`;
-        else if (nameKey && rosterNames.has(nameKey)) memberKey = `n:${nameKey}`;
-        if (memberKey) matchedYes.add(memberKey);
+        const memberKey =
+          (phoneKey && rosterPhones.get(phoneKey)) ||
+          (nameKey && rosterNames.get(nameKey)) ||
+          "";
+        if (!memberKey) continue;
+        const prev = statusByKey.get(memberKey) ?? null;
+        if (rank(status) > rank(prev)) statusByKey.set(memberKey, status);
       }
+
+      for (const m of dedup) {
+        m.rsvpStatus = statusByKey.get(m.key) ?? null;
+      }
+      dedup.sort((a, b) =>
+        a.name.toLowerCase().localeCompare(b.name.toLowerCase(), undefined, { sensitivity: "base" }),
+      );
       setRoster(dedup);
-      setRosterYesCount(matchedYes.size);
     } catch (e) {
       console.error("[committee-message] roster load failed", e);
-    }
-  };
-
-  const load = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("invitations")
-        .select(
-          "id,guest_name,guest_phone,rsvp_token,invite_sent_at,is_committee,rsvps(status)",
-        )
-        .eq("is_committee", true)
-        .order("guest_name", { ascending: true });
-      if (error) throw error;
-      type Row = Omit<Guest, "rsvp_status"> & {
-        rsvps: { status: string }[] | { status: string } | null;
-      };
-      setGuests(
-        ((data ?? []) as unknown as Row[]).map((r) => {
-          const rsvp = Array.isArray(r.rsvps) ? r.rsvps[0] : r.rsvps;
-          return {
-            id: r.id,
-            guest_name: r.guest_name,
-            guest_phone: r.guest_phone,
-            rsvp_token: r.rsvp_token,
-            invite_sent_at: r.invite_sent_at,
-            rsvp_status: rsvp?.status ?? null,
-          };
-        }),
-      );
-    } catch (e) {
-      console.error("[committee-message] load failed", e);
-      toast.error("Couldn't load committee guests", { description: getErrorMessage(e) });
+      toast.error("Couldn't load committee roster", { description: getErrorMessage(e) });
     } finally {
       setLoading(false);
     }
@@ -216,18 +185,15 @@ function CommitteeMessagePage() {
 
   useEffect(() => {
     if (!rolesLoading && isTeam) {
-      void load();
       void loadRoster();
     }
   }, [rolesLoading, isTeam]);
 
-  const visible = guests;
-
-  const messageFor = (g: Guest) =>
+  const messageFor = (m: RosterMember) =>
     renderTemplate(template, {
-      first: (g.guest_name || "Friend").split(/\s+/)[0],
+      first: (m.name || "Friend").split(/\s+/)[0],
       sender: senderName || "your friend",
-      link: linkFor(g.rsvp_token),
+      link: LOGIN_URL,
     });
 
   const copy = async (text: string, label = "Message copied") => {
@@ -239,28 +205,6 @@ function CommitteeMessagePage() {
     }
   };
 
-  const markSent = async (g: Guest, checked: boolean) => {
-    setMarkingId(g.id);
-    const sentAt = checked ? new Date().toISOString() : null;
-    const { error } = await supabase
-      .from("invitations")
-      .update({ invite_sent_at: sentAt })
-      .eq("id", g.id);
-    setMarkingId(null);
-    if (error) {
-      toast.error("Couldn't update", { description: error.message });
-      return;
-    }
-    setGuests((prev) =>
-      prev.map((row) =>
-        row.id === g.id
-          ? { ...row, invite_sent_at: sentAt }
-          : row,
-      ),
-    );
-    toast.success(checked ? "Marked as delivered." : "Marked as not delivered.");
-  };
-
   if (rolesLoading) {
     return <p className="text-muted-foreground">Loading…</p>;
   }
@@ -268,42 +212,40 @@ function CommitteeMessagePage() {
     return <p className="text-muted-foreground">Only committee members can use this tool.</p>;
   }
 
-  const totalCommittee = roster.length;
-  const pendingCount = guests.filter((g) => !g.invite_sent_at && g.rsvp_status !== "yes").length;
-  const sentCount = guests.filter((g) => g.invite_sent_at).length;
-  const yesCount = rosterYesCount;
+  const statusBadge = (s: RsvpStatus) => {
+    if (s === "yes")
+      return (
+        <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 text-[10px]">
+          RSVP'd yes
+        </Badge>
+      );
+    if (s === "waitlist")
+      return (
+        <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 text-[10px]">
+          Waitlist
+        </Badge>
+      );
+    if (s === "no")
+      return (
+        <Badge variant="outline" className="text-[10px]">
+          Declined
+        </Badge>
+      );
+    return (
+      <Badge variant="outline" className="border-amber-400 text-amber-700 text-[10px]">
+        No RSVP yet
+      </Badge>
+    );
+  };
 
   return (
     <div className="space-y-6">
-      <Card className="p-6 space-y-2">
+      <Card className="p-6">
         <div className="flex items-center gap-2">
           <Users className="w-5 h-5 text-terracotta" />
           <h2 className="font-display text-2xl">Committee invitation message</h2>
         </div>
-        <p className="text-sm text-muted-foreground">
-          A dedicated in-app message just for committee-tagged guests. Edit the template below,
-          then copy each personalized message to share however you like.
-        </p>
       </Card>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="p-4">
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Committee</p>
-          <p className="font-display text-2xl mt-1">{totalCommittee}</p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Not delivered</p>
-          <p className="font-display text-2xl mt-1">{pendingCount}</p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Delivered</p>
-          <p className="font-display text-2xl mt-1">{sentCount}</p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">RSVP'd yes</p>
-          <p className="font-display text-2xl mt-1">{yesCount}</p>
-        </Card>
-      </div>
 
       <Card className="p-6 space-y-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -327,9 +269,9 @@ function CommitteeMessagePage() {
           className="font-mono text-sm"
         />
         <p className="text-xs text-muted-foreground">
-          Placeholders: <code>{"{{first}}"}</code> (guest's first name),{" "}
+          Placeholders: <code>{"{{first}}"}</code> (member's first name),{" "}
           <code>{"{{sender}}"}</code> (you: <em>{senderName}</em>),{" "}
-          <code>{"{{link}}"}</code> (their personal RSVP link).
+          <code>{"{{link}}"}</code> (login link).
         </p>
         <div className="rounded-md border border-border bg-muted/40 p-3 text-sm">
           <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">
@@ -339,7 +281,7 @@ function CommitteeMessagePage() {
             {renderTemplate(template, {
               first: "Alex",
               sender: senderName || "your friend",
-              link: `${SITE_URL}/rsvp/SAMPLE`,
+              link: LOGIN_URL,
             })}
           </p>
         </div>
@@ -349,69 +291,31 @@ function CommitteeMessagePage() {
         <div className="p-4 border-b border-border flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-terracotta" />
-            <p className="font-medium">
-              Committee guests ({visible.length})
-            </p>
+            <p className="font-medium">Committee ({roster.length})</p>
           </div>
           {loading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
         </div>
-        {visible.length === 0 ? (
+        {roster.length === 0 ? (
           <div className="p-6 text-sm text-muted-foreground text-center">
-            {loading
-              ? "Loading…"
-              : "No committee-tagged guests yet. Tag guests as Committee on the Add guests page."}
+            {loading ? "Loading…" : "No committee members yet."}
           </div>
         ) : (
           <div className="divide-y divide-border">
-            {visible.map((g) => {
-              const body = messageFor(g);
+            {roster.map((m) => {
+              const body = messageFor(m);
               return (
-                <div key={g.id} className="p-4 space-y-2">
+                <div key={m.key} className="p-4 space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium">{g.guest_name}</span>
-                    <Badge className="bg-terracotta text-cream hover:bg-terracotta text-[10px]">
-                      Committee
-                    </Badge>
-                    {g.rsvp_status === "yes" && (
-                      <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 text-[10px]">
-                        RSVP'd yes
-                      </Badge>
-                    )}
-                    {g.invite_sent_at && g.rsvp_status !== "yes" && (
-                      <Badge variant="outline" className="text-[10px]">
-                        delivered
-                      </Badge>
-                    )}
-                    {!g.invite_sent_at && g.rsvp_status !== "yes" && (
-                      <Badge
-                        variant="outline"
-                        className="border-amber-400 text-amber-700 text-[10px]"
-                      >
-                        not delivered
-                      </Badge>
-                    )}
+                    <span className="font-medium">{m.name}</span>
+                    {statusBadge(m.rsvpStatus)}
                   </div>
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap bg-muted/40 rounded-md p-2 border border-border">
                     {body}
                   </p>
-                  <div className="flex flex-wrap gap-2">
+                  <div>
                     <Button size="sm" variant="outline" onClick={() => void copy(body)}>
                       <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy message
                     </Button>
-                    <label className="inline-flex items-center gap-2 h-8 px-2 rounded-md border border-input text-xs cursor-pointer hover:bg-accent ml-auto">
-                      <Checkbox
-                        checked={!!g.invite_sent_at}
-                        disabled={markingId === g.id}
-                        onCheckedChange={(v) => void markSent(g, v === true)}
-                      />
-                      <span>
-                        {markingId === g.id
-                          ? "Saving…"
-                          : g.invite_sent_at
-                            ? "Delivered"
-                            : "Mark as delivered"}
-                      </span>
-                    </label>
                   </div>
                 </div>
               );
