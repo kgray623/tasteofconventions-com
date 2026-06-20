@@ -18,19 +18,20 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminLayout,
 });
 
-const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boolean; team?: boolean; teamLabel?: string }[] = [
-  { to: "/admin", label: "Overview", icon: ShieldCheck, exact: true },
-  { to: "/admin/invitation", label: "Invitation page", icon: Mail },
-  { to: "/admin/upload", label: "Add guests", icon: Upload, team: true, teamLabel: "Guest list" },
-  { to: "/admin/committee-message", label: "Committee SMS", icon: MessageSquare },
-  { to: "/admin/inviters", label: "Committee", icon: UserPlus, team: true, teamLabel: "Committee" },
-  { to: "/admin/restaurants", label: "Restaurants", icon: UtensilsCrossed },
-  { to: "/admin/categories", label: "Assignments", icon: ListChecks, team: true, teamLabel: "Volunteer" },
-  { to: "/admin/donations", label: "Donations", icon: HandCoins },
-  { to: "/admin/team", label: "Team access", icon: Users },
-  { to: "/admin/chat", label: "Team chat", icon: MessagesSquare, team: true, teamLabel: "Team chat" },
-  { to: "/admin/my-rsvp", label: "My RSVP", icon: Ticket, team: true },
+const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boolean; team?: boolean; teamLabel?: string; group: "main" | "committee" }[] = [
+  { to: "/admin", label: "Overview", icon: ShieldCheck, exact: true, group: "main" },
+  { to: "/admin/invitation", label: "Invitation page", icon: Mail, group: "main" },
+  { to: "/admin/donations", label: "Donations", icon: HandCoins, group: "main" },
+  { to: "/admin/my-rsvp", label: "My RSVP", icon: Ticket, team: true, group: "main" },
+  { to: "/admin/restaurants", label: "Restaurants", icon: UtensilsCrossed, group: "main" },
+  { to: "/admin/upload", label: "Add guests", icon: Upload, team: true, teamLabel: "Guest list", group: "committee" },
+  { to: "/admin/committee-message", label: "Committee SMS", icon: MessageSquare, group: "committee" },
+  { to: "/admin/inviters", label: "Committee", icon: UserPlus, team: true, teamLabel: "Committee", group: "committee" },
+  { to: "/admin/categories", label: "Assignments", icon: ListChecks, team: true, teamLabel: "Volunteer", group: "committee" },
+  { to: "/admin/team", label: "Team access", icon: Users, group: "committee" },
+  { to: "/admin/chat", label: "Team chat", icon: MessagesSquare, team: true, teamLabel: "Team chat", group: "committee" },
 ];
+
 
 const teamAllowedPrefixes = ["/admin/subcommittee", "/admin/upload", "/admin/inviters", "/admin/categories", "/admin/chat", "/admin/my-rsvp", "/admin/preorders"];
 const isTeamAllowedPath = (path: string) =>
@@ -139,26 +140,36 @@ function AdminLayout() {
         <div className="flex flex-wrap items-center gap-2" />
 
       </div>
-      <nav className="flex flex-wrap gap-1 border-b border-border mb-8">
-        {visibleTabs.map((t) => {
-          const active = t.exact ? path === t.to : path.startsWith(t.to);
-          const label = !isAdmin && t.teamLabel ? t.teamLabel : t.label;
-          return (
-            <Link
-              key={t.to}
-              to={t.to}
-              search={previewCommittee ? { view: "committee" } : { view: undefined }}
-              className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm border-b-2 -mb-px transition ${
-                active
-                  ? "border-terracotta text-ink font-medium"
-                  : "border-transparent text-muted-foreground hover:text-ink"
-              }`}
-            >
-              <t.icon className="w-4 h-4" /> {label}
-            </Link>
-          );
-        })}
-      </nav>
+      {(["main", "committee"] as const).map((group) => {
+        const groupTabs = visibleTabs.filter((t) => t.group === group);
+        if (groupTabs.length === 0) return null;
+        return (
+          <nav
+            key={group}
+            className={`flex flex-wrap gap-1 border-b border-border ${group === "main" ? "mb-2" : "mb-8"}`}
+          >
+            {groupTabs.map((t) => {
+              const active = t.exact ? path === t.to : path.startsWith(t.to);
+              const label = !isAdmin && t.teamLabel ? t.teamLabel : t.label;
+              return (
+                <Link
+                  key={t.to}
+                  to={t.to}
+                  search={previewCommittee ? { view: "committee" } : { view: undefined }}
+                  className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm border-b-2 -mb-px transition ${
+                    active
+                      ? "border-terracotta text-ink font-medium"
+                      : "border-transparent text-muted-foreground hover:text-ink"
+                  }`}
+                >
+                  <t.icon className="w-4 h-4" /> {label}
+                </Link>
+              );
+            })}
+          </nav>
+        );
+      })}
+
       {path !== "/admin" && (
         <Link
           to="/admin"
