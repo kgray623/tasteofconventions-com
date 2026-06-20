@@ -217,7 +217,10 @@ function CommitteeMessagePage() {
   };
 
   useEffect(() => {
-    if (!rolesLoading && isTeam) void load();
+    if (!rolesLoading && isTeam) {
+      void load();
+      void loadRoster();
+    }
   }, [rolesLoading, isTeam]);
 
   const visible = useMemo(() => {
