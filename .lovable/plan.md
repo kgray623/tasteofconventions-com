@@ -1,12 +1,14 @@
-I found the committee dashboard issue: the main “My Guests Uploaded” source is still sorted by RSVP status first, and the Confirmed RSVPs section maps an unsorted confirmed list. I will standardize every visible guest/name list on the committee dashboard to alphabetical order.
+I found the source of the bad numbers: the Committee Message page is only counting `invitations.is_committee = true`, which currently produces 7 committee records and 4 RSVP'd yes. The broader committee roster used elsewhere includes active inviters, team invites, and committee-tagged invitations; deduped by phone/name it is 19, with 11 matched RSVP'd yes.
 
 Plan:
-1. In `src/components/committee-workspace.tsx`, add one shared alphabetical comparator for guest names using case-insensitive `localeCompare`.
-2. Change “My Guests Uploaded” so the base list is alphabetical by guest name, not status-ranked.
-3. Keep the three RSVP groups organized, but sort every group alphabetically:
-   - RSVP’d
-   - Awaiting RSVP / waitlist
-   - Declined
-4. Change the “Confirmed RSVPs” section to render an alphabetized confirmed list instead of raw database order.
-5. Keep the full “Guest list” alphabetized using the same comparator.
-6. Verify there are no remaining committee dashboard guest/name lists using created-date or status-first ordering.
+1. Create one shared committee roster/counting utility for the frontend using the same sources already used on the Committee page:
+   - active `inviters`
+   - `team_invites` with role `team`
+   - `invitations` marked `is_committee`
+2. Deduplicate committee members by normalized phone first, then normalized name, so the same person is not counted twice.
+3. Update `/admin/committee-message` so:
+   - the “Committee” stat shows the full deduped roster count, not just 7 committee-tagged invitations
+   - “RSVP'd yes” counts RSVP yes records matched to the deduped committee roster, not just the 4 flagged invitation rows
+   - the visible committee guest/message list stays alphabetical
+4. Update the committee workspace filter/count if needed so “Committee (x)” uses the same deduped committee identity rules and stays alphabetical.
+5. Verify with read-only database checks that the displayed totals match the complete deduped committee roster and RSVP data before reporting back.
