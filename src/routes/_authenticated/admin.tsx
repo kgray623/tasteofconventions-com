@@ -27,8 +27,8 @@ const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boole
   { to: "/admin/upload", label: "Add guests", icon: Upload, team: true, teamLabel: "Guest list", group: "committee" },
   { to: "/admin/committee-message", label: "Committee SMS", icon: MessageSquare, group: "committee" },
   { to: "/admin/inviters", label: "Committee", icon: UserPlus, team: true, teamLabel: "Committee", group: "committee" },
-  { to: "/admin/categories", label: "Assignments", icon: ListChecks, team: true, teamLabel: "Volunteer", group: "committee" },
-  { to: "/admin/team", label: "Team access", icon: Users, group: "committee" },
+  { to: "/admin/categories", label: "Volunteer", icon: ListChecks, team: true, teamLabel: "Volunteer", group: "committee" },
+  { to: "/admin/team", label: "Add Team", icon: Users, group: "committee" },
   { to: "/admin/chat", label: "Team chat", icon: MessagesSquare, team: true, teamLabel: "Team chat", group: "committee" },
 ];
 
