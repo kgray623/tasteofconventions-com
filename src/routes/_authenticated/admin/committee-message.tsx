@@ -275,10 +275,10 @@ function CommitteeMessagePage() {
     return <p className="text-muted-foreground">Only committee members can use this tool.</p>;
   }
 
-  const totalCommittee = guests.length;
+  const totalCommittee = roster.length;
   const pendingCount = guests.filter((g) => !g.invite_sent_at && g.rsvp_status !== "yes").length;
   const sentCount = guests.filter((g) => g.invite_sent_at).length;
-  const yesCount = guests.filter((g) => g.rsvp_status === "yes").length;
+  const yesCount = rosterYesCount;
 
   return (
     <div className="space-y-6">
