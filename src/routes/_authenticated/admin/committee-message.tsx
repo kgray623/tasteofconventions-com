@@ -48,10 +48,21 @@ function renderTemplate(
     .replaceAll("{{link}}", ctx.link);
 }
 
+type RosterMember = { name: string; phoneKey: string; nameKey: string };
+
+const normNameKey = (s: string | null | undefined) =>
+  (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
+const normPhoneKey = (s: string | null | undefined) => {
+  const d = (s ?? "").replace(/\D/g, "");
+  return d.length >= 7 ? d.slice(-10) : "";
+};
+
 function CommitteeMessagePage() {
   const { user } = useAuth();
   const { isTeam, loading: rolesLoading } = useRoles();
   const [guests, setGuests] = useState<Guest[]>([]);
+  const [roster, setRoster] = useState<RosterMember[]>([]);
+  const [rosterYesCount, setRosterYesCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [template, setTemplate] = useState<string>(DEFAULT_TEMPLATE);
   const [senderName, setSenderName] = useState<string>("your friend");
@@ -98,6 +109,78 @@ function CommitteeMessagePage() {
     };
   }, [user?.id]);
 
+  // Load the full deduped committee roster (active inviters + team invites +
+  // committee-tagged invitations), and count how many have RSVP'd yes by
+  // matching against the full invitations/rsvps tables on phone or name.
+  const loadRoster = async () => {
+    try {
+      const [inviters, teamInvites, committeeInvs, allInvs] = await Promise.all([
+        supabase.from("inviters").select("name,phone").eq("active", true),
+        supabase
+          .from("team_invites")
+          .select("name,phone,phone_normalized")
+          .eq("role", "team"),
+        supabase
+          .from("invitations")
+          .select("guest_name,guest_phone,guest_phone_normalized")
+          .eq("is_committee", true),
+        supabase
+          .from("invitations")
+          .select(
+            "guest_name,guest_phone,guest_phone_normalized,rsvps(status)",
+          ),
+      ]);
+      const sources: Array<{ name: string | null; phone: string | null }> = [];
+      for (const r of (inviters.data ?? []) as Array<{ name: string | null; phone: string | null }>) {
+        sources.push({ name: r.name, phone: r.phone });
+      }
+      for (const r of (teamInvites.data ?? []) as Array<{ name: string | null; phone: string | null; phone_normalized: string | null }>) {
+        sources.push({ name: r.name, phone: r.phone_normalized || r.phone });
+      }
+      for (const r of (committeeInvs.data ?? []) as Array<{ guest_name: string | null; guest_phone: string | null; guest_phone_normalized: string | null }>) {
+        sources.push({ name: r.guest_name, phone: r.guest_phone_normalized || r.guest_phone });
+      }
+      const seen = new Set<string>();
+      const dedup: RosterMember[] = [];
+      for (const s of sources) {
+        const phoneKey = normPhoneKey(s.phone);
+        const nameKey = normNameKey(s.name);
+        const key = phoneKey ? `p:${phoneKey}` : nameKey ? `n:${nameKey}` : "";
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        dedup.push({ name: (s.name ?? "").trim() || "Committee member", phoneKey, nameKey });
+      }
+      dedup.sort((a, b) =>
+        a.name.toLowerCase().localeCompare(b.name.toLowerCase(), undefined, { sensitivity: "base" }),
+      );
+
+      // Match RSVP'd yes invitations to the roster
+      const rosterPhones = new Set(dedup.map((m) => m.phoneKey).filter(Boolean));
+      const rosterNames = new Set(dedup.map((m) => m.nameKey).filter(Boolean));
+      const matchedYes = new Set<string>();
+      type InvRow = {
+        guest_name: string | null;
+        guest_phone: string | null;
+        guest_phone_normalized: string | null;
+        rsvps: { status: string }[] | { status: string } | null;
+      };
+      for (const r of ((allInvs.data ?? []) as unknown) as InvRow[]) {
+        const rsvp = Array.isArray(r.rsvps) ? r.rsvps[0] : r.rsvps;
+        if (rsvp?.status !== "yes") continue;
+        const phoneKey = normPhoneKey(r.guest_phone_normalized || r.guest_phone);
+        const nameKey = normNameKey(r.guest_name);
+        let memberKey = "";
+        if (phoneKey && rosterPhones.has(phoneKey)) memberKey = `p:${phoneKey}`;
+        else if (nameKey && rosterNames.has(nameKey)) memberKey = `n:${nameKey}`;
+        if (memberKey) matchedYes.add(memberKey);
+      }
+      setRoster(dedup);
+      setRosterYesCount(matchedYes.size);
+    } catch (e) {
+      console.error("[committee-message] roster load failed", e);
+    }
+  };
+
   const load = async () => {
     setLoading(true);
     try {
@@ -134,7 +217,10 @@ function CommitteeMessagePage() {
   };
 
   useEffect(() => {
-    if (!rolesLoading && isTeam) void load();
+    if (!rolesLoading && isTeam) {
+      void load();
+      void loadRoster();
+    }
   }, [rolesLoading, isTeam]);
 
   const visible = useMemo(() => {
@@ -189,10 +275,10 @@ function CommitteeMessagePage() {
     return <p className="text-muted-foreground">Only committee members can use this tool.</p>;
   }
 
-  const totalCommittee = guests.length;
+  const totalCommittee = roster.length;
   const pendingCount = guests.filter((g) => !g.invite_sent_at && g.rsvp_status !== "yes").length;
   const sentCount = guests.filter((g) => g.invite_sent_at).length;
-  const yesCount = guests.filter((g) => g.rsvp_status === "yes").length;
+  const yesCount = rosterYesCount;
 
   return (
     <div className="space-y-6">
