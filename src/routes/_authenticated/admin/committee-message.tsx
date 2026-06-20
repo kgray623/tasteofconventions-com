@@ -221,12 +221,7 @@ function CommitteeMessagePage() {
     }
   }, [rolesLoading, isTeam]);
 
-  const visible = useMemo(() => {
-    if (!pendingOnly) return guests;
-    return guests.filter((g) => !g.invite_sent_at && g.rsvp_status !== "yes");
-  }, [guests, pendingOnly]);
-
-  
+  const visible = guests;
 
   const messageFor = (g: Guest) =>
     renderTemplate(template, {
