@@ -1,13 +1,26 @@
-Trim the Team page and rename two tabs.
+Trim the Committee tab (`/admin/inviters`) to just two cards.
 
-## Tab renames (src/routes/_authenticated/admin.tsx)
-- "Team access" → "Add Team"
-- "Assignments" → "Volunteer" (admin label; the committee teamLabel is already "Volunteer")
+## Remove from src/routes/_authenticated/admin/inviters.tsx
 
-## Team page cleanup (src/routes/_authenticated/admin/team.tsx)
-- Remove the entire "Steering Committee" roster card (already shown on the Committee tab).
-- Keep the "Add Steering Committee Member" form at the top (admin only).
-- Rename the lower card "Pending & past invites" → "Pending invites".
-- In that list, hide anyone already accepted: filter out invites where `accepted_at` is set OR their phone number is in `signedUpDigits` (matched by last-10-digit tail, same logic used above). Only people still awaiting signup remain — e.g. Jen Spears, Rhonda Wilcher.
-- Drop now-unused state/fetches: `inviters`, `committeeGuests`, the roster-building imports (`buildCommitteeRoster`, `normalizeRosterPhone` if no longer used after the filter — keep `normalizeRosterPhone` since the pending filter still needs it), and the related Supabase queries in `load()`.
-- Keep `signedUpDigits` and `fetchSignedUpDigits` so the pending filter can exclude people who've already signed up.
+1. **Committee members description text** — remove the paragraph "Anyone flagged as committee on the guest list appears here so the whole team can see who's on board." and the "{count} committee member(s)" line under it. Keep the heading "Committee members" and the roster grid below.
+2. **Committee communication card** (the chat panel, lines ~673–729) — duplicated by Committee SMS.
+3. **Committee needs card** (lines ~732–782) — duplicated by Volunteer.
+4. **Upload your contacts to invite card** (lines ~784–856) — duplicated by Add guests.
+5. **Add Steering Committee Member form** (admin branch, lines ~862–905) AND the non-admin "Nominate" fallback (lines ~907–917) — duplicated by Add Team tab.
+6. Collapse the now-empty `<div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">` wrapper (lines ~671, 858).
+
+## Keep
+
+- Committee members roster card (heading + grid only).
+- Pending RSVP quota requests card.
+- Steering committee invitations & usage table.
+
+## Cleanup of unused code
+
+Remove now-unused state, refs, effects, handlers, and imports:
+- State: `msgs`, `messageBody`, `cats`, `assigns`, `events`, `eventId`, `contacts`, `savingContacts`, `name`, `email`, `phone`, `quota`, `adding`, `screenshotBusy`, `fileRef`, `chatScrollRef`.
+- Handlers/effects: `sendMessage`, `assignmentLabel`, `parseContactFile`, `saveContacts`, `fileToDataUrl`, `onScreenshots`, `add`, `parseVCards`, `pickContactField`, the realtime `team_messages` subscription effect, the chat scroll effect, the `inviteTeamMemberFn`/`extractContactsFn` server fns.
+- Load: drop the `team_messages`, `profiles`, `categories`, `category_assignments`, `events` queries and the auto-create-inviter-for-committee block; keep `inviters`, `invitations`, `rsvps`, `team_invites`, and the committee-flagged invitations query (still needed for the Committee members roster, the pending quota card, and the invitations table).
+- Imports: drop `Papa`, `useServerFn`, `useRef`, `Textarea`, `inviteTeamMember`, `extractContactsFromImages`, unused icons (`FileUp`, `MessageSquare`, `Plus`, `UserPlus`, `Send`, `Upload`, `ListChecks`).
+
+No other tabs/pages change; the deleted features still live at Committee SMS, Volunteer, Add guests, and Add Team.
