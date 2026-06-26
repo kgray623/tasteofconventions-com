@@ -589,7 +589,7 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
         .select("guest_name, guest_email, guest_phone, invite_sent_at")
         .eq("id", invitationId)
         .maybeSingle();
-      const patch: Record<string, string> = {};
+      const patch: { guest_name?: string; guest_email?: string; guest_phone?: string } = {};
       if (current && !current.invite_sent_at) {
         if (!current.guest_name && data.guest_name) patch.guest_name = data.guest_name;
         if (!current.guest_email && email) patch.guest_email = email;
