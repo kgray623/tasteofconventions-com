@@ -132,7 +132,7 @@ function PreviewPage() {
   };
 
   const handleSave = async () => {
-    if (status !== "no" && !name.trim()) return toast.error("Please enter your full name");
+    if (!name.trim()) return toast.error("Please enter your full name");
     if (phoneDigits.length < 7) return toast.error("Please enter your mobile number");
     const finalInvitedBy = invitedBy === "__other__" ? invitedByOther.trim() : invitedBy;
     if (!finalInvitedBy) return toast.error("Please select who invited you");
