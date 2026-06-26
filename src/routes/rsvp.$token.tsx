@@ -466,6 +466,18 @@ function RsvpPage() {
                   </p>
                 </div>
               )}
+              <div className="space-y-3 pt-2 border-t border-border">
+                <div className="space-y-1.5">
+                  <Label htmlFor="guest-name">Full name</Label>
+                  <Input id="guest-name" value={data.invitation.guest_name} readOnly />
+                </div>
+                {data.invitation.guest_phone && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="guest-phone">Mobile number</Label>
+                    <Input id="guest-phone" type="tel" value={data.invitation.guest_phone} readOnly />
+                  </div>
+                )}
+              </div>
             </>
           )}
           <div className="space-y-1.5">
