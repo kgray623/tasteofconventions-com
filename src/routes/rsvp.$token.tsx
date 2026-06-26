@@ -266,6 +266,28 @@ function RsvpPage() {
           <p className="mt-3 text-lg text-muted-foreground">Hello, {data.invitation.guest_name}</p>
         </div>
 
+        <Card className="p-7 space-y-3 border-terracotta/30">
+          <div className="space-y-1.5">
+            <Label htmlFor="guest-name">Full name <span className="text-destructive">*</span></Label>
+            <Input
+              id="guest-name"
+              value={guestName}
+              onChange={(e) => setGuestName(e.target.value)}
+              placeholder="Your full name"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="guest-phone">Mobile number <span className="text-destructive">*</span></Label>
+            <Input
+              id="guest-phone"
+              type="tel"
+              value={guestPhone}
+              onChange={(e) => setGuestPhone(e.target.value)}
+              placeholder="(555) 123-4567"
+            />
+          </div>
+        </Card>
+
         <Card className="p-7 space-y-3">
           {ev.description && <p className="text-muted-foreground">{ev.description}</p>}
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
@@ -415,27 +437,6 @@ function RsvpPage() {
                 <span className="text-sm font-medium">{o.label}</span>
               </button>
             ))}
-          </div>
-          <div className="space-y-3 pt-2 border-t border-border">
-            <div className="space-y-1.5">
-              <Label htmlFor="guest-name">Full name <span className="text-destructive">*</span></Label>
-              <Input
-                id="guest-name"
-                value={guestName}
-                onChange={(e) => setGuestName(e.target.value)}
-                placeholder="Your full name"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="guest-phone">Mobile number <span className="text-destructive">*</span></Label>
-              <Input
-                id="guest-phone"
-                type="tel"
-                value={guestPhone}
-                onChange={(e) => setGuestPhone(e.target.value)}
-                placeholder="(555) 123-4567"
-              />
-            </div>
           </div>
           {status !== "no" && (
             <>
