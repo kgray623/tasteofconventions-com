@@ -125,7 +125,7 @@ function RsvpPage() {
         if (!alive) return;
         setData(r);
         if (r.rsvp) {
-          setStatus(r.rsvp.status === "yes" ? "yes" : "no");
+          setStatus(r.rsvp.status === "no" ? "no" : "yes");
           setPartySize(r.rsvp.party_size ?? 1);
           setAttendanceMode((r.rsvp.attendance_mode as "in_person" | "zoom") ?? "in_person");
           setOrderingFood(
