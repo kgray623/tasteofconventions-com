@@ -514,6 +514,38 @@ function RsvpPage() {
             </>
           )}
           <div className="space-y-1.5">
+            <div className="rounded-md border-2 border-terracotta bg-cream/50 p-4 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-terracotta">
+                Required before RSVP
+              </p>
+              <div className="space-y-1.5">
+                <Label htmlFor="guest-name-confirm" className="text-base font-semibold text-ink">
+                  Full name <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="guest-name-confirm"
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  placeholder="Your full name"
+                  className="h-14 border-2 border-ink bg-card text-lg text-ink"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="guest-phone-confirm" className="text-base font-semibold text-ink">
+                  Mobile number <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="guest-phone-confirm"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  value={guestPhone}
+                  onChange={(e) => setGuestPhone(e.target.value)}
+                  placeholder="(555) 123-4567"
+                  className="h-14 border-2 border-ink bg-card text-lg text-ink"
+                />
+              </div>
+            </div>
             <Label htmlFor="invited-by">Invited by <span className="text-destructive">*</span></Label>
             <Select value={invitedBy || undefined} onValueChange={setInvitedBy}>
               <SelectTrigger id="invited-by">
