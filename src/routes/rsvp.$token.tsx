@@ -94,6 +94,8 @@ function RsvpPage() {
     "in_person",
   );
   const [partySize, setPartySize] = useDraftState(rsvpDraftScope, "partySize", 1);
+  const [guestName, setGuestName] = useDraftState(rsvpDraftScope, "guestName", "");
+  const [guestPhone, setGuestPhone] = useDraftState(rsvpDraftScope, "guestPhone", "");
   const [orderingFood, setOrderingFood] = useDraftState<"yes" | "no" | "">(
     rsvpDraftScope,
     "orderingFood",
@@ -124,6 +126,8 @@ function RsvpPage() {
         const r = (await withTimeout(fetchInv({ data: { token } }), 10000)) as RsvpTokenData;
         if (!alive) return;
         setData(r);
+        setGuestName(r.invitation.guest_name ?? "");
+        setGuestPhone(r.invitation.guest_phone ?? "");
         if (r.rsvp) {
           setStatus(r.rsvp.status === "no" ? "no" : "yes");
           setPartySize(r.rsvp.party_size ?? 1);
@@ -165,6 +169,9 @@ function RsvpPage() {
 
   const handleSubmit = async () => {
     try {
+      const phoneDigits = guestPhone.replace(/\D/g, "");
+      if (!guestName.trim()) return toast.error("Please enter your full name");
+      if (phoneDigits.length < 7) return toast.error("Please enter your mobile number");
       const finalInvitedBy = invitedBy === "__other__" ? invitedByOther.trim() : invitedBy;
       if (!finalInvitedBy) return toast.error("Please select who invited you");
       // Derive ordering_food from the meal pre-order: any meals = yes, none = no.
@@ -179,6 +186,8 @@ function RsvpPage() {
       const res = await submit({
         data: {
           token,
+          guest_name: guestName.trim(),
+          guest_phone: guestPhone.trim(),
           status,
           party_size: partySize,
           attendance_mode: attendanceMode,
@@ -407,6 +416,27 @@ function RsvpPage() {
               </button>
             ))}
           </div>
+          <div className="space-y-3 pt-2 border-t border-border">
+            <div className="space-y-1.5">
+              <Label htmlFor="guest-name">Full name <span className="text-destructive">*</span></Label>
+              <Input
+                id="guest-name"
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                placeholder="Your full name"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="guest-phone">Mobile number <span className="text-destructive">*</span></Label>
+              <Input
+                id="guest-phone"
+                type="tel"
+                value={guestPhone}
+                onChange={(e) => setGuestPhone(e.target.value)}
+                placeholder="(555) 123-4567"
+              />
+            </div>
+          </div>
           {status !== "no" && (
             <>
               <div className="space-y-1.5">
@@ -466,18 +496,6 @@ function RsvpPage() {
                   </p>
                 </div>
               )}
-              <div className="space-y-3 pt-2 border-t border-border">
-                <div className="space-y-1.5">
-                  <Label htmlFor="guest-name">Full name</Label>
-                  <Input id="guest-name" value={data.invitation.guest_name} readOnly />
-                </div>
-                {data.invitation.guest_phone && (
-                  <div className="space-y-1.5">
-                    <Label htmlFor="guest-phone">Mobile number</Label>
-                    <Input id="guest-phone" type="tel" value={data.invitation.guest_phone} readOnly />
-                  </div>
-                )}
-              </div>
             </>
           )}
           <div className="space-y-1.5">

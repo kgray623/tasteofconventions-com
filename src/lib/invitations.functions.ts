@@ -225,6 +225,8 @@ export const getInvitationByToken = createServerFn({ method: "GET" })
 
 const RsvpInput = z.object({
   token: z.string().min(8).max(120),
+  guest_name: z.string().min(1).max(120).optional(),
+  guest_phone: z.string().min(7).max(40).optional(),
   status: z.enum(["yes", "no", "maybe"]),
   party_size: z.number().int().min(1).max(20),
   attendance_mode: z.enum(["in_person", "zoom"]).optional(),
@@ -242,6 +244,16 @@ export const submitRsvp = createServerFn({ method: "POST" })
       .in("rsvp_token", rsvpTokenCandidates(data.token))
       .maybeSingle();
     if (!inv) throw new Error("Invitation not found");
+    if (data.guest_name || data.guest_phone) {
+      const { error: invitationError } = await supabaseAdmin
+        .from("invitations")
+        .update({
+          ...(data.guest_name ? { guest_name: data.guest_name.trim() } : {}),
+          ...(data.guest_phone ? { guest_phone: data.guest_phone.trim() } : {}),
+        })
+        .eq("id", inv.id);
+      if (invitationError) throw publicDbError(invitationError);
+    }
     const { data: existingRsvp } = await supabaseAdmin
       .from("rsvps")
       .select("status")
