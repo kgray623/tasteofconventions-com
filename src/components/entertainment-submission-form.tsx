@@ -59,11 +59,13 @@ export function EntertainmentSubmissionForm() {
 
     setSubmitting(true);
     try {
-      const ext = file.name.split(".").pop()?.toLowerCase() || "mp4";
-      const path = `${crypto.randomUUID()}.${ext}`;
+      const rawExt = file.name.split(".").pop()?.toLowerCase() || "mp4";
+      const ext = rawExt.replace(/[^a-z0-9]/g, "") || "mp4";
+      const { createEntertainmentUploadUrl } = await import("@/lib/entertainment-upload.functions");
+      const { path, token } = await createEntertainmentUploadUrl({ data: { ext } });
       const { error: upErr } = await supabase.storage
         .from("entertainment-videos")
-        .upload(path, file, { contentType: file.type, upsert: false });
+        .uploadToSignedUrl(path, token, file, { contentType: file.type, upsert: false });
       if (upErr) throw upErr;
 
       const { error: insErr } = await supabase

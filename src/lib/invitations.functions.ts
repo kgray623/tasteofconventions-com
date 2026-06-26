@@ -550,6 +550,7 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
       }
     }
 
+    let isNewInvitation = false;
     if (!invitationId) {
       const { data: inv, error: invErr } = await supabaseAdmin
         .from("invitations")
@@ -564,6 +565,7 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
         .single();
       if (invErr) throw publicDbError(invErr);
       invitationId = inv.id;
+      isNewInvitation = true;
     }
 
     const mode = data.attendance_mode ?? "in_person";
@@ -575,15 +577,33 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
       finalStatus = "waitlist";
       waitlisted = true;
     }
-    const { error: invUpdateErr } = await supabaseAdmin
-      .from("invitations")
-      .update({
-        guest_name: data.guest_name,
-        guest_email: email,
-        guest_phone: phone,
-      })
-      .eq("id", invitationId);
-    if (invUpdateErr) throw publicDbError(invUpdateErr);
+
+    // SECURITY: For matched (pre-existing) invitations — especially admin-uploaded
+    // records that have already been sent an SMS — do NOT overwrite guest_name /
+    // guest_phone / guest_email from an unauthenticated submitter. Anyone who
+    // knows a phone number could otherwise rewrite the invitee's identity.
+    // Only fill fields that are currently empty.
+    if (!isNewInvitation) {
+      const { data: current } = await supabaseAdmin
+        .from("invitations")
+        .select("guest_name, guest_email, guest_phone, invite_sent_at")
+        .eq("id", invitationId)
+        .maybeSingle();
+      const patch: { guest_name?: string; guest_email?: string; guest_phone?: string } = {};
+      if (current && !current.invite_sent_at) {
+        if (!current.guest_name && data.guest_name) patch.guest_name = data.guest_name;
+        if (!current.guest_email && email) patch.guest_email = email;
+        if (!current.guest_phone && phone) patch.guest_phone = phone;
+        if (Object.keys(patch).length > 0) {
+          const { error: invUpdateErr } = await supabaseAdmin
+            .from("invitations")
+            .update(patch)
+            .eq("id", invitationId);
+          if (invUpdateErr) throw publicDbError(invUpdateErr);
+        }
+      }
+    }
+
 
     const { error: rsvpErr } = await supabaseAdmin.from("rsvps").upsert(
       {
