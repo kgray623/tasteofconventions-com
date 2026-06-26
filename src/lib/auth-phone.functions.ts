@@ -141,15 +141,51 @@ function nameTokens(value: string | null | undefined): string[] {
     .filter((t) => t.length >= 2);
 }
 
+function levenshtein(a: string, b: string): number {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  const prev = new Array(b.length + 1);
+  for (let j = 0; j <= b.length; j++) prev[j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    let prevDiag = prev[0];
+    prev[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const tmp = prev[j];
+      prev[j] = a[i - 1] === b[j - 1]
+        ? prevDiag
+        : 1 + Math.min(prevDiag, prev[j], prev[j - 1]);
+      prevDiag = tmp;
+    }
+  }
+  return prev[b.length];
+}
+
+function tokensFuzzyEqual(a: string, b: string): boolean {
+  if (a === b) return true;
+  // One of the names contains the other (e.g. "salis" vs "salisbury") — accept.
+  if (a.length >= 4 && b.length >= 4 && (a.includes(b) || b.includes(a))) return true;
+  const longer = Math.max(a.length, b.length);
+  // Allow 1 typo for short tokens (4–5 chars) and 2 typos for longer ones.
+  const tolerance = longer >= 6 ? 2 : longer >= 4 ? 1 : 0;
+  if (tolerance === 0) return false;
+  return levenshtein(a, b) <= tolerance;
+}
+
 function namesMatch(input: string, candidates: Array<string | null | undefined>): boolean {
-  const inputTokens = new Set(nameTokens(input));
-  if (inputTokens.size === 0) return false;
+  const inputTokens = nameTokens(input);
+  if (inputTokens.length === 0) return false;
   for (const c of candidates) {
     const cand = nameTokens(c);
-    for (const t of cand) if (inputTokens.has(t)) return true;
+    for (const t of cand) {
+      for (const it of inputTokens) {
+        if (tokensFuzzyEqual(it, t)) return true;
+      }
+    }
   }
   return false;
 }
+
 
 async function recordAuthAudit(
   supabaseAdmin: any,
@@ -245,7 +281,7 @@ async function issuePhoneSession(rawPhone: string, rawName: string): Promise<Pho
       success: false,
       reason: "phone_not_on_list",
     });
-    throw new ExpectedPhoneLoginError("We don't have this mobile number on the guest list yet.");
+    throw new ExpectedPhoneLoginError("We don't have this mobile number on the guest list yet. Double-check the digits, or contact your inviter.");
   }
   if (!namesMatch(rawName, candidateNames)) {
     await recordAuthAudit(supabaseAdmin, {
@@ -254,8 +290,9 @@ async function issuePhoneSession(rawPhone: string, rawName: string): Promise<Pho
       success: false,
       reason: "name_mismatch",
     });
-    throw new ExpectedPhoneLoginError("That name doesn't match the invitation for this phone number.");
+    throw new ExpectedPhoneLoginError("This phone number IS on the list — but the last name you entered doesn't match how it's spelled on the invitation. Try a different spelling.");
   }
+
   const displayName = inv?.guest_name || inviter?.name || teamInvite?.name || rawName;
 
   // 1) Find an existing auth user by phone in any stored format.
