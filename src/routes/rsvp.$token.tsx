@@ -253,40 +253,54 @@ function RsvpPage() {
 
   return (
     <div className="min-h-screen bg-gradient-warm">
-      <div className="mx-auto max-w-3xl px-6 py-12 space-y-6">
+      <div className="mx-auto max-w-3xl px-4 py-5 space-y-5 sm:px-6 sm:py-12 sm:space-y-6">
         <Link
           to="/"
           className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-ink"
         >
           <ArrowLeft className="w-3.5 h-3.5" /> Back to invitation
         </Link>
-        <div className="text-center">
-          <p className="text-xs uppercase tracking-[0.3em] text-terracotta">You're invited</p>
-          <h1 className="font-display text-5xl mt-3 text-ink">{ev.title}</h1>
-          <p className="mt-3 text-lg text-muted-foreground">Hello, {data.invitation.guest_name}</p>
-        </div>
 
-        <Card className="p-7 space-y-3 border-terracotta/30">
-          <div className="space-y-1.5">
-            <Label htmlFor="guest-name">Full name <span className="text-destructive">*</span></Label>
+        <Card className="p-4 space-y-4 border-2 border-terracotta bg-card shadow-glow sm:p-7">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-terracotta">
+              Required before RSVP
+            </p>
+            <h2 className="font-display text-3xl text-ink">Your name and mobile number</h2>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="guest-name" className="text-base font-semibold text-ink">
+              Full name <span className="text-destructive">*</span>
+            </Label>
             <Input
               id="guest-name"
               value={guestName}
               onChange={(e) => setGuestName(e.target.value)}
               placeholder="Your full name"
+              className="h-14 border-2 border-ink bg-cream text-lg text-ink placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-terracotta"
             />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="guest-phone">Mobile number <span className="text-destructive">*</span></Label>
+          <div className="space-y-2">
+            <Label htmlFor="guest-phone" className="text-base font-semibold text-ink">
+              Mobile number <span className="text-destructive">*</span>
+            </Label>
             <Input
               id="guest-phone"
               type="tel"
+              inputMode="tel"
+              autoComplete="tel"
               value={guestPhone}
               onChange={(e) => setGuestPhone(e.target.value)}
               placeholder="(555) 123-4567"
+              className="h-14 border-2 border-ink bg-cream text-lg text-ink placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-terracotta"
             />
           </div>
         </Card>
+        <div className="text-center">
+          <p className="text-xs uppercase tracking-[0.3em] text-terracotta">You're invited</p>
+          <h1 className="font-display text-5xl mt-3 text-ink">{ev.title}</h1>
+          <p className="mt-3 text-lg text-muted-foreground">Hello, {data.invitation.guest_name}</p>
+        </div>
 
         <Card className="p-7 space-y-3">
           {ev.description && <p className="text-muted-foreground">{ev.description}</p>}
