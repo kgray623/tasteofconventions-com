@@ -281,7 +281,7 @@ async function issuePhoneSession(rawPhone: string, rawName: string): Promise<Pho
       success: false,
       reason: "phone_not_on_list",
     });
-    throw new ExpectedPhoneLoginError("We don't have this mobile number on the guest list yet.");
+    throw new ExpectedPhoneLoginError("We don't have this mobile number on the guest list yet. Double-check the digits, or contact your inviter.");
   }
   if (!namesMatch(rawName, candidateNames)) {
     await recordAuthAudit(supabaseAdmin, {
@@ -290,8 +290,9 @@ async function issuePhoneSession(rawPhone: string, rawName: string): Promise<Pho
       success: false,
       reason: "name_mismatch",
     });
-    throw new ExpectedPhoneLoginError("That name doesn't match the invitation for this phone number.");
+    throw new ExpectedPhoneLoginError("This phone number IS on the list — but the last name you entered doesn't match how it's spelled on the invitation. Try a different spelling.");
   }
+
   const displayName = inv?.guest_name || inviter?.name || teamInvite?.name || rawName;
 
   // 1) Find an existing auth user by phone in any stored format.
