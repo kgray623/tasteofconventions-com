@@ -170,7 +170,7 @@ function GuestsPage() {
               <Link
                 key={t}
                 to="/admin/guests"
-                search={(prev) => ({ ...prev, status: t === "all" ? undefined : t })}
+                search={(prev: Record<string, unknown>) => ({ ...prev, status: t === "all" ? undefined : t })}
                 className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm border transition ${
                   active ? "bg-ink text-cream border-ink" : "bg-background hover:bg-muted border-border"
                 }`}
