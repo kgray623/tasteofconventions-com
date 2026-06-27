@@ -1,42 +1,40 @@
-You're right. I'm counting RSVP records (35) when you want **people** (party-size totals). Here is what the database actually says right now:
+# Fix mobile "Choose Screenshots" + page freeze on /admin/upload
 
-| Bucket | RSVPs | People |
-|---|---|---|
-| Confirmed — in person | 29 | **46** |
-| Confirmed — Zoom | 6 | **6** |
-| **Confirmed — total** | 35 | **52** |
-| Declined | 14 | 15 |
-| Pending | — | 49 (101 − 52) |
+## What's broken (root cause)
 
-The admin dashboard cards (`/admin` → "Confirmed in person / on Zoom / Total confirmed") already sum party size — they should be showing 46, 6, 52. The page that's lying to you is **`/admin/guests`**: its filter tabs count rows (35), not people, so when you tap "Confirmed" you see "35" on the chip even though 52 people are coming.
+**1. "Choose screenshots" button does nothing on mobile.**
+Today the orange button is a `<Button>` whose `onClick` calls `screenshotRef.current?.click()` on a hidden `<input type="file">` somewhere else in the DOM. On mobile Safari/Chrome — especially inside the Lovable preview iframe — that programmatic `.click()` is treated as a non-user gesture and the system picker silently refuses to open. The desktop browser is more forgiving, which is why this only fails on the phone. The "Choose spreadsheet" button has the exact same shape and will fail the same way on mobile; I'll fix it too while I'm there.
 
-## Fix
+**2. Chat / microphone / refresh "freezing".**
+After tapping the dead screenshot button, the page is left in a half-state: the iOS file-picker intent partially fires, the AI extract call (`extractContactsFromImages`) can hang with no timeout, and `screenshotBusy` stays `true` — so the button stays disabled, the chat tab and notification bell stop responding to taps, and pull-to-refresh feels stuck. Adding a hard timeout + always resetting `screenshotBusy` in `finally` (already there, but the network call itself has no ceiling) stops the page from locking up.
 
-1. **`/admin/guests` tab counts → people, not rows.**
-   Change `c[status] += 1` to add `party_size` (default 1 when no RSVP) so the tab chip shows "Confirmed 52", "Declined 15", etc.
+## Changes (frontend only — no business logic, no DB, no auth)
 
-2. **Per-row party size is visible.**
-   Each guest card already shows "Party of N" for confirmed; extend it to declined/maybe rows too so the math always reconciles.
+**File: `src/routes/_authenticated/admin/upload.tsx`**
 
-3. **One-line summary at top of `/admin/guests`.**
-   Replace the current "Showing X of 101 total" line with: **"Showing X people across Y guests (of 101 total uploaded)"** — and when a filter is active: **"Confirmed: 52 people across 35 RSVPs (46 in person · 6 Zoom)"**. No more guessing which number means what.
+1. **Replace the programmatic-click pattern with a real label** for both file pickers (screenshots and spreadsheet). The visible orange control becomes a `<label htmlFor="...">` styled exactly like the current `Button` (same `bg-terracotta text-cream`, same width, same min-height for tap target), and the `<input type="file">` keeps `className="sr-only"` (not `hidden`, so the label/for association actually drives it). This is the only reliable way to open the native picker on iOS/Android inside an iframe — the tap on the label IS the user gesture that opens the picker, no JS hop in between. Keep the existing `ref` so we can still clear `.value` after upload.
 
-4. **Re-verify `/admin` dashboard.**
-   I'll screenshot the live admin dashboard with my admin session and confirm the cards already read 46 / 6 / 52. If anything still shows 35 there, I'll fix it in the same pass.
+2. **Wrap `extractContacts({ data: { images } })` in a 60-second timeout** using the existing `withTimeout` helper from `@/lib/async-safety`. If the AI call hangs, the user gets a clear toast ("That took too long — try fewer screenshots") instead of a frozen page. `screenshotBusy` is already reset in `finally` — keep that.
 
-5. **Verification before I call it done** (per your rule):
-   - Load `/admin` as admin → screenshot, OCR the "Confirmed" tiles, confirm 46 / 6 / 52.
-   - Load `/admin/guests` → confirm "Confirmed" tab badge reads **52**, "Declined" reads **15**.
-   - Click "Confirmed in person" tile on `/admin` → confirm guests page filters to in-person and the count reads **46**.
-   - Tap "Confirmed" tab on `/admin/guests` → confirm row list adds up to 52 people across 35 guests.
-   - If any single check fails I will not say it's fixed.
+3. **Defensive: also reset `screenshotBusy` on the `onChange` early-return paths** (no files, too many files, no event). Today if the user opens the picker and cancels, nothing fires — fine — but if they pick >10 files we toast and return without ever having flipped the busy flag, which is correct already. No change needed; just verifying after the refactor.
 
-## Files I'd touch
+4. **No changes** to: the AI server function, the DB inserts, the duplicate-flag query, the saved-guests reload, the committee/quota logic, or any other button on the page.
 
-- `src/routes/_authenticated/admin/guests.tsx` — change `counts` to sum party size, update the summary line, show party size on every row.
+## Verification before calling it done
 
-No data changes. No deletions. No RSVP edits. No changes to the audit server function (it's already correct).
+Run from inside the sandbox using Playwright against `http://localhost:8080` with a mobile viewport (390×844, iPhone UA):
 
-## One confirm before I build
+1. Restore the Supabase session, navigate to `/admin/upload`.
+2. Tap the orange "Choose screenshots" label → assert the hidden `<input type="file">` receives a `click` event (Playwright `filechooser` event fires). Screenshot.
+3. Attach a 1-pixel PNG via `page.set_input_files`, wait for the toast, confirm `screenshotBusy` resets and the button re-enables. Screenshot.
+4. Tap the notification bell and the chat tab afterward → assert they respond (panel opens / route changes). Screenshot.
+5. Repeat step 2 for "Choose spreadsheet".
 
-When the dashboard tiles say "Confirmed in person: 46", do you want the **number of people** (46) shown big, with "(29 RSVPs)" in small grey below it — or just the people number alone? Same question for the guests-page tabs.
+If any single tap doesn't respond, it is NOT fixed and I keep iterating.
+
+## Out of scope (will not touch)
+
+- Phyllis Andrews / guest counts / RSVP totals (already verified correct in earlier turn).
+- Login, session, role checks.
+- `extractContactsFromImages` server function.
+- Any other admin page.
