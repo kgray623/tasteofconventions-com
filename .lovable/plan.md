@@ -1,37 +1,40 @@
-## Goal
+## What happened (verified)
 
-You can't find the download files. They exist — they live on the **Admin page** in an "Admin exports" card and are served from the private `admin-exports` storage bucket — but the entry point isn't obvious. I'll make the entry point unmistakable and verify every download actually works end-to-end before saying it's done.
+- Phyllis Andrews is in `invitations` (uploaded 2026-06-03) and in `rsvps` with `status=no` (declined 2026-06-08). She is being counted in the "Declined: 14" tile.
+- **Nothing was dropped.** All 14 declined guests are present in the database. Full list confirmed.
+- The reason it *looks* missing: the dashboard tiles only show **counts**. Clicking "Declined" goes to `/admin/my-rsvp` (your own RSVP page), not a list of declined guests. Same for Confirmed, Pending, Maybe, Waitlist. There has never been a guests-by-status list in the UI.
 
-## What I'll change (frontend only)
+## Fix: build a real Guests list
 
-1. **Dedicated `/admin/backups` route** containing the existing 6 download buttons in one focused page:
-   - Source code (ZIP)
-   - Database migrations (ZIP)
-   - Admin screenshots (ZIP)
-   - Database dump (ZIP)
-   - Database spreadsheet (XLSX)
-   - Guests (CSV)
-   Each shows file name, last-updated timestamp (from storage metadata), and a download button with a working spinner and clear error message on failure.
+Add a single new admin page **`/admin/guests`** that lists every uploaded guest with their RSVP status, party size, attendance mode, phone, and responded date. Frontend-only — uses existing `getReconciliationRows` server function, no schema changes.
 
-2. **Prominent "Download backups" card on the Admin home** (`/admin`) at the top, linking to `/admin/backups`. Keeps the existing in-place card too so nothing moves out from under you.
+Features on `/admin/guests`:
+- Filter tabs at top: **All · Confirmed · Declined · Maybe · Waitlist · Pending** (counts shown on each tab, matching dashboard).
+- Search box (name or phone) — instant client-side filter.
+- Sortable by name, status, responded date.
+- One row per guest: name, phone, status badge, party size, in-person/Zoom, responded date.
+- "Open RSVP" link per row (admin view of guest's RSVP page via `rsvp_token`).
+- CSV export of the currently filtered list.
+- Mobile-first card layout that collapses to a table on desktop.
 
-3. **Admin nav entry** — add "Backups" as a top-level admin nav item (desktop + mobile) so it's reachable in one tap from anywhere in admin.
+Wire the dashboard tiles so each stat (Confirmed in person, Confirmed on Zoom, Total confirmed, Declined, Maybe, Waitlist, Pending, Guests uploaded) links to `/admin/guests` with the matching filter pre-applied (e.g. `/admin/guests?status=declined`). The "Declined" tile will land directly on Phyllis's row.
 
-No backend, schema, RLS, or storage changes. Files stay in the private `admin-exports` bucket, served through the existing authenticated `/exports/$filename` route.
+Add "Guests" to the admin nav (next to Backups) so the list is one tap away.
 
-## Verification (before I say it's done)
+## Verification (will run before saying done)
 
-Using Playwright as a signed-in admin, on both **mobile (390×844)** and **desktop (1280×800)**:
-- Open `/admin`, confirm the "Download backups" card is visible above the fold.
-- Click into `/admin/backups`, click every one of the 6 download buttons.
-- For each: confirm the response is HTTP 200, `Content-Type` matches (zip / xlsx / csv), `Content-Disposition: attachment`, and the response body is non-empty real bytes (not an HTML error page).
-- Confirm a signed-out request to `/exports/<file>` returns 401/redirect (still blocked).
-- Report file sizes for each download so you can sanity-check them.
+Using a direct DB read-back (auth-injection is off this session so I cannot click as admin in Playwright):
+- Confirm `/admin/guests?status=declined` returns exactly the 14 names listed above, including Phyllis Andrews.
+- Confirm `/admin/guests?status=confirmed` total party size matches the dashboard's "Total confirmed".
+- Confirm `Pending = uploaded − (confirmed + declined + maybe + waitlist)` matches.
+- Confirm CSV export of the declined filter contains all 14 rows with phone numbers.
+- Confirm linking from each dashboard tile lands on the correct pre-filtered view.
 
-If any file is missing from the `admin-exports` bucket, I'll tell you exactly which one and stop — I won't fabricate a placeholder.
+I will explicitly tell you if any guest fails to appear under the expected filter. I will not claim "done" unless every one of the 14 declined names — Phyllis included — is visible on `/admin/guests?status=declined`.
 
 ## Files touched
 
-- `src/routes/_authenticated/admin/backups.tsx` (new)
-- `src/routes/_authenticated/admin/index.tsx` (add the top "Download backups" card)
-- Admin nav component (add "Backups" link)
+- `src/routes/_authenticated/admin/guests.tsx` (new)
+- `src/routes/_authenticated/admin.tsx` (add "Guests" nav tab)
+- `src/routes/_authenticated/admin/index.tsx` (re-point status tiles to `/admin/guests?status=…`)
+- `src/lib/admin-audit.functions.ts` (extend existing reconciliation row shape with `rsvp_token` so the list can deep-link to each guest's RSVP page — no schema change, just adds a field to the SELECT)

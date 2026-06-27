@@ -38,6 +38,7 @@ import { Route as AuthenticatedAdminPreordersRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminMyRsvpRouteImport } from './routes/_authenticated/admin/my-rsvp'
 import { Route as AuthenticatedAdminInvitersRouteImport } from './routes/_authenticated/admin/inviters'
 import { Route as AuthenticatedAdminInvitationRouteImport } from './routes/_authenticated/admin/invitation'
+import { Route as AuthenticatedAdminGuestsRouteImport } from './routes/_authenticated/admin/guests'
 import { Route as AuthenticatedAdminEventRouteImport } from './routes/_authenticated/admin/event'
 import { Route as AuthenticatedAdminDonationsRouteImport } from './routes/_authenticated/admin/donations'
 import { Route as AuthenticatedAdminCommitteeMessageRouteImport } from './routes/_authenticated/admin/committee-message'
@@ -204,6 +205,12 @@ const AuthenticatedAdminInvitationRoute =
     path: '/invitation',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminGuestsRoute =
+  AuthenticatedAdminGuestsRouteImport.update({
+    id: '/guests',
+    path: '/guests',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminEventRoute = AuthenticatedAdminEventRouteImport.update({
   id: '/event',
   path: '/event',
@@ -297,6 +304,7 @@ export interface FileRoutesByFullPath {
   '/admin/committee-message': typeof AuthenticatedAdminCommitteeMessageRoute
   '/admin/donations': typeof AuthenticatedAdminDonationsRoute
   '/admin/event': typeof AuthenticatedAdminEventRoute
+  '/admin/guests': typeof AuthenticatedAdminGuestsRoute
   '/admin/invitation': typeof AuthenticatedAdminInvitationRoute
   '/admin/inviters': typeof AuthenticatedAdminInvitersRoute
   '/admin/my-rsvp': typeof AuthenticatedAdminMyRsvpRoute
@@ -338,6 +346,7 @@ export interface FileRoutesByTo {
   '/admin/committee-message': typeof AuthenticatedAdminCommitteeMessageRoute
   '/admin/donations': typeof AuthenticatedAdminDonationsRoute
   '/admin/event': typeof AuthenticatedAdminEventRoute
+  '/admin/guests': typeof AuthenticatedAdminGuestsRoute
   '/admin/invitation': typeof AuthenticatedAdminInvitationRoute
   '/admin/inviters': typeof AuthenticatedAdminInvitersRoute
   '/admin/my-rsvp': typeof AuthenticatedAdminMyRsvpRoute
@@ -382,6 +391,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/committee-message': typeof AuthenticatedAdminCommitteeMessageRoute
   '/_authenticated/admin/donations': typeof AuthenticatedAdminDonationsRoute
   '/_authenticated/admin/event': typeof AuthenticatedAdminEventRoute
+  '/_authenticated/admin/guests': typeof AuthenticatedAdminGuestsRoute
   '/_authenticated/admin/invitation': typeof AuthenticatedAdminInvitationRoute
   '/_authenticated/admin/inviters': typeof AuthenticatedAdminInvitersRoute
   '/_authenticated/admin/my-rsvp': typeof AuthenticatedAdminMyRsvpRoute
@@ -426,6 +436,7 @@ export interface FileRouteTypes {
     | '/admin/committee-message'
     | '/admin/donations'
     | '/admin/event'
+    | '/admin/guests'
     | '/admin/invitation'
     | '/admin/inviters'
     | '/admin/my-rsvp'
@@ -467,6 +478,7 @@ export interface FileRouteTypes {
     | '/admin/committee-message'
     | '/admin/donations'
     | '/admin/event'
+    | '/admin/guests'
     | '/admin/invitation'
     | '/admin/inviters'
     | '/admin/my-rsvp'
@@ -510,6 +522,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/committee-message'
     | '/_authenticated/admin/donations'
     | '/_authenticated/admin/event'
+    | '/_authenticated/admin/guests'
     | '/_authenticated/admin/invitation'
     | '/_authenticated/admin/inviters'
     | '/_authenticated/admin/my-rsvp'
@@ -758,6 +771,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminInvitationRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/guests': {
+      id: '/_authenticated/admin/guests'
+      path: '/guests'
+      fullPath: '/admin/guests'
+      preLoaderRoute: typeof AuthenticatedAdminGuestsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/event': {
       id: '/_authenticated/admin/event'
       path: '/event'
@@ -853,6 +873,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminCommitteeMessageRoute: typeof AuthenticatedAdminCommitteeMessageRoute
   AuthenticatedAdminDonationsRoute: typeof AuthenticatedAdminDonationsRoute
   AuthenticatedAdminEventRoute: typeof AuthenticatedAdminEventRoute
+  AuthenticatedAdminGuestsRoute: typeof AuthenticatedAdminGuestsRoute
   AuthenticatedAdminInvitationRoute: typeof AuthenticatedAdminInvitationRoute
   AuthenticatedAdminInvitersRoute: typeof AuthenticatedAdminInvitersRoute
   AuthenticatedAdminMyRsvpRoute: typeof AuthenticatedAdminMyRsvpRoute
@@ -874,6 +895,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
     AuthenticatedAdminCommitteeMessageRoute,
   AuthenticatedAdminDonationsRoute: AuthenticatedAdminDonationsRoute,
   AuthenticatedAdminEventRoute: AuthenticatedAdminEventRoute,
+  AuthenticatedAdminGuestsRoute: AuthenticatedAdminGuestsRoute,
   AuthenticatedAdminInvitationRoute: AuthenticatedAdminInvitationRoute,
   AuthenticatedAdminInvitersRoute: AuthenticatedAdminInvitersRoute,
   AuthenticatedAdminMyRsvpRoute: AuthenticatedAdminMyRsvpRoute,
@@ -932,13 +954,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

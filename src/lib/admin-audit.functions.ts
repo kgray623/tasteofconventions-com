@@ -210,7 +210,7 @@ export const getReconciliationRows = createServerFn({ method: "GET" })
     const [invRes, rsvpRes, preRes] = await Promise.all([
       supabaseAdmin
         .from("invitations")
-        .select("id,guest_name,guest_phone,guest_email,is_committee,invite_sent_at,created_at")
+        .select("id,guest_name,guest_phone,guest_email,is_committee,invite_sent_at,created_at,rsvp_token")
         .order("created_at", { ascending: true }),
       supabaseAdmin
         .from("rsvps")
@@ -240,10 +240,13 @@ export const getReconciliationRows = createServerFn({ method: "GET" })
       const selectionText = sels.map((s) => `${s.cuisine}×${s.qty}`).join("; ");
       const meals = sels.reduce((a, b) => a + b.qty, 0);
       return {
+        invitation_id: inv.id,
+        rsvp_token: inv.rsvp_token ?? "",
         name: inv.guest_name ?? "",
         phone: inv.guest_phone ?? "",
         email: inv.guest_email ?? "",
         audience: inv.is_committee ? "Committee" : "Guest",
+        is_committee: !!inv.is_committee,
         sms_sent: inv.invite_sent_at ? "yes" : "no",
         rsvp_status: r?.status ?? "pending",
         party_size: r?.party_size ?? "",
