@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlus, UtensilsCrossed, Mail, HandCoins, MessageSquare, Ticket, ArrowLeft, Archive } from "lucide-react";
+import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlus, UtensilsCrossed, Mail, HandCoins, MessageSquare, Ticket, ArrowLeft, Archive, UserCheck } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — A Taste of Special Conventions" }] }),
@@ -20,6 +20,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boolean; team?: boolean; teamLabel?: string; group: "main" | "committee" }[] = [
   { to: "/admin", label: "Overview", icon: ShieldCheck, exact: true, group: "main" },
+  { to: "/admin/guests", label: "Guests", icon: UserCheck, group: "main" },
   { to: "/admin/invitation", label: "Invitation page", icon: Mail, group: "main" },
   { to: "/admin/donations", label: "Donations", icon: HandCoins, group: "main" },
   { to: "/admin/my-rsvp", label: "My RSVP", icon: Ticket, team: true, group: "main" },
