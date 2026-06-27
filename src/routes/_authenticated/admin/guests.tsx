@@ -99,14 +99,29 @@ function GuestsPage() {
     return () => { alive = false; };
   }, [fetchRows]);
 
+  const partyOf = (r: Row) => {
+    const n = Number(r.party_size);
+    return Number.isFinite(n) && n > 0 ? n : 1;
+  };
+
   const counts = useMemo(() => {
     const c: Record<StatusFilter, number> = { all: 0, confirmed: 0, declined: 0, maybe: 0, waitlist: 0, pending: 0 };
-    if (!rows) return c;
+    const rsvps: Record<StatusFilter, number> = { all: 0, confirmed: 0, declined: 0, maybe: 0, waitlist: 0, pending: 0 };
+    const modePeople = { in_person: 0, zoom: 0 };
+    if (!rows) return { people: c, rsvps, modePeople };
     for (const r of rows) {
-      c.all += 1;
-      c[statusOfRow(r)] += 1;
+      const s = statusOfRow(r);
+      const p = partyOf(r);
+      c.all += p;
+      c[s] += p;
+      rsvps.all += 1;
+      rsvps[s] += 1;
+      if (s === "confirmed") {
+        if (r.attendance_mode === "zoom") modePeople.zoom += p;
+        else modePeople.in_person += p;
+      }
     }
-    return c;
+    return { people: c, rsvps, modePeople };
   }, [rows]);
 
   const filtered = useMemo(() => {
@@ -159,7 +174,9 @@ function GuestsPage() {
           <p className="text-sm text-muted-foreground mt-1">
             {rows === null
               ? "Loading…"
-              : <>Showing <span className="tabular-nums font-medium text-ink">{filtered.length}</span> of <span className="tabular-nums font-medium text-ink">{counts.all}</span> total. Tap a status to filter; search by name or phone.</>
+              : activeStatus === "confirmed"
+                ? <>Confirmed: <span className="tabular-nums font-medium text-ink">{counts.people.confirmed}</span> people across <span className="tabular-nums font-medium text-ink">{counts.rsvps.confirmed}</span> RSVPs (<span className="tabular-nums">{counts.modePeople.in_person}</span> in person · <span className="tabular-nums">{counts.modePeople.zoom}</span> Zoom).</>
+                : <>Showing <span className="tabular-nums font-medium text-ink">{counts.people[activeStatus]}</span> people across <span className="tabular-nums font-medium text-ink">{filtered.length}</span> guests (of <span className="tabular-nums font-medium text-ink">{counts.rsvps.all}</span> total uploaded · <span className="tabular-nums">{counts.people.all}</span> people if everyone showed up).</>
             }
           </p>
         </div>
@@ -180,12 +197,16 @@ function GuestsPage() {
               >
                 {STATUS_LABEL[t]}
                 <span className={`tabular-nums text-xs ${active ? "text-cream/80" : "text-muted-foreground"}`}>
-                  {counts[t]}
+                  {counts.people[t]}
+                </span>
+                <span className={`tabular-nums text-[10px] ${active ? "text-cream/60" : "text-muted-foreground/70"}`}>
+                  ({counts.rsvps[t]})
                 </span>
               </Link>
             );
           })}
         </div>
+        <p className="text-[11px] text-muted-foreground mt-2">Big number = <strong>people</strong> (party-size totals). (small) = RSVP guest count.</p>
       </Card>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -239,7 +260,7 @@ function GuestsPage() {
                     {r.phone || "no phone"}
                     {r.email && <> · {r.email}</>}
                   </p>
-                  {s === "confirmed" && (
+                  {(s === "confirmed" || s === "maybe" || s === "waitlist" || (s === "declined" && r.party_size)) && (
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Party of {r.party_size || 1}
                       {r.attendance_mode === "zoom" ? " · Zoom" : r.attendance_mode === "in_person" ? " · In person" : ""}
