@@ -22,6 +22,10 @@ const EXPORTS: Record<string, { contentType: string; downloadName: string }> = {
     contentType: "application/zip",
     downloadName: "taste-of-conventions-admin-screenshots.zip",
   },
+  "taste-of-conventions-database-dump.zip": {
+    contentType: "application/zip",
+    downloadName: "taste-of-conventions-database-dump.zip",
+  },
 };
 
 export const Route = createFileRoute("/exports/$filename")({
