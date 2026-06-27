@@ -304,16 +304,16 @@ function AdminOverview() {
 
       <Card className="p-5 space-y-1">
         <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Guests</p>
-        <StatRow row={{ label: "Guests uploaded", value: all.guests_uploaded, to: "/admin/upload", emphasis: true }} />
+        <StatRow row={{ label: "Guests uploaded", value: all.guests_uploaded, to: "/admin/guests", emphasis: true }} />
         <StatRow row={{ label: "SMS sent", value: all.sms_sent, to: "/admin/upload" }} />
         <div className="border-t my-2" />
-        <StatRow row={{ label: "Confirmed in person", value: all.confirmed_in_person, to: "/admin/my-rsvp", emphasis: true }} />
-        <StatRow row={{ label: "Confirmed on Zoom", value: all.confirmed_zoom, to: "/admin/my-rsvp" }} />
-        <StatRow row={{ label: "Total confirmed", value: all.confirmed_total, to: "/admin/my-rsvp", emphasis: true }} />
-        <StatRow row={{ label: "Declined", value: all.declined, to: "/admin/my-rsvp" }} />
-        {all.maybe > 0 && <StatRow row={{ label: "Maybe", value: all.maybe, to: "/admin/my-rsvp" }} />}
-        {all.waitlist > 0 && <StatRow row={{ label: "Waitlist", value: all.waitlist, to: "/admin/my-rsvp" }} />}
-        <StatRow row={{ label: "Pending", value: all.pending, to: "/admin/my-rsvp" }} />
+        <StatRow row={{ label: "Confirmed in person", value: all.confirmed_in_person, to: "/admin/guests?status=confirmed&mode=in_person", emphasis: true }} />
+        <StatRow row={{ label: "Confirmed on Zoom", value: all.confirmed_zoom, to: "/admin/guests?status=confirmed&mode=zoom" }} />
+        <StatRow row={{ label: "Total confirmed", value: all.confirmed_total, to: "/admin/guests?status=confirmed", emphasis: true }} />
+        <StatRow row={{ label: "Declined", value: all.declined, to: "/admin/guests?status=declined" }} />
+        {all.maybe > 0 && <StatRow row={{ label: "Maybe", value: all.maybe, to: "/admin/guests?status=maybe" }} />}
+        {all.waitlist > 0 && <StatRow row={{ label: "Waitlist", value: all.waitlist, to: "/admin/guests?status=waitlist" }} />}
+        <StatRow row={{ label: "Pending", value: all.pending, to: "/admin/guests?status=pending" }} />
       </Card>
 
       <Card className="p-5 space-y-1">
