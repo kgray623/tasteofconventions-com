@@ -22,6 +22,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RsvpIndexRouteImport } from './routes/rsvp.index'
 import { Route as RsvpTokenRouteImport } from './routes/rsvp.$token'
+import { Route as ExportsFilenameRouteImport } from './routes/exports.$filename'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -111,6 +112,11 @@ const RsvpIndexRoute = RsvpIndexRouteImport.update({
 const RsvpTokenRoute = RsvpTokenRouteImport.update({
   id: '/rsvp/$token',
   path: '/rsvp/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExportsFilenameRoute = ExportsFilenameRouteImport.update({
+  id: '/exports/$filename',
+  path: '/exports/$filename',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
@@ -274,6 +280,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/exports/$filename': typeof ExportsFilenameRoute
   '/rsvp/$token': typeof RsvpTokenRoute
   '/rsvp/': typeof RsvpIndexRoute
   '/admin/audit-log': typeof AuthenticatedAdminAuditLogRoute
@@ -313,6 +320,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/exports/$filename': typeof ExportsFilenameRoute
   '/rsvp/$token': typeof RsvpTokenRoute
   '/rsvp': typeof RsvpIndexRoute
   '/admin/audit-log': typeof AuthenticatedAdminAuditLogRoute
@@ -355,6 +363,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/exports/$filename': typeof ExportsFilenameRoute
   '/rsvp/$token': typeof RsvpTokenRoute
   '/rsvp/': typeof RsvpIndexRoute
   '/_authenticated/admin/audit-log': typeof AuthenticatedAdminAuditLogRoute
@@ -397,6 +406,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/dashboard'
     | '/email/unsubscribe'
+    | '/exports/$filename'
     | '/rsvp/$token'
     | '/rsvp/'
     | '/admin/audit-log'
@@ -436,6 +446,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/dashboard'
     | '/email/unsubscribe'
+    | '/exports/$filename'
     | '/rsvp/$token'
     | '/rsvp'
     | '/admin/audit-log'
@@ -477,6 +488,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
     | '/email/unsubscribe'
+    | '/exports/$filename'
     | '/rsvp/$token'
     | '/rsvp/'
     | '/_authenticated/admin/audit-log'
@@ -517,6 +529,7 @@ export interface RootRouteChildren {
   ShareRoute: typeof ShareRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
+  ExportsFilenameRoute: typeof ExportsFilenameRoute
   RsvpTokenRoute: typeof RsvpTokenRoute
   RsvpIndexRoute: typeof RsvpIndexRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
@@ -618,6 +631,13 @@ declare module '@tanstack/react-router' {
       path: '/rsvp/$token'
       fullPath: '/rsvp/$token'
       preLoaderRoute: typeof RsvpTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/exports/$filename': {
+      id: '/exports/$filename'
+      path: '/exports/$filename'
+      fullPath: '/exports/$filename'
+      preLoaderRoute: typeof ExportsFilenameRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/email/unsubscribe': {
@@ -877,6 +897,7 @@ const rootRouteChildren: RootRouteChildren = {
   ShareRoute: ShareRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
+  ExportsFilenameRoute: ExportsFilenameRoute,
   RsvpTokenRoute: RsvpTokenRoute,
   RsvpIndexRoute: RsvpIndexRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
