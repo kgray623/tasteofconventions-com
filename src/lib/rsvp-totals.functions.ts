@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Database } from "@/integrations/supabase/types";
 
 export type RsvpTotalsResult = {
   event: {
@@ -17,10 +19,152 @@ export type RsvpTotalsResult = {
   } | null;
 };
 
+export type CommitteeWorkspaceGuest = {
+  id: string;
+  guest_name: string;
+  guest_phone: string | null;
+  guest_email: string | null;
+  rsvp_status: string | null;
+  party_size: number;
+  attendance_mode: string | null;
+  responded_at: string | null;
+  invited_by: string | null;
+  host_id: string;
+};
+
+export type CommitteeWorkspaceGuestsResult = {
+  guests: CommitteeWorkspaceGuest[];
+  myHostIds: string[];
+};
+
 const digitsOnly = (s: string | null | undefined) =>
   (s ?? "").replace(/\D/g, "");
 const normName = (s: string | null | undefined) =>
   (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
+
+type InviterIdentity = {
+  id?: string;
+  host_id: string | null;
+  phone: string | null;
+  name: string | null;
+  quota?: number | null;
+  active?: boolean | null;
+  requested_quota?: number | null;
+};
+
+async function resolveMyHostIds(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  inviterRows: InviterIdentity[],
+) {
+  const { data: authUser } = await supabase.auth.getUser();
+  const myPhoneTail = digitsOnly(authUser?.user?.phone).slice(-10);
+  let myName = "";
+  const { data: prof } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", userId)
+    .maybeSingle();
+  myName = normName(prof?.display_name);
+
+  const mineHostIds = new Set<string>([userId]);
+  const myInviters = inviterRows.filter((r) => {
+    if (!r.host_id) return false;
+    if (r.host_id === userId) return true;
+    const rowTail = digitsOnly(r.phone).slice(-10);
+    if (myPhoneTail && rowTail && rowTail === myPhoneTail) return true;
+    if (myName && normName(r.name) === myName) return true;
+    return false;
+  });
+  myInviters.forEach((r) => r.host_id && mineHostIds.add(r.host_id));
+
+  return { mineHostIds, myInviters };
+}
+
+export const getCommitteeWorkspaceGuests = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<CommitteeWorkspaceGuestsResult> => {
+    const { supabase, userId } = context;
+
+    const { data: events, error: eventsError } = await supabase
+      .from("events")
+      .select("id")
+      .order("starts_at")
+      .limit(1);
+    if (eventsError) throw new Error(eventsError.message);
+
+    const eventId = events?.[0]?.id;
+    if (!eventId) return { guests: [], myHostIds: [userId] };
+
+    const [invitersRes, invitationsRes, rsvpsRes] = await Promise.all([
+      supabase.from("inviters").select("host_id,phone,name"),
+      supabase
+        .from("invitations")
+        .select("id,guest_name,guest_phone,guest_email,host_id,created_at")
+        .eq("event_id", eventId)
+        .order("created_at", { ascending: false }),
+      supabase.from("rsvps").select("invitation_id,status,party_size,attendance_mode,responded_at"),
+    ]);
+
+    if (invitersRes.error) throw new Error(invitersRes.error.message);
+    if (invitationsRes.error) throw new Error(invitationsRes.error.message);
+    if (rsvpsRes.error) throw new Error(rsvpsRes.error.message);
+
+    const inviterRows = (invitersRes.data ?? []) as InviterIdentity[];
+    const { mineHostIds } = await resolveMyHostIds(supabase, userId, inviterRows);
+
+    const invitationRows = (invitationsRes.data ?? []) as Array<{
+      id: string;
+      guest_name: string;
+      guest_phone: string | null;
+      guest_email: string | null;
+      host_id: string | null;
+    }>;
+
+    const rsvpByInvitation = new Map<string, { status: string | null; party_size: number | null; attendance_mode: string | null; responded_at: string | null }>();
+    for (const rsvp of rsvpsRes.data ?? []) {
+      if (!rsvp.invitation_id) continue;
+      rsvpByInvitation.set(rsvp.invitation_id, {
+        status: rsvp.status ?? null,
+        party_size: rsvp.party_size ?? 1,
+        attendance_mode: rsvp.attendance_mode ?? null,
+        responded_at: rsvp.responded_at ?? null,
+      });
+    }
+
+    const hostIds = Array.from(new Set(invitationRows.map((r) => r.host_id).filter((id): id is string => !!id)));
+    const hostNames = new Map<string, string>();
+    if (hostIds.length) {
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id,display_name,email")
+        .in("id", hostIds);
+      if (profilesError) throw new Error(profilesError.message);
+      for (const profile of profiles ?? []) {
+        const name = (profile.display_name ?? "").trim() || (profile.email ?? "").split("@")[0] || "";
+        if (name) hostNames.set(profile.id, name);
+      }
+    }
+
+    return {
+      myHostIds: Array.from(mineHostIds),
+      guests: invitationRows.map((row) => {
+        const rsvp = rsvpByInvitation.get(row.id);
+        return {
+          id: row.id,
+          guest_name: row.guest_name,
+          guest_phone: row.guest_phone,
+          guest_email: row.guest_email,
+          rsvp_status: rsvp?.status ?? null,
+          party_size: rsvp?.party_size ?? 1,
+          attendance_mode: rsvp?.attendance_mode ?? null,
+          responded_at: rsvp?.responded_at ?? null,
+          invited_by: row.host_id ? hostNames.get(row.host_id) ?? null : null,
+          host_id: row.host_id ?? "",
+        };
+      }),
+    };
+  });
 
 export const getRsvpTotals = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -130,26 +274,7 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
     let mine: RsvpTotalsResult["mine"] = null;
     if (data.includePersonal) {
       // Resolve "my" host ids by user id + phone tail + display name.
-      const { data: authUser } = await supabase.auth.getUser();
-      const myPhoneTail = digitsOnly(authUser?.user?.phone).slice(-10);
-      let myName = "";
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("display_name")
-        .eq("id", userId)
-        .maybeSingle();
-      myName = normName(prof?.display_name);
-
-      const mineHostIds = new Set<string>([userId]);
-      const myInviters = inviterRows.filter((r) => {
-        if (!r.host_id) return false;
-        if (r.host_id === userId) return true;
-        const rowTail = digitsOnly(r.phone).slice(-10);
-        if (myPhoneTail && rowTail && rowTail === myPhoneTail) return true;
-        if (myName && normName(r.name) === myName) return true;
-        return false;
-      });
-      myInviters.forEach((r) => r.host_id && mineHostIds.add(r.host_id));
+      const { mineHostIds, myInviters } = await resolveMyHostIds(supabase, userId, inviterRows);
 
       const hostIdArr = Array.from(mineHostIds);
       const { data: myInvites } = await supabase
@@ -188,7 +313,7 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
         confirmed: myConfirmed,
         virtual: myVirtual,
         pendingRequest,
-        inviterIds: activeMine.map((r) => r.id),
+          inviterIds: activeMine.map((r) => r.id).filter((id): id is string => !!id),
       };
     }
 
