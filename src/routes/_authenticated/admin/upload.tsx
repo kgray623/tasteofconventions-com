@@ -1119,7 +1119,11 @@ function UploadPage() {
     setDone(null);
     try {
       const images = await Promise.all(list.map(fileToDataUrl));
-      const { contacts } = await extractContacts({ data: { images } });
+      const { contacts } = await withTimeout(
+        extractContacts({ data: { images } }),
+        60_000,
+        "That took too long — try fewer screenshots and try again.",
+      );
       if (!contacts.length) {
         toast.error("No contacts found in those screenshots.");
         return;
