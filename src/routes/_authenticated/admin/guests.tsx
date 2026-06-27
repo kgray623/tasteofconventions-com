@@ -174,7 +174,9 @@ function GuestsPage() {
           <p className="text-sm text-muted-foreground mt-1">
             {rows === null
               ? "Loading…"
-              : <>Showing <span className="tabular-nums font-medium text-ink">{filtered.length}</span> of <span className="tabular-nums font-medium text-ink">{counts.all}</span> total. Tap a status to filter; search by name or phone.</>
+              : activeStatus === "confirmed"
+                ? <>Confirmed: <span className="tabular-nums font-medium text-ink">{counts.people.confirmed}</span> people across <span className="tabular-nums font-medium text-ink">{counts.rsvps.confirmed}</span> RSVPs (<span className="tabular-nums">{counts.modePeople.in_person}</span> in person · <span className="tabular-nums">{counts.modePeople.zoom}</span> Zoom).</>
+                : <>Showing <span className="tabular-nums font-medium text-ink">{counts.people[activeStatus]}</span> people across <span className="tabular-nums font-medium text-ink">{filtered.length}</span> guests (of <span className="tabular-nums font-medium text-ink">{counts.rsvps.all}</span> total uploaded · <span className="tabular-nums">{counts.people.all}</span> people if everyone showed up).</>
             }
           </p>
         </div>
@@ -195,12 +197,16 @@ function GuestsPage() {
               >
                 {STATUS_LABEL[t]}
                 <span className={`tabular-nums text-xs ${active ? "text-cream/80" : "text-muted-foreground"}`}>
-                  {counts[t]}
+                  {counts.people[t]}
+                </span>
+                <span className={`tabular-nums text-[10px] ${active ? "text-cream/60" : "text-muted-foreground/70"}`}>
+                  ({counts.rsvps[t]})
                 </span>
               </Link>
             );
           })}
         </div>
+        <p className="text-[11px] text-muted-foreground mt-2">Big number = <strong>people</strong> (party-size totals). (small) = RSVP guest count.</p>
       </Card>
 
       <div className="flex flex-wrap items-center gap-2">
