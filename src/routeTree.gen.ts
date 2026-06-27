@@ -43,6 +43,7 @@ import { Route as AuthenticatedAdminDonationsRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminCommitteeMessageRouteImport } from './routes/_authenticated/admin/committee-message'
 import { Route as AuthenticatedAdminChatRouteImport } from './routes/_authenticated/admin/chat'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin/categories'
+import { Route as AuthenticatedAdminBackupsRouteImport } from './routes/_authenticated/admin/backups'
 import { Route as AuthenticatedAdminAuditLogRouteImport } from './routes/_authenticated/admin/audit-log'
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
@@ -231,6 +232,12 @@ const AuthenticatedAdminCategoriesRoute =
     path: '/categories',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminBackupsRoute =
+  AuthenticatedAdminBackupsRouteImport.update({
+    id: '/backups',
+    path: '/backups',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminAuditLogRoute =
   AuthenticatedAdminAuditLogRouteImport.update({
     id: '/audit-log',
@@ -284,6 +291,7 @@ export interface FileRoutesByFullPath {
   '/rsvp/$token': typeof RsvpTokenRoute
   '/rsvp/': typeof RsvpIndexRoute
   '/admin/audit-log': typeof AuthenticatedAdminAuditLogRoute
+  '/admin/backups': typeof AuthenticatedAdminBackupsRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/chat': typeof AuthenticatedAdminChatRoute
   '/admin/committee-message': typeof AuthenticatedAdminCommitteeMessageRoute
@@ -324,6 +332,7 @@ export interface FileRoutesByTo {
   '/rsvp/$token': typeof RsvpTokenRoute
   '/rsvp': typeof RsvpIndexRoute
   '/admin/audit-log': typeof AuthenticatedAdminAuditLogRoute
+  '/admin/backups': typeof AuthenticatedAdminBackupsRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/chat': typeof AuthenticatedAdminChatRoute
   '/admin/committee-message': typeof AuthenticatedAdminCommitteeMessageRoute
@@ -367,6 +376,7 @@ export interface FileRoutesById {
   '/rsvp/$token': typeof RsvpTokenRoute
   '/rsvp/': typeof RsvpIndexRoute
   '/_authenticated/admin/audit-log': typeof AuthenticatedAdminAuditLogRoute
+  '/_authenticated/admin/backups': typeof AuthenticatedAdminBackupsRoute
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/chat': typeof AuthenticatedAdminChatRoute
   '/_authenticated/admin/committee-message': typeof AuthenticatedAdminCommitteeMessageRoute
@@ -410,6 +420,7 @@ export interface FileRouteTypes {
     | '/rsvp/$token'
     | '/rsvp/'
     | '/admin/audit-log'
+    | '/admin/backups'
     | '/admin/categories'
     | '/admin/chat'
     | '/admin/committee-message'
@@ -450,6 +461,7 @@ export interface FileRouteTypes {
     | '/rsvp/$token'
     | '/rsvp'
     | '/admin/audit-log'
+    | '/admin/backups'
     | '/admin/categories'
     | '/admin/chat'
     | '/admin/committee-message'
@@ -492,6 +504,7 @@ export interface FileRouteTypes {
     | '/rsvp/$token'
     | '/rsvp/'
     | '/_authenticated/admin/audit-log'
+    | '/_authenticated/admin/backups'
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/chat'
     | '/_authenticated/admin/committee-message'
@@ -780,6 +793,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminCategoriesRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/backups': {
+      id: '/_authenticated/admin/backups'
+      path: '/backups'
+      fullPath: '/admin/backups'
+      preLoaderRoute: typeof AuthenticatedAdminBackupsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/audit-log': {
       id: '/_authenticated/admin/audit-log'
       path: '/audit-log'
@@ -827,6 +847,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAuditLogRoute: typeof AuthenticatedAdminAuditLogRoute
+  AuthenticatedAdminBackupsRoute: typeof AuthenticatedAdminBackupsRoute
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedAdminChatRoute: typeof AuthenticatedAdminChatRoute
   AuthenticatedAdminCommitteeMessageRoute: typeof AuthenticatedAdminCommitteeMessageRoute
@@ -846,6 +867,7 @@ interface AuthenticatedAdminRouteChildren {
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminAuditLogRoute: AuthenticatedAdminAuditLogRoute,
+  AuthenticatedAdminBackupsRoute: AuthenticatedAdminBackupsRoute,
   AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
   AuthenticatedAdminChatRoute: AuthenticatedAdminChatRoute,
   AuthenticatedAdminCommitteeMessageRoute:
