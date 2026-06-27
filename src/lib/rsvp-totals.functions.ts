@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Database } from "@/integrations/supabase/types";
 
 export type RsvpTotalsResult = {
   event: {
@@ -40,10 +42,20 @@ const digitsOnly = (s: string | null | undefined) =>
 const normName = (s: string | null | undefined) =>
   (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
 
+type InviterIdentity = {
+  id?: string;
+  host_id: string | null;
+  phone: string | null;
+  name: string | null;
+  quota?: number | null;
+  active?: boolean | null;
+  requested_quota?: number | null;
+};
+
 async function resolveMyHostIds(
-  supabase: Parameters<Parameters<typeof requireSupabaseAuth["options"]["server"]>[0]>[0]["context"]["supabase"],
+  supabase: SupabaseClient<Database>,
   userId: string,
-  inviterRows: Array<{ host_id: string | null; phone: string | null; name: string | null }>,
+  inviterRows: InviterIdentity[],
 ) {
   const { data: authUser } = await supabase.auth.getUser();
   const myPhoneTail = digitsOnly(authUser?.user?.phone).slice(-10);
@@ -98,7 +110,7 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "GET" })
     if (invitationsRes.error) throw new Error(invitationsRes.error.message);
     if (rsvpsRes.error) throw new Error(rsvpsRes.error.message);
 
-    const inviterRows = (invitersRes.data ?? []) as Array<{ host_id: string | null; phone: string | null; name: string | null }>;
+    const inviterRows = (invitersRes.data ?? []) as InviterIdentity[];
     const { mineHostIds } = await resolveMyHostIds(supabase, userId, inviterRows);
 
     const invitationRows = (invitationsRes.data ?? []) as Array<{
@@ -301,7 +313,7 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
         confirmed: myConfirmed,
         virtual: myVirtual,
         pendingRequest,
-        inviterIds: activeMine.map((r) => r.id),
+          inviterIds: activeMine.map((r) => r.id).filter((id): id is string => !!id),
       };
     }
 
