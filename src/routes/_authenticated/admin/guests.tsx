@@ -260,7 +260,7 @@ function GuestsPage() {
                     {r.phone || "no phone"}
                     {r.email && <> · {r.email}</>}
                   </p>
-                  {s === "confirmed" && (
+                  {(s === "confirmed" || s === "maybe" || s === "waitlist" || (s === "declined" && r.party_size)) && (
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Party of {r.party_size || 1}
                       {r.attendance_mode === "zoom" ? " · Zoom" : r.attendance_mode === "in_person" ? " · In person" : ""}
