@@ -89,7 +89,10 @@ export function CommitteeWorkspace() {
   };
 
   const loadGuests = async (alive: () => boolean = () => true) => {
-    if (loadingGuestsRef.current) return;
+    // NOTE: do NOT early-return when loadingGuestsRef is already true.
+    // React StrictMode runs effects twice in dev; the early-return + cleanup
+    // race caused the spinner to hang forever. `alive()` is the real guard
+    // against stale state writes from a superseded run.
     loadingGuestsRef.current = true;
     if (alive()) setLoadingGuests(true);
     try {
