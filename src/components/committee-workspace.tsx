@@ -492,6 +492,16 @@ export function CommitteeWorkspace() {
 
   return (
     <div className="space-y-6">
+      {isAdmin && (
+        <div className="sticky top-0 z-30 -mx-4 px-4 py-2 bg-amber-50 border-b border-amber-200 flex items-center justify-between gap-2">
+          <span className="text-sm text-amber-900">
+            <span className="font-semibold">Previewing as Committee</span> — you're still signed in as admin.
+          </span>
+          <Button asChild size="sm" variant="outline" className="bg-white">
+            <Link to="/admin">← Back to Admin Dashboard</Link>
+          </Button>
+        </div>
+      )}
       {!hideWelcome && (
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">
@@ -856,9 +866,9 @@ export function CommitteeWorkspace() {
           </Link>
         </Button>
         <Button asChild variant="outline" className="justify-start h-14">
-          <Link to="/" hash="datetime">
+          <a href="/#datetime" target="_blank" rel="noopener noreferrer">
             <CalendarCog className="w-4 h-4" /> Event details
-          </Link>
+          </a>
         </Button>
         <Button asChild variant="outline" className="justify-start h-14">
           <Link to="/admin/team" search={{ view: "committee" }}>

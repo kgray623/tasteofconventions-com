@@ -1,40 +1,45 @@
-## What happened (verified)
+## First: nothing has been lost
 
-- Phyllis Andrews is in `invitations` (uploaded 2026-06-03) and in `rsvps` with `status=no` (declined 2026-06-08). She is being counted in the "Declined: 14" tile.
-- **Nothing was dropped.** All 14 declined guests are present in the database. Full list confirmed.
-- The reason it *looks* missing: the dashboard tiles only show **counts**. Clicking "Declined" goes to `/admin/my-rsvp` (your own RSVP page), not a list of declined guests. Same for Confirmed, Pending, Maybe, Waitlist. There has never been a guests-by-status list in the UI.
+I queried the database directly. The numbers right now:
 
-## Fix: build a real Guests list
+- **101 guests uploaded total** (every invitation row, committee + guests)
+- **35 confirmed** (yes), **14 declined** (no), **52 pending** (no RSVP yet)
+- **Phyllis Andrews** — `(402) 298-1447` — uploaded 2026-06-03, RSVP status = **no (declined)**. She is in the data. She is counted in the "Declined: 14" tile.
+- **Randy Andrews** is also there as declined.
 
-Add a single new admin page **`/admin/guests`** that lists every uploaded guest with their RSVP status, party size, attendance mode, phone, and responded date. Frontend-only — uses existing `getReconciliationRows` server function, no schema changes.
+The page that shows every one of these 101 people already exists at **`/admin/guests`** (the "Guests uploaded" tile and every status tile on the admin dashboard link to it, with a filter pre-applied). When you tap "Declined", you'll see all 14 names including Phyllis. I'll verify this end-to-end on the admin route as part of the fix.
 
-Features on `/admin/guests`:
-- Filter tabs at top: **All · Confirmed · Declined · Maybe · Waitlist · Pending** (counts shown on each tab, matching dashboard).
-- Search box (name or phone) — instant client-side filter.
-- Sortable by name, status, responded date.
-- One row per guest: name, phone, status badge, party size, in-person/Zoom, responded date.
-- "Open RSVP" link per row (admin view of guest's RSVP page via `rsvp_token`).
-- CSV export of the currently filtered list.
-- Mobile-first card layout that collapses to a table on desktop.
+## Why you got dumped on the front page
 
-Wire the dashboard tiles so each stat (Confirmed in person, Confirmed on Zoom, Total confirmed, Declined, Maybe, Waitlist, Pending, Guests uploaded) links to `/admin/guests` with the matching filter pre-applied (e.g. `/admin/guests?status=declined`). The "Declined" tile will land directly on Phyllis's row.
+I traced it. When you clicked "View as Committee", the committee workspace renders fine inside `/admin`, but one of the cards on it (the event date/time card) is a link pointing to `/` — the public home page. Tapping that — or anything that scrolled to it — yanks you off the admin route entirely, so on your next click you're on the public site, not the dashboard. That's the bug. It is not a sign-out and no data is gone; it's just bad navigation.
 
-Add "Guests" to the admin nav (next to Backups) so the list is one tap away.
+## What I want to change (small, targeted)
 
-## Verification (will run before saying done)
+1. **Stop "View as Committee" from escaping admin.**
+   - In `src/components/committee-workspace.tsx`, change the `<Link to="/" hash="datetime">` event-time card so it does NOT navigate away from admin. Two options — I'll do (a) by default:
+     - (a) Render the date/time inline as plain text (no link). It's already shown on the card itself; the link adds nothing.
+     - (b) If you want it clickable, open `/` in a new tab (`target="_blank"`) so your admin tab is untouched.
+   - Add a small sticky pill at the top of the committee preview that reads **"Previewing as Committee · Back to Admin Dashboard"** so you can always get out in one tap, no matter what.
 
-Using a direct DB read-back (auth-injection is off this session so I cannot click as admin in Playwright):
-- Confirm `/admin/guests?status=declined` returns exactly the 14 names listed above, including Phyllis Andrews.
-- Confirm `/admin/guests?status=confirmed` total party size matches the dashboard's "Total confirmed".
-- Confirm `Pending = uploaded − (confirmed + declined + maybe + waitlist)` matches.
-- Confirm CSV export of the declined filter contains all 14 rows with phone numbers.
-- Confirm linking from each dashboard tile lands on the correct pre-filtered view.
+2. **Make the full roster impossible to miss from `/admin`.**
+   - Add a prominent banner at the top of the admin dashboard: **"101 guests uploaded — view full list"** linking to `/admin/guests`. (Today the count is there but it sits inside the Guests card; this surfaces it.)
+   - On `/admin/guests`, add a one-line summary header: **"Showing X of 101 total"** that updates as filters change, so the total is always visible.
 
-I will explicitly tell you if any guest fails to appear under the expected filter. I will not claim "done" unless every one of the 14 declined names — Phyllis included — is visible on `/admin/guests?status=declined`.
+3. **Verification before I say it's done** (per your rule):
+   - Drive the admin route in a headless browser as an admin session, click "View as Committee", confirm I stay on `/admin` and the new "Back to Admin Dashboard" pill is visible.
+   - Click the new "101 guests uploaded" banner, confirm I land on `/admin/guests` and the page lists all 101 rows.
+   - Click the "Declined" tab, confirm I see exactly 14 rows and that **Phyllis Andrews** is in the list.
+   - Screenshot each step. If any one of those checks fails I will not call it fixed.
 
-## Files touched
+## Files I'd touch
 
-- `src/routes/_authenticated/admin/guests.tsx` (new)
-- `src/routes/_authenticated/admin.tsx` (add "Guests" nav tab)
-- `src/routes/_authenticated/admin/index.tsx` (re-point status tiles to `/admin/guests?status=…`)
-- `src/lib/admin-audit.functions.ts` (extend existing reconciliation row shape with `rsvp_token` so the list can deep-link to each guest's RSVP page — no schema change, just adds a field to the SELECT)
+- `src/components/committee-workspace.tsx` — remove/neutralize the `<Link to="/" hash="datetime">`; add the sticky "Back to Admin Dashboard" pill (only when rendered from the admin preview).
+- `src/routes/_authenticated/admin/index.tsx` — add the "101 guests uploaded — view full list" banner above the existing cards.
+- `src/routes/_authenticated/admin/guests.tsx` — add the "Showing X of 101 total" header line.
+
+No database changes. No deletions. No changes to anyone's RSVP. No changes to login or session handling.
+
+## Confirm before I build
+
+- OK to make the event date/time on the committee preview **plain text instead of a link** (option a)? Or would you rather it open the public page in a **new tab** (option b)?
+- Anything else you want surfaced on the new `/admin/guests` header — e.g. last-uploaded date, sortable columns, a way to mark someone as "I personally invited this person"?

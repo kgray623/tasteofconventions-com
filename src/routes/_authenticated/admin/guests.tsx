@@ -157,7 +157,10 @@ function GuestsPage() {
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Guests</p>
           <h2 className="font-display text-2xl">Everyone uploaded — by RSVP status</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Every guest on file. Tap a status to filter. Search by name or phone.
+            {rows === null
+              ? "Loading…"
+              : <>Showing <span className="tabular-nums font-medium text-ink">{filtered.length}</span> of <span className="tabular-nums font-medium text-ink">{counts.all}</span> total. Tap a status to filter; search by name or phone.</>
+            }
           </p>
         </div>
       </div>
