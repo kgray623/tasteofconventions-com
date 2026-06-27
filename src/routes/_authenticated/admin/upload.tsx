@@ -31,7 +31,7 @@ import {
   Clock,
   Copy,
 } from "lucide-react";
-import { getErrorMessage } from "@/lib/async-safety";
+import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 import { useServerFn } from "@tanstack/react-start";
 import { extractContactsFromImages } from "@/lib/extract-contacts.functions";
 import { Input } from "@/components/ui/input";
@@ -1119,7 +1119,11 @@ function UploadPage() {
     setDone(null);
     try {
       const images = await Promise.all(list.map(fileToDataUrl));
-      const { contacts } = await extractContacts({ data: { images } });
+      const { contacts } = await withTimeout(
+        extractContacts({ data: { images } }),
+        60_000,
+        "That took too long — try fewer screenshots and try again.",
+      );
       if (!contacts.length) {
         toast.error("No contacts found in those screenshots.");
         return;
@@ -1663,26 +1667,26 @@ function UploadPage() {
               <ImageIcon className="w-4 h-4 text-terracotta" />
               <p className="text-sm font-medium">Upload Guest Screenshots (8 max at a time)</p>
             </div>
-            <Button
-              type="button"
-              disabled={screenshotBusy}
-              onClick={() => screenshotRef.current?.click()}
-              className="bg-terracotta text-cream hover:bg-terracotta/90 w-full"
+            <label
+              htmlFor="screenshot-file-input"
+              aria-disabled={screenshotBusy}
+              className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors h-11 px-4 py-2 w-full bg-terracotta text-cream hover:bg-terracotta/90 shadow ${screenshotBusy ? "opacity-50 pointer-events-none cursor-not-allowed" : "cursor-pointer"}`}
             >
               {screenshotBusy ? (
                 <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Reading…</>
               ) : (
                 <><Upload className="w-4 h-4 mr-2" /> Choose screenshots</>
               )}
-            </Button>
+            </label>
             <input
+              id="screenshot-file-input"
               ref={screenshotRef}
               type="file"
               accept="image/*"
               multiple
               disabled={screenshotBusy}
               onChange={(e) => e.target.files && e.target.files.length > 0 && onScreenshots(e.target.files)}
-              className="hidden"
+              className="sr-only"
             />
           </div>
 
@@ -1691,19 +1695,19 @@ function UploadPage() {
               <FileSpreadsheet className="w-4 h-4 text-terracotta" />
               <p className="text-sm font-medium">Option 2 — Upload spreadsheet</p>
             </div>
-            <Button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className="bg-terracotta text-cream hover:bg-terracotta/90 w-full"
+            <label
+              htmlFor="spreadsheet-file-input"
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors h-11 px-4 py-2 w-full bg-terracotta text-cream hover:bg-terracotta/90 shadow cursor-pointer"
             >
               <Upload className="w-4 h-4 mr-2" /> Choose spreadsheet
-            </Button>
+            </label>
             <input
+              id="spreadsheet-file-input"
               ref={fileRef}
               type="file"
               accept=".csv,.xlsx,.xls,.vcf"
               onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
-              className="hidden"
+              className="sr-only"
             />
           </div>
         </div>
