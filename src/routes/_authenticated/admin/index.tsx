@@ -184,7 +184,7 @@ function AdminOverview() {
     }
   };
 
-  type Row = { label: string; value: number | string; to?: string; newKey?: "admin:rsvps-tile"; emphasis?: boolean };
+  type Row = { label: string; value: number | string; to?: string; search?: Record<string, string>; newKey?: "admin:rsvps-tile"; emphasis?: boolean };
   const StatRow = ({ row }: { row: Row }) => {
     const inner = (
       <>
@@ -198,14 +198,23 @@ function AdminOverview() {
     if (!row.to) {
       return <div className="flex items-center justify-between py-1.5 px-2 -mx-2">{inner}</div>;
     }
+    const href = row.search
+      ? `${row.to}?${new URLSearchParams(row.search).toString()}`
+      : row.to;
     return (
-      <Link
-        to={row.to}
-        onClick={() => row.newKey && markSeen(row.newKey)}
+      <a
+        href={href}
+        onClick={(e) => {
+          if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+          e.preventDefault();
+          row.newKey && markSeen(row.newKey);
+          window.history.pushState({}, "", href);
+          window.dispatchEvent(new PopStateEvent("popstate"));
+        }}
         className="flex items-center justify-between py-1.5 px-2 -mx-2 rounded hover:bg-muted/60 transition"
       >
         {inner}
-      </Link>
+      </a>
     );
   };
 
