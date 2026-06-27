@@ -35,6 +35,13 @@ type CommitteeGuest = CommitteeWorkspaceGuest;
 const WELCOME_HIDE_KEY = "toc.committee.welcomeVideoHidden";
 const LOAD_TIMEOUT_MS = 12_000;
 
+const pickSingleRsvp = (
+  rsvps:
+    | { status: string | null; party_size: number | null; attendance_mode: string | null; responded_at: string | null }[]
+    | { status: string | null; party_size: number | null; attendance_mode: string | null; responded_at: string | null }
+    | null,
+) => (Array.isArray(rsvps) ? rsvps[0] : rsvps) ?? null;
+
 export function CommitteeWorkspace() {
   const { user } = useAuth();
   const { isAdmin } = useRoles();
@@ -88,18 +95,121 @@ export function CommitteeWorkspace() {
     loadingGuestsRef.current = true;
     if (alive()) setLoadingGuests(true);
     try {
-      const result = await withTimeout(fetchCommitteeGuests(), LOAD_TIMEOUT_MS);
+      const result = await withTimeout(fetchCommitteeGuests({ data: {} }), LOAD_TIMEOUT_MS);
       if (!alive()) return;
       setMyHostIds(result.myHostIds);
       setGuests(result.guests);
     } catch (error) {
       console.error("[committee] guest list load failed", error);
-      if (alive()) toast.error(getErrorMessage(error, "Guest list refresh timed out. Try again."));
-      if (alive()) setGuests([]);
+      try {
+        const fallback = await loadGuestsFromBrowser();
+        if (!alive()) return;
+        setMyHostIds(fallback.myHostIds);
+        setGuests(fallback.guests);
+      } catch (fallbackError) {
+        console.error("[committee] browser guest list fallback failed", fallbackError);
+        if (alive()) toast.error(getErrorMessage(fallbackError, getErrorMessage(error, "Guest list refresh timed out. Try again.")));
+        if (alive()) setGuests([]);
+      }
     } finally {
       if (alive()) setLoadingGuests(false);
       loadingGuestsRef.current = false;
     }
+  };
+
+  const loadGuestsFromBrowser = async () => {
+    const mineSet = new Set<string>();
+    if (user?.id) mineSet.add(user.id);
+
+    const userPhone: string | undefined =
+      (user as { phone?: string } | null)?.phone ||
+      ((user?.user_metadata as { phone?: string } | undefined)?.phone ?? undefined);
+    const tail10 = (userPhone ?? "").replace(/\D/g, "").slice(-10);
+    let myName = "";
+    if (user?.id) {
+      const { data: prof } = await withTimeout(
+        supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
+        LOAD_TIMEOUT_MS,
+      );
+      myName = (prof?.display_name ?? "").trim().toLowerCase();
+    }
+
+    const { data: inviterRows, error: inviterError } = await withTimeout(
+      supabase.from("inviters").select("host_id,phone,name"),
+      LOAD_TIMEOUT_MS,
+    );
+    if (inviterError) throw inviterError;
+    for (const row of inviterRows ?? []) {
+      if (!row.host_id) continue;
+      const rowTail = (row.phone ?? "").replace(/\D/g, "").slice(-10);
+      const rowName = (row.name ?? "").trim().toLowerCase();
+      if (row.host_id === user?.id || (tail10 && rowTail === tail10) || (myName && rowName === myName)) {
+        mineSet.add(row.host_id);
+      }
+    }
+
+    const { data: events, error: eventsError } = await withTimeout(
+      supabase.from("events").select("id").order("starts_at").limit(1),
+      LOAD_TIMEOUT_MS,
+    );
+    if (eventsError) throw eventsError;
+    const eventId = events?.[0]?.id;
+    if (!eventId) return { guests: [], myHostIds: Array.from(mineSet) };
+
+    const { data, error: invitationsError } = await withTimeout(
+      supabase
+        .from("invitations")
+        .select("id,guest_name,guest_phone,guest_email,host_id,rsvps(status,party_size,attendance_mode,responded_at)")
+        .eq("event_id", eventId)
+        .order("created_at", { ascending: false }),
+      LOAD_TIMEOUT_MS,
+    );
+    if (invitationsError) throw invitationsError;
+
+    const rows = (data ?? []) as unknown as Array<{
+      id: string;
+      guest_name: string;
+      guest_phone: string | null;
+      guest_email: string | null;
+      host_id: string;
+      rsvps:
+        | { status: string | null; party_size: number | null; attendance_mode: string | null; responded_at: string | null }[]
+        | { status: string | null; party_size: number | null; attendance_mode: string | null; responded_at: string | null }
+        | null;
+    }>;
+
+    const hostIds = Array.from(new Set(rows.map((r) => r.host_id).filter(Boolean)));
+    const hostNames = new Map<string, string>();
+    if (hostIds.length) {
+      const { data: profiles, error: profilesError } = await withTimeout(
+        supabase.from("profiles").select("id,display_name,email").in("id", hostIds),
+        LOAD_TIMEOUT_MS,
+      );
+      if (profilesError) throw profilesError;
+      for (const profile of profiles ?? []) {
+        const name = (profile.display_name ?? "").trim() || (profile.email ?? "").split("@")[0] || "";
+        if (name) hostNames.set(profile.id, name);
+      }
+    }
+
+    return {
+      myHostIds: Array.from(mineSet),
+      guests: rows.map((row) => {
+        const rsvp = pickSingleRsvp(row.rsvps);
+        return {
+          id: row.id,
+          guest_name: row.guest_name,
+          guest_phone: row.guest_phone,
+          guest_email: row.guest_email,
+          rsvp_status: rsvp?.status ?? null,
+          party_size: rsvp?.party_size ?? 1,
+          attendance_mode: rsvp?.attendance_mode ?? null,
+          responded_at: rsvp?.responded_at ?? null,
+          invited_by: hostNames.get(row.host_id) ?? null,
+          host_id: row.host_id,
+        };
+      }),
+    };
   };
 
   useEffect(() => {
@@ -432,7 +542,7 @@ export function CommitteeWorkspace() {
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 flex-wrap">
             <CheckCircle2 className="w-5 h-5 text-ink" />
-            <h2 className="font-semibold">My Guests Uploaded ({myGuests.length}{myGuestsFilter === "committee" ? ` of ${myGuestsSorted.length}` : ""})</h2>
+            <h2 className="font-semibold">My Guests Uploaded ({loadingGuests ? "…" : `${myGuests.length}${myGuestsFilter === "committee" ? ` of ${myGuestsSorted.length}` : ""}`})</h2>
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -491,7 +601,7 @@ export function CommitteeWorkspace() {
             variant={myGuestsFilter === "all" ? "default" : "outline"}
             onClick={() => setMyGuestsFilter("all")}
           >
-            All ({myGuestsSorted.length})
+            All ({loadingGuests ? "…" : myGuestsSorted.length})
           </Button>
           <NewBadge target="committee:filter-toggle" />
           <Button
@@ -500,7 +610,7 @@ export function CommitteeWorkspace() {
             variant={myGuestsFilter === "committee" ? "default" : "outline"}
             onClick={() => setMyGuestsFilter("committee")}
           >
-            Committee ({committeeIds.size})
+            Committee ({loadingGuests ? "…" : committeeIds.size})
           </Button>
         </div>
         <p className="px-4 pt-3 text-xs text-muted-foreground">
@@ -569,7 +679,7 @@ export function CommitteeWorkspace() {
         open={openSection === "confirmed"}
         onToggle={() => toggleSection("confirmed")}
         icon={<CheckCircle2 className="w-5 h-5 text-terracotta" />}
-        title={`Confirmed RSVPs (${confirmedInPersonPeople} in person · ${confirmedVirtualPeople} virtual / ${confirmedGuests.length} responses)`}
+        title={loadingGuests ? "Confirmed RSVPs (loading…)" : `Confirmed RSVPs (${confirmedInPersonPeople} in person · ${confirmedVirtualPeople} virtual / ${confirmedGuests.length} responses)`}
         cardClassName="border-terracotta/40 bg-terracotta/5"
       >
         {loadingGuests ? (
@@ -615,7 +725,7 @@ export function CommitteeWorkspace() {
         open={openSection === "all"}
         onToggle={() => toggleSection("all")}
         icon={<CheckCircle2 className="w-5 h-5 text-emerald-600" />}
-        title={`Guest list (${guests.length})`}
+        title={`Guest list (${loadingGuests ? "…" : guests.length})`}
         action={
           <Button asChild variant="outline" size="sm" onClick={(e) => e.stopPropagation()}>
             <Link to="/admin/upload" search={{ view: "committee" }}>
