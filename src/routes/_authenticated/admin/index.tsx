@@ -211,6 +211,23 @@ function AdminOverview() {
 
   return (
     <div className="space-y-6">
+      <Link
+        to="/admin/backups"
+        className="block rounded-lg border-2 border-terracotta/30 bg-terracotta/5 hover:bg-terracotta/10 transition p-5"
+      >
+        <div className="flex items-center gap-4">
+          <div className="rounded-lg bg-terracotta/15 p-3 text-terracotta shrink-0">
+            <Archive className="w-6 h-6" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs uppercase tracking-wider text-terracotta">Backups</p>
+            <h2 className="font-display text-xl">Download backup files</h2>
+            <p className="text-sm text-muted-foreground">Source, migrations, database dump, spreadsheet, screenshots, guest CSV.</p>
+          </div>
+          <ArrowRight className="w-5 h-5 text-terracotta shrink-0" />
+        </div>
+      </Link>
+
       <Card className="p-4">
         <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">
           Preview dashboards
