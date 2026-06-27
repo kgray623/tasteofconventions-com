@@ -1,4 +1,5 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, CalendarCog, CheckCircle2, ChevronDown, Clock, EyeOff, ListChecks, Loader2, MessageCircle, MessageSquare, Pencil, Phone, RefreshCw, Trash2, Upload, UserPlus, Utensils } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -24,22 +25,12 @@ import { toast } from "sonner";
 import { NewBadge } from "@/components/new-badge";
 import { markSeen } from "@/lib/whats-new";
 import { getErrorMessage, withTimeout } from "@/lib/async-safety";
+import { getCommitteeWorkspaceGuests, type CommitteeWorkspaceGuest } from "@/lib/rsvp-totals.functions";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 
-type CommitteeGuest = {
-  id: string;
-  guest_name: string;
-  guest_phone: string | null;
-  guest_email: string | null;
-  rsvp_status: string | null;
-  party_size: number;
-  attendance_mode: string | null;
-  responded_at: string | null;
-  invited_by: string | null;
-  host_id: string;
-};
+type CommitteeGuest = CommitteeWorkspaceGuest;
 
 const WELCOME_HIDE_KEY = "toc.committee.welcomeVideoHidden";
 const LOAD_TIMEOUT_MS = 12_000;
@@ -48,6 +39,7 @@ export function CommitteeWorkspace() {
   const { user } = useAuth();
   const { isAdmin } = useRoles();
   const unread = useChatUnread();
+  const fetchCommitteeGuests = useServerFn(getCommitteeWorkspaceGuests);
   const search = useSearch({ strict: false }) as { chat?: string };
   const navigate = useNavigate();
   const chatsCardRef = useRef<HTMLDivElement>(null);
@@ -96,115 +88,10 @@ export function CommitteeWorkspace() {
     loadingGuestsRef.current = true;
     if (alive()) setLoadingGuests(true);
     try {
-      // Build the set of host_ids that count as "mine":
-      // the logged-in user + any inviter record linked to this user
-      // (by host_id, or by matching phone — handles people with multiple accounts).
-      const mineSet = new Set<string>();
-      if (user?.id) mineSet.add(user.id);
-      const userPhone: string | undefined =
-        (user as { phone?: string } | null)?.phone ||
-        ((user?.user_metadata as { phone?: string } | undefined)?.phone ?? undefined);
-      const phoneDigits = (userPhone ?? "").replace(/\D/g, "");
-      const tail10 = phoneDigits.slice(-10);
-      // Also match by display name (handles users with multiple accounts
-      // where the inviter row has no phone — link by name instead).
-      let myName = "";
-      try {
-        if (user?.id) {
-          const { data: prof } = await withTimeout(
-            supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
-            LOAD_TIMEOUT_MS,
-          );
-          myName = (prof?.display_name ?? "").trim().toLowerCase();
-        }
-      } catch (e) {
-        console.warn("[committee] profile lookup failed", e);
-      }
-      try {
-        const { data: inviterRows } = await withTimeout(
-          supabase.from("inviters").select("host_id,phone,name"),
-          LOAD_TIMEOUT_MS,
-        );
-        for (const row of inviterRows ?? []) {
-          if (!row.host_id) continue;
-          if (row.host_id === user?.id) {
-            mineSet.add(row.host_id);
-            continue;
-          }
-          const rowDigits = (row.phone ?? "").replace(/\D/g, "");
-          if (tail10 && rowDigits && rowDigits.slice(-10) === tail10) {
-            mineSet.add(row.host_id);
-            continue;
-          }
-          const rowName = (row.name ?? "").trim().toLowerCase();
-          if (myName && rowName && rowName === myName) {
-            mineSet.add(row.host_id);
-          }
-        }
-      } catch (e) {
-        console.warn("[committee] inviter lookup failed", e);
-      }
-      if (alive()) setMyHostIds(Array.from(mineSet));
-
-      const { data: events } = await withTimeout(
-        supabase.from("events").select("id").order("starts_at").limit(1),
-        LOAD_TIMEOUT_MS,
-      );
-      const eventId = events?.[0]?.id;
-      if (!eventId) {
-        if (alive()) setGuests([]);
-        return;
-      }
-      const { data, error } = await withTimeout(
-        supabase
-          .from("invitations")
-          .select("id,guest_name,guest_phone,guest_email,host_id,rsvps(status,party_size,attendance_mode,responded_at)")
-          .eq("event_id", eventId)
-          .order("created_at", { ascending: false }),
-        LOAD_TIMEOUT_MS,
-      );
-      if (error) throw error;
-      const rows = (data ?? []) as unknown as {
-        id: string;
-        guest_name: string;
-        guest_phone: string | null;
-        guest_email: string | null;
-        host_id: string;
-        rsvps:
-          | { status: string; party_size: number | null; attendance_mode: string | null; responded_at: string | null }[]
-          | { status: string; party_size: number | null; attendance_mode: string | null; responded_at: string | null }
-          | null;
-      }[];
-      const hostIds = Array.from(new Set(rows.map((r) => r.host_id).filter(Boolean)));
-      const hostNames = new Map<string, string>();
-      if (hostIds.length) {
-        const { data: profiles } = await withTimeout(
-          supabase.from("profiles").select("id,display_name,email").in("id", hostIds),
-          LOAD_TIMEOUT_MS,
-        );
-        for (const profile of profiles ?? []) {
-          const name = (profile.display_name ?? "").trim() || (profile.email ?? "").split("@")[0] || "";
-          if (name) hostNames.set(profile.id, name);
-        }
-      }
+      const result = await withTimeout(fetchCommitteeGuests(), LOAD_TIMEOUT_MS);
       if (!alive()) return;
-      setGuests(
-        rows.map((row) => {
-          const rsvp = Array.isArray(row.rsvps) ? row.rsvps[0] : row.rsvps;
-          return {
-            id: row.id,
-            guest_name: row.guest_name,
-            guest_phone: row.guest_phone,
-            guest_email: row.guest_email,
-            rsvp_status: rsvp?.status ?? null,
-            party_size: rsvp?.party_size ?? 1,
-            attendance_mode: rsvp?.attendance_mode ?? null,
-            responded_at: rsvp?.responded_at ?? null,
-            invited_by: hostNames.get(row.host_id) ?? null,
-            host_id: row.host_id,
-          };
-        }),
-      );
+      setMyHostIds(result.myHostIds);
+      setGuests(result.guests);
     } catch (error) {
       console.error("[committee] guest list load failed", error);
       if (alive()) toast.error(getErrorMessage(error, "Guest list refresh timed out. Try again."));
