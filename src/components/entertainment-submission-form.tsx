@@ -68,17 +68,18 @@ export function EntertainmentSubmissionForm() {
         .uploadToSignedUrl(path, token, file, { contentType: file.type, upsert: false });
       if (upErr) throw upErr;
 
-      const { error: insErr } = await supabase
-        .from("entertainment_submissions")
-        .insert({
+      const { submitEntertainment } = await import("@/lib/entertainment-submit.functions");
+      await submitEntertainment({
+        data: {
           name: parsed.data.name,
           email: parsed.data.email || null,
           phone: parsed.data.phone || null,
           talent: parsed.data.talent || null,
           notes: parsed.data.notes || null,
           video_path: path,
-        });
-      if (insErr) throw insErr;
+        },
+      });
+
 
       clearDraftScope(draftScope);
       setDone(true);
