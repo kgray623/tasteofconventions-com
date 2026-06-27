@@ -99,14 +99,29 @@ function GuestsPage() {
     return () => { alive = false; };
   }, [fetchRows]);
 
+  const partyOf = (r: Row) => {
+    const n = Number(r.party_size);
+    return Number.isFinite(n) && n > 0 ? n : 1;
+  };
+
   const counts = useMemo(() => {
     const c: Record<StatusFilter, number> = { all: 0, confirmed: 0, declined: 0, maybe: 0, waitlist: 0, pending: 0 };
-    if (!rows) return c;
+    const rsvps: Record<StatusFilter, number> = { all: 0, confirmed: 0, declined: 0, maybe: 0, waitlist: 0, pending: 0 };
+    const modePeople = { in_person: 0, zoom: 0 };
+    if (!rows) return { people: c, rsvps, modePeople };
     for (const r of rows) {
-      c.all += 1;
-      c[statusOfRow(r)] += 1;
+      const s = statusOfRow(r);
+      const p = partyOf(r);
+      c.all += p;
+      c[s] += p;
+      rsvps.all += 1;
+      rsvps[s] += 1;
+      if (s === "confirmed") {
+        if (r.attendance_mode === "zoom") modePeople.zoom += p;
+        else modePeople.in_person += p;
+      }
     }
-    return c;
+    return { people: c, rsvps, modePeople };
   }, [rows]);
 
   const filtered = useMemo(() => {
