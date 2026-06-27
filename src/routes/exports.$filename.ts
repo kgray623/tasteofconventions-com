@@ -10,6 +10,18 @@ const EXPORTS: Record<string, { contentType: string; downloadName: string }> = {
     contentType: "text/csv; charset=utf-8",
     downloadName: "guests.csv",
   },
+  "taste-of-conventions-source.zip": {
+    contentType: "application/zip",
+    downloadName: "taste-of-conventions-source.zip",
+  },
+  "taste-of-conventions-migrations.zip": {
+    contentType: "application/zip",
+    downloadName: "taste-of-conventions-migrations.zip",
+  },
+  "taste-of-conventions-admin-screenshots.zip": {
+    contentType: "application/zip",
+    downloadName: "taste-of-conventions-admin-screenshots.zip",
+  },
 };
 
 export const Route = createFileRoute("/exports/$filename")({
