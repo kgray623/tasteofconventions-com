@@ -81,8 +81,9 @@ async function resolveMyHostIds(
   return { mineHostIds, myInviters };
 }
 
-export const getCommitteeWorkspaceGuests = createServerFn({ method: "GET" })
+export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
+  .inputValidator((input: Record<string, never> | undefined) => input ?? {})
   .handler(async ({ context }): Promise<CommitteeWorkspaceGuestsResult> => {
     const { supabase, userId } = context;
 
