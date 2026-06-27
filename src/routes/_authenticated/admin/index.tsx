@@ -213,6 +213,25 @@ function AdminOverview() {
   return (
     <div className="space-y-6">
       <Link
+        to="/admin/guests"
+        className="block rounded-lg border-2 border-ink/20 bg-ink/5 hover:bg-ink/10 transition p-5"
+      >
+        <div className="flex items-center gap-4">
+          <div className="rounded-lg bg-ink/15 p-3 text-ink shrink-0">
+            <Users className="w-6 h-6" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs uppercase tracking-wider text-ink/70">Guest roster</p>
+            <h2 className="font-display text-xl">
+              <span className="tabular-nums">{all.guests_uploaded}</span> guests uploaded — view full list
+            </h2>
+            <p className="text-sm text-muted-foreground">Every person on file, filterable by RSVP status. Search by name or phone.</p>
+          </div>
+          <ArrowRight className="w-5 h-5 text-ink shrink-0" />
+        </div>
+      </Link>
+
+      <Link
         to="/admin/backups"
         className="block rounded-lg border-2 border-terracotta/30 bg-terracotta/5 hover:bg-terracotta/10 transition p-5"
       >
