@@ -1096,6 +1096,7 @@ function UploadPage() {
     let inserted = 0,
       flagged = 0,
       skipped = 0;
+    const dupNames: string[] = [];
     try {
       for (const r of rows) {
         if (skipDupes && r._dupReason) {
@@ -1113,13 +1114,18 @@ function UploadPage() {
             is_committee: importAsCommittee,
           });
           if (error) {
+            const dup = parseDuplicateGuestError(error);
+            if (dup) dupNames.push(`${r.guest_name} (matches ${dup.existingName})`);
+            else console.error("[upload] insert failed", error);
             skipped++;
             continue;
           }
           inserted++;
           if (r._dupReason) flagged++;
         } catch (e) {
-          console.error("[upload] insert failed", e);
+          const dup = parseDuplicateGuestError(e);
+          if (dup) dupNames.push(`${r.guest_name} (matches ${dup.existingName})`);
+          else console.error("[upload] insert failed", e);
           skipped++;
         }
       }
@@ -1129,6 +1135,12 @@ function UploadPage() {
       clearUploadDraft(user.id);
       if (fileRef.current) fileRef.current.value = "";
       toast.success(`Added ${inserted} guest${inserted === 1 ? "" : "s"}`);
+      if (dupNames.length) {
+        toast.warning(
+          `${dupNames.length} already on the list — not added again: ${dupNames.slice(0, 5).join(", ")}${dupNames.length > 5 ? "…" : ""}`,
+          { duration: 9000 },
+        );
+      }
       void loadSavedGuests(eventId);
     } catch (e) {
       console.error("[upload] importAll failed", e);
@@ -1137,6 +1149,7 @@ function UploadPage() {
       setBusy(false);
     }
   };
+
 
   const dupCount = rows.filter((r) => r._dupReason).length;
 
