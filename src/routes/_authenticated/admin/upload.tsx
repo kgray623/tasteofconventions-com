@@ -65,6 +65,53 @@ class UploadErrorBoundary extends Component<{ children: ReactNode }, { error: Er
   }
 }
 
+// Parse the friendly duplicate-guest error raised by the DB trigger
+// `prevent_duplicate_invitation` (ERRCODE 23505, message prefixed with
+// DUPLICATE_GUEST_PHONE: or DUPLICATE_GUEST_EMAIL:).
+function parseDuplicateGuestError(err: unknown): { kind: "phone" | "email"; existingName: string } | null {
+  if (!err || typeof err !== "object") return null;
+  const msg = String((err as { message?: string }).message ?? "");
+  const code = String((err as { code?: string }).code ?? "");
+  const phone = msg.match(/DUPLICATE_GUEST_PHONE:\s*.+?\(matches\s+(.+)\)/i);
+  if (phone) return { kind: "phone", existingName: phone[1].trim() };
+  const email = msg.match(/DUPLICATE_GUEST_EMAIL:\s*.+?\(matches\s+(.+)\)/i);
+  if (email) return { kind: "email", existingName: email[1].trim() };
+  if (code === "23505" && /invitations/i.test(msg)) {
+    return { kind: "phone", existingName: "an existing guest" };
+  }
+  return null;
+}
+
+// Tiny normalized similarity for client-side fuzzy "did you mean" prompts.
+function normalizeNameClient(s: string): string {
+  return (s || "").toLowerCase().replace(/[^a-z]/g, "");
+}
+function nameSimilarity(a: string, b: string): number {
+  const A = normalizeNameClient(a), B = normalizeNameClient(b);
+  if (!A || !B) return 0;
+  if (A === B) return 1;
+  // Dice coefficient over bigrams — cheap and good for spelling variants.
+  if (A.length < 2 || B.length < 2) return 0;
+  const bigrams = (s: string) => {
+    const out = new Map<string, number>();
+    for (let i = 0; i < s.length - 1; i++) {
+      const g = s.slice(i, i + 2);
+      out.set(g, (out.get(g) ?? 0) + 1);
+    }
+    return out;
+  };
+  const aB = bigrams(A), bB = bigrams(B);
+  let inter = 0, aT = 0, bT = 0;
+  for (const v of aB.values()) aT += v;
+  for (const v of bB.values()) bT += v;
+  for (const [g, ca] of aB) {
+    const cb = bB.get(g);
+    if (cb) inter += Math.min(ca, cb);
+  }
+  return (2 * inter) / (aT + bT);
+}
+
+
 // Browsers that support the Contact Picker API (Chrome on Android)
 type ContactInfo = { name?: string[]; email?: string[]; tel?: string[] };
 interface ContactsManager {
