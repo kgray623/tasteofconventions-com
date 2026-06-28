@@ -1193,6 +1193,7 @@ function UploadPage() {
       const insertedIds: string[] = [];
       const insertedNames: string[] = [];
       let failed = 0;
+      const dupBlocked: string[] = [];
       for (const c of contacts) {
         const name = (c.name || "").trim();
         if (!name) {
@@ -1213,13 +1214,25 @@ function UploadPage() {
           .select("id,guest_name")
           .single();
         if (error || !data) {
-          console.error("[upload] screenshot insert failed", error);
-          failed++;
+          const dup = parseDuplicateGuestError(error);
+          if (dup) {
+            dupBlocked.push(`${name} (matches ${dup.existingName})`);
+          } else {
+            console.error("[upload] screenshot insert failed", error);
+            failed++;
+          }
           continue;
         }
         insertedIds.push(data.id);
         insertedNames.push(data.guest_name);
       }
+      if (dupBlocked.length) {
+        toast.warning(
+          `${dupBlocked.length} already on the list — not added again: ${dupBlocked.slice(0, 5).join(", ")}${dupBlocked.length > 5 ? "…" : ""}`,
+          { duration: 9000 },
+        );
+      }
+
 
       // Find duplicates flagged by the database trigger (email / phone / fuzzy name).
       let dupeNames: string[] = [];
