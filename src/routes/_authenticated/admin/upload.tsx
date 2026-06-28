@@ -1356,6 +1356,17 @@ function UploadPage() {
       toast.error("Add a phone number or email so we can reach them.");
       return;
     }
+    // Fuzzy "did you mean" check against already-loaded guests (spelling variants).
+    const close = savedGuests
+      .map((g) => ({ name: g.guest_name, score: nameSimilarity(name, g.guest_name) }))
+      .filter((m) => m.score >= 0.85 && m.name.toLowerCase() !== name.toLowerCase())
+      .sort((a, b) => b.score - a.score)[0];
+    if (close) {
+      const ok = window.confirm(
+        `"${close.name}" is already on the guest list and looks very similar to "${name}". Add "${name}" anyway?`,
+      );
+      if (!ok) return;
+    }
     setQuickBusy(true);
     try {
       const { error } = await supabase.from("invitations").insert({
@@ -1374,12 +1385,21 @@ function UploadPage() {
       toast.success(`Added ${name}`);
       void loadSavedGuests(eventId);
     } catch (e) {
-      console.error("[upload] quick add failed", e);
-      toast.error("Couldn't add that guest", { description: getErrorMessage(e) });
+      const dup = parseDuplicateGuestError(e);
+      if (dup) {
+        toast.warning(
+          `${name} is already on the guest list (matches ${dup.existingName}) — not added again.`,
+          { duration: 9000 },
+        );
+      } else {
+        console.error("[upload] quick add failed", e);
+        toast.error("Couldn't add that guest", { description: getErrorMessage(e) });
+      }
     } finally {
       setQuickBusy(false);
     }
   };
+
 
 
   return (
