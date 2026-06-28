@@ -65,6 +65,53 @@ class UploadErrorBoundary extends Component<{ children: ReactNode }, { error: Er
   }
 }
 
+// Parse the friendly duplicate-guest error raised by the DB trigger
+// `prevent_duplicate_invitation` (ERRCODE 23505, message prefixed with
+// DUPLICATE_GUEST_PHONE: or DUPLICATE_GUEST_EMAIL:).
+function parseDuplicateGuestError(err: unknown): { kind: "phone" | "email"; existingName: string } | null {
+  if (!err || typeof err !== "object") return null;
+  const msg = String((err as { message?: string }).message ?? "");
+  const code = String((err as { code?: string }).code ?? "");
+  const phone = msg.match(/DUPLICATE_GUEST_PHONE:\s*.+?\(matches\s+(.+)\)/i);
+  if (phone) return { kind: "phone", existingName: phone[1].trim() };
+  const email = msg.match(/DUPLICATE_GUEST_EMAIL:\s*.+?\(matches\s+(.+)\)/i);
+  if (email) return { kind: "email", existingName: email[1].trim() };
+  if (code === "23505" && /invitations/i.test(msg)) {
+    return { kind: "phone", existingName: "an existing guest" };
+  }
+  return null;
+}
+
+// Tiny normalized similarity for client-side fuzzy "did you mean" prompts.
+function normalizeNameClient(s: string): string {
+  return (s || "").toLowerCase().replace(/[^a-z]/g, "");
+}
+function nameSimilarity(a: string, b: string): number {
+  const A = normalizeNameClient(a), B = normalizeNameClient(b);
+  if (!A || !B) return 0;
+  if (A === B) return 1;
+  // Dice coefficient over bigrams — cheap and good for spelling variants.
+  if (A.length < 2 || B.length < 2) return 0;
+  const bigrams = (s: string) => {
+    const out = new Map<string, number>();
+    for (let i = 0; i < s.length - 1; i++) {
+      const g = s.slice(i, i + 2);
+      out.set(g, (out.get(g) ?? 0) + 1);
+    }
+    return out;
+  };
+  const aB = bigrams(A), bB = bigrams(B);
+  let inter = 0, aT = 0, bT = 0;
+  for (const v of aB.values()) aT += v;
+  for (const v of bB.values()) bT += v;
+  for (const [g, ca] of aB) {
+    const cb = bB.get(g);
+    if (cb) inter += Math.min(ca, cb);
+  }
+  return (2 * inter) / (aT + bT);
+}
+
+
 // Browsers that support the Contact Picker API (Chrome on Android)
 type ContactInfo = { name?: string[]; email?: string[]; tel?: string[] };
 interface ContactsManager {
@@ -1049,6 +1096,7 @@ function UploadPage() {
     let inserted = 0,
       flagged = 0,
       skipped = 0;
+    const dupNames: string[] = [];
     try {
       for (const r of rows) {
         if (skipDupes && r._dupReason) {
@@ -1066,13 +1114,18 @@ function UploadPage() {
             is_committee: importAsCommittee,
           });
           if (error) {
+            const dup = parseDuplicateGuestError(error);
+            if (dup) dupNames.push(`${r.guest_name} (matches ${dup.existingName})`);
+            else console.error("[upload] insert failed", error);
             skipped++;
             continue;
           }
           inserted++;
           if (r._dupReason) flagged++;
         } catch (e) {
-          console.error("[upload] insert failed", e);
+          const dup = parseDuplicateGuestError(e);
+          if (dup) dupNames.push(`${r.guest_name} (matches ${dup.existingName})`);
+          else console.error("[upload] insert failed", e);
           skipped++;
         }
       }
@@ -1082,6 +1135,12 @@ function UploadPage() {
       clearUploadDraft(user.id);
       if (fileRef.current) fileRef.current.value = "";
       toast.success(`Added ${inserted} guest${inserted === 1 ? "" : "s"}`);
+      if (dupNames.length) {
+        toast.warning(
+          `${dupNames.length} already on the list — not added again: ${dupNames.slice(0, 5).join(", ")}${dupNames.length > 5 ? "…" : ""}`,
+          { duration: 9000 },
+        );
+      }
       void loadSavedGuests(eventId);
     } catch (e) {
       console.error("[upload] importAll failed", e);
@@ -1090,6 +1149,7 @@ function UploadPage() {
       setBusy(false);
     }
   };
+
 
   const dupCount = rows.filter((r) => r._dupReason).length;
 
@@ -1133,6 +1193,7 @@ function UploadPage() {
       const insertedIds: string[] = [];
       const insertedNames: string[] = [];
       let failed = 0;
+      const dupBlocked: string[] = [];
       for (const c of contacts) {
         const name = (c.name || "").trim();
         if (!name) {
@@ -1153,13 +1214,25 @@ function UploadPage() {
           .select("id,guest_name")
           .single();
         if (error || !data) {
-          console.error("[upload] screenshot insert failed", error);
-          failed++;
+          const dup = parseDuplicateGuestError(error);
+          if (dup) {
+            dupBlocked.push(`${name} (matches ${dup.existingName})`);
+          } else {
+            console.error("[upload] screenshot insert failed", error);
+            failed++;
+          }
           continue;
         }
         insertedIds.push(data.id);
         insertedNames.push(data.guest_name);
       }
+      if (dupBlocked.length) {
+        toast.warning(
+          `${dupBlocked.length} already on the list — not added again: ${dupBlocked.slice(0, 5).join(", ")}${dupBlocked.length > 5 ? "…" : ""}`,
+          { duration: 9000 },
+        );
+      }
+
 
       // Find duplicates flagged by the database trigger (email / phone / fuzzy name).
       let dupeNames: string[] = [];
@@ -1283,6 +1356,17 @@ function UploadPage() {
       toast.error("Add a phone number or email so we can reach them.");
       return;
     }
+    // Fuzzy "did you mean" check against already-loaded guests (spelling variants).
+    const close = savedGuests
+      .map((g) => ({ name: g.guest_name, score: nameSimilarity(name, g.guest_name) }))
+      .filter((m) => m.score >= 0.85 && m.name.toLowerCase() !== name.toLowerCase())
+      .sort((a, b) => b.score - a.score)[0];
+    if (close) {
+      const ok = window.confirm(
+        `"${close.name}" is already on the guest list and looks very similar to "${name}". Add "${name}" anyway?`,
+      );
+      if (!ok) return;
+    }
     setQuickBusy(true);
     try {
       const { error } = await supabase.from("invitations").insert({
@@ -1301,12 +1385,21 @@ function UploadPage() {
       toast.success(`Added ${name}`);
       void loadSavedGuests(eventId);
     } catch (e) {
-      console.error("[upload] quick add failed", e);
-      toast.error("Couldn't add that guest", { description: getErrorMessage(e) });
+      const dup = parseDuplicateGuestError(e);
+      if (dup) {
+        toast.warning(
+          `${name} is already on the guest list (matches ${dup.existingName}) — not added again.`,
+          { duration: 9000 },
+        );
+      } else {
+        console.error("[upload] quick add failed", e);
+        toast.error("Couldn't add that guest", { description: getErrorMessage(e) });
+      }
     } finally {
       setQuickBusy(false);
     }
   };
+
 
 
   return (

@@ -1031,6 +1031,18 @@ export type Database = {
           read_ct: number
         }[]
       }
+      search_invitations_fuzzy: {
+        Args: { _event_id: string; _query: string; _threshold?: number }
+        Returns: {
+          guest_email: string
+          guest_name: string
+          guest_phone: string
+          id: string
+          is_committee: boolean
+          match_kind: string
+          similarity: number
+        }[]
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }

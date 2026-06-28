@@ -127,18 +127,46 @@ function GuestsPage() {
   const filtered = useMemo(() => {
     if (!rows) return [];
     const q = query.trim().toLowerCase();
+    const qNorm = q.replace(/[^a-z0-9]/g, "");
+    const bigrams = (s: string) => {
+      const out = new Map<string, number>();
+      for (let i = 0; i < s.length - 1; i++) {
+        const g = s.slice(i, i + 2);
+        out.set(g, (out.get(g) ?? 0) + 1);
+      }
+      return out;
+    };
+    const dice = (a: string, b: string) => {
+      if (!a || !b || a.length < 2 || b.length < 2) return 0;
+      const aB = bigrams(a), bB = bigrams(b);
+      let inter = 0, aT = 0, bT = 0;
+      for (const v of aB.values()) aT += v;
+      for (const v of bB.values()) bT += v;
+      for (const [g, ca] of aB) {
+        const cb = bB.get(g);
+        if (cb) inter += Math.min(ca, cb);
+      }
+      return (2 * inter) / (aT + bT);
+    };
+    const qNameNorm = q.replace(/[^a-z]/g, "");
     return rows.filter((r) => {
       if (activeStatus !== "all" && statusOfRow(r) !== activeStatus) return false;
       if (mode && r.attendance_mode !== mode) return false;
       if (activeAudience === "guest" && r.is_committee) return false;
       if (activeAudience === "committee" && !r.is_committee) return false;
       if (q) {
+        const nameNorm = r.name.toLowerCase().replace(/[^a-z]/g, "");
         const hay = `${r.name} ${r.phone} ${r.email}`.toLowerCase();
-        if (!hay.includes(q)) return false;
+        if (hay.includes(q)) return true;
+        if (qNorm && (nameNorm.includes(qNameNorm) || r.phone.replace(/\D/g, "").includes(qNorm))) return true;
+        // Fuzzy spelling match (e.g. "Daisy" finds "Deisy")
+        if (qNameNorm.length >= 3 && dice(qNameNorm, nameNorm) >= 0.6) return true;
+        return false;
       }
       return true;
     }).sort((a, b) => a.name.localeCompare(b.name));
   }, [rows, activeStatus, activeAudience, mode, query]);
+
 
   const exportCsv = () => {
     const headers = ["name", "phone", "email", "audience", "status", "party_size", "attendance_mode", "responded_at"];
