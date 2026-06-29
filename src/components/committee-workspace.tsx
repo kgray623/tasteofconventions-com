@@ -506,6 +506,20 @@ export function CommitteeWorkspace() {
           </Button>
         </div>
       )}
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Button asChild className="bg-ink text-cream hover:bg-ink/90 justify-start h-14">
+          <Link to="/admin/upload" search={{ view: "committee" }}>
+            <Upload className="w-4 h-4" /> Upload guests
+          </Link>
+        </Button>
+        <Button asChild variant="outline" className="justify-start h-14">
+          <Link to="/invitations/new">
+            <UserPlus className="w-4 h-4" /> Add one guest
+          </Link>
+        </Button>
+      </div>
+
       {!hideWelcome && (
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">
@@ -549,19 +563,6 @@ export function CommitteeWorkspace() {
           Show welcome video
         </Button>
       )}
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Button asChild className="bg-ink text-cream hover:bg-ink/90 justify-start h-14">
-          <Link to="/admin/upload" search={{ view: "committee" }}>
-            <Upload className="w-4 h-4" /> Upload guests
-          </Link>
-        </Button>
-        <Button asChild variant="outline" className="justify-start h-14">
-          <Link to="/invitations/new">
-            <UserPlus className="w-4 h-4" /> Add one guest
-          </Link>
-        </Button>
-      </div>
 
       <RsvpTotalsCard personalHostIds={myHostIds.length ? myHostIds : user ? [user.id] : []} />
 
