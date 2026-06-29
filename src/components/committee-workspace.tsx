@@ -221,10 +221,14 @@ export function CommitteeWorkspace() {
   }, [user?.id]);
 
   const refreshGuestsNow = async () => {
+    if (manualRefreshingGuests) return;
     loadingGuestsRef.current = false;
     setManualRefreshingGuests(true);
-    await loadGuests();
-    setManualRefreshingGuests(false);
+    try {
+      await loadGuests();
+    } finally {
+      setManualRefreshingGuests(false);
+    }
   };
 
   // Load the full committee roster from all three sources and index by
@@ -546,6 +550,19 @@ export function CommitteeWorkspace() {
         </Button>
       )}
 
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Button asChild className="bg-ink text-cream hover:bg-ink/90 justify-start h-14">
+          <Link to="/admin/upload" search={{ view: "committee" }}>
+            <Upload className="w-4 h-4" /> Upload guests
+          </Link>
+        </Button>
+        <Button asChild variant="outline" className="justify-start h-14">
+          <Link to="/invitations/new">
+            <UserPlus className="w-4 h-4" /> Add one guest
+          </Link>
+        </Button>
+      </div>
+
       <RsvpTotalsCard personalHostIds={myHostIds.length ? myHostIds : user ? [user.id] : []} />
 
       <Card className="overflow-hidden">
@@ -560,7 +577,7 @@ export function CommitteeWorkspace() {
               variant="outline"
               size="sm"
               onClick={() => void refreshGuestsNow()}
-              disabled={manualRefreshingGuests}
+              disabled={manualRefreshingGuests || loadingGuests}
               aria-label="Refresh guest list"
             >
               {manualRefreshingGuests ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
