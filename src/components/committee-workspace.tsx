@@ -922,21 +922,19 @@ function CollapsibleSection({
   return (
     <Card className={`overflow-hidden ${cardClassName ?? ""}`}>
       <Collapsible open={open} onOpenChange={onToggle}>
-        <CollapsibleTrigger asChild>
-          <button
-            type="button"
-            className="w-full p-4 border-b border-border flex items-center justify-between gap-3 text-left cursor-pointer hover:bg-muted/40 transition-colors"
-          >
-            <div className="flex items-center gap-2 flex-1 min-w-0">
+        <div className="border-b border-border flex items-center justify-between gap-3 p-4">
+          <CollapsibleTrigger asChild>
+            <button
+              type="button"
+              className="flex min-w-0 flex-1 items-center gap-2 text-left cursor-pointer rounded-md hover:bg-muted/40 transition-colors"
+            >
               {icon}
               <h2 className="font-semibold truncate">{title}</h2>
-            </div>
-            <div className="flex items-center gap-2">
-              {action}
               <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
-            </div>
-          </button>
-        </CollapsibleTrigger>
+            </button>
+          </CollapsibleTrigger>
+          {action && <div className="shrink-0">{action}</div>}
+        </div>
         <CollapsibleContent>{children}</CollapsibleContent>
       </Collapsible>
     </Card>
