@@ -221,10 +221,14 @@ export function CommitteeWorkspace() {
   }, [user?.id]);
 
   const refreshGuestsNow = async () => {
+    if (manualRefreshingGuests) return;
     loadingGuestsRef.current = false;
     setManualRefreshingGuests(true);
-    await loadGuests();
-    setManualRefreshingGuests(false);
+    try {
+      await loadGuests();
+    } finally {
+      setManualRefreshingGuests(false);
+    }
   };
 
   // Load the full committee roster from all three sources and index by
@@ -502,6 +506,20 @@ export function CommitteeWorkspace() {
           </Button>
         </div>
       )}
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Button asChild className="bg-ink text-cream hover:bg-ink/90 justify-start h-14">
+          <Link to="/admin/upload" search={{ view: "committee" }}>
+            <Upload className="w-4 h-4" /> Upload guests
+          </Link>
+        </Button>
+        <Button asChild variant="outline" className="justify-start h-14">
+          <Link to="/invitations/new">
+            <UserPlus className="w-4 h-4" /> Add one guest
+          </Link>
+        </Button>
+      </div>
+
       {!hideWelcome && (
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">
@@ -560,7 +578,7 @@ export function CommitteeWorkspace() {
               variant="outline"
               size="sm"
               onClick={() => void refreshGuestsNow()}
-              disabled={manualRefreshingGuests}
+              disabled={manualRefreshingGuests || loadingGuests}
               aria-label="Refresh guest list"
             >
               {manualRefreshingGuests ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
@@ -905,21 +923,19 @@ function CollapsibleSection({
   return (
     <Card className={`overflow-hidden ${cardClassName ?? ""}`}>
       <Collapsible open={open} onOpenChange={onToggle}>
-        <CollapsibleTrigger asChild>
-          <button
-            type="button"
-            className="w-full p-4 border-b border-border flex items-center justify-between gap-3 text-left cursor-pointer hover:bg-muted/40 transition-colors"
-          >
-            <div className="flex items-center gap-2 flex-1 min-w-0">
+        <div className="border-b border-border flex items-center justify-between gap-3 p-4">
+          <CollapsibleTrigger asChild>
+            <button
+              type="button"
+              className="flex min-w-0 flex-1 items-center gap-2 text-left cursor-pointer rounded-md hover:bg-muted/40 transition-colors"
+            >
               {icon}
               <h2 className="font-semibold truncate">{title}</h2>
-            </div>
-            <div className="flex items-center gap-2">
-              {action}
               <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
-            </div>
-          </button>
-        </CollapsibleTrigger>
+            </button>
+          </CollapsibleTrigger>
+          {action && <div className="shrink-0">{action}</div>}
+        </div>
         <CollapsibleContent>{children}</CollapsibleContent>
       </Collapsible>
     </Card>

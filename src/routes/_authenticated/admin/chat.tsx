@@ -38,6 +38,8 @@ function ChatPage() {
       ]);
       setMsgs(m.data ?? []);
       setProfiles(Object.fromEntries((p.data ?? []).map((x) => [x.id, x])));
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Chat refresh timed out. Try again."));
     } finally {
       loadingMessagesRef.current = false;
     }
@@ -45,7 +47,7 @@ function ChatPage() {
 
   useEffect(() => {
     load();
-    void markChatSeen(user?.id, "team", null);
+    void withTimeout(markChatSeen(user?.id, "team", null), 5_000).catch(() => null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
@@ -67,8 +69,10 @@ function ChatPage() {
         toast.error(error.message);
         setBody(text);
       } else {
-        await load();
-        void markChatSeen(user?.id, "team", null);
+        await withTimeout(load(), 8_000, "Message sent, but chat refresh timed out.").catch((error) => {
+          toast.message(getErrorMessage(error, "Message sent, but chat refresh timed out."));
+        });
+        void withTimeout(markChatSeen(user?.id, "team", null), 5_000).catch(() => null);
       }
     } catch (error) {
       toast.error(getErrorMessage(error, "Message failed to send. Try again."));

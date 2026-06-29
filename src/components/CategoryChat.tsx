@@ -51,6 +51,7 @@ export function CategoryChat({ open, onOpenChange, categoryId, categoryName, can
       setMsgs(data ?? []);
     } catch (error) {
       console.error("[category-chat] load failed", error);
+      toast.error("Chat refresh timed out. Try again.");
     } finally {
       loadingMessagesRef.current = false;
     }
@@ -71,7 +72,7 @@ export function CategoryChat({ open, onOpenChange, categoryId, categoryName, can
   const send = async () => {
     if (!user) return toast.error("Please sign in.");
     const body = draft.trim();
-    if (!body) return;
+    if (!body || loading) return;
     setLoading(true);
     try {
       const { error } = await withTimeout(
@@ -83,8 +84,10 @@ export function CategoryChat({ open, onOpenChange, categoryId, categoryName, can
       );
       if (error) return toast.error(error.message);
       setDraft("");
-      await load();
-      void markChatSeen(user?.id, "category", categoryId);
+      await withTimeout(load(), 8_000, "Message sent, but chat refresh timed out.").catch((error) => {
+        toast.message(error instanceof Error ? error.message : "Message sent, but chat refresh timed out.");
+      });
+      void withTimeout(markChatSeen(user?.id, "category", categoryId), 5_000).catch(() => null);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Message failed to send. Try again.");
     } finally {
@@ -96,7 +99,9 @@ export function CategoryChat({ open, onOpenChange, categoryId, categoryName, can
     try {
       const { error } = await withTimeout(supabase.from("category_messages").delete().eq("id", id));
       if (error) return toast.error(error.message);
-      await load();
+      await withTimeout(load(), 8_000, "Message deleted, but chat refresh timed out.").catch((error) => {
+        toast.message(error instanceof Error ? error.message : "Message deleted, but chat refresh timed out.");
+      });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Message delete failed. Try again.");
     }
