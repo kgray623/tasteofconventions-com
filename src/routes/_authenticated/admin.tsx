@@ -160,7 +160,7 @@ function AdminLayout() {
               const label = !isAdmin && t.teamLabel ? t.teamLabel : t.label;
               const isVolChats = t.to === "/admin/my-volunteer-chats";
               const volUnread = isVolChats
-                ? chatUnread.categories.reduce((sum, c) => sum + c.count, 0)
+                ? chatUnread.categories.reduce((sum: number, c) => sum + c.count, 0)
                 : 0;
               return (
                 <Link
