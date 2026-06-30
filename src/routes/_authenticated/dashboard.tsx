@@ -42,19 +42,52 @@ function Dashboard() {
   const [invites, setInvites] = useState<Invite[]>([]);
   const [flags, setFlags] = useState<Flag[]>([]);
   const [settingRsvpId, setSettingRsvpId] = useState<string | null>(null);
+  const [myCats, setMyCats] = useState<MyCategory[]>([]);
+  const [profiles, setProfiles] = useState<ProfileRow[]>([]);
+  const [chatOpen, setChatOpen] = useState<string | null>(null);
+  const chatUnread = useChatUnread();
+
+  const loadVolunteerChats = async (uid: string) => {
+    const { data: assigns } = await supabase
+      .from("category_assignments")
+      .select("category_id")
+      .eq("user_id", uid);
+    const catIds = Array.from(new Set((assigns ?? []).map((a) => a.category_id)));
+    if (catIds.length === 0) {
+      setMyCats([]);
+      return;
+    }
+    const { data: cats } = await supabase
+      .from("categories")
+      .select("id,name,description")
+      .in("id", catIds)
+      .order("sort_order");
+    setMyCats((cats ?? []) as MyCategory[]);
+  };
 
   const load = async () => {
-    const [{ data: e }, { data: i }, { data: f }] = await Promise.all([
+    const [{ data: e }, { data: i }, { data: f }, { data: p }] = await Promise.all([
       supabase.from("events").select("id,title,starts_at,location").order("starts_at"),
       supabase.from("invitations").select("id,event_id,guest_name,guest_email,guest_phone,rsvp_token,created_at,host_id,is_committee,rsvps(status,party_size,attendance_mode)").order("guest_name", { ascending: true }),
       supabase.from("duplicate_flags").select("*"),
+      supabase.from("profiles").select("id,display_name,email"),
     ]);
     setEvents(e ?? []);
     setInvites((i as unknown as Invite[]) ?? []);
     setFlags(f ?? []);
+    setProfiles((p ?? []) as ProfileRow[]);
+    if (user?.id) await loadVolunteerChats(user.id);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [user?.id]);
+
+  const nameForUser = (uid: string) => {
+    const p = profiles.find((x) => x.id === uid);
+    return p?.display_name || p?.email || "Member";
+  };
+
+  const unreadForCategory = (catId: string) =>
+    chatUnread.categories.find((c) => c.category_id === catId)?.count ?? 0;
 
   const myInvites = invites.filter((i) => i.host_id === user?.id);
   const flaggedIds = new Set<string>();
