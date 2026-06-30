@@ -33,6 +33,8 @@ type Invite = {
 };
 type Flag = { id: string; invitation_a: string; invitation_b: string; match_type: string };
 type EventRow = { id: string; title: string; starts_at: string; location: string | null };
+type MyCategory = { id: string; name: string; description: string | null };
+type ProfileRow = { id: string; display_name: string | null; email: string | null };
 
 function Dashboard() {
   const { user } = useAuth();
