@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Plus, Calendar as CalendarIcon, Mail, Phone, Trash2 } from "lucide-react";
+import { AlertCircle, Plus, Calendar as CalendarIcon, Mail, Phone, Trash2, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -15,6 +15,10 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { NewBadge } from "@/components/new-badge";
+import { CategoryChat } from "@/components/CategoryChat";
+import { useChatUnread } from "@/hooks/use-chat-unread";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — A Taste of Special Conventions" }] }),
@@ -29,6 +33,8 @@ type Invite = {
 };
 type Flag = { id: string; invitation_a: string; invitation_b: string; match_type: string };
 type EventRow = { id: string; title: string; starts_at: string; location: string | null };
+type MyCategory = { id: string; name: string; description: string | null };
+type ProfileRow = { id: string; display_name: string | null; email: string | null };
 
 function Dashboard() {
   const { user } = useAuth();
@@ -36,19 +42,52 @@ function Dashboard() {
   const [invites, setInvites] = useState<Invite[]>([]);
   const [flags, setFlags] = useState<Flag[]>([]);
   const [settingRsvpId, setSettingRsvpId] = useState<string | null>(null);
+  const [myCats, setMyCats] = useState<MyCategory[]>([]);
+  const [profiles, setProfiles] = useState<ProfileRow[]>([]);
+  const [chatOpen, setChatOpen] = useState<string | null>(null);
+  const chatUnread = useChatUnread();
+
+  const loadVolunteerChats = async (uid: string) => {
+    const { data: assigns } = await supabase
+      .from("category_assignments")
+      .select("category_id")
+      .eq("user_id", uid);
+    const catIds = Array.from(new Set((assigns ?? []).map((a) => a.category_id)));
+    if (catIds.length === 0) {
+      setMyCats([]);
+      return;
+    }
+    const { data: cats } = await supabase
+      .from("categories")
+      .select("id,name,description")
+      .in("id", catIds)
+      .order("sort_order");
+    setMyCats((cats ?? []) as MyCategory[]);
+  };
 
   const load = async () => {
-    const [{ data: e }, { data: i }, { data: f }] = await Promise.all([
+    const [{ data: e }, { data: i }, { data: f }, { data: p }] = await Promise.all([
       supabase.from("events").select("id,title,starts_at,location").order("starts_at"),
       supabase.from("invitations").select("id,event_id,guest_name,guest_email,guest_phone,rsvp_token,created_at,host_id,is_committee,rsvps(status,party_size,attendance_mode)").order("guest_name", { ascending: true }),
       supabase.from("duplicate_flags").select("*"),
+      supabase.from("profiles").select("id,display_name,email"),
     ]);
     setEvents(e ?? []);
     setInvites((i as unknown as Invite[]) ?? []);
     setFlags(f ?? []);
+    setProfiles((p ?? []) as ProfileRow[]);
+    if (user?.id) await loadVolunteerChats(user.id);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [user?.id]);
+
+  const nameForUser = (uid: string) => {
+    const p = profiles.find((x) => x.id === uid);
+    return p?.display_name || p?.email || "Member";
+  };
+
+  const unreadForCategory = (catId: string) =>
+    chatUnread.categories.find((c) => c.category_id === catId)?.count ?? 0;
 
   const myInvites = invites.filter((i) => i.host_id === user?.id);
   const flaggedIds = new Set<string>();
@@ -165,7 +204,24 @@ function Dashboard() {
         </Link>
       </div>
 
+      <Tabs defaultValue="guests" className="w-full">
+        <TabsList className="h-auto flex-wrap">
+          <TabsTrigger value="guests">Guest list</TabsTrigger>
+          <TabsTrigger value="chats" className="relative gap-2">
+            <MessageCircle className="w-4 h-4" />
+            My volunteer chats
+            {myCats.length > 0 && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                {myCats.length}
+              </Badge>
+            )}
+            <NewBadge target="dashboard:my-volunteer-chats" className="ml-1" />
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="guests" className="space-y-10 mt-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+
         {stats.map((s) => (
           <Card key={s.label} className="p-5">
             <p className="text-xs uppercase tracking-wider text-muted-foreground">{s.label}</p>
@@ -346,6 +402,71 @@ function Dashboard() {
           </div>
         </Card>
       </div>
+        </TabsContent>
+
+        <TabsContent value="chats" className="mt-6">
+          <div className="space-y-4">
+            <div>
+              <h2 className="font-display text-2xl">My volunteer chats</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Categories you've volunteered for. Tap to open the chat with your team.
+              </p>
+            </div>
+            {myCats.length === 0 ? (
+              <Card className="p-8 text-center text-sm text-muted-foreground">
+                You haven't volunteered for any roles yet.{" "}
+                <Link to="/admin/categories" className="text-terracotta underline">
+                  Browse volunteer opportunities
+                </Link>
+                .
+              </Card>
+            ) : (
+              <div className="grid sm:grid-cols-2 gap-3">
+                {myCats.map((c) => {
+                  const unread = unreadForCategory(c.id);
+                  return (
+                    <Card key={c.id} className="p-4 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-display text-lg truncate">{c.name}</h3>
+                          {unread > 0 && (
+                            <Badge className="bg-brand-red text-white hover:bg-brand-red text-[10px]">
+                              {unread} new
+                            </Badge>
+                          )}
+                        </div>
+                        {c.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                            {c.description}
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setChatOpen(c.id)}
+                        className="shrink-0"
+                      >
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        Open
+                      </Button>
+                      <CategoryChat
+                        open={chatOpen === c.id}
+                        onOpenChange={(v) => setChatOpen(v ? c.id : null)}
+                        categoryId={c.id}
+                        categoryName={c.name}
+                        canChat={true}
+                        isAdmin={false}
+                        nameFor={nameForUser}
+                      />
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
