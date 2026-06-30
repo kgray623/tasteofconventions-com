@@ -157,6 +157,10 @@ function AdminLayout() {
             {groupTabs.map((t) => {
               const active = t.exact ? path === t.to : path.startsWith(t.to);
               const label = !isAdmin && t.teamLabel ? t.teamLabel : t.label;
+              const isVolChats = t.to === "/admin/my-volunteer-chats";
+              const volUnread = isVolChats
+                ? chatUnread.categories.reduce((sum, c) => sum + c.count, 0)
+                : 0;
               return (
                 <Link
                   key={t.to}
@@ -169,6 +173,14 @@ function AdminLayout() {
                   }`}
                 >
                   <t.icon className="w-4 h-4" /> {label}
+                  {isVolChats && volUnread > 0 && (
+                    <Badge className="bg-terracotta text-cream hover:bg-terracotta text-[10px] px-1.5 py-0">
+                      {volUnread}
+                    </Badge>
+                  )}
+                  {isVolChats && (
+                    <NewBadge target="admin:my-volunteer-chats" direction="left" />
+                  )}
                 </Link>
               );
             })}
