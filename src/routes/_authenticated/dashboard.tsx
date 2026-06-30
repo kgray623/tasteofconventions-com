@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Plus, Calendar as CalendarIcon, Mail, Phone, Trash2 } from "lucide-react";
+import { AlertCircle, Plus, Calendar as CalendarIcon, Mail, Phone, Trash2, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -15,6 +15,10 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { NewBadge } from "@/components/new-badge";
+import { CategoryChat } from "@/components/CategoryChat";
+import { useChatUnread } from "@/hooks/use-chat-unread";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — A Taste of Special Conventions" }] }),
