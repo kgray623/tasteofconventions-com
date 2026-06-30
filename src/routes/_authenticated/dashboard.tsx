@@ -204,7 +204,24 @@ function Dashboard() {
         </Link>
       </div>
 
+      <Tabs defaultValue="guests" className="w-full">
+        <TabsList className="h-auto flex-wrap">
+          <TabsTrigger value="guests">Guest list</TabsTrigger>
+          <TabsTrigger value="chats" className="relative gap-2">
+            <MessageCircle className="w-4 h-4" />
+            My volunteer chats
+            {myCats.length > 0 && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                {myCats.length}
+              </Badge>
+            )}
+            <NewBadge target="dashboard:my-volunteer-chats" className="ml-1" />
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="guests" className="space-y-10 mt-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+
         {stats.map((s) => (
           <Card key={s.label} className="p-5">
             <p className="text-xs uppercase tracking-wider text-muted-foreground">{s.label}</p>
