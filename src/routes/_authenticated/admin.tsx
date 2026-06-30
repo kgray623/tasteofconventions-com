@@ -10,7 +10,10 @@ import { Button } from "@/components/ui/button";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlus, UtensilsCrossed, Mail, HandCoins, MessageSquare, Ticket, ArrowLeft, Archive, UserCheck } from "lucide-react";
+import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlus, UtensilsCrossed, Mail, HandCoins, MessageSquare, Ticket, ArrowLeft, Archive, UserCheck, MessageCircle } from "lucide-react";
+import { NewBadge } from "@/components/new-badge";
+import { useChatUnread } from "@/hooks/use-chat-unread";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — A Taste of Special Conventions" }] }),
@@ -30,12 +33,13 @@ const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boole
   { to: "/admin/inviters", label: "Committee", icon: UserPlus, team: true, teamLabel: "Committee", group: "committee" },
   { to: "/admin/categories", label: "Volunteer", icon: ListChecks, team: true, teamLabel: "Volunteer", group: "committee" },
   { to: "/admin/team", label: "Add Team", icon: Users, group: "committee" },
+  { to: "/admin/my-volunteer-chats", label: "My volunteer chats", icon: MessageCircle, team: true, teamLabel: "My volunteer chats", group: "committee" },
   { to: "/admin/chat", label: "Team chat", icon: MessagesSquare, team: true, teamLabel: "Team chat", group: "committee" },
   { to: "/admin/backups", label: "Backups", icon: Archive, group: "main" },
 ];
 
 
-const teamAllowedPrefixes = ["/admin/subcommittee", "/admin/upload", "/admin/inviters", "/admin/categories", "/admin/chat", "/admin/my-rsvp", "/admin/preorders"];
+const teamAllowedPrefixes = ["/admin/subcommittee", "/admin/upload", "/admin/inviters", "/admin/categories", "/admin/chat", "/admin/my-volunteer-chats", "/admin/my-rsvp", "/admin/preorders"];
 const isTeamAllowedPath = (path: string) =>
   path === "/admin" || teamAllowedPrefixes.some((p) => path === p || path.startsWith(p + "/"));
 
@@ -50,6 +54,7 @@ function AdminLayout() {
   const navigate = useNavigate();
   const clearRememberedLogin = useServerFn(clearPhoneLoginCookie);
   const [displayName, setDisplayName] = useState<string>("");
+  const chatUnread = useChatUnread();
 
   useEffect(() => {
     if (!user?.id) { setDisplayName(""); return; }
@@ -153,6 +158,10 @@ function AdminLayout() {
             {groupTabs.map((t) => {
               const active = t.exact ? path === t.to : path.startsWith(t.to);
               const label = !isAdmin && t.teamLabel ? t.teamLabel : t.label;
+              const isVolChats = t.to === "/admin/my-volunteer-chats";
+              const volUnread = isVolChats
+                ? chatUnread.categories.reduce((sum: number, c) => sum + c.count, 0)
+                : 0;
               return (
                 <Link
                   key={t.to}
@@ -165,6 +174,14 @@ function AdminLayout() {
                   }`}
                 >
                   <t.icon className="w-4 h-4" /> {label}
+                  {isVolChats && volUnread > 0 && (
+                    <Badge className="bg-terracotta text-cream hover:bg-terracotta text-[10px] px-1.5 py-0">
+                      {volUnread}
+                    </Badge>
+                  )}
+                  {isVolChats && (
+                    <NewBadge target="admin:my-volunteer-chats" direction="left" />
+                  )}
                 </Link>
               );
             })}
