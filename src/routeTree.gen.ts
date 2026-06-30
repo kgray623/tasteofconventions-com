@@ -35,6 +35,7 @@ import { Route as AuthenticatedAdminSubcommitteeRouteImport } from './routes/_au
 import { Route as AuthenticatedAdminRestaurantsRouteImport } from './routes/_authenticated/admin/restaurants'
 import { Route as AuthenticatedAdminRecentlyDeletedRouteImport } from './routes/_authenticated/admin/recently-deleted'
 import { Route as AuthenticatedAdminPreordersRouteImport } from './routes/_authenticated/admin/preorders'
+import { Route as AuthenticatedAdminMyVolunteerChatsRouteImport } from './routes/_authenticated/admin/my-volunteer-chats'
 import { Route as AuthenticatedAdminMyRsvpRouteImport } from './routes/_authenticated/admin/my-rsvp'
 import { Route as AuthenticatedAdminInvitersRouteImport } from './routes/_authenticated/admin/inviters'
 import { Route as AuthenticatedAdminInvitationRouteImport } from './routes/_authenticated/admin/invitation'
@@ -187,6 +188,12 @@ const AuthenticatedAdminPreordersRoute =
     path: '/preorders',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminMyVolunteerChatsRoute =
+  AuthenticatedAdminMyVolunteerChatsRouteImport.update({
+    id: '/my-volunteer-chats',
+    path: '/my-volunteer-chats',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminMyRsvpRoute =
   AuthenticatedAdminMyRsvpRouteImport.update({
     id: '/my-rsvp',
@@ -308,6 +315,7 @@ export interface FileRoutesByFullPath {
   '/admin/invitation': typeof AuthenticatedAdminInvitationRoute
   '/admin/inviters': typeof AuthenticatedAdminInvitersRoute
   '/admin/my-rsvp': typeof AuthenticatedAdminMyRsvpRoute
+  '/admin/my-volunteer-chats': typeof AuthenticatedAdminMyVolunteerChatsRoute
   '/admin/preorders': typeof AuthenticatedAdminPreordersRoute
   '/admin/recently-deleted': typeof AuthenticatedAdminRecentlyDeletedRoute
   '/admin/restaurants': typeof AuthenticatedAdminRestaurantsRoute
@@ -350,6 +358,7 @@ export interface FileRoutesByTo {
   '/admin/invitation': typeof AuthenticatedAdminInvitationRoute
   '/admin/inviters': typeof AuthenticatedAdminInvitersRoute
   '/admin/my-rsvp': typeof AuthenticatedAdminMyRsvpRoute
+  '/admin/my-volunteer-chats': typeof AuthenticatedAdminMyVolunteerChatsRoute
   '/admin/preorders': typeof AuthenticatedAdminPreordersRoute
   '/admin/recently-deleted': typeof AuthenticatedAdminRecentlyDeletedRoute
   '/admin/restaurants': typeof AuthenticatedAdminRestaurantsRoute
@@ -395,6 +404,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/invitation': typeof AuthenticatedAdminInvitationRoute
   '/_authenticated/admin/inviters': typeof AuthenticatedAdminInvitersRoute
   '/_authenticated/admin/my-rsvp': typeof AuthenticatedAdminMyRsvpRoute
+  '/_authenticated/admin/my-volunteer-chats': typeof AuthenticatedAdminMyVolunteerChatsRoute
   '/_authenticated/admin/preorders': typeof AuthenticatedAdminPreordersRoute
   '/_authenticated/admin/recently-deleted': typeof AuthenticatedAdminRecentlyDeletedRoute
   '/_authenticated/admin/restaurants': typeof AuthenticatedAdminRestaurantsRoute
@@ -440,6 +450,7 @@ export interface FileRouteTypes {
     | '/admin/invitation'
     | '/admin/inviters'
     | '/admin/my-rsvp'
+    | '/admin/my-volunteer-chats'
     | '/admin/preorders'
     | '/admin/recently-deleted'
     | '/admin/restaurants'
@@ -482,6 +493,7 @@ export interface FileRouteTypes {
     | '/admin/invitation'
     | '/admin/inviters'
     | '/admin/my-rsvp'
+    | '/admin/my-volunteer-chats'
     | '/admin/preorders'
     | '/admin/recently-deleted'
     | '/admin/restaurants'
@@ -526,6 +538,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/invitation'
     | '/_authenticated/admin/inviters'
     | '/_authenticated/admin/my-rsvp'
+    | '/_authenticated/admin/my-volunteer-chats'
     | '/_authenticated/admin/preorders'
     | '/_authenticated/admin/recently-deleted'
     | '/_authenticated/admin/restaurants'
@@ -750,6 +763,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminPreordersRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/my-volunteer-chats': {
+      id: '/_authenticated/admin/my-volunteer-chats'
+      path: '/my-volunteer-chats'
+      fullPath: '/admin/my-volunteer-chats'
+      preLoaderRoute: typeof AuthenticatedAdminMyVolunteerChatsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/my-rsvp': {
       id: '/_authenticated/admin/my-rsvp'
       path: '/my-rsvp'
@@ -877,6 +897,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminInvitationRoute: typeof AuthenticatedAdminInvitationRoute
   AuthenticatedAdminInvitersRoute: typeof AuthenticatedAdminInvitersRoute
   AuthenticatedAdminMyRsvpRoute: typeof AuthenticatedAdminMyRsvpRoute
+  AuthenticatedAdminMyVolunteerChatsRoute: typeof AuthenticatedAdminMyVolunteerChatsRoute
   AuthenticatedAdminPreordersRoute: typeof AuthenticatedAdminPreordersRoute
   AuthenticatedAdminRecentlyDeletedRoute: typeof AuthenticatedAdminRecentlyDeletedRoute
   AuthenticatedAdminRestaurantsRoute: typeof AuthenticatedAdminRestaurantsRoute
@@ -899,6 +920,8 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminInvitationRoute: AuthenticatedAdminInvitationRoute,
   AuthenticatedAdminInvitersRoute: AuthenticatedAdminInvitersRoute,
   AuthenticatedAdminMyRsvpRoute: AuthenticatedAdminMyRsvpRoute,
+  AuthenticatedAdminMyVolunteerChatsRoute:
+    AuthenticatedAdminMyVolunteerChatsRoute,
   AuthenticatedAdminPreordersRoute: AuthenticatedAdminPreordersRoute,
   AuthenticatedAdminRecentlyDeletedRoute:
     AuthenticatedAdminRecentlyDeletedRoute,
@@ -954,13 +977,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
