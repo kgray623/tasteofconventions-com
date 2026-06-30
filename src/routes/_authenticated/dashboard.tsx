@@ -402,6 +402,71 @@ function Dashboard() {
           </div>
         </Card>
       </div>
+        </TabsContent>
+
+        <TabsContent value="chats" className="mt-6">
+          <div className="space-y-4">
+            <div>
+              <h2 className="font-display text-2xl">My volunteer chats</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Categories you've volunteered for. Tap to open the chat with your team.
+              </p>
+            </div>
+            {myCats.length === 0 ? (
+              <Card className="p-8 text-center text-sm text-muted-foreground">
+                You haven't volunteered for any roles yet.{" "}
+                <Link to="/admin/categories" className="text-terracotta underline">
+                  Browse volunteer opportunities
+                </Link>
+                .
+              </Card>
+            ) : (
+              <div className="grid sm:grid-cols-2 gap-3">
+                {myCats.map((c) => {
+                  const unread = unreadForCategory(c.id);
+                  return (
+                    <Card key={c.id} className="p-4 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-display text-lg truncate">{c.name}</h3>
+                          {unread > 0 && (
+                            <Badge className="bg-brand-red text-white hover:bg-brand-red text-[10px]">
+                              {unread} new
+                            </Badge>
+                          )}
+                        </div>
+                        {c.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                            {c.description}
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setChatOpen(c.id)}
+                        className="shrink-0"
+                      >
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        Open
+                      </Button>
+                      <CategoryChat
+                        open={chatOpen === c.id}
+                        onOpenChange={(v) => setChatOpen(v ? c.id : null)}
+                        categoryId={c.id}
+                        categoryName={c.name}
+                        canChat={true}
+                        isAdmin={false}
+                        nameFor={nameForUser}
+                      />
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
