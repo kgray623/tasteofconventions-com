@@ -54,6 +54,7 @@ function AdminLayout() {
   const navigate = useNavigate();
   const clearRememberedLogin = useServerFn(clearPhoneLoginCookie);
   const [displayName, setDisplayName] = useState<string>("");
+  const chatUnread = useChatUnread();
 
   useEffect(() => {
     if (!user?.id) { setDisplayName(""); return; }
