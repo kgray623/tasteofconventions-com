@@ -250,7 +250,7 @@ export function InvitationPage() {
             <p className="text-xs uppercase tracking-[0.4em] text-magenta mb-3">Step Two</p>
             <h2 className="font-display text-4xl sm:text-5xl text-ink mb-4">RSVP</h2>
             <p className="text-muted-foreground max-w-md mx-auto mb-3">
-              Please RSVP if you want to join us in person or virtually including your party size. In person space is limited to 550. RSVP is first reserved. Once the in-person space is spoken for, a waiting list will be made in case of cancellations. Virtual attendance is unlimited.
+              Please RSVP if you want to join us in person or virtually including your party size. In person space is limited. RSVP is first reserved. Once the in-person space is spoken for, a waiting list will be made in case of cancellations. Virtual attendance is unlimited.
             </p>
             <p className="text-xs uppercase tracking-[0.25em] text-magenta mb-7">
               In-person space is limited
