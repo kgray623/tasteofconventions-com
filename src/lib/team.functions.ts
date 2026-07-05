@@ -43,7 +43,7 @@ async function syncCommitteeInviter(data: z.infer<typeof InviteInput>) {
 
   const { error } = await supabaseAdmin
     .from("inviters")
-    .insert({ name: data.name, phone: data.phone, quota: 40, active: true });
+    .insert({ name: data.name, phone: data.phone, quota: 0, active: true });
   if (error) throw new Error(error.message);
 }
 

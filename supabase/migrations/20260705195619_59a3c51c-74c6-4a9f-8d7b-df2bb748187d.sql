@@ -1,0 +1,1 @@
+ALTER TABLE public.inviters ALTER COLUMN quota SET DEFAULT 0;
