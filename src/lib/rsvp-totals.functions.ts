@@ -195,10 +195,10 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
     }>;
 
     const requested = inviterRows.reduce(
-      (sum, r) =>
-        sum + (r.active === false ? 0 : (r.requested_quota ?? r.quota ?? 0)),
+      (sum, r) => sum + (r.active === false ? 0 : (r.quota ?? 0)),
       0,
     );
+
 
     // Build the same duplicate groups the admin upload page uses, so
     // Monahan/Monaghan-style pairs collapse into one confirmation.
