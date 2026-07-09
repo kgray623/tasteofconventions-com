@@ -1,21 +1,33 @@
-## Full audit of every recorded quota request
+## Goal
 
-**UTC:** 2026-07-09 17:05 UTC
+On the committee page, when the **Guest list / Add guests** section is expanded, put an **Add guests** button at the very top of the opened content — not just in the collapsed section header. The header button and the bottom-of-page button both stay where they are.
 
-I re-scanned every `audit_log` row for `inviters` where `requested_quota` or `quota_requested_at` was ever set on either the old or new side. This is the complete list of quota requests that have ever existed in the database:
+## Change
 
-| Date (UTC)          | Member                 | Requested | Source of evidence                              | Current state (restored) |
-|---------------------|------------------------|----------:|-------------------------------------------------|--------------------------|
-| 2026-06-17 16:55    | Dixie Frahm            | 20 → 30   | Original app request (ts recorded); later raised to 30 per your approval | quota=30, requested_quota=30 ✅ |
-| 2026-06-29 18:41-42 | Jamy Elker             | 1 → 5     | App request (ts recorded)                       | quota=5, requested_quota=5 ✅ |
-| 2026-07-09 16:35    | Betsaida Ruiz          | 30        | Your correction (Kari approved 30)              | quota=30, requested_quota=30 ✅ |
-| 2026-07-09 16:42    | Kari Gray              | 51        | Your correction (admin requested 51)            | quota=51, requested_quota=51 ✅ |
-| 2026-07-09 16:45    | Shelley & Pat Monaghan | 40        | Prior wiped quota was 40; you confirmed request | quota=40, requested_quota=40 ✅ |
+File: `src/components/committee-workspace.tsx` (the `CollapsibleSection` currently at lines 752-763 that titles "Guest list").
 
-### No other requests exist in the audit trail
+Inside that section body (right at the top, before the loading / empty / list branches around line 765), render a full-width row containing an **Add guests** button that links to `/admin/upload?view=committee` — identical target to the existing header and footer buttons, styled to be clearly visible as the first thing in the opened section.
 
-Every other inviter currently at `quota=0`/`requested_quota=null` (Andres Gutiérrez, Denise Madsen, Kenda Andersen, Melissa Novotne, Rhonda Wilcher, Rosa Gutiérrez, Tiana Stoddard, Dewinica Salis, Jacquelyn Spears, Jay Wilcher, Jen Spears, Michelle Shauger, Saul Morro, Teresa Drake) has **no `requested_quota` value, no `quota_requested_at` timestamp, and no `quota_request_note` anywhere in the audit history** — not on any insert, update, or delete row. Their prior non-zero `quota` values (where they existed) were seed/import numbers, never a recorded request from the member.
+```tsx
+<div className="p-4 border-b border-border flex justify-end">
+  <Button asChild className="bg-ink text-cream hover:bg-ink/90">
+    <Link to="/admin/upload" search={{ view: "committee" }}>
+      <Upload className="w-4 h-4 mr-2" /> Add guests
+    </Link>
+  </Button>
+</div>
+```
 
-### Proposed action
+Nothing else changes:
+- The header-row `action` button stays (visible even when collapsed).
+- The bottom-of-page "Guest list / Add guests" button stays.
+- No routing, data, or business-logic changes.
 
-**No further restores.** All 5 recorded/confirmed requests are already in place. Please reply with the exact member name + requested number if you know of anyone else who asked — I will not invent request amounts from prior seed quotas.
+## Verify
+
+Sign in as a committee member on mobile (384x673, the viewport you're using), expand the **Guest list** section, confirm the **Add guests** button is the first thing visible in the opened body and navigates to `/admin/upload`. Include the UTC timestamp in the closing update.
+
+## Not changing
+
+- Quota restores — the 5 recorded requests (Kari 51, Shelley & Pat 40, Dixie 30, Betsaida 30, Jamy 5) remain intact; no further restores exist in the audit trail.
+- The top-of-page committee buttons above the welcome video (Upload guests / Add one guest) are already present and stay.
