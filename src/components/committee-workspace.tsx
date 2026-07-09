@@ -762,6 +762,14 @@ export function CommitteeWorkspace() {
           </Button>
         }
       >
+        <div className="p-4 border-b border-border flex justify-end">
+          <Button asChild className="bg-ink text-cream hover:bg-ink/90">
+            <Link to="/admin/upload" search={{ view: "committee" }}>
+              <Upload className="w-4 h-4 mr-2" /> Add guests
+            </Link>
+          </Button>
+        </div>
+
         {loadingGuests ? (
           <div className="p-4 text-sm text-muted-foreground flex items-center gap-2">
             <Loader2 className="w-4 h-4 animate-spin" /> Loading guest list…
