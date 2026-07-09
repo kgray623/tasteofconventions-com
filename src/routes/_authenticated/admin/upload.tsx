@@ -433,7 +433,7 @@ function UploadPage() {
         0,
       );
       if (!alive) return;
-      setMyQuota(inv?.requested_quota ?? inv?.quota ?? null);
+      setMyQuota(inv?.quota ?? null);
       setQuotaPool({ total: TOTAL_RSVP_CAP, allocated });
       setRsvpAttendingTotal(attendingTotal);
       setInviterId(inv?.id ?? null);
