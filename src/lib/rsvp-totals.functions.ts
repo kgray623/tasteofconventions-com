@@ -195,7 +195,8 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
     }>;
 
     const requested = inviterRows.reduce(
-      (sum, r) => sum + (r.active === false ? 0 : r.quota ?? 0),
+      (sum, r) =>
+        sum + (r.active === false ? 0 : (r.requested_quota ?? r.quota ?? 0)),
       0,
     );
 
@@ -300,9 +301,13 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
         else myConfirmed += best.party_size;
       }
 
-      // Quota = sum of active inviter rows that map to me.
+      // Quota = sum of active inviter rows that map to me, preferring the
+      // requested amount so the app shows what the member actually asked for.
       const activeMine = myInviters.filter((r) => r.active !== false);
-      const myQuota = activeMine.reduce((s, r) => s + (r.quota ?? 0), 0);
+      const myQuota = activeMine.reduce(
+        (s, r) => s + (r.requested_quota ?? r.quota ?? 0),
+        0,
+      );
       const pendingRequest = activeMine
         .map((r) => r.requested_quota)
         .filter((v): v is number => typeof v === "number")
