@@ -1,33 +1,46 @@
-## Revised plan: restore requested amounts, not assigned quotas
+## Plan: identify and restore remaining requested quotas
 
-**UTC timestamp:** 2026-07-09 16:38 UTC
+**UTC timestamp:** 2026-07-09 16:45 UTC
 
-### What I confirmed
-- Kari Gray currently shows `quota = 0`, `requested_quota = null`.
-- The audit trail shows Kari had `quota = 52` before it was wiped, but you clarified the actual approved request was **51**, not 52.
-- Shelley & Pat Monaghan currently shows `quota = 0`, `requested_quota = null`.
-- The audit trail shows Shelley had `quota = 40` before it was wiped, but it does not show a separate `requested_quota` value.
-- Dixie Frahm, Betsaida Ruiz, and Jamy Elker are already restored from the previous step.
+### What the research found
+I checked:
+- Current `inviters` records.
+- Every audit entry where `requested_quota`, `quota_requested_at`, or `quota_request_note` appeared.
+- Every nonzero quota that was wiped to 0.
+- The app code path that submits quota requests.
 
-### Restore I can do now from your correction
-Update Kari Gray to the actual approved requested amount you gave:
+### Already restored request rows
+These are already restored and verified in the backend:
 
-| Member | Restore to | Source |
-|---|---:|---|
-| Kari Gray | 51 | Your correction: “Me, the admin, had 51 requested” |
-| Dixie Frahm | 30 | Already restored |
-| Betsaida Ruiz | 30 | Already restored |
-| Jamy Elker | 5 | Already restored |
+| Member | Current quota | Current requested_quota | Evidence |
+|---|---:|---:|---|
+| Kari Gray | 51 | 51 | User correction: admin requested 51 |
+| Dixie Frahm | 30 | 30 | Request/approval trail: requested 20, later raised/approved to 30 |
+| Betsaida Ruiz | 30 | 30 | Approval trail from Kari to 30 before wipe |
+| Jamy Elker | 5 | 5 | Explicit `requested_quota = 5` trail |
 
-### Shelley needs one missing value
-You said Shelley had some requested, but you are not sure how many. I will not guess and assign 40 unless you confirm that 40 was Shelley’s approved requested amount.
+### Remaining candidate to restore
+The only additional member you named whose prior value was wiped is:
 
-Please tell me Shelley’s approved requested amount. If you want me to use the wiped pre-existing value as the best available restore evidence, I will restore Shelley to **40**.
+| Member | Current quota | Current requested_quota | Prior wiped value | Evidence status |
+|---|---:|---:|---:|---|
+| Shelley & Pat Monaghan | 0 | null | 40 | No explicit `requested_quota` trail, but prior quota was 40 before wipe and you stated Shelley had requested |
+
+### Not restoring unless you provide a requested amount
+These had quotas wiped, but I found no request field, request timestamp, note, named actor request, or user correction for them:
+
+- Andres Gutiérrez — wiped from 40
+- Denise Madsen — wiped from 40
+- Kenda Andersen — wiped from 40
+- Melissa Novotne — wiped from 25
+- Rhonda Wilcher — wiped from 40
+- Rosa Gutiérrez — wiped from 40
+- Tiana Stoddard — wiped from 40
 
 ### Implementation after approval
-1. Update Kari Gray only:
-   - `quota = 51`
-   - `requested_quota = 51`
-2. If you confirm Shelley’s amount, update Shelley to that exact amount in both fields.
-3. Do not change Denise, Rhonda, Melissa, Rosa, Andres, Tiana, or anyone else unless you name their requested amount.
-4. Read the backend records back after the update and report the exact verified values.
+1. Restore Shelley & Pat Monaghan using the only stored prior amount available:
+   - `quota = 40`
+   - `requested_quota = 40`
+2. Leave all other zero/null rows unchanged unless you name their exact requested amounts.
+3. Read back all restored/request rows and all wiped-but-not-restored rows from the backend.
+4. Report the verified list with exact values.
