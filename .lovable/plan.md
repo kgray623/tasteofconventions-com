@@ -1,33 +1,22 @@
-## Goal
+## What's happening
 
-On the committee page, when the **Guest list / Add guests** section is expanded, put an **Add guests** button at the very top of the opened content — not just in the collapsed section header. The header button and the bottom-of-page button both stay where they are.
+The two "unlinked" rows (Jana Weinberger, Yetunde Adejunmobi) came in through the public `/preorder` page. That page inserts into `cuisine_preorders` with just name + phone and **no `invitation_id`** — and it doesn't require an RSVP or a signed-in session at all. So your assumption ("they must have RSVP'd first") isn't enforced by the code today; anyone with the `/preorder` link can submit meals without ever touching RSVP.
 
-## Change
+Both of these people DO have matching invitations by phone in the database (7854779714 and 4022901113). Nothing ever went back and stitched their preorder to their invitation, so they show up as "unlinked / not counted".
 
-File: `src/components/committee-workspace.tsx` (the `CollapsibleSection` currently at lines 752-763 that titles "Guest list").
+## Fix (two parts, same change)
 
-Inside that section body (right at the top, before the loading / empty / list branches around line 765), render a full-width row containing an **Add guests** button that links to `/admin/upload?view=committee` — identical target to the existing header and footer buttons, styled to be clearly visible as the first thing in the opened section.
+**1. Backfill the two existing rows.** Match by phone digits to `invitations.guest_phone_normalized` and set `invitation_id`. After this the "Unlinked food orders (need review)" section is empty and their 2 meals roll into the restaurant totals.
 
-```tsx
-<div className="p-4 border-b border-border flex justify-end">
-  <Button asChild className="bg-ink text-cream hover:bg-ink/90">
-    <Link to="/admin/upload" search={{ view: "committee" }}>
-      <Upload className="w-4 h-4 mr-2" /> Add guests
-    </Link>
-  </Button>
-</div>
-```
+**2. Forward-fix so this can't happen again.** Add a `BEFORE INSERT OR UPDATE` trigger on `cuisine_preorders`: when `invitation_id` is null, look up an invitation by normalized phone and set it. Public `/preorder` submissions from a known guest will auto-link; truly unknown numbers still land in the "needs review" list instead of silently linking to the wrong person.
 
-Nothing else changes:
-- The header-row `action` button stays (visible even when collapsed).
-- The bottom-of-page "Guest list / Add guests" button stays.
-- No routing, data, or business-logic changes.
+I'm keeping the `/preorder` public route open (some guests use it before RSVPing), but the trigger guarantees any meal from a known phone is attached to their invitation and counted.
 
-## Verify
+## Files touched
 
-Sign in as a committee member on mobile (384x673, the viewport you're using), expand the **Guest list** section, confirm the **Add guests** button is the first thing visible in the opened body and navigates to `/admin/upload`. Include the UTC timestamp in the closing update.
+- New migration: backfill the 2 rows + create `link_preorder_by_phone()` trigger on `cuisine_preorders`.
+- No frontend changes needed — the admin report already reads `invitation_id` and will move the two rows from "unlinked" to "guest preorder details" automatically.
 
-## Not changing
+## Out of scope
 
-- Quota restores — the 5 recorded requests (Kari 51, Shelley & Pat 40, Dixie 30, Betsaida 30, Jamy 5) remain intact; no further restores exist in the audit trail.
-- The top-of-page committee buttons above the welcome video (Upload guests / Add one guest) are already present and stay.
+- I'm not gating `/preorder` behind RSVP in this change. If you want that too (block the submit unless the phone has a "yes" RSVP), say so and I'll add it in a follow-up.
