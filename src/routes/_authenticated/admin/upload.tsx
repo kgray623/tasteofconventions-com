@@ -244,12 +244,13 @@ function clearUploadDraft(userId?: string) {
 }
 
 function UploadPage() {
-  const { user } = useAuth();
-  const { isAdmin, isTeam, loading: rolesLoading } = useRoles();
+  const { user, loading: authLoading } = useAuth();
+  const { isAdmin, isTeam, loading: rolesLoading, refresh: refreshRoles } = useRoles();
   const fileRef = useRef<HTMLInputElement>(null);
   const vcardRef = useRef<HTMLInputElement>(null);
   const quickNameRef = useRef<HTMLInputElement>(null);
   const draftLoadedRef = useRef(false);
+  const roleRefreshUserRef = useRef<string | null>(null);
   const [events, setEvents] = useState<{ id: string; title: string }[]>([]);
   const [eventId, setEventId] = useState("");
   const [rows, setRows] = useState<Parsed[]>([]);
@@ -305,6 +306,28 @@ function UploadPage() {
   const [savingQuotaReq, setSavingQuotaReq] = useState(false);
   const [quotaPool, setQuotaPool] = useState({ total: TOTAL_RSVP_CAP, allocated: 0 });
   const [rsvpAttendingTotal, setRsvpAttendingTotal] = useState(0);
+  const [roleRefreshDone, setRoleRefreshDone] = useState(false);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user?.id) {
+      setRoleRefreshDone(true);
+      roleRefreshUserRef.current = null;
+      return;
+    }
+    if (roleRefreshUserRef.current === user.id) return;
+    roleRefreshUserRef.current = user.id;
+    let alive = true;
+    setRoleRefreshDone(false);
+    void refreshRoles(() => alive).finally(() => {
+      if (alive) setRoleRefreshDone(true);
+    });
+    return () => {
+      alive = false;
+    };
+    // refreshRoles is intentionally omitted because useRoles returns a new function each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user?.id]);
 
   const loadSavedGuests = async (evId: string) => {
     if (!evId) {
@@ -830,7 +853,7 @@ function UploadPage() {
     saveUploadDraft(user.id, pasted, quick, rows);
   }, [user?.id, pasted, quick, rows]);
 
-  if (rolesLoading) {
+  if (authLoading || rolesLoading || !roleRefreshDone) {
     return <p className="text-muted-foreground">Loading guest tools…</p>;
   }
 
