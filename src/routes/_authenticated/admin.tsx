@@ -55,6 +55,7 @@ function AdminLayout() {
   const clearRememberedLogin = useServerFn(clearPhoneLoginCookie);
   const [displayName, setDisplayName] = useState<string>("");
   const chatUnread = useChatUnread();
+  const committeeSearch = isAdmin ? { view: undefined } : { view: "committee" as const };
 
   useEffect(() => {
     if (!user?.id) { setDisplayName(""); return; }
@@ -147,7 +148,7 @@ function AdminLayout() {
         {isTeam && (
           <Link
             to="/admin/upload"
-            search={previewCommittee ? { view: "committee" } : { view: undefined }}
+            search={committeeSearch}
             className="inline-flex h-11 items-center gap-2 rounded-md bg-terracotta px-4 text-sm font-semibold text-cream shadow-sm transition hover:bg-terracotta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-2"
           >
             <Upload className="w-4 h-4" />

@@ -4,7 +4,6 @@ import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { useRoles } from "@/hooks/use-roles";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -244,8 +243,7 @@ function clearUploadDraft(userId?: string) {
 }
 
 function UploadPage() {
-  const { user } = useAuth();
-  const { isAdmin, isTeam, loading: rolesLoading } = useRoles();
+  const { user, loading: authLoading } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
   const vcardRef = useRef<HTMLInputElement>(null);
   const quickNameRef = useRef<HTMLInputElement>(null);
@@ -388,7 +386,7 @@ function UploadPage() {
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [eventId, isAdmin, user?.id]);
+  }, [eventId, user?.id]);
 
   // Load this team member's quota and display name (for SMS personalization)
   useEffect(() => {
@@ -830,12 +828,12 @@ function UploadPage() {
     saveUploadDraft(user.id, pasted, quick, rows);
   }, [user?.id, pasted, quick, rows]);
 
-  if (rolesLoading) {
+  if (authLoading) {
     return <p className="text-muted-foreground">Loading guest tools…</p>;
   }
 
-  if (!isTeam) {
-    return <p className="text-muted-foreground">Only team members can add guests.</p>;
+  if (!user) {
+    return <p className="text-muted-foreground">Opening login…</p>;
   }
 
   const availableRsvps = Math.max(
