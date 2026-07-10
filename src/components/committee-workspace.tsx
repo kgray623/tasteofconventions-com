@@ -762,18 +762,23 @@ export function CommitteeWorkspace() {
         action={
           <Button asChild variant="outline" size="sm" onClick={(e) => e.stopPropagation()}>
             <Link to="/admin/upload" search={{ view: "committee" }}>
-              <Upload className="w-4 h-4 mr-2" /> Add guests
+              <span className="inline-flex items-center gap-2">
+                <Upload className="w-4 h-4" /> Add guests
+              </span>
             </Link>
           </Button>
         }
       >
         <div className="p-4 border-b border-border flex justify-end">
-          <Button asChild className="bg-ink text-cream hover:bg-ink/90">
+          <Button asChild className="bg-terracotta text-cream hover:bg-terracotta/90">
             <Link to="/admin/upload" search={{ view: "committee" }}>
-              <Upload className="w-4 h-4 mr-2" /> Add guests
+              <span className="inline-flex items-center gap-2">
+                <Upload className="w-4 h-4" /> Add guests
+              </span>
             </Link>
           </Button>
         </div>
+
 
         {loadingGuests ? (
           <div className="p-4 text-sm text-muted-foreground flex items-center gap-2">
