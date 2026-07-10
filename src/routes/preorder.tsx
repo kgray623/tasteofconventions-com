@@ -1,7 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { submitStandaloneCuisinePreorder } from "@/lib/invitations.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +32,7 @@ export const Route = createFileRoute("/preorder")({
 type Stop = { country: string; when?: string; note?: string; restaurant?: string | null };
 
 function PreorderPage() {
+  const savePreorder = useServerFn(submitStandaloneCuisinePreorder);
   const { data: content } = useQuery({
     queryKey: ["invitation_content_preorder"],
     queryFn: async () => {
@@ -80,15 +83,21 @@ function PreorderPage() {
     setSubmitting(true);
     const selections = Object.entries(counts)
       .filter(([, qty]) => qty > 0)
-      .map(([country, qty]) => ({ country, qty }));
-    const { error } = await supabase
-      .from("cuisine_preorders")
-      .insert({ name: name.trim().slice(0, 120), phone: phone.trim().slice(0, 40), selections });
-    setSubmitting(false);
-    if (error) {
-      toast.error(error.message);
+      .map(([country, qty]) => ({ cuisine: country, qty }));
+    try {
+      await savePreorder({
+        data: {
+          name: name.trim().slice(0, 120),
+          phone: phone.trim().slice(0, 40),
+          selections,
+        },
+      });
+    } catch (error) {
+      setSubmitting(false);
+      toast.error(error instanceof Error ? error.message : "Could not save meal choices");
       return;
     }
+    setSubmitting(false);
     toast.success("Thanks! We'll be in touch with the menu soon.");
     setName("");
     setPhone("");
@@ -108,8 +117,8 @@ function PreorderPage() {
           </p>
           <h1 className="font-display text-4xl sm:text-5xl text-ink">Cuisine pre-order</h1>
           <p className="mt-4 text-muted-foreground">
-            Catered meals will be in the $25.00 range per meal. Tell us how many of each
-            cuisine you'd like and we'll send the menu to confirm in the coming weeks.
+            Catered meals will be in the $25.00 range per meal. Enter the same mobile number
+            used on your attending RSVP so your meal choices stay connected to your RSVP.
           </p>
         </div>
 

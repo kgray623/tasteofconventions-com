@@ -1,22 +1,27 @@
-## What's happening
+I checked the current records: every current food preorder is linked to an invitation and has an RSVP status of `yes`. The problem is the previous cleanup deleted archived preorder rows for Jana Weinberger and Yetunde Adejunmobi instead of restoring/merging them as RSVP-backed food orders. We need to restore their submitted information without overwriting anything.
 
-The two "unlinked" rows (Jana Weinberger, Yetunde Adejunmobi) came in through the public `/preorder` page. That page inserts into `cuisine_preorders` with just name + phone and **no `invitation_id`** — and it doesn't require an RSVP or a signed-in session at all. So your assumption ("they must have RSVP'd first") isn't enforced by the code today; anyone with the `/preorder` link can submit meals without ever touching RSVP.
+Plan:
 
-Both of these people DO have matching invitations by phone in the database (7854779714 and 4022901113). Nothing ever went back and stitched their preorder to their invitation, so they show up as "unlinked / not counted".
+1. Restore the archived food order information
+   - Bring back the two archived preorder submissions for Jana Weinberger and Yetunde Adejunmobi from the deleted-row archive.
+   - Because each already has a current linked preorder for the same invitation, preserve the existing linked row and merge the archived selection into it instead of losing either submission.
+   - Keep all submitted food choices visible/countable; do not drop or hide any submitted meal request.
 
-## Fix (two parts, same change)
+2. Make the database treat matched meal orders as RSVP-backed orders
+   - Keep/link `cuisine_preorders.invitation_id` by matching the submitted phone to the invitation phone.
+   - If the matching invitation already has an RSVP, the preorder must be treated as linked and counted.
+   - If a matching invitation does not have an RSVP, create or repair the missing RSVP relationship according to the existing RSVP table rules so the food order cannot appear as “not an RSVP.”
 
-**1. Backfill the two existing rows.** Match by phone digits to `invitations.guest_phone_normalized` and set `invitation_id`. After this the "Unlinked food orders (need review)" section is empty and their 2 meals roll into the restaurant totals.
+3. Remove the misleading “unlinked/not counted” behavior for valid guests
+   - Update the admin preorder report so known guests with matched invitations/RSVPs are included in restaurant totals.
+   - Replace the “unlinked food orders” language with a true exception-only state for unknown phone numbers that cannot be matched to any invitation.
 
-**2. Forward-fix so this can't happen again.** Add a `BEFORE INSERT OR UPDATE` trigger on `cuisine_preorders`: when `invitation_id` is null, look up an invitation by normalized phone and set it. Public `/preorder` submissions from a known guest will auto-link; truly unknown numbers still land in the "needs review" list instead of silently linking to the wrong person.
+4. Forward-fix the submission flow
+   - Update the public preorder submission path so a phone number must resolve to an invitation/RSVP before saving food choices.
+   - If a guest already has a linked preorder, merge/update their choices instead of creating a duplicate or deleting the older submission.
+   - If the phone cannot be matched, block submission with a clear message instead of creating an unlinked row.
 
-I'm keeping the `/preorder` public route open (some guests use it before RSVPing), but the trigger guarantees any meal from a known phone is attached to their invitation and counted.
-
-## Files touched
-
-- New migration: backfill the 2 rows + create `link_preorder_by_phone()` trigger on `cuisine_preorders`.
-- No frontend changes needed — the admin report already reads `invitation_id` and will move the two rows from "unlinked" to "guest preorder details" automatically.
-
-## Out of scope
-
-- I'm not gating `/preorder` behind RSVP in this change. If you want that too (block the submit unless the phone has a "yes" RSVP), say so and I'll add it in a follow-up.
+5. Verify end-to-end before calling it resolved
+   - Read back the database chain for Jana and Yetunde: phone → invitation → RSVP → preorder selections.
+   - Confirm the admin preorder report counts their restored selections in the restaurant totals.
+   - Confirm there are no remaining preorder rows for known guests that are unlinked from invitations/RSVPs.

@@ -1014,6 +1014,10 @@ export type Database = {
         Returns: boolean
       }
       is_current_user_committee: { Args: never; Returns: boolean }
+      merge_preorder_selections: {
+        Args: { _existing: Json; _incoming: Json }
+        Returns: Json
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
@@ -1024,6 +1028,7 @@ export type Database = {
         Returns: number
       }
       normalize_name_for_match: { Args: { _name: string }; Returns: string }
+      normalize_preorder_selection: { Args: { _item: Json }; Returns: Json }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {

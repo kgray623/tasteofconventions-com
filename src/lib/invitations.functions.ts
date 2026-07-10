@@ -317,6 +317,20 @@ const CuisinePreorderInput = z.object({
     .max(10),
 });
 
+const StandaloneCuisinePreorderInput = z.object({
+  name: z.string().min(1).max(120),
+  phone: z.string().min(7).max(40),
+  selections: z
+    .array(
+      z.object({
+        cuisine: z.string().min(1).max(80),
+        qty: z.number().int().min(1).max(50),
+      }),
+    )
+    .min(1)
+    .max(10),
+});
+
 export const submitCuisinePreorder = createServerFn({ method: "POST" })
   .inputValidator((d) => CuisinePreorderInput.parse(d))
   .handler(async ({ data }) => {
@@ -345,6 +359,53 @@ export const submitCuisinePreorder = createServerFn({ method: "POST" })
         .eq("invitation_id", inv.id);
       if (error) throw publicDbError(error);
     }
+
+    return { ok: true };
+  });
+
+export const submitStandaloneCuisinePreorder = createServerFn({ method: "POST" })
+  .inputValidator((d) => StandaloneCuisinePreorderInput.parse(d))
+  .handler(async ({ data }) => {
+    const phoneNorm = data.phone.replace(/\D/g, "");
+    if (phoneNorm.length < 7) throw new Error("Enter the mobile number used for your RSVP.");
+
+    const { data: ev } = await supabaseAdmin
+      .from("events")
+      .select("id")
+      .order("starts_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (!ev) throw new Error("No event configured yet");
+
+    const candidates = phoneCandidates(phoneNorm);
+    const { data: invitation, error: invErr } = await supabaseAdmin
+      .from("invitations")
+      .select("id,guest_name,guest_phone")
+      .eq("event_id", ev.id)
+      .in("guest_phone_normalized", candidates)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (invErr) throw publicDbError(invErr);
+    if (!invitation) throw new Error("Please RSVP first using the same mobile number before choosing meals.");
+
+    const { data: rsvp, error: rsvpErr } = await supabaseAdmin
+      .from("rsvps")
+      .select("status")
+      .eq("invitation_id", invitation.id)
+      .maybeSingle();
+    if (rsvpErr) throw publicDbError(rsvpErr);
+    if (rsvp?.status !== "yes") {
+      throw new Error("Meal choices are only saved after an attending RSVP is on file.");
+    }
+
+    const { error } = await supabaseAdmin.from("cuisine_preorders").insert({
+      invitation_id: invitation.id,
+      name: (invitation.guest_name || data.name).slice(0, 120),
+      phone: (invitation.guest_phone || data.phone).slice(0, 40),
+      selections: data.selections,
+    });
+    if (error) throw publicDbError(error);
 
     return { ok: true };
   });

@@ -230,12 +230,12 @@ export function InvitationPage() {
             <UtensilsCrossed className="w-4 h-4" /> Optional cultural meal
           </p>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Cultural meals are not required to attend. You may choose to pre-order a cultural meal at your discretion. They will be in the twenty dollar range per meal. Click to pre-order so we can negotiate with the restaurant once we have a meal count total. You will be updated with the menu to confirm in the coming weeks and to pay the restaurant direct.
+            Cultural meals are not required to attend. After you RSVP as attending, you may choose to pre-order a cultural meal at your discretion. They will be in the twenty dollar range per meal so we can negotiate with the restaurant once we have a meal count total. You will be updated with the menu to confirm in the coming weeks and to pay the restaurant direct.
           </p>
-          <Link to="/preorder" className="inline-block mt-5">
+          <Link to="/rsvp" className="inline-block mt-5">
             <Button size="lg" className="bg-gradient-sunset text-white hover:opacity-90 px-8 shadow-glow border-0">
               <UtensilsCrossed className="mr-2 w-4 h-4" />
-              Pre-order a cultural meal
+              RSVP and choose meals
             </Button>
           </Link>
         </div>
