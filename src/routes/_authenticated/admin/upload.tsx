@@ -315,7 +315,7 @@ function UploadPage() {
       roleRefreshUserRef.current = null;
       return;
     }
-    if (roleRefreshUserRef.current === user.id) return;
+    if (roleRefreshUserRef.current === user.id && roleRefreshDone) return;
     roleRefreshUserRef.current = user.id;
     let alive = true;
     setRoleRefreshDone(false);
