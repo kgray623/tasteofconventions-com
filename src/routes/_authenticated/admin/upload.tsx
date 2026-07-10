@@ -853,7 +853,7 @@ function UploadPage() {
     saveUploadDraft(user.id, pasted, quick, rows);
   }, [user?.id, pasted, quick, rows]);
 
-  if (authLoading || rolesLoading || !roleRefreshDone) {
+  if (authLoading || rolesLoading || (!roleRefreshDone && !isTeam && !isAdmin)) {
     return <p className="text-muted-foreground">Loading guest tools…</p>;
   }
 
