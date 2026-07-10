@@ -1744,6 +1744,72 @@ function UploadPage() {
 
       <Card className="p-6 space-y-4 border-terracotta/40 bg-terracotta/5">
         <div className="flex items-center gap-2">
+          <UserPlus className="w-5 h-5 text-terracotta" />
+          <h2 className="text-lg font-semibold">Add one guest</h2>
+        </div>
+        <form
+          className="grid gap-3 md:grid-cols-[1.2fr_1fr_1fr_auto] md:items-end"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void onQuickAdd();
+          }}
+        >
+          <div className="space-y-1.5">
+            <label htmlFor="quick-guest-name" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Guest name
+            </label>
+            <Input
+              id="quick-guest-name"
+              ref={quickNameRef}
+              value={quick.name}
+              onChange={(event) => setQuick((current) => ({ ...current, name: event.target.value }))}
+              placeholder="Name"
+              autoComplete="name"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="quick-guest-phone" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Phone
+            </label>
+            <Input
+              id="quick-guest-phone"
+              value={quick.phone}
+              onChange={(event) => setQuick((current) => ({ ...current, phone: event.target.value }))}
+              placeholder="Phone"
+              inputMode="tel"
+              autoComplete="tel"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="quick-guest-email" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Email
+            </label>
+            <Input
+              id="quick-guest-email"
+              value={quick.email}
+              onChange={(event) => setQuick((current) => ({ ...current, email: event.target.value }))}
+              placeholder="Email"
+              type="email"
+              autoComplete="email"
+            />
+          </div>
+          <Button
+            type="submit"
+            disabled={quickBusy || !eventId || !quick.name.trim() || (!quick.phone.trim() && !quick.email.trim())}
+            className="bg-terracotta text-cream hover:bg-terracotta/90"
+          >
+            {quickBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <><UserPlus className="w-4 h-4 mr-2" /> Add guest</>}
+          </Button>
+        </form>
+        {quickAdded > 0 && (
+          <p className="text-xs text-muted-foreground">
+            {quickAdded} guest{quickAdded === 1 ? "" : "s"} added this session.
+          </p>
+        )}
+      </Card>
+
+      <Card className="p-6 space-y-4 border-terracotta/40 bg-terracotta/5">
+        <div className="flex items-center gap-2">
           <Upload className="w-5 h-5 text-terracotta" />
           <h2 className="text-lg font-semibold">Upload your guest list</h2>
         </div>
