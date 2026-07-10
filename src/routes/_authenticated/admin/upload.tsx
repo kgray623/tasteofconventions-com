@@ -29,6 +29,7 @@ import {
   Send,
   Clock,
   Copy,
+  UserPlus,
 } from "lucide-react";
 import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 import { useServerFn } from "@tanstack/react-start";
