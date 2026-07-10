@@ -194,7 +194,7 @@ function PreorderReportPage() {
           <p className="text-xs text-muted-foreground mt-1">assigned cuisine dishes · {totalMeals} including review</p>
           {unlinkedMeals > 0 && (
             <p className="text-xs text-amber-700 mt-2">
-              + {unlinkedMeals} meal{unlinkedMeals === 1 ? "" : "s"} in unlinked orders (not counted)
+              + {unlinkedMeals} meal{unlinkedMeals === 1 ? "" : "s"} needing phone review (not counted)
             </p>
           )}
         </Card>
@@ -203,10 +203,10 @@ function PreorderReportPage() {
       {unlinkedDetailed.length > 0 && (
         <Card className="overflow-hidden border-amber-300/50">
           <div className="p-5 border-b border-border bg-amber-50/50">
-            <h3 className="font-display text-xl">Unlinked food orders (need review)</h3>
+            <h3 className="font-display text-xl">Food orders needing phone review</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              These orders were submitted before being matched to an invitation. They are NOT included
-              in the restaurant totals above. Match the person to an invitation, or delete the row.
+              These are exception records whose phone number could not be matched to an invitation and RSVP.
+              Match the person to an invitation, or delete the row.
             </p>
           </div>
           <div className="overflow-x-auto">
