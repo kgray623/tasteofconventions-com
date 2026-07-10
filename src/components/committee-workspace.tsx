@@ -508,16 +508,21 @@ export function CommitteeWorkspace() {
       )}
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <Button asChild className="bg-ink text-cream hover:bg-ink/90 justify-start h-14">
+        <Button asChild className="bg-terracotta text-cream hover:bg-terracotta/90 justify-start h-14">
           <Link to="/admin/upload" search={{ view: "committee" }}>
-            <Upload className="w-4 h-4" /> Upload guests
+            <span className="inline-flex items-center gap-2">
+              <Upload className="w-4 h-4" /> Upload guests
+            </span>
           </Link>
         </Button>
         <Button asChild variant="outline" className="justify-start h-14">
           <Link to="/invitations/new">
-            <UserPlus className="w-4 h-4" /> Add one guest
+            <span className="inline-flex items-center gap-2">
+              <UserPlus className="w-4 h-4" /> Add one guest
+            </span>
           </Link>
         </Button>
+
       </div>
 
       {!hideWelcome && (
