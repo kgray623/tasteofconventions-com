@@ -1,16 +1,17 @@
-I will make the upload control visible and reliable in the top committee/admin header, not only lower inside the workspace.
+Root cause I found: the button now navigates, but the upload flow still depends on committee/team role resolution and the invitations insert policy only allows `host_id = current user`. If role resolution stalls or the user is not granted `team` before landing there, the page can hang/block; if they get to the page, guest creation can still fail under the current insert rules.
 
 Plan:
-1. Add a prominent orange **Upload guests** link/button in the top header of the committee workspace layout for every committee/team member.
-   - It will appear at the top of `/admin` when a committee member logs in.
-   - It will also appear for admins previewing committee view.
-2. Make the button a direct TanStack `Link` styled as the orange button, instead of relying on nested `Button asChild` behavior, so clicking it reliably navigates to `/admin/upload`.
-3. Keep the existing orange buttons inside the committee workspace, but make their labels consistent as **Upload guests** where needed.
-4. Verify with the live preview on the same mobile viewport that:
-   - logging/landing on committee `/admin` shows the orange button at the top,
-   - tapping it navigates to `/admin/upload`,
-   - the upload page allows committee/team members to add guests.
-
-Technical details:
-- Files to update: `src/routes/_authenticated/admin.tsx` and, if needed for label consistency, `src/components/committee-workspace.tsx`.
-- No database changes are needed for this button fix.
+1. Keep the orange top **Upload guests** button as a direct link, but make it preserve committee mode consistently:
+   - `/admin/upload?view=committee` for committee/admin-preview contexts.
+2. Make `/admin/upload` fail-safe for committee members:
+   - wait for auth and role loading before rendering access decisions,
+   - call the committee role refresh once on page entry,
+   - show the upload tools only after the role check is resolved.
+3. Fix guest creation permissions so committee/team members can actually add guests:
+   - add a database migration updating the `invitations` insert policy to allow authenticated `team` and `admin` users to insert guest records, while still requiring their own `host_id` unless they are admin.
+   - keep existing guest data and existing architecture intact.
+4. Verify end-to-end on the mobile viewport:
+   - `/admin` as a committee-capable signed-in user shows the orange top **Upload guests** button,
+   - tapping it reaches `/admin/upload?view=committee`,
+   - the upload page renders the guest upload controls instead of hanging or showing access denied,
+   - adding a test guest writes an invitation row and reads it back, then remove only that test row if created for verification.
