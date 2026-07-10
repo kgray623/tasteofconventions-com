@@ -1404,6 +1404,90 @@ function UploadPage() {
 
   return (
     <div className="space-y-6">
+      <Card id="add-guests" className="p-5 space-y-4 border-terracotta/50 bg-terracotta/5 scroll-mt-24">
+        <div className="flex items-center gap-2">
+          <UserPlus className="w-5 h-5 text-terracotta" />
+          <h2 className="text-lg font-semibold">Add guests</h2>
+        </div>
+        <form
+          className="grid gap-3 md:grid-cols-[1.2fr_1fr_1fr_auto] md:items-end"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void onQuickAdd();
+          }}
+        >
+          <div className="space-y-1.5">
+            <label htmlFor="top-quick-guest-name" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Guest name
+            </label>
+            <Input
+              id="top-quick-guest-name"
+              value={quick.name}
+              onChange={(event) => setQuick((current) => ({ ...current, name: event.target.value }))}
+              placeholder="Name"
+              autoComplete="name"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="top-quick-guest-phone" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Phone
+            </label>
+            <Input
+              id="top-quick-guest-phone"
+              value={quick.phone}
+              onChange={(event) => setQuick((current) => ({ ...current, phone: event.target.value }))}
+              placeholder="Phone"
+              inputMode="tel"
+              autoComplete="tel"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="top-quick-guest-email" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Email
+            </label>
+            <Input
+              id="top-quick-guest-email"
+              value={quick.email}
+              onChange={(event) => setQuick((current) => ({ ...current, email: event.target.value }))}
+              placeholder="Email"
+              type="email"
+              autoComplete="email"
+            />
+          </div>
+          <Button
+            type="submit"
+            disabled={quickBusy || !eventId || !quick.name.trim() || (!quick.phone.trim() && !quick.email.trim())}
+            className="bg-terracotta text-cream hover:bg-terracotta/90"
+          >
+            {quickBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <><UserPlus className="w-4 h-4 mr-2" /> Add guest</>}
+          </Button>
+        </form>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label
+            htmlFor="screenshot-file-input"
+            aria-disabled={screenshotBusy}
+            className={`inline-flex h-11 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-cream shadow transition bg-terracotta hover:bg-terracotta/90 ${screenshotBusy ? "opacity-50 pointer-events-none cursor-not-allowed" : "cursor-pointer"}`}
+          >
+            {screenshotBusy ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Reading…</>
+            ) : (
+              <><Upload className="w-4 h-4" /> Choose screenshots</>
+            )}
+          </label>
+          <label
+            htmlFor="spreadsheet-file-input"
+            className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-md bg-terracotta px-4 py-2 text-sm font-medium text-cream shadow transition hover:bg-terracotta/90"
+          >
+            <FileSpreadsheet className="w-4 h-4" /> Choose spreadsheet
+          </label>
+        </div>
+        {quickAdded > 0 && (
+          <p className="text-xs text-muted-foreground">
+            {quickAdded} guest{quickAdded === 1 ? "" : "s"} added this session.
+          </p>
+        )}
+      </Card>
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-5">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Total RSVPs</p>
