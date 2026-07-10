@@ -509,7 +509,7 @@ export function CommitteeWorkspace() {
 
       <div className="grid gap-3 sm:grid-cols-2">
         <Button asChild className="bg-terracotta text-cream hover:bg-terracotta/90 justify-start h-14">
-          <Link to="/admin/upload" search={{ view: "committee" }}>
+          <Link to="/admin/upload" search={{ view: "committee" }} hash="add-guests">
             <span className="inline-flex items-center gap-2">
               <Upload className="w-4 h-4" /> Upload guests
             </span>
@@ -761,7 +761,7 @@ export function CommitteeWorkspace() {
         title={`Guest list (${loadingGuests ? "…" : guests.length})`}
         action={
           <Button asChild variant="outline" size="sm" onClick={(e) => e.stopPropagation()}>
-            <Link to="/admin/upload" search={{ view: "committee" }}>
+            <Link to="/admin/upload" search={{ view: "committee" }} hash="add-guests">
               <span className="inline-flex items-center gap-2">
                 <Upload className="w-4 h-4" /> Upload guests
               </span>
@@ -771,7 +771,7 @@ export function CommitteeWorkspace() {
       >
         <div className="p-4 border-b border-border flex justify-end">
           <Button asChild className="bg-terracotta text-cream hover:bg-terracotta/90">
-            <Link to="/admin/upload" search={{ view: "committee" }}>
+            <Link to="/admin/upload" search={{ view: "committee" }} hash="add-guests">
               <span className="inline-flex items-center gap-2">
                 <Upload className="w-4 h-4" /> Upload guests
               </span>
@@ -891,7 +891,7 @@ export function CommitteeWorkspace() {
           </Link>
         </Button>
         <Button asChild variant="outline" className="justify-start h-14">
-          <Link to="/admin/upload" search={{ view: "committee" }}>
+          <Link to="/admin/upload" search={{ view: "committee" }} hash="add-guests">
             <span className="inline-flex items-center gap-2">
               <Upload className="w-4 h-4" /> Guest list / Add guests
             </span>
