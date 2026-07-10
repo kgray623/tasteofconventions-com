@@ -83,7 +83,7 @@ function PreorderPage() {
     setSubmitting(true);
     const selections = Object.entries(counts)
       .filter(([, qty]) => qty > 0)
-      .map(([country, qty]) => ({ country, qty }));
+      .map(([country, qty]) => ({ cuisine: country, qty }));
     try {
       await savePreorder({
         data: {
