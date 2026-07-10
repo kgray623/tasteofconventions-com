@@ -245,12 +245,10 @@ function clearUploadDraft(userId?: string) {
 
 function UploadPage() {
   const { user, loading: authLoading } = useAuth();
-  const { isAdmin, isTeam, loading: rolesLoading, refresh: refreshRoles } = useRoles();
   const fileRef = useRef<HTMLInputElement>(null);
   const vcardRef = useRef<HTMLInputElement>(null);
   const quickNameRef = useRef<HTMLInputElement>(null);
   const draftLoadedRef = useRef(false);
-  const roleRefreshUserRef = useRef<string | null>(null);
   const [events, setEvents] = useState<{ id: string; title: string }[]>([]);
   const [eventId, setEventId] = useState("");
   const [rows, setRows] = useState<Parsed[]>([]);
@@ -306,28 +304,6 @@ function UploadPage() {
   const [savingQuotaReq, setSavingQuotaReq] = useState(false);
   const [quotaPool, setQuotaPool] = useState({ total: TOTAL_RSVP_CAP, allocated: 0 });
   const [rsvpAttendingTotal, setRsvpAttendingTotal] = useState(0);
-  const [roleRefreshDone, setRoleRefreshDone] = useState(false);
-
-  useEffect(() => {
-    if (authLoading) return;
-    if (!user?.id) {
-      setRoleRefreshDone(true);
-      roleRefreshUserRef.current = null;
-      return;
-    }
-    if (roleRefreshUserRef.current === user.id && roleRefreshDone) return;
-    roleRefreshUserRef.current = user.id;
-    let alive = true;
-    setRoleRefreshDone(false);
-    void refreshRoles(() => alive).finally(() => {
-      if (alive) setRoleRefreshDone(true);
-    });
-    return () => {
-      alive = false;
-    };
-    // refreshRoles is intentionally omitted because useRoles returns a new function each render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, user?.id]);
 
   const loadSavedGuests = async (evId: string) => {
     if (!evId) {
@@ -411,7 +387,7 @@ function UploadPage() {
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [eventId, isAdmin, user?.id]);
+  }, [eventId, user?.id]);
 
   // Load this team member's quota and display name (for SMS personalization)
   useEffect(() => {
@@ -853,12 +829,12 @@ function UploadPage() {
     saveUploadDraft(user.id, pasted, quick, rows);
   }, [user?.id, pasted, quick, rows]);
 
-  if (authLoading || rolesLoading || (!roleRefreshDone && !isTeam && !isAdmin)) {
+  if (authLoading) {
     return <p className="text-muted-foreground">Loading guest tools…</p>;
   }
 
-  if (!isTeam) {
-    return <p className="text-muted-foreground">Only team members can add guests.</p>;
+  if (!user) {
+    return <p className="text-muted-foreground">Opening login…</p>;
   }
 
   const availableRsvps = Math.max(
