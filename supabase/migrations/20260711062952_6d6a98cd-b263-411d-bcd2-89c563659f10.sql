@@ -1,0 +1,1 @@
+DELETE FROM public.invitations WHERE id = 'c98a37d7-42a5-4263-9e0b-dbd6b47909b8';
