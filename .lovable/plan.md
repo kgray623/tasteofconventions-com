@@ -1,42 +1,22 @@
-2026-07-12 22:21:21 UTC
+## Goal
 
-Plan to fix the RSVP quota/remaining math only
+On the "Add committee" page, let admins pick any existing guest from the RSVP/invitation list via a searchable dropdown instead of retyping name + phone. Selecting a guest auto-fills their name and phone, and one click adds them as a committee member.
 
-1. Correct the remaining formula everywhere this committee quota appears
-- Remaining must be based on the approved/requested RSVP quota, not uploaded guests.
-- Formula for committee quota views:
-  ```text
-  Remaining = RSVP requests/quota - in-person confirmed RSVPs
-  ```
-- For Betsaida Ruiz, this means:
-  ```text
-  30 requested - 7 in-person confirmations = 23 remaining
-  ```
-- Uploaded guests stays a separate number and will not reduce remaining by itself.
+## Changes
 
-2. Update the admin committee usage table
-- In `/admin/inviters`, change Remaining from the current incorrect calculation:
-  ```text
-  uploaded guests - in-person confirmed
-  ```
-- To the correct quota calculation:
-  ```text
-  inviter quota - in-person confirmed
-  ```
-- Keep Uploaded visible as its own column so admins can still see how many guest records were added.
-- Keep Zoom/virtual RSVPs separate and unlimited; Zoom does not reduce remaining.
+1. **Add committee page (`src/routes/_authenticated/admin/team.tsx`)**
+   - Add a searchable dropdown (Command/Combobox from shadcn) above the existing name/phone inputs, labeled "Pick from guest list".
+   - Load all rows from `invitations` (guest_name, guest_phone, id) for the current event, sorted by name.
+   - Typing filters by name or phone digits; selecting a guest fills the Name and Phone fields (which remain editable as a fallback).
+   - Role dropdown (Committee / Admin) and the "Add" button stay as they are, wired to the existing `inviteTeamMember` server function — no backend changes needed.
+   - Keep the manual name/phone inputs visible for the case where the person isn't yet on the guest list.
 
-3. Align the committee/member RSVP summary cards with the same meaning
-- Ensure “My RSVPs left” and any “remaining of requested” display use the same baseline: approved requested RSVP quota.
-- Do not use uploaded guests as the baseline for remaining.
-- Do not count declined, pending, Zoom, or not-yet-sent guests against remaining.
+2. **Behavior**
+   - Guests already marked committee (or already accepted a team invite matching that phone) are shown with a "Already committee" badge and disabled in the dropdown, so we don't create duplicates.
+   - After a successful add, the form clears and the pending-invites list refreshes (already implemented).
 
-4. Verify directly against the database before saying it is fixed
-- Read back Betsaida Ruiz’s row and confirm these source values:
-  - quota/requested = 30
-  - uploaded = 21
-  - in-person confirmations = 7
-  - remaining = 23
-- Open the exact admin route `/admin/inviters` and verify the row renders those numbers.
-- Open the committee-facing route/card at the current viewport and verify the same remaining logic appears there.
-- I will not call it fixed unless the database read-back and rendered UI both match.
+## Out of scope
+
+- No schema changes. No changes to `inviters`, `team_invites`, or RLS.
+- The `is_committee` flag on `invitations` is not toggled here — this only creates/updates the `team_invites` + `inviters` rows via the existing server function, matching current behavior.
+- The inline "Add committee member" link on `/admin/inviters` stays as-is.
