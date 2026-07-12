@@ -1565,7 +1565,7 @@ function UploadPage() {
             {savedLoading ? "Loading confirmed RSVPs…" : "No confirmed RSVPs yet."}
           </div>
         ) : (
-          <div className="max-h-[360px] overflow-auto">
+          <div className="md:max-h-[360px] md:overflow-auto">
             {confirmedGuests.filter((g) => g.attendance_mode !== "zoom").length > 0 && (
               <>
                 <div className="px-4 py-2 bg-background/60 text-[11px] uppercase tracking-wider text-muted-foreground border-b border-border">
@@ -1750,7 +1750,7 @@ function UploadPage() {
                 </span>
               )}
             </div>
-            <div className="max-h-[480px] overflow-auto">
+            <div className="md:max-h-[480px] md:overflow-auto">
 
             {sections.map((sec) => sec.rows.length === 0 ? null : (
               <div key={sec.label}>
@@ -2140,7 +2140,7 @@ function UploadPage() {
               </Button>
             </div>
           </div>
-          <div className="divide-y divide-border max-h-[480px] overflow-auto">
+          <div className="divide-y divide-border md:max-h-[480px] md:overflow-auto">
             {rows.map((r, idx) => (
               <div key={idx} className="px-4 py-2.5 flex flex-wrap items-center gap-3 text-sm">
                 <span className="text-xs text-muted-foreground w-8">#{r._row}</span>
