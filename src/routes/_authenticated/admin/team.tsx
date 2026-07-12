@@ -155,6 +155,25 @@ function TeamPage() {
     (i) => !i.accepted_at && !isSignedUp(normalizeRosterPhone(i.phone)),
   );
 
+  const existingCommitteeTails = useMemo(() => {
+    const set = new Set<string>();
+    for (const g of guests) if (g.isCommittee && g.digits) set.add(g.digits.slice(-10));
+    for (const inv of invites) {
+      const d = normalizeRosterPhone(inv.phone);
+      if (d) set.add(d.slice(-10));
+    }
+    return set;
+  }, [guests, invites]);
+
+  const selectedGuest = guests.find((g) => g.id === selectedGuestId) ?? null;
+
+  const pickGuest = (g: GuestOption) => {
+    setSelectedGuestId(g.id);
+    setName(g.name);
+    setPhone(g.phone);
+    setPickerOpen(false);
+  };
+
   return (
     <div className="space-y-6">
       {isAdmin && (
@@ -163,18 +182,78 @@ function TeamPage() {
             <Phone className="w-4 h-4 text-terracotta" />
             <h2 className="font-display text-xl">Add Steering Committee Member</h2>
           </div>
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium flex items-center gap-2">
+              <Users className="w-4 h-4 text-terracotta" /> Pick from guest list
+            </label>
+            <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  role="combobox"
+                  className="w-full justify-between font-normal"
+                >
+                  <span className="truncate">
+                    {selectedGuest ? `${selectedGuest.name} — ${selectedGuest.phone}` : "Search guests by name or phone…"}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="p-0 w-[--radix-popover-trigger-width] max-w-[95vw]" align="start">
+                <Command
+                  filter={(value, search) => {
+                    const s = search.toLowerCase().trim();
+                    if (!s) return 1;
+                    return value.toLowerCase().includes(s) ? 1 : 0;
+                  }}
+                >
+                  <CommandInput placeholder="Type a name or phone…" />
+                  <CommandList>
+                    <CommandEmpty>No matching guest.</CommandEmpty>
+                    <CommandGroup>
+                      {guests.map((g) => {
+                        const already = existingCommitteeTails.has(g.digits.slice(-10));
+                        return (
+                          <CommandItem
+                            key={g.id}
+                            value={`${g.name} ${g.phone} ${g.digits}`}
+                            disabled={already}
+                            onSelect={() => !already && pickGuest(g)}
+                            className="flex items-center justify-between gap-2"
+                          >
+                            <div className="min-w-0">
+                              <div className="truncate">{g.name}</div>
+                              <div className="text-xs text-muted-foreground truncate">{g.phone}</div>
+                            </div>
+                            {already && <Badge variant="outline" className="shrink-0">Already committee</Badge>}
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            <p className="text-xs text-muted-foreground">
+              Choose someone already on the guest list, or type a new name and phone below.
+            </p>
+          </div>
+
           <div className="grid gap-3 sm:grid-cols-2">
             <Input
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => { setName(e.target.value); setSelectedGuestId(null); }}
               placeholder="Full name"
             />
             <Input
               type="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => { setPhone(e.target.value); setSelectedGuestId(null); }}
               placeholder="Phone number"
             />
+
             <Select value={role} onValueChange={(v) => setRole(v as "team" | "admin")}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
