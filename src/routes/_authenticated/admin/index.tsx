@@ -35,16 +35,6 @@ type AuditData = {
   };
 };
 
-const adminExportFiles = [
-  { filename: "taste-of-conventions-database-dump.zip", label: "Database dump ZIP" },
-  { filename: "taste-of-conventions-source.zip", label: "Source code ZIP" },
-  { filename: "taste-of-conventions-migrations.zip", label: "Database migrations ZIP" },
-  { filename: "taste-of-conventions-admin-screenshots.zip", label: "Admin screenshots ZIP" },
-  { filename: "taste-of-conventions-database.xlsx", label: "Database spreadsheet" },
-  { filename: "guests.csv", label: "Guest CSV" },
-] as const;
-
-type AdminExportFilename = (typeof adminExportFiles)[number]["filename"];
 
 function escapeCsv(value: unknown) {
   const text = String(value ?? "");
