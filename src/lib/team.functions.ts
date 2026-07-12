@@ -82,6 +82,7 @@ export const inviteTeamMember = createServerFn({ method: "POST" })
         .eq("id", existing.id);
       if (updErr) throw new Error(updErr.message);
       await syncCommitteeInviter(data);
+      await flagInvitationsAsCommittee(data);
       return { ok: true };
     }
 
