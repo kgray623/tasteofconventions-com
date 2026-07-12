@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { MessageCircle } from "lucide-react";
 import { CategoryChat } from "@/components/CategoryChat";
 import { useChatUnread } from "@/hooks/use-chat-unread";
-import { useRoles } from "@/hooks/use-roles";
+import { useAdminView } from "@/hooks/use-admin-view";
 
 export const Route = createFileRoute("/_authenticated/admin/my-volunteer-chats")({
   head: () => ({ meta: [{ title: "My volunteer chats — Steering Committee" }] }),
@@ -20,7 +20,7 @@ type ProfileRow = { id: string; display_name: string | null; email: string | nul
 
 function MyVolunteerChatsPage() {
   const { user } = useAuth();
-  const { isAdmin } = useRoles();
+  const { isAdmin } = useAdminView();
   const chatUnread = useChatUnread();
   const [myCats, setMyCats] = useState<MyCategory[]>([]);
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);

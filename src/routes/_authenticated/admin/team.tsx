@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { useRoles } from "@/hooks/use-roles";
+import { useAdminView } from "@/hooks/use-admin-view";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,7 +47,7 @@ const inviteSchema = z.object({
 
 function TeamPage() {
   const { user } = useAuth();
-  const { isAdmin } = useRoles();
+  const { isAdmin } = useAdminView();
   const [invites, setInvites] = useState<Invite[]>([]);
   const [signedUpDigits, setSignedUpDigits] = useState<Set<string>>(new Set());
   const [guests, setGuests] = useState<GuestOption[]>([]);
