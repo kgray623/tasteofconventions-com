@@ -1078,7 +1078,7 @@ function MyGuestsGroup({
                       {guest.party_size || 1} {guest.attendance_mode === "zoom" ? "Zoom" : "in person"}
                     </Badge>
                   )}
-                  {!guest.rsvp_status && (
+                  {guest.rsvp_status !== "yes" && guest.rsvp_status !== "no" && (
                     <Select
                       value=""
                       disabled={settingRsvpId === guest.id}
