@@ -253,43 +253,19 @@ function AdminOverview() {
 
       <Card className="p-4">
         <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">
-          Preview dashboards
+          Data export
         </p>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!sampleGuestToken}
-            title={sampleGuestToken ? "Opens a real guest's RSVP page" : "No guest invitations yet"}
-            onClick={() => {
-              if (sampleGuestToken) {
-                window.open(`/rsvp/${sampleGuestToken}`, "_blank", "noopener");
-              }
-            }}
-          >
-            <User className="w-4 h-4 mr-2" />
-            View as Guest
-            <ExternalLink className="w-3 h-3 ml-2 opacity-60" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowCommitteePreview(true)}
-          >
-            <Users className="w-4 h-4 mr-2" />
-            View as Committee
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={downloadReconciliation}
-            disabled={downloading}
-          >
-            <Download className="w-4 h-4 mr-2" />
-            {downloading ? "Preparing…" : "Reconciliation CSV"}
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={downloadReconciliation}
+          disabled={downloading}
+        >
+          <Download className="w-4 h-4 mr-2" />
+          {downloading ? "Preparing…" : "Reconciliation CSV"}
+        </Button>
       </Card>
+
 
       {auditError && (
         <Card className="p-4 border-destructive/40 bg-destructive/5">
