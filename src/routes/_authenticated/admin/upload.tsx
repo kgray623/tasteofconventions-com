@@ -1701,22 +1701,21 @@ function UploadPage() {
               },
             ];
           } else {
-            const yes = savedGuests.filter((g) => effStatus(g) === "yes").sort(byName);
-            const wait = savedGuests.filter((g) => effStatus(g) === "waitlist").sort(byName);
+            const rsvp = savedGuests.filter((g) => effStatus(g) === "yes").sort(byName);
             const no = savedGuests.filter((g) => effStatus(g) === "no").sort(byName);
             const pending = savedGuests
               .filter((g) => {
                 const s = effStatus(g);
-                return s !== "yes" && s !== "waitlist" && s !== "no";
+                return s !== "yes" && s !== "no";
               })
               .sort(byName);
             sections = [
-              { label: "RSVP yes", rows: yes },
-              { label: "RSVP waitlist", rows: wait },
-              { label: "No response yet", rows: pending },
-              { label: "RSVP no", rows: no },
+              { label: "RSVP", rows: rsvp },
+              { label: "Pending", rows: pending },
+              { label: "No", rows: no },
             ];
           }
+
 
           return (
           <div>
