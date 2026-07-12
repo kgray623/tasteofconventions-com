@@ -170,7 +170,7 @@ export function CommitteeWorkspace() {
     const { data, error: invitationsError } = await withTimeout(
       supabase
         .from("invitations")
-        .select("id,guest_name,guest_phone,guest_email,host_id,rsvps(status,party_size,attendance_mode,responded_at)")
+        .select("id,guest_name,guest_phone,guest_email,host_id,rsvp_token,rsvps(status,party_size,attendance_mode,responded_at)")
         .eq("event_id", eventId)
         .order("created_at", { ascending: false }),
       LOAD_TIMEOUT_MS,
@@ -183,6 +183,7 @@ export function CommitteeWorkspace() {
       guest_phone: string | null;
       guest_email: string | null;
       host_id: string;
+      rsvp_token: string | null;
       rsvps:
         | { status: string | null; party_size: number | null; attendance_mode: string | null; responded_at: string | null }[]
         | { status: string | null; party_size: number | null; attendance_mode: string | null; responded_at: string | null }
@@ -218,6 +219,7 @@ export function CommitteeWorkspace() {
           responded_at: rsvp?.responded_at ?? null,
           invited_by: hostNames.get(row.host_id) ?? null,
           host_id: row.host_id,
+          rsvp_token: row.rsvp_token ?? null,
         };
       }),
     };
@@ -482,6 +484,29 @@ export function CommitteeWorkspace() {
     .sort(byName);
   const myDeclined = myGuests.filter((g) => g.rsvp_status === "no").sort(byName);
 
+  // Build a sms: link for the phone's Messages app. Same wording as the
+  // Upload page's Send SMS button so committee members send a consistent
+  // invitation whether they text from the pending list or the upload page.
+  const siteOrigin =
+    typeof window !== "undefined" ? window.location.origin : "https://tasteofconventions.com";
+  const senderName =
+    (myGuestsUnsorted.find((g) => g.host_id === user?.id)?.invited_by ?? "").trim() ||
+    (((user?.user_metadata as { full_name?: string; name?: string; display_name?: string } | undefined)?.full_name ??
+      (user?.user_metadata as { name?: string } | undefined)?.name ??
+      (user?.user_metadata as { display_name?: string } | undefined)?.display_name ??
+      "") as string).trim() ||
+    "your friend";
+  const rsvpLinkToken = (token: string) =>
+    encodeURIComponent(token.trim().replace(/\+/g, "-").replace(/\//g, "_"));
+  const buildSmsHref = (guest: CommitteeGuest): string | null => {
+    if (!guest.guest_phone || !guest.rsvp_token) return null;
+    const firstName = (guest.guest_name || "Friend").split(/\s+/)[0];
+    const senderFirst = senderName.split(/\s+/)[0];
+    const link = `${siteOrigin}/rsvp/${rsvpLinkToken(guest.rsvp_token)}`;
+    const body = `Hi ${firstName}, it's ${senderFirst}. You're invited to A Taste of Special Conventions on Sunday, August 30, 2026. Please RSVP here: ${link}`;
+    return `sms:${guest.guest_phone}?&body=${encodeURIComponent(body)}`;
+  };
+
   // "New guests RSVP'd" since user last acknowledged.
   useEffect(() => {
     if (!user || typeof window === "undefined") return;
@@ -723,6 +748,7 @@ export function CommitteeWorkspace() {
               setRsvpFor={setRsvpFor}
               saveGuestEdits={saveGuestEdits}
               deleteGuest={deleteGuest}
+              buildSmsHref={buildSmsHref}
             />
           </div>
         )}
@@ -996,6 +1022,7 @@ function MyGuestsGroup({
   setRsvpFor,
   saveGuestEdits,
   deleteGuest,
+  buildSmsHref,
 }: {
   label: string;
   tone: "emerald" | "muted" | "rose";
@@ -1011,6 +1038,7 @@ function MyGuestsGroup({
     edits: { guest_name: string; guest_phone: string; guest_email: string },
   ) => Promise<boolean>;
   deleteGuest: (guest: CommitteeGuest) => Promise<void>;
+  buildSmsHref?: (guest: CommitteeGuest) => string | null;
 }) {
   const toneClasses =
     tone === "emerald"
@@ -1093,6 +1121,23 @@ function MyGuestsGroup({
                       </SelectContent>
                     </Select>
                   )}
+                  {buildSmsHref && (() => {
+                    const href = buildSmsHref(guest);
+                    if (!href) return null;
+                    return (
+                      <Button
+                        asChild
+                        size="sm"
+                        className="w-full sm:w-auto bg-terracotta text-cream hover:bg-terracotta/90"
+                      >
+                        <a href={href}>
+                          <span className="inline-flex items-center gap-2">
+                            <MessageSquare className="w-4 h-4" /> Send text
+                          </span>
+                        </a>
+                      </Button>
+                    );
+                  })()}
                   <EditGuestButton guest={guest} onSave={saveGuestEdits} />
                   <DeleteGuestButton guest={guest} onDelete={deleteGuest} />
                 </div>

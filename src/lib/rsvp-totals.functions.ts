@@ -30,6 +30,7 @@ export type CommitteeWorkspaceGuest = {
   responded_at: string | null;
   invited_by: string | null;
   host_id: string;
+  rsvp_token: string | null;
 };
 
 export type CommitteeWorkspaceGuestsResult = {
@@ -101,7 +102,7 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
       supabase.from("inviters").select("host_id,phone,name"),
       supabase
         .from("invitations")
-        .select("id,guest_name,guest_phone,guest_email,host_id,created_at")
+        .select("id,guest_name,guest_phone,guest_email,host_id,created_at,rsvp_token")
         .eq("event_id", eventId)
         .order("created_at", { ascending: false }),
       supabase.from("rsvps").select("invitation_id,status,party_size,attendance_mode,responded_at"),
@@ -120,6 +121,7 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
       guest_phone: string | null;
       guest_email: string | null;
       host_id: string | null;
+      rsvp_token: string | null;
     }>;
 
     const rsvpByInvitation = new Map<string, { status: string | null; party_size: number | null; attendance_mode: string | null; responded_at: string | null }>();
@@ -162,6 +164,7 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
           responded_at: rsvp?.responded_at ?? null,
           invited_by: row.host_id ? hostNames.get(row.host_id) ?? null : null,
           host_id: row.host_id ?? "",
+          rsvp_token: row.rsvp_token ?? null,
         };
       }),
     };
