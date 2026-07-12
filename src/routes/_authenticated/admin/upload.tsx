@@ -282,6 +282,8 @@ function UploadPage() {
     }[]
   >([]);
   const [activeListTab, setActiveListTab] = useState<"all" | "latest">("all");
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({ "RSVP no": true });
+
 
 
   const [importAsCommittee, setImportAsCommittee] = useState(false);
