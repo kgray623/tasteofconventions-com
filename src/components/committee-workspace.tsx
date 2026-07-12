@@ -219,6 +219,7 @@ export function CommitteeWorkspace() {
           responded_at: rsvp?.responded_at ?? null,
           invited_by: hostNames.get(row.host_id) ?? null,
           host_id: row.host_id,
+          rsvp_token: row.rsvp_token ?? null,
         };
       }),
     };
