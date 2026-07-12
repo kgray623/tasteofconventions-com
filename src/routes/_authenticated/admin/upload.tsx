@@ -372,6 +372,8 @@ function UploadPage() {
             attendance_mode: rsvp?.attendance_mode === "zoom" ? "zoom" : "in_person",
             is_committee: !!r.is_committee,
             invited_by: hostNames.get(r.host_id) ?? null,
+            created_at: r.created_at,
+
           };
         }),
       );
