@@ -51,8 +51,6 @@ function AdminOverview() {
   const [audit, setAudit] = useState<AuditData | null>(null);
   const [auditError, setAuditError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
-  const [exportDownloading, setExportDownloading] = useState<AdminExportFilename | null>(null);
-  const [exportError, setExportError] = useState<string | null>(null);
   const [ops, setOps] = useState({ flags: 0, categories: 0 });
   const loadingAdminDataRef = useRef(false);
 
