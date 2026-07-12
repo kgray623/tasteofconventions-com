@@ -102,7 +102,7 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
       supabase.from("inviters").select("host_id,phone,name"),
       supabase
         .from("invitations")
-        .select("id,guest_name,guest_phone,guest_email,host_id,created_at")
+        .select("id,guest_name,guest_phone,guest_email,host_id,created_at,rsvp_token")
         .eq("event_id", eventId)
         .order("created_at", { ascending: false }),
       supabase.from("rsvps").select("invitation_id,status,party_size,attendance_mode,responded_at"),
