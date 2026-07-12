@@ -794,6 +794,14 @@ function UploadPage() {
     setSavedGuests((prev) =>
       prev.map((row) => (row.id === g.id ? { ...row, is_committee: checked } : row)),
     );
+    if (!checked && g.guest_phone) {
+      try {
+        await removeTeamInvitesFn({ data: { phone: g.guest_phone } });
+      } catch (e) {
+        // non-fatal; toggle already succeeded
+        console.warn("removeTeamInvitesForPhone failed", e);
+      }
+    }
     toast.success(checked ? `Tagged ${g.guest_name} as committee` : `Removed committee tag from ${g.guest_name}`);
   };
 
