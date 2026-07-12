@@ -437,10 +437,10 @@ function UploadPage() {
 
       const { data: attendingRows } = await supabase
         .from("rsvps")
-        .select("party_size,status")
+        .select("party_size,status,attendance_mode")
         .eq("status", "yes");
       const attendingTotal = (attendingRows ?? []).reduce(
-        (sum, r) => sum + (r.party_size ?? 1),
+        (sum, r) => sum + (r.attendance_mode === "zoom" ? 0 : (r.party_size ?? 1)),
         0,
       );
       if (!alive) return;
@@ -1502,19 +1502,19 @@ function UploadPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-5">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Total RSVPs</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Total seats</p>
           <p className="font-display text-3xl mt-2">{quotaPool.total}</p>
         </Card>
         <Card className="p-5">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Current RSVPs</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Confirmed in-person</p>
           <p className="font-display text-3xl mt-2">{rsvpAttendingTotal}</p>
         </Card>
         <Card className="p-5">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Requested RSVPs</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Requested RSVP quota</p>
           <p className="font-display text-3xl mt-2">{quotaPool.allocated}</p>
         </Card>
         <Card className="p-5">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Available RSVPs</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Seats available</p>
           <p className="font-display text-3xl mt-2 text-terracotta">
             {Math.max(0, quotaPool.total - rsvpAttendingTotal)}
           </p>

@@ -79,7 +79,7 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
   }, [showPersonal]);
 
 
-  const available = Math.max(0, TOTAL_SEATS - event.requested);
+  const available = Math.max(0, TOTAL_SEATS - event.confirmed);
   const pct = TOTAL_SEATS > 0 ? Math.min(100, Math.round((event.confirmed / TOTAL_SEATS) * 100)) : 0;
   const myAvailable = Math.max(0, mine.requested - mine.confirmed);
   const overUploaded = mine.uploaded > mine.requested;
@@ -101,7 +101,7 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
         <Stat label="Total seats" value={TOTAL_SEATS} />
         <Stat label="RSVP requests" value={loading ? "—" : event.requested} />
-        <Stat label="RSVPs available" value={loading ? "—" : available} />
+        <Stat label="Seats available" value={loading ? "—" : available} />
         <Stat label="In-person confirmed" value={loading ? "—" : event.confirmed} emphasis />
       </div>
 

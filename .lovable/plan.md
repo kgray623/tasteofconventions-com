@@ -1,24 +1,28 @@
-## Restore three-category guest list: RSVP / Pending / No
+Timestamp (UTC): 2026-07-12
 
-Undo the extra collapse behavior I added on all headers. Only the "No" section stays collapsed by default; the other headers go back to plain, non-collapsible labels like they were before.
+Plan to correct the RSVP math and wording:
 
-### Change (only in `src/routes/_authenticated/admin/upload.tsx`)
+1. Separate the three different numbers everywhere they appear
+   - Total seats: always 550.
+   - Confirmed in-person RSVPs: count only `status = yes` and `attendance_mode != zoom`, summed by party size.
+   - Requested RSVPs: keep as quota/allocation requests from committee members; do not use this for capacity percentage.
 
-1. **Rebuild the section list to exactly 3 categories**, in this order:
-   - **RSVP** — rows where effective status is `yes`.
-   - **Pending** — rows where effective status is `waitlist`, or anything not `yes` / `no` (i.e. today's "No response yet" + "RSVP waitlist" merged).
-   - **No** — rows where effective status is `no`. Kept in the DB, rendered at the bottom, **collapsed by default**. Header still shows the count (e.g. "No (12)") so you know they're there; click to expand.
+2. Fix the capacity percentage
+   - Capacity percent = confirmed in-person seats / 550.
+   - With the current database read-back showing 73 in-person confirmed seats, that should display about 13% filled, not 28%.
+   - Zoom RSVPs stay visible separately and do not reduce seat capacity.
 
-2. **Remove the collapse toggle from RSVP and Pending headers.** They render as the original plain sticky label (`<div>...</div>`), not a button. No chevrons.
+3. Fix misleading labels on the RSVP cards
+   - Rename any confusing “Current RSVPs”/“Total RSVPs” language where needed so it is clear what is seats, confirmed in-person RSVPs, requested RSVP quota, and available seats.
+   - Keep “Requested RSVPs” as its own quota/allocation number, not as actual RSVPs.
 
-3. **Keep the collapse toggle only on the "No" header** (chevron + button), defaulting to collapsed. `collapsedSections` state stays but only "No" reads/writes it.
+4. Fix all affected screens consistently
+   - Update the shared RSVP totals card used on admin/committee pages.
+   - Update the admin upload totals area, which currently counts all `yes` RSVPs and can include Zooms in the seat math.
+   - Leave database rows untouched.
 
-4. **No data changes.** No migration, no status rewrites. Waitlist rows keep `rsvp_status = 'waitlist'` in the DB — they're only *grouped under* Pending in the UI.
-
-### Out of scope
-
-- No changes to Latest-upload tab, SMS button, or any row-level controls.
-- No changes to `/admin/guests`, RSVP totals card, or any counts elsewhere.
-- No schema changes.
-
-Timestamp: 2026-07-12 UTC.
+5. Verify before reporting back
+   - Read the database counts again after the change.
+   - Open the exact admin/committee route on the current mobile viewport.
+   - Confirm the UI shows 550 seats, 73 confirmed in-person seats if that remains the live count, and approximately 13% filled.
+   - Confirm requested RSVP quota remains shown separately and is not used as capacity.
