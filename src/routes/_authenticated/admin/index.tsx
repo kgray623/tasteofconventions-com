@@ -148,41 +148,6 @@ function AdminOverview() {
     }
   };
 
-  const downloadAdminExport = async (filename: AdminExportFilename) => {
-    setExportDownloading(filename);
-    setExportError(null);
-    try {
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      if (sessionError || !token) {
-        throw new Error("Sign in again before downloading admin exports.");
-      }
-
-      const response = await fetch(`/exports/${encodeURIComponent(filename)}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) {
-        const message = await response.text().catch(() => "");
-        throw new Error(message || `Download failed with status ${response.status}`);
-      }
-
-      const blob = await response.blob();
-      if (blob.size === 0) throw new Error("The export file was empty.");
-
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      setExportError(error instanceof Error ? error.message : "Download failed");
-    } finally {
-      setExportDownloading(null);
-    }
-  };
 
   type Row = { label: string; value: number | string; to?: string; search?: Record<string, string>; newKey?: "admin:rsvps-tile"; emphasis?: boolean };
   const StatRow = ({ row }: { row: Row }) => {
