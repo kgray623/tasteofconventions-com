@@ -170,7 +170,7 @@ export function CommitteeWorkspace() {
     const { data, error: invitationsError } = await withTimeout(
       supabase
         .from("invitations")
-        .select("id,guest_name,guest_phone,guest_email,host_id,rsvps(status,party_size,attendance_mode,responded_at)")
+        .select("id,guest_name,guest_phone,guest_email,host_id,rsvp_token,rsvps(status,party_size,attendance_mode,responded_at)")
         .eq("event_id", eventId)
         .order("created_at", { ascending: false }),
       LOAD_TIMEOUT_MS,
@@ -183,6 +183,7 @@ export function CommitteeWorkspace() {
       guest_phone: string | null;
       guest_email: string | null;
       host_id: string;
+      rsvp_token: string | null;
       rsvps:
         | { status: string | null; party_size: number | null; attendance_mode: string | null; responded_at: string | null }[]
         | { status: string | null; party_size: number | null; attendance_mode: string | null; responded_at: string | null }
