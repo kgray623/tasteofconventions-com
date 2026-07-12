@@ -287,7 +287,9 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
       const myInviteIds = new Set((myInvites ?? []).map((i) => i.id));
 
       // Dedupe my confirmations by group: a group counts as "mine" if any
-      // invitation in it belongs to one of my host ids.
+      // invitation in it belongs to one of my host ids. Personal quota
+      // remaining is request-count based, so count confirmed RSVP records
+      // here instead of party-size bodies.
       let myConfirmed = 0;
       let myVirtual = 0;
       const seenGroups = new Set<string>();
@@ -297,8 +299,8 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
         seenGroups.add(gid);
         const best = groupBest.get(gid);
         if (!best || best.status !== "yes") continue;
-        if (best.attendance_mode === "zoom") myVirtual += best.party_size;
-        else myConfirmed += best.party_size;
+        if (best.attendance_mode === "zoom") myVirtual += 1;
+        else myConfirmed += 1;
       }
 
       // Quota = sum of approved inviter quotas that map to me. Pending

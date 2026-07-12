@@ -403,7 +403,7 @@ function InvitersPage() {
                   const used = confirmedResponseCount(guests);
                   const virtual = virtualResponseCount(guests);
                   const invited = guests.length || (i.host_id ? (invitedCounts[i.host_id] ?? 0) : 0);
-                  const remaining = Math.max(0, invited - used);
+                  const remaining = Math.max(0, i.quota - used);
                   const isOpen = expandedHost === i.id;
                   const rows: ReactNode[] = [];
                   rows.push(
