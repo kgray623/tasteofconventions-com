@@ -1758,13 +1758,13 @@ function UploadPage() {
                   <button
                     type="button"
                     onClick={() => setCollapsedSections((prev) => ({ ...prev, [sec.label]: !prev[sec.label] }))}
-                    className="w-full flex items-center gap-1.5 px-4 py-2 bg-background/60 text-[11px] uppercase tracking-wider text-muted-foreground border-y border-border sticky top-0 z-10 hover:bg-muted/60 text-left"
+                    className="w-full flex items-center gap-1.5 px-4 py-2 bg-background/60 text-[11px] uppercase tracking-wider text-muted-foreground border-y border-border md:sticky top-0 z-10 hover:bg-muted/60 text-left"
                   >
                     {collapsedSections[sec.label] ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                     <span>{sec.label} ({sec.rows.length})</span>
                   </button>
                 ) : (
-                  <div className="px-4 py-2 bg-background/60 text-[11px] uppercase tracking-wider text-muted-foreground border-y border-border sticky top-0 z-10">
+                  <div className="px-4 py-2 bg-background/60 text-[11px] uppercase tracking-wider text-muted-foreground border-y border-border md:sticky top-0 z-10">
                     {sec.label} ({sec.rows.length})
                   </div>
                 )}
