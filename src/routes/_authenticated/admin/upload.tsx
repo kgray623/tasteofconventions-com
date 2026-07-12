@@ -30,7 +30,10 @@ import {
   Clock,
   Copy,
   UserPlus,
+  ChevronRight,
+  ChevronDown,
 } from "lucide-react";
+
 import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 import { useServerFn } from "@tanstack/react-start";
 import { extractContactsFromImages } from "@/lib/extract-contacts.functions";
@@ -279,6 +282,8 @@ function UploadPage() {
     }[]
   >([]);
   const [activeListTab, setActiveListTab] = useState<"all" | "latest">("all");
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({ "RSVP no": true });
+
 
 
   const [importAsCommittee, setImportAsCommittee] = useState(false);
@@ -1708,10 +1713,11 @@ function UploadPage() {
             sections = [
               { label: "RSVP yes", rows: yes },
               { label: "RSVP waitlist", rows: wait },
-              { label: "RSVP no", rows: no },
               { label: "No response yet", rows: pending },
+              { label: "RSVP no", rows: no },
             ];
           }
+
           return (
           <div>
             <div className="px-4 py-2 border-b border-border flex items-center gap-1.5 flex-wrap">
@@ -1739,10 +1745,17 @@ function UploadPage() {
 
             {sections.map((sec) => sec.rows.length === 0 ? null : (
               <div key={sec.label}>
-                <div className="px-4 py-2 bg-background/60 text-[11px] uppercase tracking-wider text-muted-foreground border-y border-border sticky top-0 z-10">
-                  {sec.label} ({sec.rows.length})
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setCollapsedSections((prev) => ({ ...prev, [sec.label]: !prev[sec.label] }))}
+                  className="w-full flex items-center gap-1.5 px-4 py-2 bg-background/60 text-[11px] uppercase tracking-wider text-muted-foreground border-y border-border sticky top-0 z-10 hover:bg-muted/60 text-left"
+                >
+                  {collapsedSections[sec.label] ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  <span>{sec.label} ({sec.rows.length})</span>
+                </button>
+                {!collapsedSections[sec.label] && (
                 <div className="divide-y divide-border">
+
             {sec.rows.map((g) => {
               const isDup = duplicateGroups.dupIds.has(g.id);
               return (<div
@@ -1884,7 +1897,9 @@ function UploadPage() {
               );
             })}
                 </div>
+                )}
               </div>
+
             ))}
             </div>
           </div>
