@@ -1,37 +1,42 @@
-Plan to fix the RSVP guest categories and committee member scope
+2026-07-12 22:21:21 UTC
 
-1. Update the committee workspace guest groups
-- Replace the current grouped labels:
-  - “RSVP’d”
-  - “Awaiting RSVP”
-  - “Declined”
-- With exactly these RSVP groups under the committee member’s guest list:
-  - “RSVP in person”
-  - “RSVP by Zoom”
-  - “Decline”
-  - “Pending”
-- Remove “Maybe” and “Waitlist” as visible committee RSVP categories for this view.
-- Treat null/no RSVP as “Pending”. If an old row has `waitlist` or `maybe`, group it with “Pending” for this committee view so it does not show as its own category.
+Plan to fix the RSVP quota/remaining math only
 
-2. Scope committee guest lists to the logged-in committee member
-- The committee workspace will display categories from `myGuests`, not the global `guests` list.
-- Pending will show only invitations owned by the logged-in committee member’s resolved host identity, not all 144 global pending invitations.
-- Keep the existing admin-only views intact; admins can still see global lists in admin routes.
+1. Correct the remaining formula everywhere this committee quota appears
+- Remaining must be based on the approved/requested RSVP quota, not uploaded guests.
+- Formula for committee quota views:
+  ```text
+  Remaining = RSVP requests/quota - in-person confirmed RSVPs
+  ```
+- For Betsaida Ruiz, this means:
+  ```text
+  30 requested - 7 in-person confirmations = 23 remaining
+  ```
+- Uploaded guests stays a separate number and will not reduce remaining by itself.
 
-3. Preserve the current ownership resolution
-- Use the existing `myHostIds` resolution logic, which matches the logged-in user to inviter records by user id, phone, and name.
-- Do not guess a different relationship or overwrite any submitted guest/RSVP data.
+2. Update the admin committee usage table
+- In `/admin/inviters`, change Remaining from the current incorrect calculation:
+  ```text
+  uploaded guests - in-person confirmed
+  ```
+- To the correct quota calculation:
+  ```text
+  inviter quota - in-person confirmed
+  ```
+- Keep Uploaded visible as its own column so admins can still see how many guest records were added.
+- Keep Zoom/virtual RSVPs separate and unlimited; Zoom does not reduce remaining.
 
-4. Adjust RSVP labels and badges
-- “RSVP’d yes” becomes mode-specific in this context:
-  - in-person yes → “RSVP in person”
-  - Zoom yes → “RSVP by Zoom”
-- `no` becomes “Decline”.
-- pending/null/old maybe/old waitlist becomes “Pending”.
+3. Align the committee/member RSVP summary cards with the same meaning
+- Ensure “My RSVPs left” and any “remaining of requested” display use the same baseline: approved requested RSVP quota.
+- Do not use uploaded guests as the baseline for remaining.
+- Do not count declined, pending, Zoom, or not-yet-sent guests against remaining.
 
-5. Verification after implementation
-- Read back the database counts by host to confirm global pending is 144 but each committee member’s pending count is smaller and personal.
-- Open the committee route at the current mobile-sized viewport.
-- Verify the rendered committee dashboard shows only the four requested RSVP categories.
-- Verify “Pending” count/list comes from the logged-in committee member’s own guests, not all guests.
-- Verify admin/global guest views are not changed unless they are explicitly part of the committee preview.
+4. Verify directly against the database before saying it is fixed
+- Read back Betsaida Ruiz’s row and confirm these source values:
+  - quota/requested = 30
+  - uploaded = 21
+  - in-person confirmations = 7
+  - remaining = 23
+- Open the exact admin route `/admin/inviters` and verify the row renders those numbers.
+- Open the committee-facing route/card at the current viewport and verify the same remaining logic appears there.
+- I will not call it fixed unless the database read-back and rendered UI both match.

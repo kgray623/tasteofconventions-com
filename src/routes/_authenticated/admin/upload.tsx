@@ -481,10 +481,10 @@ function UploadPage() {
       }
       const { data: rs } = await supabase
         .from("rsvps")
-        .select("party_size,status")
+        .select("party_size,status,attendance_mode")
         .in("invitation_id", ids);
       if (!alive) return;
-      const yes = (rs ?? []).filter((r) => r.status === "yes");
+      const yes = (rs ?? []).filter((r) => r.status === "yes" && r.attendance_mode !== "zoom");
       setMyRsvpCount(yes.length);
       setMyRsvpSeats(yes.reduce((s, r) => s + (r.party_size ?? 1), 0));
     })();
@@ -2226,7 +2226,7 @@ function UploadPage() {
             </Card>
             <Card className="p-4">
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                RSVP confirmations
+                In-person RSVP confirmations
               </p>
               <p className="font-display text-2xl mt-1">{myRsvpCount}</p>
               {remaining !== null && (
