@@ -213,6 +213,8 @@ function AdminOverview() {
 
   return (
     <div className="space-y-6">
+      <ViewTabs />
+
       <Link
         to="/admin/guests"
         className="block rounded-lg border-2 border-ink/20 bg-ink/5 hover:bg-ink/10 transition p-5"
