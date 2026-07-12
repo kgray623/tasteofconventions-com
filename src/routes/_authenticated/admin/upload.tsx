@@ -1799,20 +1799,31 @@ function UploadPage() {
                        </SelectContent>
                      </Select>
                    )}
-                   <label className="inline-flex items-center gap-2 h-8 px-2 rounded-md border border-input text-xs cursor-pointer hover:bg-accent">
-                    <Checkbox
-                      checked={!!g.invite_sent_at}
-                      disabled={markingSentId === g.id}
-                      onCheckedChange={(v) => void toggleSent(g, v === true)}
-                    />
-                    <span>
-                      {markingSentId === g.id
-                        ? "Saving…"
-                        : g.invite_sent_at
-                          ? `Text sent ${new Date(g.invite_sent_at).toLocaleDateString()}`
-                          : "I sent the text"}
-                    </span>
-                  </label>
+                    {g.guest_phone && g.rsvp_token && (
+                      <a
+                        href={`sms:${g.guest_phone}?&body=${encodeURIComponent(buildSmsBody(g.guest_name, g.rsvp_token))}`}
+                        onClick={() => {
+                          if (!g.invite_sent_at) void toggleSent(g, true);
+                        }}
+                        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-terracotta text-cream text-xs font-medium hover:bg-terracotta/90"
+                      >
+                        {g.invite_sent_at ? "Resend SMS" : "Send SMS"}
+                      </a>
+                    )}
+                    <label className="inline-flex items-center gap-2 h-8 px-2 rounded-md border border-input text-xs cursor-pointer hover:bg-accent">
+                     <Checkbox
+                       checked={!!g.invite_sent_at}
+                       disabled={markingSentId === g.id}
+                       onCheckedChange={(v) => void toggleSent(g, v === true)}
+                     />
+                     <span>
+                       {markingSentId === g.id
+                         ? "Saving…"
+                         : g.invite_sent_at
+                           ? `Text sent ${new Date(g.invite_sent_at).toLocaleDateString()}`
+                           : "I sent the text"}
+                     </span>
+                   </label>
                 </div>
 
 
