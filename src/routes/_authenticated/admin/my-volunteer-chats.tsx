@@ -20,7 +20,7 @@ type ProfileRow = { id: string; display_name: string | null; email: string | nul
 
 function MyVolunteerChatsPage() {
   const { user } = useAuth();
-  const { isAdmin } = useRoles();
+  const { isAdmin } = useAdminView();
   const chatUnread = useChatUnread();
   const [myCats, setMyCats] = useState<MyCategory[]>([]);
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
