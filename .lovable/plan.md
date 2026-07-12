@@ -1,33 +1,23 @@
-## What's happening
+## Add "Send text" button on committee Pending list
 
-Kari Gray's inviter row currently has:
-- `quota = 50` (approved amount)
-- `requested_quota = 51` (leftover pending request from 7/9)
+Committee view (`/admin?view=committee`) → "My guests" card → **Pending** group currently shows each pending guest with name/phone/edit/delete, but no way to launch the phone's Messages app. The upload page already has that pattern — reuse it here.
 
-Audit log confirms: on 7/9 an admin approve set both `quota` and `requested_quota` to 51. On 7/12 an admin lowered `quota` to 50 directly, but `requested_quota` was left at 51. Nothing in the code is auto-adding +1 — the 51 is stale data being surfaced as a "pending request."
+### Changes
 
-Also: when the committee submit path writes a fresh request, it currently overwrites `requested_quota` but does NOT clear `quota_requested_at` staleness in one specific case, and the admin's direct-edit-quota path (inviters page) does not sync `requested_quota` at all — that's what created the drift in the first place.
+1. **`src/lib/rsvp-totals.functions.ts`** — add `rsvp_token: string | null` to `CommitteeWorkspaceGuest` type and include `rsvp_token` in the select in `getCommitteeWorkspaceGuests`, so the workspace has what it needs to build the RSVP link.
 
-## Fix (Update UTC: 2026-07-12)
+2. **`src/components/committee-workspace.tsx`** — 
+   - Add a small helper (same shape as `buildSmsBody` in `upload.tsx`): `Hi <first name>, it's <inviter first name>. You're invited to A Taste of Special Conventions on Sunday, August 30, 2026. Please RSVP here: <origin>/rsvp/<url-safe token>`.
+   - Get the inviter/sender name from the current user (component already loads guests; pull display name from profile/user metadata like `upload.tsx` does).
+   - In `MyGuestsGroup`, when `label === "Pending"` AND `guest.guest_phone` is present AND `guest.rsvp_token` exists, render a **Send text** button (anchor with `href="sms:<phone>?&body=<encoded body>"`). Icon: `MessageSquare` from lucide. Placed before the Edit button. Full-width on narrow screens (`w-full sm:w-auto`) so it's easy to tap on mobile.
+   - No auto-marking "sent" — committee already marks that separately on the upload page. This button only opens the phone's Messages app.
 
-1. Data cleanup (one-time SQL migration): for every inviter where `requested_quota IS NOT NULL AND requested_quota = quota` OR `requested_quota < quota`, set `requested_quota = NULL`, `quota_request_note = NULL`, `quota_requested_at = NULL`. This clears Kari's stale 51 and any similar rows. No submitted user data is dropped — `quota` (the source of truth) is preserved.
+### Out of scope
 
-2. Forward-fix in `src/routes/_authenticated/admin/inviters.tsx` (admin editing quota directly): when an admin saves a new `quota` value, also clear `requested_quota`, `quota_request_note`, `quota_requested_at`. That way manually lowering an approved quota doesn't leave a phantom pending request behind.
+- No changes to Confirmed, Declined, or non-pending lists.
+- No changes to counts, RSVP logic, or admin-only views.
+- Does NOT auto-flip `invite_sent_at`; that stays a manual toggle on the upload page.
 
-3. Forward-fix in the approve path (already correct — line 206-207 sets `quota: inv.requested_quota, requested_quota: null`). Verify no regression.
+### Verification
 
-4. Verify end-to-end after changes:
-   - Read Kari's row: `quota=50`, `requested_quota=null`.
-   - Load `/admin?view=committee` as Kari's account, confirm "RSVP requests" shows 50, no "pending 51" banner anywhere.
-   - Load `/admin` inviters page as admin, confirm no yellow "Requesting 51" chip on Kari.
-
-## What is NOT changing
-
-- The committee submit path already writes exactly the number entered (no +1 anywhere).
-- No changes to counts, RSVP logic, or guest data.
-- No admin/committee/guest tab behavior changes.
-
-## Technical notes
-
-- Migration: single UPDATE on `public.inviters`.
-- Edit-quota handler in `inviters.tsx` (around line 200-215): extend the update payload with the three cleanup fields.
+Playwright at mobile viewport (390×844), sign in as a committee member with pending guests, open `/admin?view=committee`, expand "Pending", screenshot to confirm the "Send text" button renders next to each pending row with a phone number, and that its `href` starts with `sms:` and contains the RSVP URL.
