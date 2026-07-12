@@ -130,11 +130,29 @@
 
 @layer base {
   * { border-color: var(--color-border); }
+  html {
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: auto;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
     font-feature-settings: "ss01", "cv11";
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: visible;
+    overscroll-behavior-y: auto;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+  #root, #__tanstack-root {
+    min-height: 100dvh;
+    touch-action: pan-y;
   }
   h1, h2, h3, .font-display {
     font-family: var(--font-serif);

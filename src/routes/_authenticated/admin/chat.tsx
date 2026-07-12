@@ -88,8 +88,8 @@ function ChatPage() {
   };
 
   return (
-    <Card className="flex flex-col h-[calc(100vh-260px)] min-h-[420px] overflow-hidden">
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 space-y-4">
+    <Card className="flex flex-col min-h-[420px] md:h-[calc(100vh-260px)] md:overflow-hidden">
+      <div ref={scrollRef} className="flex-1 p-5 space-y-4 md:overflow-y-auto">
         {msgs.length === 0 && (
           <p className="text-center text-muted-foreground text-sm py-12">
             No messages yet. Say hi to your committee.
