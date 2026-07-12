@@ -484,6 +484,29 @@ export function CommitteeWorkspace() {
     .sort(byName);
   const myDeclined = myGuests.filter((g) => g.rsvp_status === "no").sort(byName);
 
+  // Build a sms: link for the phone's Messages app. Same wording as the
+  // Upload page's Send SMS button so committee members send a consistent
+  // invitation whether they text from the pending list or the upload page.
+  const siteOrigin =
+    typeof window !== "undefined" ? window.location.origin : "https://tasteofconventions.com";
+  const senderName =
+    (myGuestsUnsorted.find((g) => g.host_id === user?.id)?.invited_by ?? "").trim() ||
+    (((user?.user_metadata as { full_name?: string; name?: string; display_name?: string } | undefined)?.full_name ??
+      (user?.user_metadata as { name?: string } | undefined)?.name ??
+      (user?.user_metadata as { display_name?: string } | undefined)?.display_name ??
+      "") as string).trim() ||
+    "your friend";
+  const rsvpLinkToken = (token: string) =>
+    encodeURIComponent(token.trim().replace(/\+/g, "-").replace(/\//g, "_"));
+  const buildSmsHref = (guest: CommitteeGuest): string | null => {
+    if (!guest.guest_phone || !guest.rsvp_token) return null;
+    const firstName = (guest.guest_name || "Friend").split(/\s+/)[0];
+    const senderFirst = senderName.split(/\s+/)[0];
+    const link = `${siteOrigin}/rsvp/${rsvpLinkToken(guest.rsvp_token)}`;
+    const body = `Hi ${firstName}, it's ${senderFirst}. You're invited to A Taste of Special Conventions on Sunday, August 30, 2026. Please RSVP here: ${link}`;
+    return `sms:${guest.guest_phone}?&body=${encodeURIComponent(body)}`;
+  };
+
   // "New guests RSVP'd" since user last acknowledged.
   useEffect(() => {
     if (!user || typeof window === "undefined") return;
