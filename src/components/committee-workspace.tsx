@@ -31,6 +31,17 @@ import {
 } from "@/components/ui/select";
 
 type CommitteeGuest = CommitteeWorkspaceGuest;
+type RsvpAction =
+  | "inperson1"
+  | "inperson2"
+  | "inperson3"
+  | "inperson4"
+  | "zoom1"
+  | "zoom2"
+  | "zoom3"
+  | "zoom4"
+  | "no"
+  | "clear";
 
 const WELCOME_HIDE_KEY = "toc.committee.welcomeVideoHidden";
 const LOAD_TIMEOUT_MS = 12_000;
@@ -62,7 +73,7 @@ export function CommitteeWorkspace() {
   const [committeeNames, setCommitteeNames] = useState<Set<string>>(new Set());
   const [committeePhones, setCommitteePhones] = useState<Set<string>>(new Set());
   const [myGuestsFilter, setMyGuestsFilter] = useState<"all" | "committee">("all");
-  const [openMyGroup, setOpenMyGroup] = useState<{ yes: boolean; waiting: boolean; declined: boolean }>({ yes: true, waiting: false, declined: false });
+  const [openMyGroup, setOpenMyGroup] = useState<{ inPerson: boolean; zoom: boolean; declined: boolean; pending: boolean }>({ inPerson: true, zoom: true, declined: false, pending: true });
   const [lastSeenYesAt, setLastSeenYesAt] = useState<number | null>(null);
   const [manualRefreshingGuests, setManualRefreshingGuests] = useState(false);
   const handledChatParamRef = useRef<string | null>(null);
@@ -336,7 +347,7 @@ export function CommitteeWorkspace() {
 
   const setRsvpFor = async (
     guest: CommitteeGuest,
-    value: "yes1" | "yes2" | "yes3" | "yes4" | "no" | "clear",
+    value: RsvpAction,
   ) => {
     setSettingRsvpId(guest.id);
     try {
@@ -346,13 +357,14 @@ export function CommitteeWorkspace() {
         toast.success(`Cleared RSVP for ${guest.guest_name}.`);
       } else {
         const status = value === "no" ? "no" : "yes";
-        const partySize = value === "no" ? 1 : Number(value.replace("yes", ""));
+        const attendanceMode = value.startsWith("zoom") ? "zoom" : "in_person";
+        const partySize = value === "no" ? 1 : Number(value.replace("inperson", "").replace("zoom", ""));
         const { error } = await supabase.from("rsvps").upsert(
           {
             invitation_id: guest.id,
             status,
             party_size: partySize,
-            attendance_mode: "in_person",
+            attendance_mode: attendanceMode,
             responded_at: new Date().toISOString(),
           },
           { onConflict: "invitation_id" },
@@ -361,7 +373,7 @@ export function CommitteeWorkspace() {
         toast.success(
           status === "no"
             ? `Marked ${guest.guest_name} as declined.`
-            : `Marked ${guest.guest_name} attending (${partySize}).`,
+            : `Marked ${guest.guest_name} attending ${attendanceMode === "zoom" ? "by Zoom" : "in person"} (${partySize}).`,
         );
       }
       await loadGuests();
@@ -452,17 +464,21 @@ export function CommitteeWorkspace() {
     ? myGuestsSorted.filter((g) => committeeIds.has(g.id))
     : myGuestsSorted;
 
-  const sortedAllGuests = [...guests].sort(byName);
-  const confirmedGuests = [...guests].filter((g) => g.rsvp_status === "yes").sort(byName);
+  const confirmedGuests = [...myGuests].filter((g) => g.rsvp_status === "yes").sort(byName);
   const confirmedInPersonGuests = confirmedGuests.filter((g) => g.attendance_mode !== "zoom");
   const confirmedVirtualGuests = confirmedGuests.filter((g) => g.attendance_mode === "zoom");
   const confirmedInPersonPeople = confirmedInPersonGuests.reduce((t, g) => t + g.party_size, 0);
   const confirmedVirtualPeople = confirmedVirtualGuests.reduce((t, g) => t + g.party_size, 0);
 
   // Group "My Guests" by RSVP status, alphabetized within each group.
-  const myYes = myGuests.filter((g) => g.rsvp_status === "yes").sort(byName);
-  const myWaiting = myGuests
-    .filter((g) => !g.rsvp_status || g.rsvp_status === "waitlist")
+  const myInPerson = myGuests
+    .filter((g) => g.rsvp_status === "yes" && g.attendance_mode !== "zoom")
+    .sort(byName);
+  const myZoom = myGuests
+    .filter((g) => g.rsvp_status === "yes" && g.attendance_mode === "zoom")
+    .sort(byName);
+  const myPending = myGuests
+    .filter((g) => !g.rsvp_status || g.rsvp_status === "waitlist" || g.rsvp_status === "maybe")
     .sort(byName);
   const myDeclined = myGuests.filter((g) => g.rsvp_status === "no").sort(byName);
 
@@ -665,11 +681,11 @@ export function CommitteeWorkspace() {
         ) : (
           <div className="p-4 space-y-3">
             <MyGuestsGroup
-              label="RSVP'd"
+              label="RSVP in person"
               tone="emerald"
-              guests={myYes}
-              open={openMyGroup.yes}
-              onToggle={() => setOpenMyGroup((p) => ({ ...p, yes: !p.yes }))}
+              guests={myInPerson}
+              open={openMyGroup.inPerson}
+              onToggle={() => setOpenMyGroup((p) => ({ ...p, inPerson: !p.inPerson }))}
               isCommitteeGuest={isCommitteeGuest}
               duplicateIds={duplicateIds}
               settingRsvpId={settingRsvpId}
@@ -678,11 +694,11 @@ export function CommitteeWorkspace() {
               deleteGuest={deleteGuest}
             />
             <MyGuestsGroup
-              label="Awaiting RSVP"
+              label="RSVP by Zoom"
               tone="muted"
-              guests={myWaiting}
-              open={openMyGroup.waiting}
-              onToggle={() => setOpenMyGroup((p) => ({ ...p, waiting: !p.waiting }))}
+              guests={myZoom}
+              open={openMyGroup.zoom}
+              onToggle={() => setOpenMyGroup((p) => ({ ...p, zoom: !p.zoom }))}
               isCommitteeGuest={isCommitteeGuest}
               duplicateIds={duplicateIds}
               settingRsvpId={settingRsvpId}
@@ -691,11 +707,24 @@ export function CommitteeWorkspace() {
               deleteGuest={deleteGuest}
             />
             <MyGuestsGroup
-              label="Declined"
+              label="Decline"
               tone="rose"
               guests={myDeclined}
               open={openMyGroup.declined}
               onToggle={() => setOpenMyGroup((p) => ({ ...p, declined: !p.declined }))}
+              isCommitteeGuest={isCommitteeGuest}
+              duplicateIds={duplicateIds}
+              settingRsvpId={settingRsvpId}
+              setRsvpFor={setRsvpFor}
+              saveGuestEdits={saveGuestEdits}
+              deleteGuest={deleteGuest}
+            />
+            <MyGuestsGroup
+              label="Pending"
+              tone="muted"
+              guests={myPending}
+              open={openMyGroup.pending}
+              onToggle={() => setOpenMyGroup((p) => ({ ...p, pending: !p.pending }))}
               isCommitteeGuest={isCommitteeGuest}
               duplicateIds={duplicateIds}
               settingRsvpId={settingRsvpId}
@@ -712,15 +741,15 @@ export function CommitteeWorkspace() {
         open={openSection === "confirmed"}
         onToggle={() => toggleSection("confirmed")}
         icon={<CheckCircle2 className="w-5 h-5 text-terracotta" />}
-        title={loadingGuests ? "Confirmed RSVPs (loading…)" : `Confirmed RSVPs (${confirmedInPersonPeople} in person · ${confirmedVirtualPeople} virtual / ${confirmedGuests.length} responses)`}
+        title={loadingGuests ? "My RSVP confirmations (loading…)" : `My RSVP confirmations (${confirmedInPersonPeople} in person · ${confirmedVirtualPeople} Zoom / ${confirmedGuests.length} responses)`}
         cardClassName="border-terracotta/40 bg-terracotta/5"
       >
         {loadingGuests ? (
           <div className="p-4 text-sm text-muted-foreground flex items-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin" /> Loading confirmed RSVPs…
+            <Loader2 className="w-4 h-4 animate-spin" /> Loading my RSVP confirmations…
           </div>
         ) : confirmedGuests.length === 0 ? (
-          <div className="p-4 text-sm text-muted-foreground">No confirmed RSVPs yet.</div>
+          <div className="p-4 text-sm text-muted-foreground">None of your guests have RSVP'd yet.</div>
         ) : (
           <div className="divide-y divide-border max-h-[360px] overflow-auto">
             {confirmedGuests.map((guest) => {
@@ -758,7 +787,7 @@ export function CommitteeWorkspace() {
         open={openSection === "all"}
         onToggle={() => toggleSection("all")}
         icon={<CheckCircle2 className="w-5 h-5 text-emerald-600" />}
-        title={`Guest list (${loadingGuests ? "…" : guests.length})`}
+        title={`My full guest list (${loadingGuests ? "…" : myGuests.length})`}
         action={
           <Button asChild variant="outline" size="sm" onClick={(e) => e.stopPropagation()}>
             <Link to="/admin/upload" search={{ view: "committee" }} hash="add-guests">
@@ -784,11 +813,11 @@ export function CommitteeWorkspace() {
           <div className="p-4 text-sm text-muted-foreground flex items-center gap-2">
             <Loader2 className="w-4 h-4 animate-spin" /> Loading guest list…
           </div>
-        ) : guests.length === 0 ? (
-          <div className="p-4 text-sm text-muted-foreground">No guests have been added yet.</div>
+        ) : myGuests.length === 0 ? (
+          <div className="p-4 text-sm text-muted-foreground">You haven't invited anyone yet.</div>
         ) : (
           <div className="divide-y divide-border max-h-[520px] overflow-auto">
-            {sortedAllGuests.map((guest) => (
+            {myGuests.map((guest) => (
               <div key={guest.id} className="p-4 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-medium flex-1 min-w-[160px]">
@@ -799,7 +828,7 @@ export function CommitteeWorkspace() {
                       </span>
                     )}
                   </p>
-                  <RsvpStatusBadge status={guest.rsvp_status} />
+                  <RsvpStatusBadge status={guest.rsvp_status} attendanceMode={guest.attendance_mode} />
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   {guest.guest_phone && (
@@ -984,7 +1013,7 @@ function MyGuestsGroup({
   isCommitteeGuest: (g: CommitteeGuest) => boolean;
   duplicateIds: Set<string>;
   settingRsvpId: string | null;
-  setRsvpFor: (guest: CommitteeGuest, value: "yes1" | "yes2" | "yes3" | "yes4" | "no" | "clear") => Promise<void>;
+  setRsvpFor: (guest: CommitteeGuest, value: RsvpAction) => Promise<void>;
   saveGuestEdits: (
     guest: CommitteeGuest,
     edits: { guest_name: string; guest_phone: string; guest_email: string },
@@ -1037,7 +1066,7 @@ function MyGuestsGroup({
                     )}
                   </div>
 
-                  <RsvpStatusBadge status={guest.rsvp_status} />
+                  <RsvpStatusBadge status={guest.rsvp_status} attendanceMode={guest.attendance_mode} />
                   {guest.rsvp_status === "yes" && (
                     <Badge
                       className={
@@ -1049,23 +1078,25 @@ function MyGuestsGroup({
                       {guest.party_size || 1} {guest.attendance_mode === "zoom" ? "Zoom" : "in person"}
                     </Badge>
                   )}
-                  {!guest.rsvp_status && (
+                  {guest.rsvp_status !== "yes" && guest.rsvp_status !== "no" && (
                     <Select
                       value=""
                       disabled={settingRsvpId === guest.id}
-                      onValueChange={(v) =>
-                        void setRsvpFor(guest, v as "yes1" | "yes2" | "yes3" | "yes4" | "no" | "clear")
-                      }
+                      onValueChange={(v) => void setRsvpFor(guest, v as RsvpAction)}
                     >
                       <SelectTrigger className="h-8 w-[160px] text-xs">
                         <SelectValue placeholder={settingRsvpId === guest.id ? "Saving…" : "Record RSVP"} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="no">No / declined</SelectItem>
-                        <SelectItem value="yes1">Yes — 1 person</SelectItem>
-                        <SelectItem value="yes2">Yes — 2 people</SelectItem>
-                        <SelectItem value="yes3">Yes — 3 people</SelectItem>
-                        <SelectItem value="yes4">Yes — 4 people</SelectItem>
+                        <SelectItem value="no">Decline</SelectItem>
+                        <SelectItem value="inperson1">RSVP in person — 1</SelectItem>
+                        <SelectItem value="inperson2">RSVP in person — 2</SelectItem>
+                        <SelectItem value="inperson3">RSVP in person — 3</SelectItem>
+                        <SelectItem value="inperson4">RSVP in person — 4</SelectItem>
+                        <SelectItem value="zoom1">RSVP by Zoom — 1</SelectItem>
+                        <SelectItem value="zoom2">RSVP by Zoom — 2</SelectItem>
+                        <SelectItem value="zoom3">RSVP by Zoom — 3</SelectItem>
+                        <SelectItem value="zoom4">RSVP by Zoom — 4</SelectItem>
                         <SelectItem value="clear">Clear RSVP</SelectItem>
                       </SelectContent>
                     </Select>
@@ -1084,13 +1115,12 @@ function MyGuestsGroup({
 
 
 
-function RsvpStatusBadge({ status }: { status: string | null }) {
+function RsvpStatusBadge({ status, attendanceMode }: { status: string | null; attendanceMode?: string | null }) {
   if (status === "yes") {
-    return <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100"><Clock className="w-3 h-3 mr-1" /> RSVP'd yes</Badge>;
+    return <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100"><Clock className="w-3 h-3 mr-1" /> {attendanceMode === "zoom" ? "RSVP by Zoom" : "RSVP in person"}</Badge>;
   }
-  if (status === "no") return <Badge variant="secondary">Declined</Badge>;
-  if (status === "waitlist") return <Badge variant="outline">Waitlist</Badge>;
-  return <Badge variant="outline">Awaiting RSVP</Badge>;
+  if (status === "no") return <Badge variant="secondary">Decline</Badge>;
+  return <Badge variant="outline">Pending</Badge>;
 }
 
 function EditGuestButton({
