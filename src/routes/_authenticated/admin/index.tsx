@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +10,7 @@ import { NewBadge } from "@/components/new-badge";
 import { markSeen } from "@/lib/whats-new";
 import { getAdminAudit, getReconciliationRows, type AudienceTotals } from "@/lib/admin-audit.functions";
 import { RsvpTotalsCard } from "@/components/rsvp-totals-card";
-import { ExternalLink, User, Users, Download, AlertTriangle, Archive, ArrowRight } from "lucide-react";
+import { ExternalLink, User, Users, Download, AlertTriangle, Archive, ArrowRight, ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: AdminOverview,
