@@ -374,7 +374,7 @@ function InvitersPage() {
         <div className="px-6 py-4 border-b border-border">
           <h2 className="font-display text-xl">Steering committee invitations &amp; usage</h2>
           <p className="text-sm text-muted-foreground">
-            In-person and Remaining reflect seated guests only. Virtual (Zoom) RSVPs are unlimited and don't reduce remaining seats.
+            Remaining is approved RSVP requests minus in-person confirmations. Uploaded guests are tracked separately.
           </p>
         </div>
         {loading ? (
