@@ -110,7 +110,7 @@ function TeamPage() {
     setSending(true);
     try {
       await sendInviteFn({ data: { ...parsed.data, role } });
-      setName(""); setPhone("");
+      setName(""); setPhone(""); setSelectedGuestId(null);
       toast.success(`Added ${parsed.data.name}. They'll get their role automatically when they sign up with ${parsed.data.phone}.`);
       load();
     } catch (err: any) {
