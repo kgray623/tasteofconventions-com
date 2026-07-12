@@ -1886,8 +1886,10 @@ function UploadPage() {
                 </div>
               </div>
             ))}
+            </div>
           </div>
           );
+
         })()}
       </Card>
 
