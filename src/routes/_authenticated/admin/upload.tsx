@@ -37,6 +37,7 @@ import {
 import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 import { useServerFn } from "@tanstack/react-start";
 import { extractContactsFromImages } from "@/lib/extract-contacts.functions";
+import { removeTeamInvitesForPhone } from "@/lib/team.functions";
 import { Input } from "@/components/ui/input";
 import { Image as ImageIcon, Target } from "lucide-react";
 
