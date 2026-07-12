@@ -50,6 +50,9 @@ function TeamPage() {
   const { isAdmin } = useRoles();
   const [invites, setInvites] = useState<Invite[]>([]);
   const [signedUpDigits, setSignedUpDigits] = useState<Set<string>>(new Set());
+  const [guests, setGuests] = useState<GuestOption[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [selectedGuestId, setSelectedGuestId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState<"team" | "admin">("team");
@@ -66,6 +69,21 @@ function TeamPage() {
       .select("id,name,phone,role,accepted_at,created_at")
       .order("created_at", { ascending: false });
     setInvites((inv.data ?? []) as Invite[]);
+    const g = await supabase
+      .from("invitations")
+      .select("id,guest_name,guest_phone,is_committee")
+      .order("guest_name", { ascending: true });
+    setGuests(
+      ((g.data ?? []) as Array<{ id: string; guest_name: string | null; guest_phone: string | null; is_committee: boolean | null }>)
+        .map((row) => ({
+          id: row.id,
+          name: (row.guest_name ?? "").trim() || "(no name)",
+          phone: row.guest_phone ?? "",
+          digits: normalizeRosterPhone(row.guest_phone),
+          isCommittee: !!row.is_committee,
+        }))
+        .filter((row) => row.digits.length >= 7),
+    );
     try {
       const res = await fetchSignedUpDigits();
       setSignedUpDigits(new Set(res.digits));
@@ -73,6 +91,7 @@ function TeamPage() {
       // non-fatal
     }
   };
+
   useEffect(() => { load(); }, []);
 
   const isSignedUp = (digits: string) => {
