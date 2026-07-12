@@ -63,24 +63,37 @@ function BackupsPage() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <div className="flex items-start gap-3">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-start gap-3 text-left"
+        aria-expanded={open}
+      >
         <div className="rounded-lg bg-terracotta/10 p-3 text-terracotta">
           <Archive className="w-6 h-6" />
         </div>
-        <div>
+        <div className="flex-1">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Admin exports</p>
-          <h2 className="font-display text-2xl">Download backup files</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Each file is served privately to signed-in admins. Tap a button to save it to this device.
-          </p>
+          <h2 className="font-display text-2xl flex items-center gap-2">
+            Download backup files
+            {open ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+          </h2>
+          {open && (
+            <p className="text-sm text-muted-foreground mt-1">
+              Each file is served privately to signed-in admins. Tap a button to save it to this device.
+            </p>
+          )}
         </div>
-      </div>
+      </button>
 
-      {error && (
+      {open && error && (
         <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm">
           {error}
         </div>
       )}
+
+      {open && (
+
 
       <div className="space-y-2">
         {files.map((f) => (
