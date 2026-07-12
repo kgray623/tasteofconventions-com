@@ -1,21 +1,33 @@
-Fix the committee RSVP totals so the top card and the guest list use the same meaning for RSVP counts.
+## What's happening
 
-Plan:
-1. Update the personal RSVP totals to count people, not just RSVP rows, for "My in-person RSVPs" and "My RSVPs left".
-   - In the current data, that changes the personal in-person count from 17 RSVP records to 25 in-person people.
-   - Zoom remains separate and unlimited, currently 3 Zoom people.
-   - Total yes RSVP people remains 28 across 20 responses.
-2. Rename labels so the page no longer mixes meanings:
-   - "My in-person RSVPs" -> "My in-person guests RSVP’d"
-   - "My RSVPs left" -> "My in-person spots left"
-   - Keep "My Guests Uploaded" as uploaded invitations, because that is not an RSVP count.
-3. Keep the lower confirmation section explicit:
-   - Show in-person people, Zoom people, and response count separately, matching the visible guest list.
-4. Verify end-to-end on `/admin?view=committee` as the admin previewing committee view:
-   - Confirm the route renders committee-only view.
-   - Confirm the top card count matches the lower confirmation/person totals.
-   - Read the database back for the same host identity to confirm the displayed numbers match the stored RSVP rows and party sizes.
+Kari Gray's inviter row currently has:
+- `quota = 50` (approved amount)
+- `requested_quota = 51` (leftover pending request from 7/9)
 
-Technical details:
-- Change `getRsvpTotals` personal calculations in `src/lib/rsvp-totals.functions.ts` so `mine.confirmed` and `mine.virtual` sum `party_size` from the best yes RSVP per guest group instead of adding `1` per RSVP response.
-- Update copy in `src/components/rsvp-totals-card.tsx` to distinguish people/spots from response records.
+Audit log confirms: on 7/9 an admin approve set both `quota` and `requested_quota` to 51. On 7/12 an admin lowered `quota` to 50 directly, but `requested_quota` was left at 51. Nothing in the code is auto-adding +1 — the 51 is stale data being surfaced as a "pending request."
+
+Also: when the committee submit path writes a fresh request, it currently overwrites `requested_quota` but does NOT clear `quota_requested_at` staleness in one specific case, and the admin's direct-edit-quota path (inviters page) does not sync `requested_quota` at all — that's what created the drift in the first place.
+
+## Fix (Update UTC: 2026-07-12)
+
+1. Data cleanup (one-time SQL migration): for every inviter where `requested_quota IS NOT NULL AND requested_quota = quota` OR `requested_quota < quota`, set `requested_quota = NULL`, `quota_request_note = NULL`, `quota_requested_at = NULL`. This clears Kari's stale 51 and any similar rows. No submitted user data is dropped — `quota` (the source of truth) is preserved.
+
+2. Forward-fix in `src/routes/_authenticated/admin/inviters.tsx` (admin editing quota directly): when an admin saves a new `quota` value, also clear `requested_quota`, `quota_request_note`, `quota_requested_at`. That way manually lowering an approved quota doesn't leave a phantom pending request behind.
+
+3. Forward-fix in the approve path (already correct — line 206-207 sets `quota: inv.requested_quota, requested_quota: null`). Verify no regression.
+
+4. Verify end-to-end after changes:
+   - Read Kari's row: `quota=50`, `requested_quota=null`.
+   - Load `/admin?view=committee` as Kari's account, confirm "RSVP requests" shows 50, no "pending 51" banner anywhere.
+   - Load `/admin` inviters page as admin, confirm no yellow "Requesting 51" chip on Kari.
+
+## What is NOT changing
+
+- The committee submit path already writes exactly the number entered (no +1 anywhere).
+- No changes to counts, RSVP logic, or guest data.
+- No admin/committee/guest tab behavior changes.
+
+## Technical notes
+
+- Migration: single UPDATE on `public.inviters`.
+- Edit-quota handler in `inviters.tsx` (around line 200-215): extend the update payload with the three cleanup fields.
