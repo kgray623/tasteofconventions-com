@@ -1,17 +1,21 @@
 ## Plan
 
-1. **Make the admin page usable above the mobile preview toolbar**
-   - Add mobile-only bottom spacing to the admin layout container so the last tabs and page content are not hidden behind the Lovable preview controls shown in the screenshot.
-   - Use safe-area spacing so it behaves correctly on phones with gesture/navigation bars.
+1. **Add a global mobile scroll foundation**
+   - Set the root document/app surface to allow vertical touch scrolling explicitly.
+   - Add `-webkit-overflow-scrolling: touch`, `touch-action: pan-y`, and stable min-height rules so phone drag gestures scroll the page instead of being ignored.
 
-2. **Improve the mobile admin header/tabs layout**
-   - Keep the heading and Upload guests button responsive so they don’t crowd the top of the page.
-   - Keep the existing admin and committee tabs, routes, labels, counts, and permissions unchanged.
+2. **Protect against preview/editor toolbar overlap**
+   - Keep the admin mobile bottom spacing already added.
+   - Extend the same bottom safe-area padding to the authenticated/admin content surface if needed, so the Lovable mobile toolbar cannot hide the last content.
 
-3. **Do not change RSVP data or counts**
-   - No RSVP quota logic, RSVP totals, Send text behavior, guest data, or database logic will be changed.
+3. **Remove mobile nested-scroll traps where they still exist**
+   - Re-scan admin and committee pages for any remaining mobile `overflow-auto`, `overflow-y-auto`, `max-h`, or fixed-height list containers that could capture touch gestures.
+   - Change only mobile behavior; keep desktop capped-scroll lists unchanged.
 
-4. **Verify on the exact mobile size**
-   - Test `/admin?view=committee` at the 384×673 mobile viewport.
-   - Confirm the page can scroll to the bottom and the lower tabs/content are reachable without being covered.
-   - If authenticated preview access is not available in the test environment, I’ll state that explicitly and verify the source/layout behavior I can.
+4. **Verify with touch behavior, not only programmatic scroll**
+   - Test the exact mobile viewport: 384×673.
+   - Use Playwright mobile/touch settings and perform a drag gesture on `/admin?view=committee` and `/admin/upload?view=committee`.
+   - Confirm `document.documentElement.scrollTop` changes after the drag and screenshot the bottom of each page.
+
+5. **No data/business logic changes**
+   - Do not change RSVP totals, quotas, Send text, guest records, routes, roles, or database logic.
