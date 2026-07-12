@@ -193,7 +193,17 @@ function InvitersPage() {
     guests.filter((guest) => guest.rsvp_status === "yes" && guest.rsvp_attendance_mode === "zoom").length;
 
   const updateQuota = async (id: string, q: number) => {
-    const { error } = await supabase.from("inviters").update({ quota: q }).eq("id", id);
+    // Clear any pending request fields so a stale requested_quota can't linger
+    // as a phantom "pending" after an admin manually edits the approved quota.
+    const { error } = await supabase
+      .from("inviters")
+      .update({
+        quota: q,
+        requested_quota: null,
+        quota_request_note: null,
+        quota_requested_at: null,
+      })
+      .eq("id", id);
     if (error) return toast.error(error.message);
     load();
   };
