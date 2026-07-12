@@ -1,43 +1,50 @@
-## Problem
+## What you want
 
-On `/admin/team`, the "Pending invites" list shows people it shouldn't:
-
-- **Rhonda Wiltshire** — already flagged as committee on her invitation, but has a stale `team_invites` row (from when she was first added), so she still shows as "awaiting signup".
-- **Jen Spears** — was removed from the committee, but the `team_invites` row was never deleted.
-- **Yeshia Meyer** — just added via the guest picker. She has an invitation record, but the "Add" flow only creates a `team_invites` row; it never sets `is_committee=true` on her invitation, so she looks pending even though she's a picked-from-the-guest-list committee member.
-
-Root cause: the app tracks committee membership in two places (`invitations.is_committee` and `team_invites`) and nothing keeps them in sync.
+When you (an admin) switch the Overview to "Committee" view, the page — and every sub-page you click into from that view — should look and behave exactly like it does for an actual committee member. No admin cards mixed in, no admin-only buttons, no "Previewing as Committee" banner cluttering things up. Tabs at the top let you jump back to Admin at any time (and to Guest, which already opens a real guest RSVP page).
 
 ## Fix
 
-Keep the two sources in sync and make "Pending invites" reflect actual pending state — no schema changes.
+### 1. Persistent Admin / Committee / Guest tabs on `/admin`
 
-### 1. Add committee via guest picker → auto-flag the invitation
+Replace the "Preview dashboards" card at the top of `/admin` with a single tab strip visible only to actual admins:
 
-In `inviteTeamMember` (`src/lib/team.functions.ts`), when `role === "team"`, also set `is_committee=true` on the matching invitation(s) by phone (last-10-digit match). This mirrors what admins do manually on the guests page and makes Yeshia-style picks disappear from "pending" the moment they're added.
+- **Admin** (default) — the full admin overview.
+- **Committee** — full committee workspace, nothing else.
+- **Guest** — opens a real guest's RSVP page in a new tab (same as today).
 
-### 2. Remove committee tag → clean up team_invites
+Clicking Committee sets `?view=committee` in the URL (not just local state), so navigating into any sub-page keeps you in committee mode. Clicking Admin clears it. The tab strip stays visible on `/admin` so switching back is one click.
 
-In `toggleCommittee` (`src/routes/_authenticated/admin/upload.tsx`), when `checked === false`, also delete any `team_invites` rows whose `phone_normalized` matches that guest's phone (via a new small server function `removeTeamInvitesForPhone` that verifies admin + deletes). This fixes Jen — unchecking committee cleans up the stale invite.
+### 2. Committee view = committee-only, no admin chrome
 
-### 3. "Pending" filter treats `is_committee` guests as accepted
+- Remove the yellow "Previewing as Committee — Back to Admin Dashboard" sticky banner inside `CommitteeWorkspace`. The tab strip already tells you which mode you're in and provides the back path.
+- `CommitteeWorkspace` renders unchanged otherwise — same sections, same buttons a committee member sees.
 
-In `src/routes/_authenticated/admin/team.tsx`, extend the `pending` filter to also exclude any invite whose phone tail matches a guest with `is_committee=true`. This fixes Rhonda immediately (no data migration needed) and is a belt-and-suspenders guard if the two sources ever drift again.
+### 3. Sub-pages behave as committee when `?view=committee` is set
 
-### 4. One-time cleanup of existing stale rows
+The layout already computes `previewCommittee = isActualAdmin && view === "committee"` and passes `view=committee` through nav links. I'll audit every admin sub-page and make sure that when `previewCommittee` is true, every admin-only control (bulk delete, admin-only filters, "assign role", "view as admin", raw exports, etc.) is hidden and every action is scoped to what a committee member can actually do. Concretely I'll check and fix as needed:
 
-Delete `team_invites` rows for phones that either (a) already match an `is_committee=true` invitation, or (b) match a guest with no committee flag AND were previously toggled off. Since we can't reconstruct history for (b), we only auto-clean case (a); Jen's row is removed manually via the existing "Remove" button on the pending list (or covered by fix #2 the next time an admin toggles).
+- `/admin/upload` (Add guests / Guest list)
+- `/admin/inviters` (Committee)
+- `/admin/categories` (Volunteer)
+- `/admin/chat` (Team chat)
+- `/admin/my-volunteer-chats`
+- `/admin/my-rsvp`
+- `/admin/preorders`
+- `/admin/subcommittee`
+- `/admin/team` (Add committee)
 
-## Technical details
+The header tab bar in `admin.tsx` already filters to `team`-flagged tabs when in committee mode; no change there.
 
-- `src/lib/team.functions.ts`:
-  - `inviteTeamMember` handler: after upserting `team_invites`, when `role === "team"`, run `update invitations set is_committee=true where right(guest_phone_normalized,10) = right(phoneNorm,10)`.
-  - New `removeTeamInvitesForPhone` server fn: admin-only, `delete from team_invites where right(phone_normalized,10) = right(:digits,10)`.
-- `src/routes/_authenticated/admin/upload.tsx`: `toggleCommittee` calls the new server fn when unchecking, and refreshes local state.
-- `src/routes/_authenticated/admin/team.tsx`: `pending` filter also skips invites whose last-10 digits are in `existingCommitteeTails` derived from `guests.filter(isCommittee)`.
+### 4. Guest tab
+
+Same as today — opens a sample non-committee invitation's `/rsvp/:token` in a new tab. If no guest invitation exists yet, the tab is disabled with a tooltip.
 
 ## Out of scope
 
-- No schema/RLS changes.
-- No changes to sign-in, roles, or the inviter quota.
-- The `inviters` sync in `syncCommitteeInviter` is unchanged.
+- No real impersonation / login as another user (would break audit trail). The tabs are a rendering-only preview that mirrors committee behavior.
+- No changes to backups, reconciliation CSV, sign-in, or roles.
+- No schema changes.
+
+## One clarification
+
+For any admin-only control I find on a sub-page in Committee view, my default is to **hide it entirely** in that mode (not "show it but disable it"). Say the word if you'd rather see it grayed out with a "admin only" tooltip instead.
