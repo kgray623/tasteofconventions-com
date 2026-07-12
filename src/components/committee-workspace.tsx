@@ -1022,6 +1022,7 @@ function MyGuestsGroup({
   setRsvpFor,
   saveGuestEdits,
   deleteGuest,
+  buildSmsHref,
 }: {
   label: string;
   tone: "emerald" | "muted" | "rose";
@@ -1037,6 +1038,7 @@ function MyGuestsGroup({
     edits: { guest_name: string; guest_phone: string; guest_email: string },
   ) => Promise<boolean>;
   deleteGuest: (guest: CommitteeGuest) => Promise<void>;
+  buildSmsHref?: (guest: CommitteeGuest) => string | null;
 }) {
   const toneClasses =
     tone === "emerald"
