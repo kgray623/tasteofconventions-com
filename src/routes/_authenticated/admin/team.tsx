@@ -47,7 +47,7 @@ const inviteSchema = z.object({
 
 function TeamPage() {
   const { user } = useAuth();
-  const { isAdmin } = useRoles();
+  const { isAdmin } = useAdminView();
   const [invites, setInvites] = useState<Invite[]>([]);
   const [signedUpDigits, setSignedUpDigits] = useState<Set<string>>(new Set());
   const [guests, setGuests] = useState<GuestOption[]>([]);
