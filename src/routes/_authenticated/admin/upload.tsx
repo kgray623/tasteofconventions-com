@@ -307,6 +307,7 @@ function UploadPage() {
   const screenshotRef = useRef<HTMLInputElement>(null);
   const [screenshotBusy, setScreenshotBusy] = useState(false);
   const extractContacts = useServerFn(extractContactsFromImages);
+  const removeTeamInvitesFn = useServerFn(removeTeamInvitesForPhone);
   const [inviterId, setInviterId] = useState<string | null>(null);
   const [requestedQuota, setRequestedQuota] = useState<string>("");
   const [quotaRequestedAt, setQuotaRequestedAt] = useState<string | null>(null);
