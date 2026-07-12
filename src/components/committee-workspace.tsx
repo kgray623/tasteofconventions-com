@@ -769,7 +769,7 @@ export function CommitteeWorkspace() {
         ) : confirmedGuests.length === 0 ? (
           <div className="p-4 text-sm text-muted-foreground">None of your guests have RSVP'd yet.</div>
         ) : (
-          <div className="divide-y divide-border max-h-[360px] overflow-auto">
+          <div className="divide-y divide-border md:max-h-[360px] md:overflow-auto">
             {confirmedGuests.map((guest) => {
               const isVirtual = guest.attendance_mode === "zoom";
               return (
@@ -834,7 +834,7 @@ export function CommitteeWorkspace() {
         ) : myGuests.length === 0 ? (
           <div className="p-4 text-sm text-muted-foreground">You haven't invited anyone yet.</div>
         ) : (
-          <div className="divide-y divide-border max-h-[520px] overflow-auto">
+          <div className="divide-y divide-border md:max-h-[520px] md:overflow-auto">
             {myGuests.map((guest) => (
               <div key={guest.id} className="p-4 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
@@ -1062,7 +1062,7 @@ function MyGuestsGroup({
           {guests.length === 0 ? (
             <div className="p-3 text-xs text-muted-foreground border-t border-border/60">No guests in this group.</div>
           ) : (
-            <div className="divide-y divide-border/60 border-t border-border/60 max-h-[360px] overflow-auto bg-background">
+            <div className="divide-y divide-border/60 border-t border-border/60 md:max-h-[360px] md:overflow-auto bg-background">
               {guests.map((guest) => (
                 <div key={guest.id} className="p-3 flex flex-wrap items-center gap-3">
                   <div className="flex-1 min-w-[160px]">
