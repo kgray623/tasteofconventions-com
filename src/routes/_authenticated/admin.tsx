@@ -32,7 +32,7 @@ const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boole
   { to: "/admin/committee-message", label: "Committee SMS", icon: MessageSquare, group: "committee" },
   { to: "/admin/inviters", label: "Committee", icon: UserPlus, team: true, teamLabel: "Committee", group: "committee" },
   { to: "/admin/categories", label: "Volunteer", icon: ListChecks, team: true, teamLabel: "Volunteer", group: "committee" },
-  { to: "/admin/team", label: "Add Team", icon: Users, group: "committee" },
+  { to: "/admin/team", label: "Add committee", icon: Users, group: "committee" },
   { to: "/admin/my-volunteer-chats", label: "My volunteer chats", icon: MessageCircle, team: true, teamLabel: "My volunteer chats", group: "committee" },
   { to: "/admin/chat", label: "Team chat", icon: MessagesSquare, team: true, teamLabel: "Team chat", group: "committee" },
   { to: "/admin/backups", label: "Backups", icon: Archive, group: "main" },
