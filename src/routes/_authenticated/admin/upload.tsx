@@ -282,7 +282,7 @@ function UploadPage() {
     }[]
   >([]);
   const [activeListTab, setActiveListTab] = useState<"all" | "latest">("all");
-  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({ "RSVP no": true });
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({ "No": true });
 
 
 
@@ -1701,22 +1701,21 @@ function UploadPage() {
               },
             ];
           } else {
-            const yes = savedGuests.filter((g) => effStatus(g) === "yes").sort(byName);
-            const wait = savedGuests.filter((g) => effStatus(g) === "waitlist").sort(byName);
+            const rsvp = savedGuests.filter((g) => effStatus(g) === "yes").sort(byName);
             const no = savedGuests.filter((g) => effStatus(g) === "no").sort(byName);
             const pending = savedGuests
               .filter((g) => {
                 const s = effStatus(g);
-                return s !== "yes" && s !== "waitlist" && s !== "no";
+                return s !== "yes" && s !== "no";
               })
               .sort(byName);
             sections = [
-              { label: "RSVP yes", rows: yes },
-              { label: "RSVP waitlist", rows: wait },
-              { label: "No response yet", rows: pending },
-              { label: "RSVP no", rows: no },
+              { label: "RSVP", rows: rsvp },
+              { label: "Pending", rows: pending },
+              { label: "No", rows: no },
             ];
           }
+
 
           return (
           <div>
@@ -1745,16 +1744,23 @@ function UploadPage() {
 
             {sections.map((sec) => sec.rows.length === 0 ? null : (
               <div key={sec.label}>
-                <button
-                  type="button"
-                  onClick={() => setCollapsedSections((prev) => ({ ...prev, [sec.label]: !prev[sec.label] }))}
-                  className="w-full flex items-center gap-1.5 px-4 py-2 bg-background/60 text-[11px] uppercase tracking-wider text-muted-foreground border-y border-border sticky top-0 z-10 hover:bg-muted/60 text-left"
-                >
-                  {collapsedSections[sec.label] ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  <span>{sec.label} ({sec.rows.length})</span>
-                </button>
-                {!collapsedSections[sec.label] && (
+                {sec.label === "No" ? (
+                  <button
+                    type="button"
+                    onClick={() => setCollapsedSections((prev) => ({ ...prev, [sec.label]: !prev[sec.label] }))}
+                    className="w-full flex items-center gap-1.5 px-4 py-2 bg-background/60 text-[11px] uppercase tracking-wider text-muted-foreground border-y border-border sticky top-0 z-10 hover:bg-muted/60 text-left"
+                  >
+                    {collapsedSections[sec.label] ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    <span>{sec.label} ({sec.rows.length})</span>
+                  </button>
+                ) : (
+                  <div className="px-4 py-2 bg-background/60 text-[11px] uppercase tracking-wider text-muted-foreground border-y border-border sticky top-0 z-10">
+                    {sec.label} ({sec.rows.length})
+                  </div>
+                )}
+                {!(sec.label === "No" && collapsedSections[sec.label]) && (
                 <div className="divide-y divide-border">
+
 
             {sec.rows.map((g) => {
               const isDup = duplicateGroups.dupIds.has(g.id);
