@@ -748,6 +748,7 @@ export function CommitteeWorkspace() {
               setRsvpFor={setRsvpFor}
               saveGuestEdits={saveGuestEdits}
               deleteGuest={deleteGuest}
+              buildSmsHref={buildSmsHref}
             />
           </div>
         )}
