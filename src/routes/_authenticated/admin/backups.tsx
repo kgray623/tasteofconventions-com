@@ -24,6 +24,8 @@ type Filename = (typeof files)[number]["filename"];
 
 function BackupsPage() {
   const [busy, setBusy] = useState<Filename | null>(null);
+  const [open, setOpen] = useState(false);
+
   const [error, setError] = useState<string | null>(null);
 
   const download = async (filename: Filename) => {
