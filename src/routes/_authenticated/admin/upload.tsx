@@ -275,8 +275,11 @@ function UploadPage() {
       attendance_mode: "in_person" | "zoom";
       is_committee: boolean;
       invited_by: string | null;
+      created_at: string;
     }[]
   >([]);
+  const [activeListTab, setActiveListTab] = useState<"all" | "latest">("all");
+
 
   const [importAsCommittee, setImportAsCommittee] = useState(false);
   const [committeeFilter, setCommitteeFilter] = useState(false);
