@@ -3,7 +3,8 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Archive } from "lucide-react";
+import { Download, Archive, ChevronDown, ChevronRight } from "lucide-react";
+
 
 export const Route = createFileRoute("/_authenticated/admin/backups")({
   head: () => ({ meta: [{ title: "Backups — Admin" }] }),
