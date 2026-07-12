@@ -275,8 +275,11 @@ function UploadPage() {
       attendance_mode: "in_person" | "zoom";
       is_committee: boolean;
       invited_by: string | null;
+      created_at: string;
     }[]
   >([]);
+  const [activeListTab, setActiveListTab] = useState<"all" | "latest">("all");
+
 
   const [importAsCommittee, setImportAsCommittee] = useState(false);
   const [committeeFilter, setCommitteeFilter] = useState(false);
@@ -317,7 +320,7 @@ function UploadPage() {
       let query = supabase
         .from("invitations")
         .select(
-          "id,guest_name,guest_email,guest_phone,rsvp_token,invite_sent_at,is_committee,host_id,rsvps(status,party_size,attendance_mode)",
+          "id,guest_name,guest_email,guest_phone,rsvp_token,invite_sent_at,is_committee,host_id,created_at,rsvps(status,party_size,attendance_mode)",
         )
         .eq("event_id", evId)
         .order("created_at", { ascending: false });
@@ -334,8 +337,10 @@ function UploadPage() {
         invite_sent_at: string | null;
         is_committee: boolean | null;
         host_id: string;
+        created_at: string;
         rsvps: { status: string; party_size: number | null; attendance_mode: string | null }[] | { status: string; party_size: number | null; attendance_mode: string | null } | null;
       };
+
       const rows = (data ?? []) as unknown as Row[];
 
       // Look up "invited by" display names for all unique hosts.
@@ -367,6 +372,8 @@ function UploadPage() {
             attendance_mode: rsvp?.attendance_mode === "zoom" ? "zoom" : "in_person",
             is_committee: !!r.is_committee,
             invited_by: hostNames.get(r.host_id) ?? null,
+            created_at: r.created_at,
+
           };
         }),
       );
@@ -1665,25 +1672,71 @@ function UploadPage() {
         ) : (() => {
           const byName = (a: typeof savedGuests[number], b: typeof savedGuests[number]) =>
             (a.guest_name ?? "").localeCompare(b.guest_name ?? "", undefined, { sensitivity: "base" });
+          const byNewest = (a: typeof savedGuests[number], b: typeof savedGuests[number]) =>
+            +new Date(b.created_at) - +new Date(a.created_at);
           const effStatus = (g: typeof savedGuests[number]) =>
             duplicateGroups.effectiveById.get(g.id)?.status ?? g.rsvp_status ?? null;
-          const yes = savedGuests.filter((g) => effStatus(g) === "yes").sort(byName);
-          const wait = savedGuests.filter((g) => effStatus(g) === "waitlist").sort(byName);
-          const no = savedGuests.filter((g) => effStatus(g) === "no").sort(byName);
-          const pending = savedGuests
-            .filter((g) => {
-              const s = effStatus(g);
-              return s !== "yes" && s !== "waitlist" && s !== "no";
-            })
-            .sort(byName);
-          const sections: { label: string; rows: typeof savedGuests }[] = [
-            { label: "RSVP yes", rows: yes },
-            { label: "RSVP waitlist", rows: wait },
-            { label: "RSVP no", rows: no },
-            { label: "No response yet", rows: pending },
-          ];
+
+          // Latest upload batch: rows within 60 min of the newest created_at.
+          const times = savedGuests.map((g) => +new Date(g.created_at)).filter((n) => Number.isFinite(n));
+          const maxTs = times.length ? Math.max(...times) : 0;
+          const latestBatch = savedGuests
+            .filter((g) => maxTs - +new Date(g.created_at) <= 60 * 60 * 1000)
+            .sort(byNewest);
+          const batchDate = maxTs ? new Date(maxTs) : null;
+
+          let sections: { label: string; rows: typeof savedGuests }[];
+          if (activeListTab === "latest") {
+            sections = [
+              {
+                label: batchDate
+                  ? `Latest upload — ${batchDate.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} (${latestBatch.length})`
+                  : `Latest upload (${latestBatch.length})`,
+                rows: latestBatch,
+              },
+            ];
+          } else {
+            const yes = savedGuests.filter((g) => effStatus(g) === "yes").sort(byName);
+            const wait = savedGuests.filter((g) => effStatus(g) === "waitlist").sort(byName);
+            const no = savedGuests.filter((g) => effStatus(g) === "no").sort(byName);
+            const pending = savedGuests
+              .filter((g) => {
+                const s = effStatus(g);
+                return s !== "yes" && s !== "waitlist" && s !== "no";
+              })
+              .sort(byName);
+            sections = [
+              { label: "RSVP yes", rows: yes },
+              { label: "RSVP waitlist", rows: wait },
+              { label: "RSVP no", rows: no },
+              { label: "No response yet", rows: pending },
+            ];
+          }
           return (
-          <div className="max-h-[480px] overflow-auto">
+          <div>
+            <div className="px-4 py-2 border-b border-border flex items-center gap-1.5 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setActiveListTab("all")}
+                className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs border transition ${activeListTab === "all" ? "bg-ink text-cream border-ink" : "bg-background hover:bg-muted border-border"}`}
+              >
+                All guests ({savedGuests.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveListTab("latest")}
+                className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs border transition ${activeListTab === "latest" ? "bg-ink text-cream border-ink" : "bg-background hover:bg-muted border-border"}`}
+              >
+                Latest upload ({latestBatch.length})
+              </button>
+              {activeListTab === "latest" && (
+                <span className="text-[11px] text-muted-foreground ml-1">
+                  Newest first · tap Send SMS to text each guest.
+                </span>
+              )}
+            </div>
+            <div className="max-h-[480px] overflow-auto">
+
             {sections.map((sec) => sec.rows.length === 0 ? null : (
               <div key={sec.label}>
                 <div className="px-4 py-2 bg-background/60 text-[11px] uppercase tracking-wider text-muted-foreground border-y border-border sticky top-0 z-10">
@@ -1833,8 +1886,10 @@ function UploadPage() {
                 </div>
               </div>
             ))}
+            </div>
           </div>
           );
+
         })()}
       </Card>
 
