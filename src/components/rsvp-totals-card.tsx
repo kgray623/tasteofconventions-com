@@ -139,11 +139,11 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
               sub={overUploaded ? `Requested: ${mine.requested}` : undefined}
               warn={overUploaded}
             />
-            <Stat label="My in-person RSVPs" value={loading ? "—" : mine.confirmed} emphasis />
-            <Stat label="My RSVPs left" value={loading ? "—" : myAvailable} />
+            <Stat label="My in-person guests RSVP’d" value={loading ? "—" : mine.confirmed} emphasis />
+            <Stat label="My in-person spots left" value={loading ? "—" : myAvailable} />
           </div>
           <p className="text-xs text-muted-foreground">
-            My RSVP Zooms:{" "}
+            My Zoom guests RSVP’d:{" "}
             <span className="font-semibold text-ink tabular-nums">
               {loading ? "—" : mine.virtual}
             </span>
@@ -160,8 +160,8 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
       )}
 
       <p className="text-xs text-muted-foreground italic leading-relaxed">
-        Only in-person RSVPs count. Not everyone you invite will say yes, so plan to invite
-        more guests than your RSVP request amount.
+        Only in-person guests use spots. Not everyone you invite will say yes, so plan to invite
+        more guests than your approved in-person spots.
       </p>
     </Card>
   );
