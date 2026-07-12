@@ -43,10 +43,11 @@ function escapeCsv(value: unknown) {
 
 function AdminOverview() {
   const { view } = useSearch({ from: "/_authenticated/admin" });
+  const navigate = useNavigate();
   const { isAdmin, loading: rolesLoading } = useRoles();
   const fetchAudit = useServerFn(getAdminAudit);
   const fetchRecon = useServerFn(getReconciliationRows);
-  const [showCommitteePreview, setShowCommitteePreview] = useState(view === "committee");
+  const previewCommittee = view === "committee";
   const [sampleGuestToken, setSampleGuestToken] = useState<string | null>(null);
   const [audit, setAudit] = useState<AuditData | null>(null);
   const [auditError, setAuditError] = useState<string | null>(null);
@@ -99,12 +100,59 @@ function AdminOverview() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rolesLoading, isAdmin]);
 
-  useEffect(() => {
-    setShowCommitteePreview(view === "committee");
-  }, [view]);
+  const openAsGuest = () => {
+    if (!sampleGuestToken) return;
+    window.open(`/rsvp/${sampleGuestToken}`, "_blank", "noopener");
+  };
+
+  const ViewTabs = () => {
+    if (!isAdmin) return null;
+    const tabClass = (active: boolean) =>
+      `inline-flex items-center gap-2 px-4 py-2 text-sm border-b-2 -mb-px transition ${
+        active
+          ? "border-terracotta text-ink font-medium"
+          : "border-transparent text-muted-foreground hover:text-ink"
+      }`;
+    return (
+      <div className="flex flex-wrap items-center gap-1 border-b border-border mb-4">
+        <button
+          type="button"
+          onClick={() => navigate({ to: "/admin", search: { view: undefined } })}
+          className={tabClass(!previewCommittee)}
+        >
+          <ShieldCheck className="w-4 h-4" /> Admin
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate({ to: "/admin", search: { view: "committee" } })}
+          className={tabClass(previewCommittee)}
+        >
+          <Users className="w-4 h-4" /> Committee
+        </button>
+        <button
+          type="button"
+          onClick={openAsGuest}
+          disabled={!sampleGuestToken}
+          title={sampleGuestToken ? "Opens a real guest's RSVP page" : "No guest invitations yet"}
+          className={`${tabClass(false)} disabled:opacity-50 disabled:cursor-not-allowed`}
+        >
+          <User className="w-4 h-4" /> Guest
+          <ExternalLink className="w-3 h-3 ml-1 opacity-60" />
+        </button>
+      </div>
+    );
+  };
 
   if (rolesLoading) return <p className="text-muted-foreground">Loading workspace…</p>;
-  if (!isAdmin || showCommitteePreview) return <CommitteeWorkspace />;
+  if (!isAdmin) return <CommitteeWorkspace />;
+  if (previewCommittee) {
+    return (
+      <>
+        <ViewTabs />
+        <CommitteeWorkspace />
+      </>
+    );
+  }
 
   const all = audit?.all ?? emptyTotals();
   const recon = audit?.reconciliation;
