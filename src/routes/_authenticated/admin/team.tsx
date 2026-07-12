@@ -31,6 +31,15 @@ type Invite = {
   created_at: string;
 };
 
+type GuestOption = {
+  id: string;
+  name: string;
+  phone: string;
+  digits: string;
+  isCommittee: boolean;
+};
+
+
 const inviteSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(120),
   phone: z.string().trim().min(1, "Phone is required").max(40),
