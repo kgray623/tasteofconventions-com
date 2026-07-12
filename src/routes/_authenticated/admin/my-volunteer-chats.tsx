@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { MessageCircle } from "lucide-react";
 import { CategoryChat } from "@/components/CategoryChat";
 import { useChatUnread } from "@/hooks/use-chat-unread";
-import { useRoles } from "@/hooks/use-roles";
+import { useAdminView } from "@/hooks/use-admin-view";
 
 export const Route = createFileRoute("/_authenticated/admin/my-volunteer-chats")({
   head: () => ({ meta: [{ title: "My volunteer chats — Steering Committee" }] }),
