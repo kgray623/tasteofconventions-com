@@ -121,6 +121,7 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
       guest_phone: string | null;
       guest_email: string | null;
       host_id: string | null;
+      rsvp_token: string | null;
     }>;
 
     const rsvpByInvitation = new Map<string, { status: string | null; party_size: number | null; attendance_mode: string | null; responded_at: string | null }>();
