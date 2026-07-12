@@ -35,16 +35,6 @@ type AuditData = {
   };
 };
 
-const adminExportFiles = [
-  { filename: "taste-of-conventions-database-dump.zip", label: "Database dump ZIP" },
-  { filename: "taste-of-conventions-source.zip", label: "Source code ZIP" },
-  { filename: "taste-of-conventions-migrations.zip", label: "Database migrations ZIP" },
-  { filename: "taste-of-conventions-admin-screenshots.zip", label: "Admin screenshots ZIP" },
-  { filename: "taste-of-conventions-database.xlsx", label: "Database spreadsheet" },
-  { filename: "guests.csv", label: "Guest CSV" },
-] as const;
-
-type AdminExportFilename = (typeof adminExportFiles)[number]["filename"];
 
 function escapeCsv(value: unknown) {
   const text = String(value ?? "");
@@ -61,8 +51,6 @@ function AdminOverview() {
   const [audit, setAudit] = useState<AuditData | null>(null);
   const [auditError, setAuditError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
-  const [exportDownloading, setExportDownloading] = useState<AdminExportFilename | null>(null);
-  const [exportError, setExportError] = useState<string | null>(null);
   const [ops, setOps] = useState({ flags: 0, categories: 0 });
   const loadingAdminDataRef = useRef(false);
 
@@ -148,41 +136,6 @@ function AdminOverview() {
     }
   };
 
-  const downloadAdminExport = async (filename: AdminExportFilename) => {
-    setExportDownloading(filename);
-    setExportError(null);
-    try {
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      if (sessionError || !token) {
-        throw new Error("Sign in again before downloading admin exports.");
-      }
-
-      const response = await fetch(`/exports/${encodeURIComponent(filename)}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) {
-        const message = await response.text().catch(() => "");
-        throw new Error(message || `Download failed with status ${response.status}`);
-      }
-
-      const blob = await response.blob();
-      if (blob.size === 0) throw new Error("The export file was empty.");
-
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      setExportError(error instanceof Error ? error.message : "Download failed");
-    } finally {
-      setExportDownloading(null);
-    }
-  };
 
   type Row = { label: string; value: number | string; to?: string; search?: Record<string, string>; newKey?: "admin:rsvps-tile"; emphasis?: boolean };
   const StatRow = ({ row }: { row: Row }) => {
@@ -294,31 +247,6 @@ function AdminOverview() {
         </Card>
       )}
 
-      <Card className="p-5 space-y-4">
-        <div>
-          <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Admin exports</p>
-          <h2 className="font-display text-2xl">Download backup files</h2>
-        </div>
-        {exportError && (
-          <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm">
-            {exportError}
-          </div>
-        )}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {adminExportFiles.map((file) => (
-            <Button
-              key={file.filename}
-              variant="outline"
-              className="h-auto min-h-11 justify-start whitespace-normal text-left"
-              onClick={() => downloadAdminExport(file.filename)}
-              disabled={exportDownloading !== null}
-            >
-              <Download className="w-4 h-4 mr-2 shrink-0" />
-              {exportDownloading === file.filename ? "Preparing…" : file.label}
-            </Button>
-          ))}
-        </div>
-      </Card>
 
       <RsvpTotalsCard />
 
