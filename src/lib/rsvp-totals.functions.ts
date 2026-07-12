@@ -30,6 +30,7 @@ export type CommitteeWorkspaceGuest = {
   responded_at: string | null;
   invited_by: string | null;
   host_id: string;
+  rsvp_token: string | null;
 };
 
 export type CommitteeWorkspaceGuestsResult = {
