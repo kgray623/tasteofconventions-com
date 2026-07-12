@@ -337,8 +337,10 @@ function UploadPage() {
         invite_sent_at: string | null;
         is_committee: boolean | null;
         host_id: string;
+        created_at: string;
         rsvps: { status: string; party_size: number | null; attendance_mode: string | null }[] | { status: string; party_size: number | null; attendance_mode: string | null } | null;
       };
+
       const rows = (data ?? []) as unknown as Row[];
 
       // Look up "invited by" display names for all unique hosts.
