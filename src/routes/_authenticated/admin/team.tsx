@@ -151,19 +151,28 @@ function TeamPage() {
     load();
   };
 
-  const pending = invites.filter(
-    (i) => !i.accepted_at && !isSignedUp(normalizeRosterPhone(i.phone)),
-  );
-
-  const existingCommitteeTails = useMemo(() => {
+  const committeeTails = useMemo(() => {
     const set = new Set<string>();
     for (const g of guests) if (g.isCommittee && g.digits) set.add(g.digits.slice(-10));
+    return set;
+  }, [guests]);
+
+  const pending = invites.filter((i) => {
+    if (i.accepted_at) return false;
+    const digits = normalizeRosterPhone(i.phone);
+    if (isSignedUp(digits)) return false;
+    if (digits && committeeTails.has(digits.slice(-10))) return false;
+    return true;
+  });
+
+  const existingCommitteeTails = useMemo(() => {
+    const set = new Set<string>(committeeTails);
     for (const inv of invites) {
       const d = normalizeRosterPhone(inv.phone);
       if (d) set.add(d.slice(-10));
     }
     return set;
-  }, [guests, invites]);
+  }, [committeeTails, invites]);
 
   const selectedGuest = guests.find((g) => g.id === selectedGuestId) ?? null;
 

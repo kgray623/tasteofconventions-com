@@ -37,6 +37,7 @@ import {
 import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 import { useServerFn } from "@tanstack/react-start";
 import { extractContactsFromImages } from "@/lib/extract-contacts.functions";
+import { removeTeamInvitesForPhone } from "@/lib/team.functions";
 import { Input } from "@/components/ui/input";
 import { Image as ImageIcon, Target } from "lucide-react";
 
@@ -306,6 +307,7 @@ function UploadPage() {
   const screenshotRef = useRef<HTMLInputElement>(null);
   const [screenshotBusy, setScreenshotBusy] = useState(false);
   const extractContacts = useServerFn(extractContactsFromImages);
+  const removeTeamInvitesFn = useServerFn(removeTeamInvitesForPhone);
   const [inviterId, setInviterId] = useState<string | null>(null);
   const [requestedQuota, setRequestedQuota] = useState<string>("");
   const [quotaRequestedAt, setQuotaRequestedAt] = useState<string | null>(null);
@@ -792,6 +794,14 @@ function UploadPage() {
     setSavedGuests((prev) =>
       prev.map((row) => (row.id === g.id ? { ...row, is_committee: checked } : row)),
     );
+    if (!checked && g.guest_phone) {
+      try {
+        await removeTeamInvitesFn({ data: { phone: g.guest_phone } });
+      } catch (e) {
+        // non-fatal; toggle already succeeded
+        console.warn("removeTeamInvitesForPhone failed", e);
+      }
+    }
     toast.success(checked ? `Tagged ${g.guest_name} as committee` : `Removed committee tag from ${g.guest_name}`);
   };
 

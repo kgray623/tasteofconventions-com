@@ -82,6 +82,7 @@ export const inviteTeamMember = createServerFn({ method: "POST" })
         .eq("id", existing.id);
       if (updErr) throw new Error(updErr.message);
       await syncCommitteeInviter(data);
+      await flagInvitationsAsCommittee(data);
       return { ok: true };
     }
 
@@ -95,8 +96,51 @@ export const inviteTeamMember = createServerFn({ method: "POST" })
       });
     if (insErr) throw new Error(insErr.message);
     await syncCommitteeInviter(data);
+    await flagInvitationsAsCommittee(data);
     return { ok: true };
   });
+
+async function flagInvitationsAsCommittee(data: z.infer<typeof InviteInput>) {
+  if (data.role !== "team") return;
+  const phoneNorm = normalizePhone(data.phone);
+  if (phoneNorm.length < 7) return;
+  const tail = phoneNorm.slice(-10);
+  const { data: rows, error } = await supabaseAdmin
+    .from("invitations")
+    .select("id,guest_phone_normalized,is_committee");
+  if (error) return;
+  const ids = (rows ?? [])
+    .filter((r) => {
+      const d = (r.guest_phone_normalized ?? "").replace(/\D/g, "");
+      return d.length >= 7 && d.slice(-10) === tail && !r.is_committee;
+    })
+    .map((r) => r.id);
+  if (ids.length === 0) return;
+  await supabaseAdmin.from("invitations").update({ is_committee: true }).in("id", ids);
+}
+
+export const removeTeamInvitesForPhone = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { phone: string }) => ({ phone: String(d.phone ?? "") }))
+  .handler(async ({ data, context }) => {
+    const userId = (context as any).userId as string | undefined;
+    if (!userId) throw new Error("Not authenticated");
+    await assertAdmin(userId);
+    const phoneNorm = normalizePhone(data.phone);
+    if (phoneNorm.length < 7) return { ok: true, removed: 0 };
+    const tail = phoneNorm.slice(-10);
+    const { data: rows } = await supabaseAdmin
+      .from("team_invites")
+      .select("id,phone_normalized,accepted_at");
+    const ids = (rows ?? [])
+      .filter((r) => !r.accepted_at && (r.phone_normalized ?? "").slice(-10) === tail)
+      .map((r) => r.id);
+    if (ids.length === 0) return { ok: true, removed: 0 };
+    const { error } = await supabaseAdmin.from("team_invites").delete().in("id", ids);
+    if (error) throw new Error(error.message);
+    return { ok: true, removed: ids.length };
+  });
+
 
 export const getSignedUpPhoneDigits = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
