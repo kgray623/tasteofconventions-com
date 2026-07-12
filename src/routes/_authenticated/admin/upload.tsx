@@ -1713,10 +1713,11 @@ function UploadPage() {
             sections = [
               { label: "RSVP yes", rows: yes },
               { label: "RSVP waitlist", rows: wait },
-              { label: "RSVP no", rows: no },
               { label: "No response yet", rows: pending },
+              { label: "RSVP no", rows: no },
             ];
           }
+
           return (
           <div>
             <div className="px-4 py-2 border-b border-border flex items-center gap-1.5 flex-wrap">
