@@ -286,11 +286,18 @@ function InvitersPage() {
   return (
     <div className="space-y-8">
       <Card className="p-5 space-y-3">
-        <div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-display text-xl flex items-center gap-2">
             <Users className="w-5 h-5 text-terracotta" /> Committee members
           </h2>
+          <Link
+            to="/admin/team"
+            className="inline-flex h-9 items-center gap-2 rounded-md bg-ink px-3 text-sm font-semibold text-cream hover:bg-ink/90"
+          >
+            <Users className="w-4 h-4" /> Add committee member
+          </Link>
         </div>
+
         {committee.length === 0 ? (
           <p className="text-sm text-muted-foreground italic">
             No committee members flagged yet. Open <Link to="/admin/upload" className="underline">Add guests / Guest list</Link> and check the committee box next to a guest.
