@@ -138,9 +138,9 @@ function AdminLayout() {
     : `Welcome${displayName ? `, ${displayName}` : ""}`;
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8">
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <div>
+    <div className="mx-auto max-w-6xl px-6 pt-8 pb-[calc(8rem+env(safe-area-inset-bottom))] md:pb-8">
+      <div className="mb-6 grid grid-cols-1 items-center gap-4 sm:grid-cols-[minmax(0,1fr)_auto]">
+        <div className="min-w-0">
           <p className="text-xs uppercase tracking-[0.3em] text-terracotta">{headingEyebrow}</p>
           <h1 className="font-display text-3xl mt-1">{headingTitle}</h1>
         </div>
@@ -150,7 +150,7 @@ function AdminLayout() {
             to="/admin/upload"
             search={committeeSearch}
             hash="add-guests"
-            className="inline-flex h-11 items-center gap-2 rounded-md bg-terracotta px-4 text-sm font-semibold text-cream shadow-sm transition hover:bg-terracotta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-2"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-terracotta px-4 text-sm font-semibold text-cream shadow-sm transition hover:bg-terracotta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-2 sm:w-auto"
           >
             <Upload className="w-4 h-4" />
             Upload guests
