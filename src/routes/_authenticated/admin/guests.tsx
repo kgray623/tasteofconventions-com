@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { useServerFn } from "@tanstack/react-start";
@@ -6,9 +6,11 @@ import { getReconciliationRows } from "@/lib/admin-audit.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, ExternalLink, Search, Users } from "lucide-react";
 
 type StatusFilter = "all" | "confirmed" | "declined" | "maybe" | "waitlist" | "pending";
+type SortMode = "alpha" | "newest" | "oldest";
 
 export const Route = createFileRoute("/_authenticated/admin/guests")({
   head: () => ({ meta: [{ title: "Guests — Admin" }] }),
@@ -17,6 +19,7 @@ export const Route = createFileRoute("/_authenticated/admin/guests")({
       status: z.enum(["all", "confirmed", "declined", "maybe", "waitlist", "pending"]).optional(),
       mode: z.enum(["in_person", "zoom"]).optional(),
       audience: z.enum(["all", "guest", "committee"]).optional(),
+      sort: z.enum(["alpha", "newest", "oldest"]).optional(),
     }).parse(s),
   component: GuestsPage,
 });
@@ -24,6 +27,7 @@ export const Route = createFileRoute("/_authenticated/admin/guests")({
 type Row = {
   invitation_id: string;
   rsvp_token: string;
+  created_at: string;
   name: string;
   phone: string;
   email: string;
@@ -78,13 +82,15 @@ function escapeCsv(v: unknown) {
 }
 
 function GuestsPage() {
-  const { status, mode, audience } = Route.useSearch();
+  const { status, mode, audience, sort } = Route.useSearch();
+  const navigate = useNavigate({ from: "/admin/guests" });
   const fetchRows = useServerFn(getReconciliationRows);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const activeStatus: StatusFilter = status ?? "all";
   const activeAudience = audience ?? "all";
+  const activeSort: SortMode = sort ?? "alpha";
 
   useEffect(() => {
     let alive = true;
@@ -164,8 +170,16 @@ function GuestsPage() {
         return false;
       }
       return true;
-    }).sort((a, b) => a.name.localeCompare(b.name));
-  }, [rows, activeStatus, activeAudience, mode, query]);
+    }).sort((a, b) => {
+      if (activeSort === "newest" || activeSort === "oldest") {
+        const at = a.created_at ? Date.parse(a.created_at) : 0;
+        const bt = b.created_at ? Date.parse(b.created_at) : 0;
+        if (at !== bt) return activeSort === "newest" ? bt - at : at - bt;
+        return a.name.localeCompare(b.name);
+      }
+      return a.name.localeCompare(b.name);
+    });
+  }, [rows, activeStatus, activeAudience, mode, query, activeSort]);
 
 
   const exportCsv = () => {
@@ -247,6 +261,23 @@ function GuestsPage() {
             className="pl-9"
           />
         </div>
+        <Select
+          value={activeSort}
+          onValueChange={(v) =>
+            navigate({
+              search: (prev: Record<string, unknown>) => ({ ...prev, sort: v === "alpha" ? undefined : (v as SortMode) }),
+            })
+          }
+        >
+          <SelectTrigger className="w-[170px]">
+            <SelectValue placeholder="Sort" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="alpha">Alphabetical</SelectItem>
+            <SelectItem value="newest">Newest first</SelectItem>
+            <SelectItem value="oldest">Oldest first</SelectItem>
+          </SelectContent>
+        </Select>
         <Button variant="outline" onClick={exportCsv} disabled={filtered.length === 0}>
           <Download className="w-4 h-4 mr-2" /> Export CSV ({filtered.length})
         </Button>

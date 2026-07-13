@@ -1,21 +1,32 @@
-## Plan
+## Add sort options to the Guests list
 
-1. **Add a global mobile scroll foundation**
-   - Set the root document/app surface to allow vertical touch scrolling explicitly.
-   - Add `-webkit-overflow-scrolling: touch`, `touch-action: pan-y`, and stable min-height rules so phone drag gestures scroll the page instead of being ignored.
+On `/admin/guests`, add a sort control so the list (especially under the Pending/unconfirmed tab) can be ordered by:
 
-2. **Protect against preview/editor toolbar overlap**
-   - Keep the admin mobile bottom spacing already added.
-   - Extend the same bottom safe-area padding to the authenticated/admin content surface if needed, so the Lovable mobile toolbar cannot hide the last content.
+- **Newest first** — most recently uploaded/added at top
+- **Oldest first** — earliest uploaded at top
+- **Alphabetical** — by name A–Z (current default)
 
-3. **Remove mobile nested-scroll traps where they still exist**
-   - Re-scan admin and committee pages for any remaining mobile `overflow-auto`, `overflow-y-auto`, `max-h`, or fixed-height list containers that could capture touch gestures.
-   - Change only mobile behavior; keep desktop capped-scroll lists unchanged.
+### Changes
 
-4. **Verify with touch behavior, not only programmatic scroll**
-   - Test the exact mobile viewport: 384×673.
-   - Use Playwright mobile/touch settings and perform a drag gesture on `/admin?view=committee` and `/admin/upload?view=committee`.
-   - Confirm `document.documentElement.scrollTop` changes after the drag and screenshot the bottom of each page.
+1. **`src/routes/_authenticated/admin/guests.tsx`**
+   - Extend `validateSearch` with `sort: "newest" | "oldest" | "alpha"` (optional, default `alpha`).
+   - Add a small sort dropdown (shadcn `Select`) next to the search input / Export CSV button.
+   - Apply the sort in the existing `filtered` memo:
+     - `alpha` → current `a.name.localeCompare(b.name)`
+     - `newest` → by upload/created date desc
+     - `oldest` → by upload/created date asc
+   - Persist selection in the URL via `Route.useSearch()` + `<Link>`/`navigate` so it survives refresh and shows on every status tab (not only Pending).
 
-5. **No data/business logic changes**
-   - Do not change RSVP totals, quotas, Send text, guest records, routes, roles, or database logic.
+2. **`src/lib/admin-audit.functions.ts`** (only if needed)
+   - Ensure the reconciliation row includes a `created_at`/`uploaded_at` timestamp for sorting. If it's already present in the row (e.g. `responded_at` won't work for pending), expose the invitation `created_at`. No schema change — just include the existing column in the SELECT and the returned row shape.
+
+### Not changing
+
+- No database schema, RLS, business logic, quotas, or RSVP behavior.
+- Sort applies to all status tabs, not just Pending, since it's a lightweight UI addition and consistent behavior is simpler.
+
+### Verification
+
+- Load `/admin/guests?status=pending`, switch sort to Newest / Oldest / Alphabetical, confirm order changes and URL reflects `?sort=…`.
+- Refresh page — selection persists.
+- Confirm no regressions on other status tabs, search, and CSV export (export follows the currently sorted, filtered list).
