@@ -500,27 +500,30 @@ export function CommitteeWorkspace() {
   const myDeclined = myGuests.filter((g) => g.rsvp_status === "no").sort(byName);
 
   const pendingSortControl = (
-    <Select
-      value={activePendingSort}
-      onValueChange={(value) =>
-        navigate({
-          to: ".",
-          search: (prev: Record<string, unknown>) => ({
-            ...prev,
-            pendingSort: value === "alpha" ? undefined : (value as PendingSortMode),
-          }),
-        })
-      }
-    >
-      <SelectTrigger className="h-8 w-[150px] bg-background text-xs" aria-label="Sort pending guests">
-        <SelectValue placeholder="Sort pending" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="alpha">Alphabetical</SelectItem>
-        <SelectItem value="newest">Newest first</SelectItem>
-        <SelectItem value="oldest">Oldest first</SelectItem>
-      </SelectContent>
-    </Select>
+    <div className="flex flex-wrap items-center gap-2 pt-3">
+      <span className="text-xs font-medium text-muted-foreground">Pending order</span>
+      <Select
+        value={activePendingSort}
+        onValueChange={(value) =>
+          navigate({
+            to: ".",
+            search: (prev: Record<string, unknown>) => ({
+              ...prev,
+              pendingSort: value === "alpha" ? undefined : (value as PendingSortMode),
+            }),
+          })
+        }
+      >
+        <SelectTrigger className="h-8 w-[150px] bg-background text-xs" aria-label="Sort pending guests">
+          <SelectValue placeholder="Sort pending" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="alpha">Alphabetical</SelectItem>
+          <SelectItem value="newest">Newest first</SelectItem>
+          <SelectItem value="oldest">Oldest first</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
   );
 
   // Build a sms: link for the phone's Messages app. Same wording as the
@@ -1088,6 +1091,7 @@ function MyGuestsGroup({
       : tone === "rose"
         ? "border-rose-200 bg-rose-50/40"
         : "border-border bg-muted/30";
+  const showUploadedDate = Boolean(action);
   return (
     <Collapsible open={open} onOpenChange={onToggle}>
       <div className={`rounded-md border ${toneClasses} overflow-hidden`}>
@@ -1126,6 +1130,11 @@ function MyGuestsGroup({
                       <span className="inline-flex items-center gap-1 text-xs text-muted-foreground mt-1">
                         <Phone className="w-3 h-3" /> {guest.guest_phone}
                       </span>
+                    )}
+                    {showUploadedDate && guest.created_at && (
+                      <p className="text-[11px] text-muted-foreground/80 mt-1">
+                        Uploaded {new Date(guest.created_at).toLocaleDateString()}
+                      </p>
                     )}
                   </div>
 
