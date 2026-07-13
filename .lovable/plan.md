@@ -1,43 +1,34 @@
-## Plan: Add sorting to the committee “Pending” list
+## Fix "Send text" button on Committee → Pending
 
-### What will change
-1. **Committee page only**
-   - Add the sort control inside the committee workspace’s **My Guests Uploaded → Pending** section.
-   - This will affect **your pending guests only**: the list is already filtered to the current committee member’s own uploaded guests via `myHostIds` / `host_id`.
+### Problem
+On `/admin?view=committee`, the newly added "Send text" button in the Pending list doesn't launch the phone's Messages app when tapped. The equivalent button on `/admin/upload` (Send SMS) works. The two differ in one meaningful way: upload uses a plain `<a href="sms:...">`, while the committee button wraps the anchor in `<Button asChild>`. Radix's Slot can interfere with `sms:` navigation on some Android WebViews (including the Lovable mobile app WebView), which matches the reported symptom.
 
-2. **Sort options for Pending**
-   - Add options:
-     - Alphabetical
-     - Newest uploaded first
-     - Oldest uploaded first
-   - Default stays alphabetical unless a different sort is selected.
+### Change
+File: `src/components/committee-workspace.tsx` (Pending row render, ~lines 1176-1192)
 
-3. **Use upload date, not RSVP date**
-   - Use the invitation upload/created timestamp (`created_at`) for newest/oldest sorting.
-   - Update the committee guest data type and fallback browser query so `created_at` is available everywhere this committee list loads.
+Replace the `<Button asChild><a href={href}>…</a></Button>` block with the same raw anchor pattern used on the upload page — identical styling and identical `sms:` href builder that already lives in this file (`buildSmsHref`). No other files touched.
 
-4. **Keep selection visible and persistent**
-   - Store the selected pending sort in the URL, e.g. `/admin?view=committee&pendingSort=newest`, so refresh/back navigation keeps the same order.
-   - Preserve existing URL params like `view=committee` and `chat` when changing the sort.
+```tsx
+{buildSmsHref && (() => {
+  const href = buildSmsHref(guest);
+  if (!href) return null;
+  return (
+    <a
+      href={href}
+      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-terracotta text-cream text-xs font-medium hover:bg-terracotta/90"
+    >
+      <MessageSquare className="w-4 h-4" /> Send text
+    </a>
+  );
+})()}
+```
 
-5. **Leave admin-wide guests alone unless you ask otherwise**
-   - I will not rely on `/admin/guests`; this fix is for the committee workspace list you actually use.
-   - I won’t change RSVP rules, quotas, SMS sending, database schema, or admin exports.
-
-### Technical notes
-- File to update: `src/components/committee-workspace.tsx`
-  - Add `created_at` to fallback rows.
-  - Add `pendingSort` URL search handling with `useSearch` / `useNavigate`.
-  - Sort only `myPending` by selected mode.
-  - Render a small Select control in the Pending group header.
-- File to update: `src/lib/rsvp-totals.functions.ts`
-  - Add `created_at` to `CommitteeWorkspaceGuest` and include it in returned rows from `getCommitteeWorkspaceGuests`.
-- File to update if required: `src/routes/_authenticated/admin.tsx`
-  - Extend the admin layout `validateSearch` to allow `pendingSort` so the URL param is valid on `/admin`.
+### Out of scope
+- No changes to sort control, quotas, RSVP flow, DB, or admin pages.
+- Not adding auto "mark as sent" here (upload page does that; committee flow doesn't track `invite_sent_at` in this query). Can add later if requested.
 
 ### Verification
-- Sign in as a committee user / committee preview.
-- Open `/admin?view=committee` on the mobile viewport the user is using.
-- Confirm Pending shows only that committee member’s guests.
-- Change Pending sort to Newest, Oldest, Alphabetical.
-- Verify the order changes by upload date/name, URL updates, and refresh keeps the selected order.
+1. Sign in as a committee user on mobile, open `/admin?view=committee`.
+2. Expand Pending, tap "Send text" on a guest with a phone.
+3. Confirm the phone's Messages app opens with recipient + prefilled body.
+4. Screenshot via Playwright to confirm the anchor renders with correct `href="sms:..."`.
