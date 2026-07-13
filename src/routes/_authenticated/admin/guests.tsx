@@ -82,13 +82,15 @@ function escapeCsv(v: unknown) {
 }
 
 function GuestsPage() {
-  const { status, mode, audience } = Route.useSearch();
+  const { status, mode, audience, sort } = Route.useSearch();
+  const navigate = useNavigate({ from: "/admin/guests" });
   const fetchRows = useServerFn(getReconciliationRows);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const activeStatus: StatusFilter = status ?? "all";
   const activeAudience = audience ?? "all";
+  const activeSort: SortMode = sort ?? "alpha";
 
   useEffect(() => {
     let alive = true;
