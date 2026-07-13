@@ -242,6 +242,7 @@ export const getReconciliationRows = createServerFn({ method: "GET" })
       return {
         invitation_id: inv.id,
         rsvp_token: inv.rsvp_token ?? "",
+        created_at: inv.created_at ?? "",
         name: inv.guest_name ?? "",
         phone: inv.guest_phone ?? "",
         email: inv.guest_email ?? "",
