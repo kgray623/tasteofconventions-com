@@ -21,6 +21,7 @@ export type RsvpTotalsResult = {
 
 export type CommitteeWorkspaceGuest = {
   id: string;
+  created_at: string | null;
   guest_name: string;
   guest_phone: string | null;
   guest_email: string | null;
@@ -117,6 +118,7 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
 
     const invitationRows = (invitationsRes.data ?? []) as Array<{
       id: string;
+      created_at: string | null;
       guest_name: string;
       guest_phone: string | null;
       guest_email: string | null;
@@ -155,6 +157,7 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
         const rsvp = rsvpByInvitation.get(row.id);
         return {
           id: row.id,
+          created_at: row.created_at ?? null,
           guest_name: row.guest_name,
           guest_phone: row.guest_phone,
           guest_email: row.guest_email,

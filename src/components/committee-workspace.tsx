@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/select";
 
 type CommitteeGuest = CommitteeWorkspaceGuest;
+type PendingSortMode = "alpha" | "newest" | "oldest";
 type RsvpAction =
   | "inperson1"
   | "inperson2"
@@ -58,7 +59,7 @@ export function CommitteeWorkspace() {
   const { isAdmin } = useRoles();
   const unread = useChatUnread();
   const fetchCommitteeGuests = useServerFn(getCommitteeWorkspaceGuests);
-  const search = useSearch({ strict: false }) as { chat?: string };
+  const search = useSearch({ strict: false }) as { chat?: string; pendingSort?: string };
   const navigate = useNavigate();
   const chatsCardRef = useRef<HTMLDivElement>(null);
   const [guests, setGuests] = useState<CommitteeGuest[]>([]);
@@ -78,6 +79,10 @@ export function CommitteeWorkspace() {
   const [manualRefreshingGuests, setManualRefreshingGuests] = useState(false);
   const handledChatParamRef = useRef<string | null>(null);
   const loadingGuestsRef = useRef(false);
+  const activePendingSort: PendingSortMode =
+    search.pendingSort === "newest" || search.pendingSort === "oldest" || search.pendingSort === "alpha"
+      ? search.pendingSort
+      : "alpha";
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -170,7 +175,7 @@ export function CommitteeWorkspace() {
     const { data, error: invitationsError } = await withTimeout(
       supabase
         .from("invitations")
-        .select("id,guest_name,guest_phone,guest_email,host_id,rsvp_token,rsvps(status,party_size,attendance_mode,responded_at)")
+          .select("id,created_at,guest_name,guest_phone,guest_email,host_id,rsvp_token,rsvps(status,party_size,attendance_mode,responded_at)")
         .eq("event_id", eventId)
         .order("created_at", { ascending: false }),
       LOAD_TIMEOUT_MS,
@@ -179,6 +184,7 @@ export function CommitteeWorkspace() {
 
     const rows = (data ?? []) as unknown as Array<{
       id: string;
+      created_at: string | null;
       guest_name: string;
       guest_phone: string | null;
       guest_email: string | null;
@@ -210,6 +216,7 @@ export function CommitteeWorkspace() {
         const rsvp = pickSingleRsvp(row.rsvps);
         return {
           id: row.id,
+          created_at: row.created_at ?? null,
           guest_name: row.guest_name,
           guest_phone: row.guest_phone,
           guest_email: row.guest_email,
@@ -452,6 +459,14 @@ export function CommitteeWorkspace() {
       undefined,
       { sensitivity: "base" },
     );
+  const byPendingSort = (a: CommitteeGuest, b: CommitteeGuest) => {
+    if (activePendingSort === "newest" || activePendingSort === "oldest") {
+      const at = a.created_at ? Date.parse(a.created_at) : 0;
+      const bt = b.created_at ? Date.parse(b.created_at) : 0;
+      if (at !== bt) return activePendingSort === "newest" ? bt - at : at - bt;
+    }
+    return byName(a, b);
+  };
   const isCommitteeGuest = (g: CommitteeGuest) => {
     const n = normName(g.guest_name);
     if (n && committeeNames.has(n)) return true;
@@ -481,8 +496,35 @@ export function CommitteeWorkspace() {
     .sort(byName);
   const myPending = myGuests
     .filter((g) => !g.rsvp_status || g.rsvp_status === "waitlist" || g.rsvp_status === "maybe")
-    .sort(byName);
+    .sort(byPendingSort);
   const myDeclined = myGuests.filter((g) => g.rsvp_status === "no").sort(byName);
+
+  const pendingSortControl = (
+    <div className="flex flex-wrap items-center gap-2 pt-3">
+      <span className="text-xs font-medium text-muted-foreground">Pending order</span>
+      <Select
+        value={activePendingSort}
+        onValueChange={(value) =>
+          navigate({
+            to: ".",
+            search: (prev: Record<string, unknown>) => ({
+              ...prev,
+              pendingSort: value === "alpha" ? undefined : (value as PendingSortMode),
+            }),
+          })
+        }
+      >
+        <SelectTrigger className="h-8 w-[150px] bg-background text-xs" aria-label="Sort pending guests">
+          <SelectValue placeholder="Sort pending" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="alpha">Alphabetical</SelectItem>
+          <SelectItem value="newest">Newest first</SelectItem>
+          <SelectItem value="oldest">Oldest first</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  );
 
   // Build a sms: link for the phone's Messages app. Same wording as the
   // Upload page's Send SMS button so committee members send a consistent
@@ -742,6 +784,7 @@ export function CommitteeWorkspace() {
               guests={myPending}
               open={openMyGroup.pending}
               onToggle={() => setOpenMyGroup((p) => ({ ...p, pending: !p.pending }))}
+              action={pendingSortControl}
               isCommitteeGuest={isCommitteeGuest}
               duplicateIds={duplicateIds}
               settingRsvpId={settingRsvpId}
@@ -1016,6 +1059,7 @@ function MyGuestsGroup({
   guests,
   open,
   onToggle,
+  action,
   isCommitteeGuest,
   duplicateIds,
   settingRsvpId,
@@ -1029,6 +1073,7 @@ function MyGuestsGroup({
   guests: CommitteeGuest[];
   open: boolean;
   onToggle: () => void;
+  action?: React.ReactNode;
   isCommitteeGuest: (g: CommitteeGuest) => boolean;
   duplicateIds: Set<string>;
   settingRsvpId: string | null;
@@ -1046,6 +1091,7 @@ function MyGuestsGroup({
       : tone === "rose"
         ? "border-rose-200 bg-rose-50/40"
         : "border-border bg-muted/30";
+  const showUploadedDate = Boolean(action);
   return (
     <Collapsible open={open} onOpenChange={onToggle}>
       <div className={`rounded-md border ${toneClasses} overflow-hidden`}>
@@ -1058,6 +1104,7 @@ function MyGuestsGroup({
             <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
           </button>
         </CollapsibleTrigger>
+        {action && <div className="border-t border-border/60 px-3 pb-3">{action}</div>}
         <CollapsibleContent>
           {guests.length === 0 ? (
             <div className="p-3 text-xs text-muted-foreground border-t border-border/60">No guests in this group.</div>
@@ -1083,6 +1130,11 @@ function MyGuestsGroup({
                       <span className="inline-flex items-center gap-1 text-xs text-muted-foreground mt-1">
                         <Phone className="w-3 h-3" /> {guest.guest_phone}
                       </span>
+                    )}
+                    {showUploadedDate && guest.created_at && (
+                      <p className="text-[11px] text-muted-foreground/80 mt-1">
+                        Uploaded {new Date(guest.created_at).toLocaleDateString()}
+                      </p>
                     )}
                   </div>
 
