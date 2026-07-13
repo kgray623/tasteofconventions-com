@@ -265,7 +265,7 @@ function GuestsPage() {
           value={activeSort}
           onValueChange={(v) =>
             navigate({
-              search: (prev) => ({ ...prev, sort: v === "alpha" ? undefined : (v as SortMode) }),
+              search: (prev: Record<string, unknown>) => ({ ...prev, sort: v === "alpha" ? undefined : (v as SortMode) }),
             })
           }
         >
