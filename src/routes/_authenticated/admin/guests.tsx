@@ -261,6 +261,23 @@ function GuestsPage() {
             className="pl-9"
           />
         </div>
+        <Select
+          value={activeSort}
+          onValueChange={(v) =>
+            navigate({
+              search: (prev) => ({ ...prev, sort: v === "alpha" ? undefined : (v as SortMode) }),
+            })
+          }
+        >
+          <SelectTrigger className="w-[170px]">
+            <SelectValue placeholder="Sort" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="alpha">Alphabetical</SelectItem>
+            <SelectItem value="newest">Newest first</SelectItem>
+            <SelectItem value="oldest">Oldest first</SelectItem>
+          </SelectContent>
+        </Select>
         <Button variant="outline" onClick={exportCsv} disabled={filtered.length === 0}>
           <Download className="w-4 h-4 mr-2" /> Export CSV ({filtered.length})
         </Button>
