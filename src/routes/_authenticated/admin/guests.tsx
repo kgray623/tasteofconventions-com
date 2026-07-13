@@ -170,8 +170,16 @@ function GuestsPage() {
         return false;
       }
       return true;
-    }).sort((a, b) => a.name.localeCompare(b.name));
-  }, [rows, activeStatus, activeAudience, mode, query]);
+    }).sort((a, b) => {
+      if (activeSort === "newest" || activeSort === "oldest") {
+        const at = a.created_at ? Date.parse(a.created_at) : 0;
+        const bt = b.created_at ? Date.parse(b.created_at) : 0;
+        if (at !== bt) return activeSort === "newest" ? bt - at : at - bt;
+        return a.name.localeCompare(b.name);
+      }
+      return a.name.localeCompare(b.name);
+    });
+  }, [rows, activeStatus, activeAudience, mode, query, activeSort]);
 
 
   const exportCsv = () => {
