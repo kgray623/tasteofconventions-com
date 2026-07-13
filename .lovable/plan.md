@@ -1,32 +1,43 @@
-## Add sort options to the Guests list
+## Plan: Add sorting to the committee “Pending” list
 
-On `/admin/guests`, add a sort control so the list (especially under the Pending/unconfirmed tab) can be ordered by:
+### What will change
+1. **Committee page only**
+   - Add the sort control inside the committee workspace’s **My Guests Uploaded → Pending** section.
+   - This will affect **your pending guests only**: the list is already filtered to the current committee member’s own uploaded guests via `myHostIds` / `host_id`.
 
-- **Newest first** — most recently uploaded/added at top
-- **Oldest first** — earliest uploaded at top
-- **Alphabetical** — by name A–Z (current default)
+2. **Sort options for Pending**
+   - Add options:
+     - Alphabetical
+     - Newest uploaded first
+     - Oldest uploaded first
+   - Default stays alphabetical unless a different sort is selected.
 
-### Changes
+3. **Use upload date, not RSVP date**
+   - Use the invitation upload/created timestamp (`created_at`) for newest/oldest sorting.
+   - Update the committee guest data type and fallback browser query so `created_at` is available everywhere this committee list loads.
 
-1. **`src/routes/_authenticated/admin/guests.tsx`**
-   - Extend `validateSearch` with `sort: "newest" | "oldest" | "alpha"` (optional, default `alpha`).
-   - Add a small sort dropdown (shadcn `Select`) next to the search input / Export CSV button.
-   - Apply the sort in the existing `filtered` memo:
-     - `alpha` → current `a.name.localeCompare(b.name)`
-     - `newest` → by upload/created date desc
-     - `oldest` → by upload/created date asc
-   - Persist selection in the URL via `Route.useSearch()` + `<Link>`/`navigate` so it survives refresh and shows on every status tab (not only Pending).
+4. **Keep selection visible and persistent**
+   - Store the selected pending sort in the URL, e.g. `/admin?view=committee&pendingSort=newest`, so refresh/back navigation keeps the same order.
+   - Preserve existing URL params like `view=committee` and `chat` when changing the sort.
 
-2. **`src/lib/admin-audit.functions.ts`** (only if needed)
-   - Ensure the reconciliation row includes a `created_at`/`uploaded_at` timestamp for sorting. If it's already present in the row (e.g. `responded_at` won't work for pending), expose the invitation `created_at`. No schema change — just include the existing column in the SELECT and the returned row shape.
+5. **Leave admin-wide guests alone unless you ask otherwise**
+   - I will not rely on `/admin/guests`; this fix is for the committee workspace list you actually use.
+   - I won’t change RSVP rules, quotas, SMS sending, database schema, or admin exports.
 
-### Not changing
-
-- No database schema, RLS, business logic, quotas, or RSVP behavior.
-- Sort applies to all status tabs, not just Pending, since it's a lightweight UI addition and consistent behavior is simpler.
+### Technical notes
+- File to update: `src/components/committee-workspace.tsx`
+  - Add `created_at` to fallback rows.
+  - Add `pendingSort` URL search handling with `useSearch` / `useNavigate`.
+  - Sort only `myPending` by selected mode.
+  - Render a small Select control in the Pending group header.
+- File to update: `src/lib/rsvp-totals.functions.ts`
+  - Add `created_at` to `CommitteeWorkspaceGuest` and include it in returned rows from `getCommitteeWorkspaceGuests`.
+- File to update if required: `src/routes/_authenticated/admin.tsx`
+  - Extend the admin layout `validateSearch` to allow `pendingSort` so the URL param is valid on `/admin`.
 
 ### Verification
-
-- Load `/admin/guests?status=pending`, switch sort to Newest / Oldest / Alphabetical, confirm order changes and URL reflects `?sort=…`.
-- Refresh page — selection persists.
-- Confirm no regressions on other status tabs, search, and CSV export (export follows the currently sorted, filtered list).
+- Sign in as a committee user / committee preview.
+- Open `/admin?view=committee` on the mobile viewport the user is using.
+- Confirm Pending shows only that committee member’s guests.
+- Change Pending sort to Newest, Oldest, Alphabetical.
+- Verify the order changes by upload date/name, URL updates, and refresh keeps the selected order.

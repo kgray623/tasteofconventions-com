@@ -17,7 +17,10 @@ import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — A Taste of Special Conventions" }] }),
-  validateSearch: (s) => z.object({ view: z.enum(["committee"]).optional() }).parse(s),
+  validateSearch: (s) => z.object({
+    view: z.enum(["committee"]).optional(),
+    pendingSort: z.enum(["alpha", "newest", "oldest"]).optional(),
+  }).parse(s),
   component: AdminLayout,
 });
 
