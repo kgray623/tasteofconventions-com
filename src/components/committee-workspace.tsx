@@ -1177,17 +1177,12 @@ function MyGuestsGroup({
                     const href = buildSmsHref(guest);
                     if (!href) return null;
                     return (
-                      <Button
-                        asChild
-                        size="sm"
-                        className="w-full sm:w-auto bg-terracotta text-cream hover:bg-terracotta/90"
+                      <a
+                        href={href}
+                        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-terracotta text-cream text-xs font-medium hover:bg-terracotta/90"
                       >
-                        <a href={href}>
-                          <span className="inline-flex items-center gap-2">
-                            <MessageSquare className="w-4 h-4" /> Send text
-                          </span>
-                        </a>
-                      </Button>
+                        <MessageSquare className="w-4 h-4" /> Send text
+                      </a>
                     );
                   })()}
                   <EditGuestButton guest={guest} onSave={saveGuestEdits} />
