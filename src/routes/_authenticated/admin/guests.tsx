@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { useServerFn } from "@tanstack/react-start";
@@ -6,9 +6,11 @@ import { getReconciliationRows } from "@/lib/admin-audit.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, ExternalLink, Search, Users } from "lucide-react";
 
 type StatusFilter = "all" | "confirmed" | "declined" | "maybe" | "waitlist" | "pending";
+type SortMode = "alpha" | "newest" | "oldest";
 
 export const Route = createFileRoute("/_authenticated/admin/guests")({
   head: () => ({ meta: [{ title: "Guests — Admin" }] }),
