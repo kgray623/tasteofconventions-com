@@ -47,6 +47,19 @@ type RsvpAction =
 const WELCOME_HIDE_KEY = "toc.committee.welcomeVideoHidden";
 const LOAD_TIMEOUT_MS = 12_000;
 
+const normalizeSmsRecipient = (phone: string | null | undefined) => {
+  const digits = (phone ?? "").replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  return digits.startsWith("+") ? digits : `+${digits}`;
+};
+
+const smsBodySeparator = () => {
+  if (typeof navigator === "undefined") return "?body=";
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ? "&body=" : "?body=";
+};
+
 const pickSingleRsvp = (
   rsvps:
     | { status: string | null; party_size: number | null; attendance_mode: string | null; responded_at: string | null }[]
@@ -541,12 +554,13 @@ export function CommitteeWorkspace() {
   const rsvpLinkToken = (token: string) =>
     encodeURIComponent(token.trim().replace(/\+/g, "-").replace(/\//g, "_"));
   const buildSmsHref = (guest: CommitteeGuest): string | null => {
-    if (!guest.guest_phone || !guest.rsvp_token) return null;
+    const recipient = normalizeSmsRecipient(guest.guest_phone);
+    if (!recipient || !guest.rsvp_token) return null;
     const firstName = (guest.guest_name || "Friend").split(/\s+/)[0];
     const senderFirst = senderName.split(/\s+/)[0];
     const link = `${siteOrigin}/rsvp/${rsvpLinkToken(guest.rsvp_token)}`;
     const body = `Hi ${firstName}, it's ${senderFirst}. You're invited to A Taste of Special Conventions on Sunday, August 30, 2026. Please RSVP here: ${link}`;
-    return `sms:${guest.guest_phone}?&body=${encodeURIComponent(body)}`;
+    return `sms:${recipient}${smsBodySeparator()}${encodeURIComponent(body)}`;
   };
 
   // "New guests RSVP'd" since user last acknowledged.
@@ -1179,6 +1193,11 @@ function MyGuestsGroup({
                     return (
                       <a
                         href={href}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          window.location.href = href;
+                        }}
+                        aria-label={`Send text to ${guest.guest_name}`}
                         className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-terracotta text-cream text-xs font-medium hover:bg-terracotta/90"
                       >
                         <MessageSquare className="w-4 h-4" /> Send text
