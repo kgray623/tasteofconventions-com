@@ -245,7 +245,6 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
       // Resolve "my" host ids by user id + phone tail + display name.
       const { mineHostIds, myInviters } = await resolveMyHostIds(supabase, userId, inviterRows);
 
-      const hostIdArr = Array.from(mineHostIds);
       const myGroupIds = new Set(
         invitationRows
           .filter((inv) => inv.host_id && mineHostIds.has(inv.host_id))

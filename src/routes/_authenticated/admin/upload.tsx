@@ -1526,7 +1526,7 @@ function UploadPage() {
           <div className="flex items-center gap-2 flex-wrap">
             <CheckCircle2 className="w-5 h-5 text-terracotta" />
             <p className="font-medium">
-              Confirmed RSVPs — {inPersonPeople} in person · {zoomPeople} on Zoom ({confirmedPeople} people / {confirmedGuests.length} responses)
+              Confirmed RSVPs — {inPersonPeople} in person · {zoomPeople} on Zoom ({confirmedPeople} people / {savedGuestRollup.responses.confirmed} responses)
             </p>
           </div>
           {savedLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}

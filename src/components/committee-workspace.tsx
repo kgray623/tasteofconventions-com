@@ -529,8 +529,6 @@ export function CommitteeWorkspace() {
   })));
 
   const confirmedGuests = [...myGuests].filter((g) => g.rsvp_status === "yes").sort(byName);
-  const confirmedInPersonGuests = confirmedGuests.filter((g) => g.attendance_mode !== "zoom");
-  const confirmedVirtualGuests = confirmedGuests.filter((g) => g.attendance_mode === "zoom");
   const confirmedInPersonPeople = myGuestRollup.people.inPerson;
   const confirmedVirtualPeople = myGuestRollup.people.zoom;
   const confirmedResponseCount = myGuestRollup.responses.confirmed;
