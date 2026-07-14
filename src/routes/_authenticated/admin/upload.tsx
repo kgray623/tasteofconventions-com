@@ -1733,7 +1733,7 @@ function UploadPage() {
                     {sec.label} ({sec.rows.length})
                   </div>
                 )}
-                {!(sec.label === "No" && collapsedSections[sec.label]) && (
+                {!(sec.label === "Declined" && collapsedSections[sec.label]) && (
                 <div className="divide-y divide-border">
 
 
