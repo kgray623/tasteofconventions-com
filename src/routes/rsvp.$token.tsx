@@ -44,7 +44,6 @@ type CuisineSelection = { cuisine: string; qty: number };
 type RsvpTokenData = {
   invitation: {
     guest_name: string;
-    guest_email?: string | null;
     guest_phone?: string | null;
     events: {
       title: string;
@@ -320,11 +319,6 @@ function RsvpPage() {
             <p>
               <strong>Name:</strong> {data.invitation.guest_name}
             </p>
-            {data.invitation.guest_email && (
-              <p>
-                <strong>Email:</strong> {data.invitation.guest_email}
-              </p>
-            )}
             {data.invitation.guest_phone && (
               <p>
                 <strong>Phone:</strong> {data.invitation.guest_phone}

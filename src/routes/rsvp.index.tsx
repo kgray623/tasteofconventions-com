@@ -153,7 +153,6 @@ function PreviewPage() {
       await save({
         data: {
           guest_name: name.trim() || "Guest",
-          guest_email: null,
           guest_phone: phone.trim() || null,
           password: phoneDigits,
           status,
