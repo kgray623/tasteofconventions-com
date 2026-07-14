@@ -759,11 +759,6 @@ export function CommitteeWorkspace() {
             >
               {manualRefreshingGuests ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
             </Button>
-            <Button asChild variant="outline" size="sm">
-              <Link to="/invitations/new">
-                <UserPlus className="w-4 h-4 mr-2" /> Add guest
-              </Link>
-            </Button>
           </div>
         </div>
         <CollapsibleContent>
