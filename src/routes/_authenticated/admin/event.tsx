@@ -214,7 +214,7 @@ function EditEventPage() {
     setSaving(false);
     if (error) return toast.error(error.message);
     setInitial(current);
-    toast.success("Event updated. Guest screens and emails will now show the new details.");
+    toast.success("Event updated. Guest screens now show the new details.");
   };
 
   if (loading || rolesLoading) return <div className="text-muted-foreground">Loading event…</div>;
