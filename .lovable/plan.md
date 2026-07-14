@@ -1,26 +1,37 @@
-Timestamp: 2026-07-14 20:57 UTC
+## Reorder RSVP totals card — My RSVPs first
 
-Plan to make sure this does not show up again:
+On the committee dashboard, the "RSVP totals" card currently shows the event-wide totals first and the personal "My RSVPs" block underneath. Flip the two blocks so personal totals come first.
 
-1. Remove the actual guest-facing email surface completely
-   - Audit all current admin/committee/RSVP/import routes for any visible email label, input, placeholder, parser hint, CSV column, export field, or validation message.
-   - Remove remaining user-facing email wording from upload/import parsing helpers where it could surface in errors or imported contact text.
-   - Keep phone/SMS-only behavior intact and do not touch submitted guest data except to hide/remove email from UI paths.
+### Changes
 
-2. Separate transactional infrastructure from guest data
-   - Leave only backend/auth transactional email routes/templates if they are required by the platform infrastructure.
-   - Confirm none of those routes/components are linked from admin guest upload, RSVP, dashboard, committee, or public guest flows.
+**`src/components/rsvp-totals-card.tsx`**
+- Move the "My RSVPs" section (currently lines ~124–160: label, personal 4-up stat grid, "My Zoom guests RSVP'd" line, `RequestMoreButton`) to render **before** the event-wide block.
+- Event-wide block (Total seats / RSVP requests / Seats available / In-person confirmed grid, progress bar, "RSVP Zooms" line) moves **below** the personal block.
+- Insert a divider (`border-t pt-3`) above the event-wide block instead of above the personal one, so the visual grouping still reads cleanly.
+- Keep the closing italic disclaimer ("Only in-person guests use spots…") at the very bottom, unchanged.
+- No changes to data fetching, math, `RequestMoreButton`, `Stat`, or props.
 
-3. Verify on the exact route and viewport
-   - Check `/admin/upload`, `/dashboard`, committee guest list, RSVP routes, and admin guest list at the mobile viewport the user is using.
-   - Inspect the rendered DOM for `email`, `e-mail`, and `mail` labels/inputs/placeholders, not just the source code.
-   - Verify there is no email field visible before saying it is fixed.
+### Resulting order inside the card
 
-4. Verify security/dependency status separately
-   - Re-run the current security/dependency scan after the package/lockfile update.
-   - If the scanner is stale, trigger a fresh scan and only report the fresh result.
-   - If a finding still appears, identify whether it is stale scan cache vs. a real remaining dependency path and address the real dependency path.
+```text
+[ My RSVPs ]
+  My RSVP request | My guests uploaded | My in-person RSVP'd | My in-person spots left
+  My Zoom guests RSVP'd: N
+  [Request more] (when applicable)
+────────────────────────
+[ Event totals ]
+  Total seats | RSVP requests | Seats available | In-person confirmed
+  progress bar
+  RSVP Zooms: N
+Only in-person guests use spots…
+```
 
-5. Publish readiness
-   - After verification passes, tell you exactly what was checked and whether publishing should pick it up.
-   - I will not claim it is done unless the live preview DOM and relevant scan result confirm it.
+### Committee dashboard card order (unchanged, matches request)
+
+1. RSVP totals card (now My RSVPs → Everyone inside)
+2. My Guests Uploaded card
+
+### Out of scope
+
+- No changes to `committee-workspace.tsx` layout, `My Guests Uploaded`, or the `My RSVP confirmations` section further down.
+- No new data, no schema changes.
