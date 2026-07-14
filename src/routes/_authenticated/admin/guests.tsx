@@ -93,6 +93,22 @@ function GuestsPage() {
   const activeAudience = audience ?? "all";
   const activeSort: SortMode = sort ?? "alpha";
 
+  const rollupRows = (sourceRows: Row[]) => {
+    const groupIds = buildDuplicateGroupIds(sourceRows.map((r) => ({
+      id: r.invitation_id,
+      guest_name: r.name,
+      guest_email: r.email,
+      guest_phone: r.phone,
+    })));
+    return computeRsvpRollup(sourceRows.map((r) => ({
+      id: r.invitation_id,
+      groupId: groupIds.get(r.invitation_id) ?? r.invitation_id,
+      status: r.rsvp_status === "pending" ? null : r.rsvp_status,
+      party_size: r.party_size,
+      attendance_mode: r.attendance_mode,
+    })));
+  };
+
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -111,19 +127,7 @@ function GuestsPage() {
     const rsvps: Record<StatusFilter, number> = { all: 0, confirmed: 0, declined: 0, maybe: 0, waitlist: 0, pending: 0 };
     const modePeople = { in_person: 0, zoom: 0 };
     if (!rows) return { people: c, rsvps, modePeople };
-    const groupIds = buildDuplicateGroupIds(rows.map((r) => ({
-      id: r.invitation_id,
-      guest_name: r.name,
-      guest_email: r.email,
-      guest_phone: r.phone,
-    })));
-    const rollup = computeRsvpRollup(rows.map((r) => ({
-      id: r.invitation_id,
-      groupId: groupIds.get(r.invitation_id) ?? r.invitation_id,
-      status: r.rsvp_status === "pending" ? null : r.rsvp_status,
-      party_size: r.party_size,
-      attendance_mode: r.attendance_mode,
-    })));
+    const rollup = rollupRows(rows);
     c.all = rollup.people.allIfEveryoneShowed;
     c.confirmed = rollup.people.confirmed;
     c.declined = rollup.people.declined;
@@ -192,6 +196,29 @@ function GuestsPage() {
     });
   }, [rows, activeStatus, activeAudience, mode, query, activeSort]);
 
+  const filteredCounts = useMemo(() => {
+    const rollup = rollupRows(filtered);
+    return {
+      people: {
+        all: rollup.people.allIfEveryoneShowed,
+        confirmed: rollup.people.confirmed,
+        declined: rollup.people.declined,
+        maybe: rollup.people.maybe,
+        waitlist: rollup.people.waitlist,
+        pending: rollup.responses.pending,
+      } as Record<StatusFilter, number>,
+      rsvps: {
+        all: rollup.responses.uploaded,
+        confirmed: rollup.responses.confirmed,
+        declined: rollup.responses.declined,
+        maybe: rollup.responses.maybe,
+        waitlist: rollup.responses.waitlist,
+        pending: rollup.responses.pending,
+      } as Record<StatusFilter, number>,
+      modePeople: { in_person: rollup.people.inPerson, zoom: rollup.people.zoom },
+    };
+  }, [filtered]);
+
 
   const exportCsv = () => {
     const headers = ["name", "phone", "email", "audience", "status", "party_size", "attendance_mode", "responded_at"];
@@ -228,10 +255,10 @@ function GuestsPage() {
             {rows === null
               ? "Loading…"
               : activeStatus === "confirmed"
-                ? <>Confirmed: <span className="tabular-nums font-medium text-ink">{counts.people.confirmed}</span> people across <span className="tabular-nums font-medium text-ink">{counts.rsvps.confirmed}</span> RSVPs (<span className="tabular-nums">{counts.modePeople.in_person}</span> in person · <span className="tabular-nums">{counts.modePeople.zoom}</span> Zoom).</>
+                ? <>Confirmed: <span className="tabular-nums font-medium text-ink">{filteredCounts.people.confirmed}</span> people across <span className="tabular-nums font-medium text-ink">{filteredCounts.rsvps.confirmed}</span> RSVPs (<span className="tabular-nums">{filteredCounts.modePeople.in_person}</span> in person · <span className="tabular-nums">{filteredCounts.modePeople.zoom}</span> Zoom).</>
                 : activeStatus === "pending"
-                  ? <>Pending: <span className="tabular-nums font-medium text-ink">{counts.rsvps.pending}</span> guests with no RSVP yet (of <span className="tabular-nums font-medium text-ink">{counts.rsvps.all}</span> total uploaded).</>
-                  : <>Showing <span className="tabular-nums font-medium text-ink">{counts.people[activeStatus]}</span> people across <span className="tabular-nums font-medium text-ink">{counts.rsvps[activeStatus]}</span> RSVPs (of <span className="tabular-nums font-medium text-ink">{counts.rsvps.all}</span> total uploaded).</>
+                  ? <>Pending: <span className="tabular-nums font-medium text-ink">{filteredCounts.rsvps.pending}</span> guests with no RSVP yet (of <span className="tabular-nums font-medium text-ink">{counts.rsvps.all}</span> total uploaded).</>
+                  : <>Showing <span className="tabular-nums font-medium text-ink">{filteredCounts.people[activeStatus]}</span> people across <span className="tabular-nums font-medium text-ink">{filteredCounts.rsvps[activeStatus]}</span> RSVPs (of <span className="tabular-nums font-medium text-ink">{counts.rsvps.all}</span> total uploaded).</>
             }
           </p>
         </div>
