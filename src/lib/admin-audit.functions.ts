@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
 
@@ -94,6 +93,7 @@ export const getAdminAudit = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const [invRes, rsvpRes, preRes] = await Promise.all([
       supabaseAdmin
@@ -209,6 +209,7 @@ export const getReconciliationRows = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const [invRes, rsvpRes, preRes] = await Promise.all([
       supabaseAdmin
