@@ -41,11 +41,6 @@ export type CommitteeWorkspaceGuestsResult = {
   myHostIds: string[];
 };
 
-const digitsOnly = (s: string | null | undefined) =>
-  (s ?? "").replace(/\D/g, "");
-const normName = (s: string | null | undefined) =>
-  (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
-
 type InviterIdentity = {
   id?: string;
   host_id: string | null;
@@ -55,35 +50,6 @@ type InviterIdentity = {
   active?: boolean | null;
   requested_quota?: number | null;
 };
-
-async function resolveMyHostIds(
-  supabase: SupabaseClient<Database>,
-  userId: string,
-  inviterRows: InviterIdentity[],
-) {
-  const { data: authUser } = await supabase.auth.getUser();
-  const myPhoneTail = digitsOnly(authUser?.user?.phone).slice(-10);
-  let myName = "";
-  const { data: prof } = await supabase
-    .from("profiles")
-    .select("display_name")
-    .eq("id", userId)
-    .maybeSingle();
-  myName = normName(prof?.display_name);
-
-  const mineHostIds = new Set<string>([userId]);
-  const myInviters = inviterRows.filter((r) => {
-    if (!r.host_id) return false;
-    if (r.host_id === userId) return true;
-    const rowTail = digitsOnly(r.phone).slice(-10);
-    if (myPhoneTail && rowTail && rowTail === myPhoneTail) return true;
-    if (myName && normName(r.name) === myName) return true;
-    return false;
-  });
-  myInviters.forEach((r) => r.host_id && mineHostIds.add(r.host_id));
-
-  return { mineHostIds, myInviters };
-}
 
 export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -116,7 +82,24 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
     if (rsvpsRes.error) throw new Error(rsvpsRes.error.message);
 
     const inviterRows = (invitersRes.data ?? []) as InviterIdentity[];
-    const { mineHostIds } = await resolveMyHostIds(supabase, userId, inviterRows);
+    const digitsOnly = (s: string | null | undefined) => (s ?? "").replace(/\D/g, "");
+    const normName = (s: string | null | undefined) => (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
+    const { data: authUser } = await supabase.auth.getUser();
+    const myPhoneTail = digitsOnly(authUser?.user?.phone).slice(-10);
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", userId)
+      .maybeSingle();
+    const myName = normName(prof?.display_name);
+    const mineHostIds = new Set<string>([userId]);
+    inviterRows.forEach((r) => {
+      if (!r.host_id) return;
+      if (r.host_id === userId) mineHostIds.add(r.host_id);
+      const rowTail = digitsOnly(r.phone).slice(-10);
+      if (myPhoneTail && rowTail && rowTail === myPhoneTail) mineHostIds.add(r.host_id);
+      if (myName && normName(r.name) === myName) mineHostIds.add(r.host_id);
+    });
 
     const invitationRows = (invitationsRes.data ?? []) as Array<{
       id: string;
@@ -242,8 +225,26 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
 
     let mine: RsvpTotalsResult["mine"] = null;
     if (data.includePersonal) {
-      // Resolve "my" host ids by user id + phone tail + display name.
-      const { mineHostIds, myInviters } = await resolveMyHostIds(supabase, userId, inviterRows);
+      const digitsOnly = (s: string | null | undefined) => (s ?? "").replace(/\D/g, "");
+      const normName = (s: string | null | undefined) => (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
+      const { data: authUser } = await supabase.auth.getUser();
+      const myPhoneTail = digitsOnly(authUser?.user?.phone).slice(-10);
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", userId)
+        .maybeSingle();
+      const myName = normName(prof?.display_name);
+      const mineHostIds = new Set<string>([userId]);
+      const myInviters = inviterRows.filter((r) => {
+        if (!r.host_id) return false;
+        if (r.host_id === userId) return true;
+        const rowTail = digitsOnly(r.phone).slice(-10);
+        if (myPhoneTail && rowTail && rowTail === myPhoneTail) return true;
+        if (myName && normName(r.name) === myName) return true;
+        return false;
+      });
+      myInviters.forEach((r) => r.host_id && mineHostIds.add(r.host_id));
 
       const myGroupIds = new Set(
         invitationRows
