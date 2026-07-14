@@ -31,7 +31,6 @@ type Row = {
   created_at: string;
   name: string;
   phone: string;
-  email: string;
   audience: string;
   is_committee: boolean;
   sms_sent: string;
@@ -86,7 +85,6 @@ function rollupRows(sourceRows: Row[]) {
   const groupIds = buildDuplicateGroupIds(sourceRows.map((r) => ({
     id: r.invitation_id,
     guest_name: r.name,
-    guest_email: r.email,
     guest_phone: r.phone,
   })));
   return computeRsvpRollup(sourceRows.map((r) => ({
@@ -177,7 +175,7 @@ function GuestsPage() {
       if (activeAudience === "committee" && !r.is_committee) return false;
       if (q) {
         const nameNorm = r.name.toLowerCase().replace(/[^a-z]/g, "");
-        const hay = `${r.name} ${r.phone} ${r.email}`.toLowerCase();
+        const hay = `${r.name} ${r.phone}`.toLowerCase();
         if (hay.includes(q)) return true;
         if (qNorm && (nameNorm.includes(qNameNorm) || r.phone.replace(/\D/g, "").includes(qNorm))) return true;
         // Fuzzy spelling match (e.g. "Daisy" finds "Deisy")
@@ -221,11 +219,11 @@ function GuestsPage() {
 
 
   const exportCsv = () => {
-    const headers = ["name", "phone", "email", "audience", "status", "party_size", "attendance_mode", "responded_at"];
+    const headers = ["name", "phone", "audience", "status", "party_size", "attendance_mode", "responded_at"];
     const lines = [headers.join(",")];
     for (const r of filtered) {
       lines.push([
-        r.name, r.phone, r.email, r.audience, r.rsvp_status,
+        r.name, r.phone, r.audience, r.rsvp_status,
         r.party_size, r.attendance_mode, r.responded_at,
       ].map(escapeCsv).join(","));
     }
@@ -297,7 +295,7 @@ function GuestsPage() {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search name, phone, or email"
+            placeholder="Search name or phone"
             className="pl-9"
           />
         </div>
