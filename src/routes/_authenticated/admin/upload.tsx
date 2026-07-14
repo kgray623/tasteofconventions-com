@@ -73,14 +73,12 @@ class UploadErrorBoundary extends Component<{ children: ReactNode }, { error: Er
 // Parse the friendly duplicate-guest error raised by the DB trigger
 // `prevent_duplicate_invitation` (ERRCODE 23505, message prefixed with
 // DUPLICATE_GUEST_PHONE: or DUPLICATE_GUEST_EMAIL:).
-function parseDuplicateGuestError(err: unknown): { kind: "phone" | "email"; existingName: string } | null {
+function parseDuplicateGuestError(err: unknown): { kind: "phone"; existingName: string } | null {
   if (!err || typeof err !== "object") return null;
   const msg = String((err as { message?: string }).message ?? "");
   const code = String((err as { code?: string }).code ?? "");
   const phone = msg.match(/DUPLICATE_GUEST_PHONE:\s*.+?\(matches\s+(.+)\)/i);
   if (phone) return { kind: "phone", existingName: phone[1].trim() };
-  const email = msg.match(/DUPLICATE_GUEST_EMAIL:\s*.+?\(matches\s+(.+)\)/i);
-  if (email) return { kind: "email", existingName: email[1].trim() };
   if (code === "23505" && /invitations/i.test(msg)) {
     return { kind: "phone", existingName: "an existing guest" };
   }
@@ -118,7 +116,7 @@ function nameSimilarity(a: string, b: string): number {
 
 
 // Browsers that support the Contact Picker API (Chrome on Android)
-type ContactInfo = { name?: string[]; email?: string[]; tel?: string[] };
+type ContactInfo = { name?: string[]; tel?: string[] };
 interface ContactsManager {
   select: (props: string[], opts?: { multiple?: boolean }) => Promise<ContactInfo[]>;
   getProperties: () => Promise<string[]>;
@@ -152,7 +150,6 @@ function parseVCards(text: string): Record<string, string>[] {
       // unfold folded lines (RFC 6350)
       const lines = body.replace(/\r?\n[ \t]/g, "").split(/\r?\n/);
       let name = "",
-        email = "",
         phone = "";
       for (const raw of lines) {
         const idx = raw.indexOf(":");
@@ -164,12 +161,11 @@ function parseVCards(text: string): Record<string, string>[] {
         else if (!name && left.startsWith("N")) {
           const [last, first] = value.split(";");
           name = [first, last].filter(Boolean).join(" ").trim();
-        } else if (!email && left.startsWith("EMAIL")) email = value;
         else if (!phone && left.startsWith("TEL")) phone = value;
       }
-      return { name, email, phone, notes: "" };
+      return { name, phone, notes: "" };
     })
-    .filter((r) => r.name || r.email || r.phone);
+    .filter((r) => r.name || r.phone);
 }
 
 export const Route = createFileRoute("/_authenticated/admin/upload")({
@@ -180,7 +176,7 @@ export const Route = createFileRoute("/_authenticated/admin/upload")({
   ),
 });
 
-type Row = { guest_name: string; guest_email: string; guest_phone: string; notes: string };
+type Row = { guest_name: string; guest_phone: string; notes: string };
 type Parsed = Row & { _row: number; _dupReason?: string };
 
 const norm = (s: string) => (s || "").trim().toLowerCase();
@@ -214,7 +210,7 @@ function parseContactText(value: string) {
           .trim(),
       )
       .find((part) => /[a-zA-Z]/.test(part)) ?? "";
-  return { name, phone, email };
+  return { name, phone };
 }
 
 const uploadDraftKey = (userId?: string) => `admin-upload-draft:${userId ?? "unknown"}`;
@@ -224,16 +220,16 @@ function loadUploadDraft(userId?: string) {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(uploadDraftKey(userId));
-    return raw ? JSON.parse(raw) as { pasted?: string; quick?: { name?: string; phone?: string; email?: string }; rows?: Parsed[] } : null;
+    return raw ? JSON.parse(raw) as { pasted?: string; quick?: { name?: string; phone?: string }; rows?: Parsed[] } : null;
   } catch {
     return null;
   }
 }
 
-function saveUploadDraft(userId: string | undefined, pasted: string, quick: { name: string; phone: string; email: string }, rows: Parsed[]) {
+function saveUploadDraft(userId: string | undefined, pasted: string, quick: { name: string; phone: string }, rows: Parsed[]) {
   if (typeof window === "undefined") return;
   try {
-    if (!pasted.trim() && !quick.name.trim() && !quick.phone.trim() && !quick.email.trim() && rows.length === 0) {
+    if (!pasted.trim() && !quick.name.trim() && !quick.phone.trim() && rows.length === 0) {
       window.localStorage.removeItem(uploadDraftKey(userId));
       return;
     }
@@ -262,7 +258,7 @@ function UploadPage() {
     null,
   );
   const [pasted, setPasted] = useState("");
-  const [quick, setQuick] = useState({ name: "", phone: "", email: "" });
+  const [quick, setQuick] = useState({ name: "", phone: "" });
   const [quickBusy, setQuickBusy] = useState(false);
   const [quickAdded, setQuickAdded] = useState(0);
   const [canPickContacts, setCanPickContacts] = useState(false);
@@ -271,7 +267,6 @@ function UploadPage() {
     {
       id: string;
       guest_name: string;
-      guest_email: string | null;
       guest_phone: string | null;
       rsvp_token: string;
       invite_sent_at: string | null;
@@ -327,7 +322,7 @@ function UploadPage() {
       let query = supabase
         .from("invitations")
         .select(
-          "id,guest_name,guest_email,guest_phone,rsvp_token,invite_sent_at,is_committee,host_id,created_at,rsvps(status,party_size,attendance_mode)",
+          "id,guest_name,guest_phone,rsvp_token,invite_sent_at,is_committee,host_id,created_at,rsvps(status,party_size,attendance_mode)",
         )
         .eq("event_id", evId)
         .order("created_at", { ascending: false });
@@ -338,7 +333,6 @@ function UploadPage() {
       type Row = {
         id: string;
         guest_name: string;
-        guest_email: string | null;
         guest_phone: string | null;
         rsvp_token: string;
         invite_sent_at: string | null;
@@ -370,7 +364,6 @@ function UploadPage() {
           return {
             id: r.id,
             guest_name: r.guest_name,
-            guest_email: r.guest_email,
             guest_phone: r.guest_phone,
             rsvp_token: r.rsvp_token,
             invite_sent_at: r.invite_sent_at,
