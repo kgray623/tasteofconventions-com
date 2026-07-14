@@ -1228,6 +1228,87 @@ function MyGuestsGroup({
   );
 }
 
+function RsvpActionSelect({
+  guest,
+  settingRsvpId,
+  setRsvpFor,
+}: {
+  guest: CommitteeGuest;
+  settingRsvpId: string | null;
+  setRsvpFor: (guest: CommitteeGuest, value: RsvpAction) => Promise<void>;
+}) {
+  return (
+    <Select
+      value=""
+      disabled={settingRsvpId === guest.id}
+      onValueChange={(v) => void setRsvpFor(guest, v as RsvpAction)}
+    >
+      <SelectTrigger className="h-8 w-[160px] text-xs">
+        <SelectValue placeholder={settingRsvpId === guest.id ? "Saving…" : (guest.rsvp_status === "yes" || guest.rsvp_status === "no" ? "Change RSVP" : "Record RSVP")} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="no">Decline</SelectItem>
+        <SelectItem value="inperson1">RSVP in person — 1</SelectItem>
+        <SelectItem value="inperson2">RSVP in person — 2</SelectItem>
+        <SelectItem value="inperson3">RSVP in person — 3</SelectItem>
+        <SelectItem value="inperson4">RSVP in person — 4</SelectItem>
+        <SelectItem value="zoom1">RSVP by Zoom — 1</SelectItem>
+        <SelectItem value="zoom2">RSVP by Zoom — 2</SelectItem>
+        <SelectItem value="zoom3">RSVP by Zoom — 3</SelectItem>
+        <SelectItem value="zoom4">RSVP by Zoom — 4</SelectItem>
+        <SelectItem value="clear">Clear RSVP</SelectItem>
+      </SelectContent>
+    </Select>
+  );
+}
+
+function SendTextButton({
+  guest,
+  info,
+  onSent,
+}: {
+  guest: CommitteeGuest;
+  info: { phone: string; body: string };
+  onSent: (guest: CommitteeGuest, checked: boolean) => Promise<void>;
+}) {
+  return (
+    <a
+      href={`sms:${info.phone}?&body=${encodeURIComponent(info.body)}`}
+      onClick={() => {
+        if (!guest.invite_sent_at) void onSent(guest, true);
+      }}
+      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-sage text-cream text-xs font-medium hover:bg-sage/90"
+      aria-label={`Send text to ${guest.guest_name || "guest"}`}
+    >
+      <MessageSquare className="w-4 h-4" /> {guest.invite_sent_at ? "Resend text" : "Send text"}
+    </a>
+  );
+}
+
+function SentTextControl({
+  guest,
+  markingSentId,
+  onToggleSent,
+}: {
+  guest: CommitteeGuest;
+  markingSentId: string | null;
+  onToggleSent: (guest: CommitteeGuest, checked: boolean) => Promise<void>;
+}) {
+  const sentLabel = guest.invite_sent_at
+    ? `Text sent ${new Date(guest.invite_sent_at).toLocaleDateString()}`
+    : "I sent the text";
+  return (
+    <label className="inline-flex items-center gap-2 min-h-8 px-2 rounded-md border border-input text-xs cursor-pointer hover:bg-accent">
+      <Checkbox
+        checked={!!guest.invite_sent_at}
+        disabled={markingSentId === guest.id}
+        onCheckedChange={(value) => void onToggleSent(guest, value === true)}
+      />
+      <span>{markingSentId === guest.id ? "Saving…" : sentLabel}</span>
+    </label>
+  );
+}
+
 function SmsCopyButton({ phone, body, guestName }: { phone: string; body: string; guestName: string }) {
   const onClick = async () => {
     let copied = false;
