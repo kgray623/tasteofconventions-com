@@ -668,7 +668,26 @@ export function CommitteeWorkspace() {
         </Button>
       )}
 
-      <RsvpTotalsCard personalHostIds={myHostIds.length ? myHostIds : user ? [user.id] : []} />
+      <Card className="overflow-hidden border-terracotta/30">
+        <Collapsible open={openTotals} onOpenChange={() => setOpenTotals((v) => !v)}>
+          <CollapsibleTrigger asChild>
+            <button
+              type="button"
+              className="w-full flex items-center justify-between gap-2 p-4 text-left hover:bg-muted/40"
+            >
+              <span className="flex items-center gap-2 font-semibold">
+                <ListChecks className="w-5 h-5 text-terracotta" /> RSVP totals
+              </span>
+              <ChevronDown className={`w-4 h-4 transition-transform ${openTotals ? "rotate-180" : ""}`} />
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="p-4 pt-0">
+              <RsvpTotalsCard personalHostIds={myHostIds.length ? myHostIds : user ? [user.id] : []} />
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      </Card>
 
       <Card className="overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">
