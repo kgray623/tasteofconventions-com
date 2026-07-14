@@ -158,9 +158,14 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
 
 export const getRsvpTotals = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { includePersonal?: boolean } | undefined) => input ?? {})
+  .inputValidator((input: { includePersonal?: boolean; eventId?: string } | undefined) => input ?? {})
   .handler(async ({ data, context }): Promise<RsvpTotalsResult> => {
     const { supabase, userId } = context;
+
+    let invitationsQuery = supabase
+      .from("invitations")
+      .select("id,host_id,guest_name,guest_phone_normalized");
+    if (data.eventId) invitationsQuery = invitationsQuery.eq("event_id", data.eventId);
 
     const [invitersRes, rsvpsRes, invitationsRes] = await Promise.all([
       supabase
@@ -169,9 +174,7 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
       supabase
         .from("rsvps")
         .select("party_size,status,invitation_id,attendance_mode"),
-      supabase
-        .from("invitations")
-        .select("id,host_id,guest_name,guest_phone_normalized"),
+      invitationsQuery,
     ]);
     const inviterRows = invitersRes.data ?? [];
     const rsvpRows = rsvpsRes.data ?? [];
