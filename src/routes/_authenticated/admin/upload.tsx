@@ -1286,7 +1286,7 @@ function UploadPage() {
         dupeNames = insertedNames.filter((_, i) => dupeIdSet.has(insertedIds[i]));
       }
 
-      await loadSavedGuests(eventId);
+      await Promise.all([loadSavedGuests(eventId), loadEventSeatTotals(eventId)]);
 
       if (insertedIds.length) {
         toast.success(
@@ -1418,6 +1418,7 @@ function UploadPage() {
       saveUploadDraft(user.id, pasted, { name: "", phone: "" }, rows);
       toast.success(`Added ${name}`);
       void loadSavedGuests(eventId);
+      void loadEventSeatTotals(eventId);
     } catch (e) {
       const dup = parseDuplicateGuestError(e);
       if (dup) {
