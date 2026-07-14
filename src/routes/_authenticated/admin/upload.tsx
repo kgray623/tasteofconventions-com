@@ -1719,7 +1719,7 @@ function UploadPage() {
 
             {sections.map((sec) => sec.rows.length === 0 ? null : (
               <div key={sec.label}>
-                {sec.label === "No" ? (
+                {sec.label === "Declined" ? (
                   <button
                     type="button"
                     onClick={() => setCollapsedSections((prev) => ({ ...prev, [sec.label]: !prev[sec.label] }))}
