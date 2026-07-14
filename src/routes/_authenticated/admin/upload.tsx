@@ -862,7 +862,6 @@ function UploadPage() {
       .map((r, i) => ({
         _row: i + 1,
         guest_name: pick(r, ["name", "guest", "guest name", "full name"]),
-        guest_email: pick(r, ["email", "e-mail", "email address"]),
         guest_phone: pick(r, ["phone", "mobile", "cell", "phone number"]),
         notes: pick(r, ["notes", "note", "comment", "comments"]),
       }))
@@ -993,7 +992,7 @@ function UploadPage() {
 
   const onPaste = async () => {
     setDone(null);
-    const emailRegex = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
+    const ignoredEmailPattern = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
     const phoneRegex =
       /(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)\d{3}[\s.-]?\d{4}(?:\s*(?:x|ext\.?)\s*\d{1,6})?|\b\d{7,15}\b/i;
     const labelRegex =
@@ -1006,27 +1005,21 @@ function UploadPage() {
       .filter(Boolean);
 
     const raw: Record<string, string>[] = [];
-    let cur: Record<string, string> = { name: "", email: "", phone: "", notes: "" };
+    let cur: Record<string, string> = { name: "", phone: "", notes: "" };
     const flush = () => {
-      if (cur.name || cur.email || cur.phone) raw.push(cur);
-      cur = { name: "", email: "", phone: "", notes: "" };
+      if (cur.name || cur.phone) raw.push(cur);
+      cur = { name: "", phone: "", notes: "" };
     };
 
     const addName = (value: string) => {
       const cleaned = value
-        .replace(emailRegex, " ")
+        .replace(ignoredEmailPattern, " ")
         .replace(phoneRegex, " ")
         .replace(/\s+/g, " ")
         .trim();
       if (!cleaned || !/[a-zA-Z]/.test(cleaned)) return;
       if (cur.name) flush();
       cur.name = cleaned;
-    };
-    const addEmail = (value: string) => {
-      const email = value.match(emailRegex)?.[0]?.trim() ?? "";
-      if (!email) return;
-      if (cur.email) flush();
-      cur.email = email;
     };
     const addPhone = (value: string) => {
       const phone = value.match(phoneRegex)?.[0]?.trim() ?? value.trim();
@@ -1045,14 +1038,13 @@ function UploadPage() {
       } else if (["mobile", "phone", "cell"].includes(labelKind)) {
         addPhone(value);
       } else if (["email", "e-mail"].includes(labelKind)) {
-        addEmail(value);
+        continue;
       } else {
-        const email = value.match(emailRegex)?.[0] ?? "";
+        const ignoredEmail = value.match(ignoredEmailPattern)?.[0] ?? "";
         const phone = value.match(phoneRegex)?.[0] ?? "";
         addName(value);
-        if (email) addEmail(email);
         if (phone) addPhone(phone);
-        if (!email && !phone && !/[a-zA-Z]/.test(value)) {
+        if (!ignoredEmail && !phone && !/[a-zA-Z]/.test(value)) {
           cur.notes = cur.notes ? `${cur.notes} ${value}` : value;
         }
       }
@@ -1177,7 +1169,6 @@ function UploadPage() {
             event_id: eventId,
             host_id: user.id,
             guest_name: name,
-            guest_email: (c.email || "").trim() || null,
             guest_phone: (c.phone || "").trim() || null,
             notes: null,
             is_committee: importAsCommittee,
@@ -1205,7 +1196,7 @@ function UploadPage() {
       }
 
 
-      // Find duplicates flagged by the database trigger (email / phone / fuzzy name).
+      // Find duplicates flagged by the database trigger (phone / fuzzy name).
       let dupeNames: string[] = [];
       if (insertedIds.length) {
         const { data: flags } = await supabase
