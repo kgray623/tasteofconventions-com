@@ -192,7 +192,7 @@ function pick(obj: Record<string, unknown>, keys: string[]): string {
 }
 
 function parseContactText(value: string) {
-  const email = value.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0]?.trim() ?? "";
+  const ignoredAddress = value.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0]?.trim() ?? "";
   const phone =
     value
       .match(
@@ -200,14 +200,14 @@ function parseContactText(value: string) {
       )?.[0]
       ?.trim() ?? "";
   let nameSource = value;
-  if (email) nameSource = nameSource.replace(email, " ");
+  if (ignoredAddress) nameSource = nameSource.replace(ignoredAddress, " ");
   if (phone) nameSource = nameSource.replace(phone, " ");
   const name =
     nameSource
       .split(/\r?\n|[,;|\t]/)
       .map((part) =>
         part
-          .replace(/^\s*(name|full name|guest|mobile|phone|cell|email|e-mail)\s*[:\-–—]?\s*/i, "")
+          .replace(/^\s*(name|full name|guest|mobile|phone|cell|contact)\s*[:\-–—]?\s*/i, "")
           .trim(),
       )
       .find((part) => /[a-zA-Z]/.test(part)) ?? "";
@@ -1003,11 +1003,12 @@ function UploadPage() {
 
   const onPaste = async () => {
     setDone(null);
-    const ignoredEmailPattern = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
+    const ignoredAddressPattern = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
     const phoneRegex =
       /(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)\d{3}[\s.-]?\d{4}(?:\s*(?:x|ext\.?)\s*\d{1,6})?|\b\d{7,15}\b/i;
     const labelRegex =
-      /^\s*(?:\[(name|full name|guest|mobile|phone|cell|email|e-mail)\]|(name|full name|guest|mobile|phone|cell|email|e-mail))\s*[:\-–—]?\s*(.*)$/i;
+      /^\s*(?:\[(name|full name|guest|mobile|phone|cell|contact)\]|(name|full name|guest|mobile|phone|cell|contact))\s*[:\-–—]?\s*(.*)$/i;
+    const genericPrefixRegex = /^\s*(?:\[[^\]]{1,32}\]|[A-Za-z][A-Za-z\s-]{0,32})\s*[:\-–—]\s*(.*)$/;
 
     const tokens = pasted
       .split(/\r?\n/)
@@ -1024,7 +1025,7 @@ function UploadPage() {
 
     const addName = (value: string) => {
       const cleaned = value
-        .replace(ignoredEmailPattern, " ")
+        .replace(ignoredAddressPattern, " ")
         .replace(phoneRegex, " ")
         .replace(/\s+/g, " ")
         .trim();
@@ -1042,20 +1043,19 @@ function UploadPage() {
     for (const tok of tokens) {
       const label = tok.match(labelRegex);
       const labelKind = (label?.[1] ?? label?.[2] ?? "").toLowerCase();
-      const value = label ? label[3].trim() : tok;
+      const generic = !label ? tok.match(genericPrefixRegex) : null;
+      const value = label ? label[3].trim() : generic ? generic[1].trim() : tok;
 
       if (["name", "full name", "guest"].includes(labelKind)) {
         addName(value);
       } else if (["mobile", "phone", "cell"].includes(labelKind)) {
         addPhone(value);
-      } else if (["email", "e-mail"].includes(labelKind)) {
-        continue;
       } else {
-        const ignoredEmail = value.match(ignoredEmailPattern)?.[0] ?? "";
+        const ignoredAddress = value.match(ignoredAddressPattern)?.[0] ?? "";
         const phone = value.match(phoneRegex)?.[0] ?? "";
         addName(value);
         if (phone) addPhone(phone);
-        if (!ignoredEmail && !phone && !/[a-zA-Z]/.test(value)) {
+        if (!ignoredAddress && !phone && !/[a-zA-Z]/.test(value)) {
           cur.notes = cur.notes ? `${cur.notes} ${value}` : value;
         }
       }
