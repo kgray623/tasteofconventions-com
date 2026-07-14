@@ -330,8 +330,9 @@ function UploadPage() {
         )
         .eq("event_id", evId)
         .order("created_at", { ascending: false });
-      // Everyone on the steering committee (team + admin) sees the full
-      // guest list across all inviters.
+      // Show only the current user's own guests — each committee member's
+      // upload list is their own focus, not everyone's.
+      if (user?.id) query = query.eq("host_id", user.id);
       const { data, error } = await query;
       if (error) throw error;
       type Row = {
