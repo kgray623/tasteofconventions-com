@@ -215,12 +215,12 @@ export function CommitteeWorkspace() {
     const hostNames = new Map<string, string>();
     if (hostIds.length) {
       const { data: profiles, error: profilesError } = await withTimeout(
-        supabase.from("profiles").select("id,display_name,email").in("id", hostIds),
+        supabase.from("profiles").select("id,display_name").in("id", hostIds),
         LOAD_TIMEOUT_MS,
       );
       if (profilesError) throw profilesError;
       for (const profile of profiles ?? []) {
-        const name = (profile.display_name ?? "").trim() || (profile.email ?? "").split("@")[0] || "";
+        const name = (profile.display_name ?? "").trim();
         if (name) hostNames.set(profile.id, name);
       }
     }
@@ -338,11 +338,11 @@ export function CommitteeWorkspace() {
   useEffect(() => {
     let alive = true;
     (async () => {
-      const { data } = await supabase.from("profiles").select("id,display_name,email");
+      const { data } = await supabase.from("profiles").select("id,display_name");
       if (!alive) return;
       const map: Record<string, string> = {};
-      for (const p of (data ?? []) as { id: string; display_name: string | null; email: string | null }[]) {
-        map[p.id] = (p.display_name ?? "").trim() || (p.email ?? "").split("@")[0] || "Member";
+      for (const p of (data ?? []) as { id: string; display_name: string | null }[]) {
+        map[p.id] = (p.display_name ?? "").trim() || "Member";
       }
       setProfileNames(map);
     })();

@@ -351,10 +351,10 @@ function UploadPage() {
       if (hostIds.length) {
         const { data: profs } = await supabase
           .from("profiles")
-          .select("id,display_name,email")
+          .select("id,display_name")
           .in("id", hostIds);
         for (const p of profs ?? []) {
-          const name = (p.display_name ?? "").trim() || (p.email ?? "").split("@")[0] || "";
+          const name = (p.display_name ?? "").trim();
           if (name) hostNames.set(p.id, name);
         }
       }
@@ -404,12 +404,11 @@ function UploadPage() {
     void (async () => {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("display_name,email")
+        .select("display_name")
         .eq("id", user.id)
         .maybeSingle();
       const fallbackName =
-        profile?.display_name ||
-        (profile?.email ? profile.email.split("@")[0] : "your friend");
+        profile?.display_name || "your friend";
       let { data: inv } = await supabase
         .from("inviters")
         .select("id,quota,name,requested_quota,quota_request_note,quota_requested_at")

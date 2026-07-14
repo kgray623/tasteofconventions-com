@@ -42,7 +42,7 @@ type RsvpAction = "inperson1" | "inperson2" | "inperson3" | "inperson4" | "zoom1
 type Flag = { id: string; invitation_a: string; invitation_b: string; match_type: string };
 type EventRow = { id: string; title: string; starts_at: string; location: string | null };
 type MyCategory = { id: string; name: string; description: string | null };
-type ProfileRow = { id: string; display_name: string | null; email: string | null };
+type ProfileRow = { id: string; display_name: string | null };
 
 function Dashboard() {
   const { user } = useAuth();
@@ -79,7 +79,7 @@ function Dashboard() {
       supabase.from("events").select("id,title,starts_at,location").order("starts_at"),
       supabase.from("invitations").select("id,event_id,guest_name,guest_phone,rsvp_token,created_at,host_id,invite_sent_at,is_committee,rsvps(status,party_size,attendance_mode)").order("guest_name", { ascending: true }),
       supabase.from("duplicate_flags").select("*"),
-      supabase.from("profiles").select("id,display_name,email"),
+      supabase.from("profiles").select("id,display_name"),
     ]);
     setEvents(e ?? []);
     setInvites((i as unknown as Invite[]) ?? []);
@@ -92,7 +92,7 @@ function Dashboard() {
 
   const nameForUser = (uid: string) => {
     const p = profiles.find((x) => x.id === uid);
-    return p?.display_name || p?.email || "Member";
+    return p?.display_name || "Member";
   };
 
   const unreadForCategory = (catId: string) =>

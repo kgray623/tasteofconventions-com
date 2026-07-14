@@ -125,11 +125,11 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
     if (hostIds.length) {
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select("id,display_name,email")
+        .select("id,display_name")
         .in("id", hostIds);
       if (profilesError) throw new Error(profilesError.message);
       for (const profile of profiles ?? []) {
-        const name = (profile.display_name ?? "").trim() || (profile.email ?? "").split("@")[0] || "";
+        const name = (profile.display_name ?? "").trim();
         if (name) hostNames.set(profile.id, name);
       }
     }
