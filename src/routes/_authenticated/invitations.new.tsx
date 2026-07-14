@@ -21,8 +21,7 @@ export const Route = createFileRoute("/_authenticated/invitations/new")({
 const schema = z.object({
   event_id: z.string().uuid(),
   guest_name: z.string().trim().min(1, "Name required").max(100),
-  guest_email: z.string().trim().email().max(255).optional().or(z.literal("")),
-  guest_phone: z.string().trim().max(40).optional().or(z.literal("")),
+  guest_phone: z.string().trim().min(7, "Phone required").max(40),
   notes: z.string().max(500).optional().or(z.literal("")),
 });
 
@@ -33,7 +32,6 @@ function NewInvite() {
   const [events, setEvents] = useState<{ id: string; title: string }[]>([]);
   const [eventId, setEventId] = useDraftState(draftScope, "eventId", "");
   const [name, setName] = useDraftState(draftScope, "name", "");
-  const [email, setEmail] = useDraftState(draftScope, "email", "");
   const [phone, setPhone] = useDraftState(draftScope, "phone", "");
   const [notes, setNotes] = useDraftState(draftScope, "notes", "");
   const [warning, setWarning] = useState<string | null>(null);
@@ -51,29 +49,21 @@ function NewInvite() {
     setWarning(null);
     if (!eventId) return;
     const t = setTimeout(async () => {
-      const e = email.trim().toLowerCase();
       const p = phone.replace(/\D/g, "");
-      if (!e && p.length < 7) return;
-      let q = supabase.from("invitations").select("guest_name,guest_email,guest_phone").eq("event_id", eventId);
-      if (e && p.length >= 7) q = q.or(`guest_email_normalized.eq.${e},guest_phone_normalized.eq.${p}`);
-      else if (e) q = q.eq("guest_email_normalized", e);
-      else q = q.eq("guest_phone_normalized", p);
+      if (p.length < 7) return;
+      const q = supabase.from("invitations").select("guest_name,guest_phone").eq("event_id", eventId).eq("guest_phone_normalized", p);
       const { data } = await q.limit(1);
       if (data && data.length > 0) {
         setWarning(`Possible duplicate: "${data[0].guest_name}" is already invited.`);
       }
     }, 350);
     return () => clearTimeout(t);
-  }, [email, phone, eventId]);
+  }, [phone, eventId]);
 
   const submit = async () => {
-    const parsed = schema.safeParse({ event_id: eventId, guest_name: name, guest_email: email, guest_phone: phone, notes });
+    const parsed = schema.safeParse({ event_id: eventId, guest_name: name, guest_phone: phone, notes });
     if (!parsed.success) {
       toast.error(parsed.error.issues[0]?.message ?? "Invalid input");
-      return;
-    }
-    if (!email && !phone) {
-      toast.error("Provide at least an email or phone.");
       return;
     }
     setBusy(true);
@@ -81,7 +71,6 @@ function NewInvite() {
       event_id: eventId,
       host_id: user!.id,
       guest_name: name.trim(),
-      guest_email: email.trim() || null,
       guest_phone: phone.trim() || null,
       notes: notes.trim() || null,
     });
