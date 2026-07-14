@@ -73,14 +73,12 @@ class UploadErrorBoundary extends Component<{ children: ReactNode }, { error: Er
 // Parse the friendly duplicate-guest error raised by the DB trigger
 // `prevent_duplicate_invitation` (ERRCODE 23505, message prefixed with
 // DUPLICATE_GUEST_PHONE: or DUPLICATE_GUEST_EMAIL:).
-function parseDuplicateGuestError(err: unknown): { kind: "phone" | "email"; existingName: string } | null {
+function parseDuplicateGuestError(err: unknown): { kind: "phone"; existingName: string } | null {
   if (!err || typeof err !== "object") return null;
   const msg = String((err as { message?: string }).message ?? "");
   const code = String((err as { code?: string }).code ?? "");
   const phone = msg.match(/DUPLICATE_GUEST_PHONE:\s*.+?\(matches\s+(.+)\)/i);
   if (phone) return { kind: "phone", existingName: phone[1].trim() };
-  const email = msg.match(/DUPLICATE_GUEST_EMAIL:\s*.+?\(matches\s+(.+)\)/i);
-  if (email) return { kind: "email", existingName: email[1].trim() };
   if (code === "23505" && /invitations/i.test(msg)) {
     return { kind: "phone", existingName: "an existing guest" };
   }
@@ -118,7 +116,7 @@ function nameSimilarity(a: string, b: string): number {
 
 
 // Browsers that support the Contact Picker API (Chrome on Android)
-type ContactInfo = { name?: string[]; email?: string[]; tel?: string[] };
+type ContactInfo = { name?: string[]; tel?: string[] };
 interface ContactsManager {
   select: (props: string[], opts?: { multiple?: boolean }) => Promise<ContactInfo[]>;
   getProperties: () => Promise<string[]>;
@@ -152,7 +150,6 @@ function parseVCards(text: string): Record<string, string>[] {
       // unfold folded lines (RFC 6350)
       const lines = body.replace(/\r?\n[ \t]/g, "").split(/\r?\n/);
       let name = "",
-        email = "",
         phone = "";
       for (const raw of lines) {
         const idx = raw.indexOf(":");
@@ -164,12 +161,12 @@ function parseVCards(text: string): Record<string, string>[] {
         else if (!name && left.startsWith("N")) {
           const [last, first] = value.split(";");
           name = [first, last].filter(Boolean).join(" ").trim();
-        } else if (!email && left.startsWith("EMAIL")) email = value;
+        }
         else if (!phone && left.startsWith("TEL")) phone = value;
       }
-      return { name, email, phone, notes: "" };
+      return { name, phone, notes: "" };
     })
-    .filter((r) => r.name || r.email || r.phone);
+    .filter((r) => r.name || r.phone);
 }
 
 export const Route = createFileRoute("/_authenticated/admin/upload")({
@@ -180,7 +177,7 @@ export const Route = createFileRoute("/_authenticated/admin/upload")({
   ),
 });
 
-type Row = { guest_name: string; guest_email: string; guest_phone: string; notes: string };
+type Row = { guest_name: string; guest_phone: string; notes: string };
 type Parsed = Row & { _row: number; _dupReason?: string };
 
 const norm = (s: string) => (s || "").trim().toLowerCase();
@@ -214,7 +211,7 @@ function parseContactText(value: string) {
           .trim(),
       )
       .find((part) => /[a-zA-Z]/.test(part)) ?? "";
-  return { name, phone, email };
+  return { name, phone };
 }
 
 const uploadDraftKey = (userId?: string) => `admin-upload-draft:${userId ?? "unknown"}`;
@@ -224,16 +221,16 @@ function loadUploadDraft(userId?: string) {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(uploadDraftKey(userId));
-    return raw ? JSON.parse(raw) as { pasted?: string; quick?: { name?: string; phone?: string; email?: string }; rows?: Parsed[] } : null;
+    return raw ? JSON.parse(raw) as { pasted?: string; quick?: { name?: string; phone?: string }; rows?: Parsed[] } : null;
   } catch {
     return null;
   }
 }
 
-function saveUploadDraft(userId: string | undefined, pasted: string, quick: { name: string; phone: string; email: string }, rows: Parsed[]) {
+function saveUploadDraft(userId: string | undefined, pasted: string, quick: { name: string; phone: string }, rows: Parsed[]) {
   if (typeof window === "undefined") return;
   try {
-    if (!pasted.trim() && !quick.name.trim() && !quick.phone.trim() && !quick.email.trim() && rows.length === 0) {
+    if (!pasted.trim() && !quick.name.trim() && !quick.phone.trim() && rows.length === 0) {
       window.localStorage.removeItem(uploadDraftKey(userId));
       return;
     }
@@ -262,7 +259,7 @@ function UploadPage() {
     null,
   );
   const [pasted, setPasted] = useState("");
-  const [quick, setQuick] = useState({ name: "", phone: "", email: "" });
+  const [quick, setQuick] = useState({ name: "", phone: "" });
   const [quickBusy, setQuickBusy] = useState(false);
   const [quickAdded, setQuickAdded] = useState(0);
   const [canPickContacts, setCanPickContacts] = useState(false);
@@ -271,7 +268,6 @@ function UploadPage() {
     {
       id: string;
       guest_name: string;
-      guest_email: string | null;
       guest_phone: string | null;
       rsvp_token: string;
       invite_sent_at: string | null;
@@ -327,7 +323,7 @@ function UploadPage() {
       let query = supabase
         .from("invitations")
         .select(
-          "id,guest_name,guest_email,guest_phone,rsvp_token,invite_sent_at,is_committee,host_id,created_at,rsvps(status,party_size,attendance_mode)",
+          "id,guest_name,guest_phone,rsvp_token,invite_sent_at,is_committee,host_id,created_at,rsvps(status,party_size,attendance_mode)",
         )
         .eq("event_id", evId)
         .order("created_at", { ascending: false });
@@ -338,7 +334,6 @@ function UploadPage() {
       type Row = {
         id: string;
         guest_name: string;
-        guest_email: string | null;
         guest_phone: string | null;
         rsvp_token: string;
         invite_sent_at: string | null;
@@ -356,10 +351,10 @@ function UploadPage() {
       if (hostIds.length) {
         const { data: profs } = await supabase
           .from("profiles")
-          .select("id,display_name,email")
+          .select("id,display_name")
           .in("id", hostIds);
         for (const p of profs ?? []) {
-          const name = (p.display_name ?? "").trim() || (p.email ?? "").split("@")[0] || "";
+          const name = (p.display_name ?? "").trim();
           if (name) hostNames.set(p.id, name);
         }
       }
@@ -370,7 +365,6 @@ function UploadPage() {
           return {
             id: r.id,
             guest_name: r.guest_name,
-            guest_email: r.guest_email,
             guest_phone: r.guest_phone,
             rsvp_token: r.rsvp_token,
             invite_sent_at: r.invite_sent_at,
@@ -410,12 +404,11 @@ function UploadPage() {
     void (async () => {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("display_name,email")
+        .select("display_name")
         .eq("id", user.id)
         .maybeSingle();
       const fallbackName =
-        profile?.display_name ||
-        (profile?.email ? profile.email.split("@")[0] : "your friend");
+        profile?.display_name || "your friend";
       let { data: inv } = await supabase
         .from("inviters")
         .select("id,quota,name,requested_quota,quota_request_note,quota_requested_at")
@@ -491,7 +484,6 @@ function UploadPage() {
     const idToGroup = buildDuplicateGroupIds(savedGuests.map((g) => ({
       id: g.id,
       guest_name: g.guest_name,
-      guest_email: g.guest_email,
       guest_phone: g.guest_phone,
     })));
     const counts = new Map<string, number>();
@@ -813,7 +805,6 @@ function UploadPage() {
       setQuick((current) => ({
         name: current.name || draft.quick?.name || "",
         phone: current.phone || draft.quick?.phone || "",
-        email: current.email || draft.quick?.email || "",
       }));
       setRows((current) => current.length ? current : draft.rows ?? []);
     }
@@ -836,15 +827,9 @@ function UploadPage() {
   const availableRsvps = Math.max(0, quotaPool.total - inPersonPeople);
 
   const flagDuplicates = async (parsed: Parsed[]) => {
-    const seenE = new Map<string, number>();
     const seenP = new Map<string, number>();
     parsed.forEach((r, idx) => {
-      const e = norm(r.guest_email);
       const p = phoneNorm(r.guest_phone);
-      if (e) {
-        if (seenE.has(e)) r._dupReason = `email duplicates row ${parsed[seenE.get(e)!]._row}`;
-        else seenE.set(e, idx);
-      }
       if (p.length >= 7 && !r._dupReason) {
         if (seenP.has(p)) r._dupReason = `phone duplicates row ${parsed[seenP.get(p)!]._row}`;
         else seenP.set(p, idx);
@@ -854,20 +839,15 @@ function UploadPage() {
       try {
         const { data: existing } = await supabase
           .from("invitations")
-          .select("guest_name,guest_email_normalized,guest_phone_normalized")
+          .select("guest_name,guest_phone_normalized")
           .eq("event_id", eventId);
-        const existE = new Set(
-          (existing ?? []).map((r) => r.guest_email_normalized).filter(Boolean) as string[],
-        );
         const existP = new Set(
           (existing ?? []).map((r) => r.guest_phone_normalized).filter(Boolean) as string[],
         );
         parsed.forEach((r) => {
           if (r._dupReason) return;
-          const e = norm(r.guest_email);
           const p = phoneNorm(r.guest_phone);
-          if (e && existE.has(e)) r._dupReason = "already on the guest list (email match)";
-          else if (p.length >= 7 && existP.has(p))
+          if (p.length >= 7 && existP.has(p))
             r._dupReason = "already on the guest list (phone match)";
         });
       } catch (e) {
@@ -881,7 +861,6 @@ function UploadPage() {
       .map((r, i) => ({
         _row: i + 1,
         guest_name: pick(r, ["name", "guest", "guest name", "full name"]),
-        guest_email: pick(r, ["email", "e-mail", "email address"]),
         guest_phone: pick(r, ["phone", "mobile", "cell", "phone number"]),
         notes: pick(r, ["notes", "note", "comment", "comments"]),
       }))
@@ -941,15 +920,14 @@ function UploadPage() {
     }
     try {
       setDone(null);
-      const picked = await api.select(["name", "email", "tel"], { multiple: true });
+      const picked = await api.select(["name", "tel"], { multiple: true });
       const raw = picked
         .map((c) => ({
           name: (c.name?.[0] ?? "").trim(),
-          email: (c.email?.[0] ?? "").trim(),
           phone: (c.tel?.[0] ?? "").trim(),
           notes: "",
         }))
-        .filter((r) => r.name || r.email || r.phone);
+        .filter((r) => r.name || r.phone);
       if (!raw.length) {
         toast.message("No contacts selected.");
         return;
@@ -982,7 +960,6 @@ function UploadPage() {
       setQuick((q) => ({
         name: parsed.name || q.name,
         phone: parsed.phone || q.phone,
-        email: parsed.email || q.email,
       }));
       setPasted(text);
       toast.success("Pasted contact details");
@@ -1014,7 +991,7 @@ function UploadPage() {
 
   const onPaste = async () => {
     setDone(null);
-    const emailRegex = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
+    const ignoredEmailPattern = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
     const phoneRegex =
       /(?:\+?1[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)\d{3}[\s.-]?\d{4}(?:\s*(?:x|ext\.?)\s*\d{1,6})?|\b\d{7,15}\b/i;
     const labelRegex =
@@ -1027,27 +1004,21 @@ function UploadPage() {
       .filter(Boolean);
 
     const raw: Record<string, string>[] = [];
-    let cur: Record<string, string> = { name: "", email: "", phone: "", notes: "" };
+    let cur: Record<string, string> = { name: "", phone: "", notes: "" };
     const flush = () => {
-      if (cur.name || cur.email || cur.phone) raw.push(cur);
-      cur = { name: "", email: "", phone: "", notes: "" };
+      if (cur.name || cur.phone) raw.push(cur);
+      cur = { name: "", phone: "", notes: "" };
     };
 
     const addName = (value: string) => {
       const cleaned = value
-        .replace(emailRegex, " ")
+        .replace(ignoredEmailPattern, " ")
         .replace(phoneRegex, " ")
         .replace(/\s+/g, " ")
         .trim();
       if (!cleaned || !/[a-zA-Z]/.test(cleaned)) return;
       if (cur.name) flush();
       cur.name = cleaned;
-    };
-    const addEmail = (value: string) => {
-      const email = value.match(emailRegex)?.[0]?.trim() ?? "";
-      if (!email) return;
-      if (cur.email) flush();
-      cur.email = email;
     };
     const addPhone = (value: string) => {
       const phone = value.match(phoneRegex)?.[0]?.trim() ?? value.trim();
@@ -1066,14 +1037,13 @@ function UploadPage() {
       } else if (["mobile", "phone", "cell"].includes(labelKind)) {
         addPhone(value);
       } else if (["email", "e-mail"].includes(labelKind)) {
-        addEmail(value);
+        continue;
       } else {
-        const email = value.match(emailRegex)?.[0] ?? "";
+        const ignoredEmail = value.match(ignoredEmailPattern)?.[0] ?? "";
         const phone = value.match(phoneRegex)?.[0] ?? "";
         addName(value);
-        if (email) addEmail(email);
         if (phone) addPhone(phone);
-        if (!email && !phone && !/[a-zA-Z]/.test(value)) {
+        if (!ignoredEmail && !phone && !/[a-zA-Z]/.test(value)) {
           cur.notes = cur.notes ? `${cur.notes} ${value}` : value;
         }
       }
@@ -1101,7 +1071,6 @@ function UploadPage() {
             event_id: eventId,
             host_id: user.id,
             guest_name: r.guest_name,
-            guest_email: r.guest_email || null,
             guest_phone: r.guest_phone || null,
             notes: r.notes || null,
             is_committee: importAsCommittee,
@@ -1199,7 +1168,6 @@ function UploadPage() {
             event_id: eventId,
             host_id: user.id,
             guest_name: name,
-            guest_email: (c.email || "").trim() || null,
             guest_phone: (c.phone || "").trim() || null,
             notes: null,
             is_committee: importAsCommittee,
@@ -1227,7 +1195,7 @@ function UploadPage() {
       }
 
 
-      // Find duplicates flagged by the database trigger (email / phone / fuzzy name).
+      // Find duplicates flagged by the database trigger (phone / fuzzy name).
       let dupeNames: string[] = [];
       if (insertedIds.length) {
         const { data: flags } = await supabase
@@ -1345,8 +1313,8 @@ function UploadPage() {
       toast.error("Add a name first.");
       return;
     }
-    if (!quick.phone.trim() && !quick.email.trim()) {
-      toast.error("Add a phone number or email so we can reach them.");
+    if (!quick.phone.trim()) {
+      toast.error("Add a phone number so we can reach them.");
       return;
     }
     // Fuzzy "did you mean" check against already-loaded guests (spelling variants).
@@ -1366,15 +1334,14 @@ function UploadPage() {
         event_id: eventId,
         host_id: user.id,
         guest_name: name,
-        guest_email: quick.email.trim() || null,
         guest_phone: quick.phone.trim() || null,
         notes: null,
         is_committee: importAsCommittee,
       });
       if (error) throw error;
       setQuickAdded((n) => n + 1);
-      setQuick({ name: "", phone: "", email: "" });
-      saveUploadDraft(user.id, pasted, { name: "", phone: "", email: "" }, rows);
+      setQuick({ name: "", phone: "" });
+      saveUploadDraft(user.id, pasted, { name: "", phone: "" }, rows);
       toast.success(`Added ${name}`);
       void loadSavedGuests(eventId);
     } catch (e) {
@@ -1434,22 +1401,9 @@ function UploadPage() {
               autoComplete="tel"
             />
           </div>
-          <div className="space-y-1.5">
-            <label htmlFor="top-quick-guest-email" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Email
-            </label>
-            <Input
-              id="top-quick-guest-email"
-              value={quick.email}
-              onChange={(event) => setQuick((current) => ({ ...current, email: event.target.value }))}
-              placeholder="Email"
-              type="email"
-              autoComplete="email"
-            />
-          </div>
           <Button
             type="submit"
-            disabled={quickBusy || !eventId || !quick.name.trim() || (!quick.phone.trim() && !quick.email.trim())}
+            disabled={quickBusy || !eventId || !quick.name.trim() || !quick.phone.trim()}
             className="bg-terracotta text-cream hover:bg-terracotta/90"
           >
             {quickBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <><UserPlus className="w-4 h-4 mr-2" /> Add guest</>}
@@ -1933,22 +1887,9 @@ function UploadPage() {
               autoComplete="tel"
             />
           </div>
-          <div className="space-y-1.5">
-            <label htmlFor="quick-guest-email" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Email
-            </label>
-            <Input
-              id="quick-guest-email"
-              value={quick.email}
-              onChange={(event) => setQuick((current) => ({ ...current, email: event.target.value }))}
-              placeholder="Email"
-              type="email"
-              autoComplete="email"
-            />
-          </div>
           <Button
             type="submit"
-            disabled={quickBusy || !eventId || !quick.name.trim() || (!quick.phone.trim() && !quick.email.trim())}
+            disabled={quickBusy || !eventId || !quick.name.trim() || !quick.phone.trim()}
             className="bg-terracotta text-cream hover:bg-terracotta/90"
           >
             {quickBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <><UserPlus className="w-4 h-4 mr-2" /> Add guest</>}
@@ -2140,9 +2081,6 @@ function UploadPage() {
                     <Pencil className="w-3 h-3 opacity-40" />
                   </button>
                 )}
-                <span className="text-muted-foreground min-w-[160px] break-all">
-                  {r.guest_email}
-                </span>
                 <span className="text-muted-foreground min-w-[110px]">{r.guest_phone}</span>
                 {r._dupReason && (
                   <Badge

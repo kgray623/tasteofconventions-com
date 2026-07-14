@@ -190,7 +190,7 @@ export function CommitteeWorkspace() {
     const { data, error: invitationsError } = await withTimeout(
       supabase
         .from("invitations")
-          .select("id,created_at,invite_sent_at,guest_name,guest_phone,guest_email,host_id,rsvp_token,rsvps(status,party_size,attendance_mode,responded_at)")
+          .select("id,created_at,invite_sent_at,guest_name,guest_phone,host_id,rsvp_token,rsvps(status,party_size,attendance_mode,responded_at)")
         .eq("event_id", eventId)
         .order("created_at", { ascending: false }),
       LOAD_TIMEOUT_MS,
@@ -203,7 +203,6 @@ export function CommitteeWorkspace() {
       invite_sent_at: string | null;
       guest_name: string;
       guest_phone: string | null;
-      guest_email: string | null;
       host_id: string;
       rsvp_token: string | null;
       rsvps:
@@ -216,12 +215,12 @@ export function CommitteeWorkspace() {
     const hostNames = new Map<string, string>();
     if (hostIds.length) {
       const { data: profiles, error: profilesError } = await withTimeout(
-        supabase.from("profiles").select("id,display_name,email").in("id", hostIds),
+        supabase.from("profiles").select("id,display_name").in("id", hostIds),
         LOAD_TIMEOUT_MS,
       );
       if (profilesError) throw profilesError;
       for (const profile of profiles ?? []) {
-        const name = (profile.display_name ?? "").trim() || (profile.email ?? "").split("@")[0] || "";
+        const name = (profile.display_name ?? "").trim();
         if (name) hostNames.set(profile.id, name);
       }
     }
@@ -236,7 +235,6 @@ export function CommitteeWorkspace() {
           invite_sent_at: row.invite_sent_at ?? null,
           guest_name: row.guest_name,
           guest_phone: row.guest_phone,
-          guest_email: row.guest_email,
           rsvp_status: rsvp?.status ?? null,
           party_size: rsvp?.party_size ?? 1,
           attendance_mode: rsvp?.attendance_mode ?? null,
@@ -340,11 +338,11 @@ export function CommitteeWorkspace() {
   useEffect(() => {
     let alive = true;
     (async () => {
-      const { data } = await supabase.from("profiles").select("id,display_name,email");
+      const { data } = await supabase.from("profiles").select("id,display_name");
       if (!alive) return;
       const map: Record<string, string> = {};
-      for (const p of (data ?? []) as { id: string; display_name: string | null; email: string | null }[]) {
-        map[p.id] = (p.display_name ?? "").trim() || (p.email ?? "").split("@")[0] || "Member";
+      for (const p of (data ?? []) as { id: string; display_name: string | null }[]) {
+        map[p.id] = (p.display_name ?? "").trim() || "Member";
       }
       setProfileNames(map);
     })();
@@ -423,14 +421,13 @@ export function CommitteeWorkspace() {
 
   const saveGuestEdits = async (
     guest: CommitteeGuest,
-    edits: { guest_name: string; guest_phone: string; guest_email: string },
+    edits: { guest_name: string; guest_phone: string },
   ) => {
     const { error } = await supabase
       .from("invitations")
       .update({
         guest_name: edits.guest_name.trim(),
         guest_phone: edits.guest_phone.trim() || null,
-        guest_email: edits.guest_email.trim() || null,
       })
       .eq("id", guest.id);
     if (error) {
@@ -518,7 +515,6 @@ export function CommitteeWorkspace() {
     id: g.id,
     guest_name: g.guest_name,
     guest_phone: g.guest_phone,
-    guest_email: g.guest_email,
   })));
   const myGuestRollup = computeRsvpRollup(myGuests.map((g) => ({
     id: g.id,
@@ -623,7 +619,6 @@ export function CommitteeWorkspace() {
     id: g.id,
     guest_name: g.guest_name,
     guest_phone: g.guest_phone,
-    guest_email: g.guest_email,
   })));
   const newYesRollup = computeRsvpRollup(newYesGuests.map((g) => ({
     id: g.id,
@@ -1211,7 +1206,7 @@ function MyGuestsGroup({
   setRsvpFor: (guest: CommitteeGuest, value: RsvpAction) => Promise<void>;
   saveGuestEdits: (
     guest: CommitteeGuest,
-    edits: { guest_name: string; guest_phone: string; guest_email: string },
+    edits: { guest_name: string; guest_phone: string },
   ) => Promise<boolean>;
   deleteGuest: (guest: CommitteeGuest) => Promise<void>;
   buildSmsInfo?: (guest: CommitteeGuest) => { phone: string; body: string } | null;
@@ -1403,20 +1398,18 @@ function EditGuestButton({
   guest: CommitteeGuest;
   onSave: (
     guest: CommitteeGuest,
-    edits: { guest_name: string; guest_phone: string; guest_email: string },
+    edits: { guest_name: string; guest_phone: string },
   ) => Promise<boolean>;
 }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(guest.guest_name);
   const [phone, setPhone] = useState(guest.guest_phone ?? "");
-  const [email, setEmail] = useState(guest.guest_email ?? "");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
       setName(guest.guest_name);
       setPhone(guest.guest_phone ?? "");
-      setEmail(guest.guest_email ?? "");
     }
   }, [open, guest]);
 
@@ -1426,7 +1419,7 @@ function EditGuestButton({
       return;
     }
     setSaving(true);
-    const ok = await onSave(guest, { guest_name: name, guest_phone: phone, guest_email: email });
+    const ok = await onSave(guest, { guest_name: name, guest_phone: phone });
     setSaving(false);
     if (ok) setOpen(false);
   };

@@ -75,13 +75,13 @@ function CommitteeMessagePage() {
     void (async () => {
       const [{ data: inv }, { data: profile }] = await Promise.all([
         supabase.from("inviters").select("name").eq("host_id", user.id).maybeSingle(),
-        supabase.from("profiles").select("display_name,email").eq("id", user.id).maybeSingle(),
+        supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
       ]);
       if (!alive) return;
       setSenderName(
         inv?.name ||
           profile?.display_name ||
-          (profile?.email ? profile.email.split("@")[0] : "your friend"),
+          "your friend",
       );
     })();
     return () => {

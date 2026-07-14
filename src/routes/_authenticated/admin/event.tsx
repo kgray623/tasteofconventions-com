@@ -120,7 +120,6 @@ function MyRsvpCard() {
         </div>
         <div className="rounded-md border border-border bg-cream/40 p-4 text-sm space-y-1">
           <p><strong>Name:</strong> {invitation.guest_name}</p>
-          {invitation.guest_email && <p><strong>Email:</strong> {invitation.guest_email}</p>}
           {invitation.guest_phone && <p><strong>Phone:</strong> {invitation.guest_phone}</p>}
           {rsvp?.invited_by && <p><strong>Invited by:</strong> {rsvp.invited_by}</p>}
           {rsvp?.dietary_notes && <p><strong>Dietary notes:</strong> {rsvp.dietary_notes}</p>}
@@ -228,7 +227,7 @@ function EditEventPage() {
         <h1 className="font-display text-3xl mt-1">{isAdmin ? "Edit event" : "Event details"}</h1>
         <p className="text-sm text-muted-foreground mt-2">
           {isAdmin
-            ? "These details show on every invitation, RSVP page, and confirmation email."
+            ? "These details show on every invitation and RSVP page."
             : "These are the current event details for team coordination."}
         </p>
       </div>

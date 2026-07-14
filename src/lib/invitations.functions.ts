@@ -2,7 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { sendTransactionalEmailServer } from "@/lib/email/send-server";
 
 function publicDbError(error: { message?: string } | null | undefined, fallback = "Something went wrong. Please try again."): Error {
   if (error?.message) console.error("[invitations] db error:", error.message);
@@ -111,7 +110,7 @@ export const getMyInvitation = createServerFn({ method: "GET" })
     const { data: inv, error } = await supabaseAdmin
       .from("invitations")
       .select(
-        "id,event_id,guest_name,guest_email,guest_phone,notes,rsvp_token,created_at,events(title,description,starts_at,ends_at,location,virtual_link)",
+        "id,event_id,guest_name,guest_phone,notes,rsvp_token,created_at,events(title,description,starts_at,ends_at,location,virtual_link)",
       )
       .in("guest_phone_normalized", candidates)
       .order("created_at", { ascending: false })
@@ -126,38 +125,6 @@ export const getMyInvitation = createServerFn({ method: "GET" })
     ]);
     return { invitation: inv, rsvp, order, preorder };
   });
-
-async function sendRsvpConfirmation(
-  invitationId: string,
-  status: "yes" | "no" | "maybe",
-  partySize: number,
-) {
-  try {
-    const { data: inv } = await supabaseAdmin
-      .from("invitations")
-      .select("id,guest_name,guest_email,events(title,starts_at,location)")
-      .eq("id", invitationId)
-      .maybeSingle();
-    const email = inv?.guest_email;
-    if (!email) return;
-    const ev = (inv as any)?.events;
-    await sendTransactionalEmailServer({
-      templateName: "rsvp-confirmation",
-      recipientEmail: email,
-      idempotencyKey: `rsvp-confirm-${invitationId}-${status}`,
-      templateData: {
-        guestName: inv?.guest_name,
-        eventTitle: ev?.title,
-        eventStartsAt: ev?.starts_at,
-        location: ev?.location,
-        status,
-        partySize,
-      },
-    });
-  } catch (err) {
-    console.error("[rsvp] failed to send confirmation email", err);
-  }
-}
 
 // Determine if a "yes" RSVP should be placed on the waiting list because
 // the inviter's quota is already full. Counts existing "yes" seats for
@@ -209,7 +176,7 @@ export const getInvitationByToken = createServerFn({ method: "GET" })
     const { data: inv, error } = await supabaseAdmin
       .from("invitations")
       .select(
-        "id,event_id,guest_name,guest_email,guest_phone,notes,invite_sent_at,events(title,description,starts_at,ends_at,location,virtual_link)",
+        "id,event_id,guest_name,guest_phone,notes,invite_sent_at,events(title,description,starts_at,ends_at,location,virtual_link)",
       )
       .in("rsvp_token", rsvpTokenCandidates(data.token))
       .maybeSingle();
@@ -284,7 +251,6 @@ export const submitRsvp = createServerFn({ method: "POST" })
       { onConflict: "invitation_id" },
     );
     if (error) throw publicDbError(error);
-    await sendRsvpConfirmation(inv.id, data.status, effectivePartySize);
     return { ok: true, waitlisted };
   });
 
@@ -455,7 +421,6 @@ export const submitOrder = createServerFn({ method: "POST" })
 
 const PublicRsvpInput = z.object({
   guest_name: z.string().min(1).max(120),
-  guest_email: z.string().email().max(200).optional().nullable(),
   guest_phone: z.string().max(40).optional().nullable(),
   password: z.string().min(6).max(72).optional().nullable(),
   status: z.enum(["yes", "no"]),
@@ -548,7 +513,6 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!host) throw new Error("No host configured yet");
 
-    const email = data.guest_email?.trim() || null;
     const phone = data.guest_phone?.trim() || null;
     const password = data.password?.trim() || null;
     const selections = (data.cuisine_selections ?? []).filter((s) => s.qty > 0);
@@ -581,24 +545,14 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
       if (userId) {
         await supabaseAdmin.from("profiles").upsert({
           id: userId,
-          email,
           display_name: data.guest_name,
         });
       }
     }
 
-    // Reuse existing invitation if a matching guest already RSVP'd (by email or phone)
+    // Reuse existing invitation if a matching guest already RSVP'd by phone.
     let invitationId: string | null = null;
-    if (email) {
-      const { data: existing } = await supabaseAdmin
-        .from("invitations")
-        .select("id")
-        .eq("event_id", ev.id)
-        .eq("guest_email_normalized", email.toLowerCase())
-        .maybeSingle();
-      if (existing) invitationId = existing.id;
-    }
-    if (!invitationId && phone) {
+    if (phone) {
       const phoneNorm = phone.replace(/\D/g, "");
       if (phoneNorm.length >= 7) {
         const { data: existing } = await supabaseAdmin
@@ -619,7 +573,6 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
           event_id: ev.id,
           host_id: host.id,
           guest_name: data.guest_name,
-          guest_email: email,
           guest_phone: phone,
         })
         .select("id")
@@ -641,19 +594,18 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
 
     // SECURITY: For matched (pre-existing) invitations — especially admin-uploaded
     // records that have already been sent an SMS — do NOT overwrite guest_name /
-    // guest_phone / guest_email from an unauthenticated submitter. Anyone who
+    // guest_phone from an unauthenticated submitter. Anyone who
     // knows a phone number could otherwise rewrite the invitee's identity.
     // Only fill fields that are currently empty.
     if (!isNewInvitation) {
       const { data: current } = await supabaseAdmin
         .from("invitations")
-        .select("guest_name, guest_email, guest_phone, invite_sent_at")
+        .select("guest_name, guest_phone, invite_sent_at")
         .eq("id", invitationId)
         .maybeSingle();
-      const patch: { guest_name?: string; guest_email?: string; guest_phone?: string } = {};
+      const patch: { guest_name?: string; guest_phone?: string } = {};
       if (current && !current.invite_sent_at) {
         if (!current.guest_name && data.guest_name) patch.guest_name = data.guest_name;
-        if (!current.guest_email && email) patch.guest_email = email;
         if (!current.guest_phone && phone) patch.guest_phone = phone;
         if (Object.keys(patch).length > 0) {
           const { error: invUpdateErr } = await supabaseAdmin
@@ -696,7 +648,6 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
       await supabaseAdmin.from("cuisine_preorders").delete().eq("invitation_id", invitationId);
     }
 
-    await sendRsvpConfirmation(invitationId, data.status, effectivePartySize);
     return { ok: true, invitation_id: invitationId, waitlisted };
   });
 

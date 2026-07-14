@@ -11,7 +11,6 @@ import { clearDraftScope, useDraftState } from "@/hooks/use-draft-state";
 
 const schema = z.object({
   name: z.string().trim().min(1, "Name is required").max(120),
-  email: z.string().trim().email("Invalid email").max(255).optional().or(z.literal("")),
   phone: z.string().trim().max(40).optional().or(z.literal("")),
   talent: z.string().trim().max(200).optional().or(z.literal("")),
   notes: z.string().trim().max(1000).optional().or(z.literal("")),
@@ -22,7 +21,6 @@ const MAX_BYTES = 200 * 1024 * 1024; // 200MB
 export function EntertainmentSubmissionForm() {
   const draftScope = "entertainment-submission";
   const [name, setName] = useDraftState(draftScope, "name", "");
-  const [email, setEmail] = useDraftState(draftScope, "email", "");
   const [phone, setPhone] = useDraftState(draftScope, "phone", "");
   const [talent, setTalent] = useDraftState(draftScope, "talent", "");
   const [notes, setNotes] = useDraftState(draftScope, "notes", "");
@@ -35,7 +33,6 @@ export function EntertainmentSubmissionForm() {
     const fd = new FormData(e.currentTarget);
     const parsed = schema.safeParse({
       name: String(fd.get("name") ?? ""),
-      email: String(fd.get("email") ?? ""),
       phone: String(fd.get("phone") ?? ""),
       talent: String(fd.get("talent") ?? ""),
       notes: String(fd.get("notes") ?? ""),
@@ -72,7 +69,6 @@ export function EntertainmentSubmissionForm() {
       await submitEntertainment({
         data: {
           name: parsed.data.name,
-          email: parsed.data.email || null,
           phone: parsed.data.phone || null,
           talent: parsed.data.talent || null,
           notes: parsed.data.notes || null,
@@ -114,10 +110,6 @@ export function EntertainmentSubmissionForm() {
         <div className="space-y-1.5">
           <Label htmlFor="ent-talent">Your talent</Label>
           <Input id="ent-talent" name="talent" value={talent} onChange={(e) => setTalent(e.target.value)} maxLength={200} placeholder="e.g. Violin, Spoken word" />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="ent-email">Email</Label>
-          <Input id="ent-email" name="email" value={email} onChange={(e) => setEmail(e.target.value)} type="email" maxLength={255} />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="ent-phone">Phone</Label>

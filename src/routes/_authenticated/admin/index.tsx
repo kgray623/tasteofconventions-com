@@ -162,7 +162,7 @@ function AdminOverview() {
     try {
       const { rows } = (await fetchRecon()) as { rows: Record<string, unknown>[] };
       const headers = [
-        "name", "phone", "email", "audience", "sms_sent",
+        "name", "phone", "audience", "sms_sent",
         "rsvp_status", "party_size", "attendance_mode", "ordering_food",
         "responded_at", "preorder_selections", "preorder_meals",
       ];

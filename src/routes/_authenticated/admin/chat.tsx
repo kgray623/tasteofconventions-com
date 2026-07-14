@@ -17,7 +17,7 @@ export const Route = createFileRoute("/_authenticated/admin/chat")({
 });
 
 type Msg = { id: string; user_id: string; body: string; created_at: string };
-type Profile = { id: string; display_name: string | null; email: string | null };
+type Profile = { id: string; display_name: string | null };
 
 function ChatPage() {
   const { user } = useAuth();
@@ -34,7 +34,7 @@ function ChatPage() {
     try {
       const [m, p] = await Promise.all([
         withTimeout(supabase.from("team_messages").select("*").order("created_at").limit(500)),
-        withTimeout(supabase.from("profiles").select("id,display_name,email")),
+        withTimeout(supabase.from("profiles").select("id,display_name")),
       ]);
       setMsgs(m.data ?? []);
       setProfiles(Object.fromEntries((p.data ?? []).map((x) => [x.id, x])));
@@ -84,7 +84,7 @@ function ChatPage() {
 
   const labelFor = (id: string) => {
     const p = profiles[id];
-    return p?.display_name || p?.email || id.slice(0, 8);
+    return p?.display_name || id.slice(0, 8);
   };
 
   return (

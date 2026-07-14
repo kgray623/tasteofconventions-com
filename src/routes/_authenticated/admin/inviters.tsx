@@ -37,7 +37,6 @@ type Inviter = {
   quota: number;
   active: boolean;
   host_id: string | null;
-  email: string | null;
   phone: string | null;
   requested_quota: number | null;
   quota_request_note: string | null;
@@ -47,7 +46,6 @@ type GuestRow = {
   id: string;
   host_id: string | null;
   guest_name: string;
-  guest_email: string | null;
   guest_phone: string | null;
   invite_sent_at: string | null;
 
@@ -87,7 +85,7 @@ function InvitersPage() {
           supabase.from("invitations").select("host_id"),
           supabase
             .from("invitations")
-            .select("id,host_id,guest_name,guest_email,guest_phone,invite_sent_at")
+            .select("id,host_id,guest_name,guest_phone,invite_sent_at")
             .order("guest_name"),
           supabase.from("rsvps").select("id,invitation_id,status,party_size,attendance_mode"),
         ]),
@@ -123,7 +121,7 @@ function InvitersPage() {
       const [{ data: commData }, { data: teamInviteData }] = await Promise.all([
         supabase
           .from("invitations")
-          .select("id,guest_name,guest_email,guest_phone")
+          .select("id,guest_name,guest_phone")
           .eq("is_committee", true)
           .order("guest_name"),
         supabase
@@ -145,11 +143,10 @@ function InvitersPage() {
           phone: row.phone,
           source: "teamInvite" as const,
         }))),
-        ...(((commData as { id: string; guest_name: string; guest_email: string | null; guest_phone: string | null }[]) ?? []).map((row) => ({
+        ...(((commData as { id: string; guest_name: string; guest_phone: string | null }[]) ?? []).map((row) => ({
           id: row.id,
           name: row.guest_name,
           phone: row.guest_phone,
-          email: row.guest_email,
           source: "inviter" as const,
         }))),
       ]).map((member) => ({ id: member.key, name: member.name, contact: member.contact }));

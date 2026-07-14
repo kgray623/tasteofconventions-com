@@ -4,7 +4,6 @@ export type CommitteeRosterInput = {
   id: string;
   name: string | null;
   phone?: string | null;
-  email?: string | null;
   contact?: string | null;
   role?: string | null;
   status?: string | null;
@@ -108,8 +107,8 @@ export function buildCommitteeRoster(rows: CommitteeRosterInput[]) {
   for (const row of sorted) {
     const phone = normalizeRosterPhone(row.phone ?? row.contact);
     const tail = phone.length >= 7 ? phone.slice(-10) : "";
-    const name = (row.name ?? row.phone ?? row.email ?? "Committee member").trim() || "Committee member";
-    const contact = row.phone || row.contact || row.email || (row.source === "member" ? "Signed in" : "No phone");
+    const name = (row.name ?? row.phone ?? "Committee member").trim() || "Committee member";
+    const contact = row.phone || row.contact || (row.source === "member" ? "Signed in" : "No phone");
     const match = roster.find((member) => {
       const memberPhone = normalizeRosterPhone(member.contact);
       if (tail && memberPhone && memberPhone.slice(-10) === tail) return true;

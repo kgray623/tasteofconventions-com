@@ -15,7 +15,6 @@ type MyRsvpData = {
   invitation: {
     rsvp_token: string;
     guest_name: string;
-    guest_email?: string | null;
     guest_phone?: string | null;
     events: { title: string; starts_at: string; location?: string | null };
   };
@@ -373,11 +372,6 @@ export function MyRsvpContent() {
             <p>
               <strong>Name:</strong> {invitation.guest_name}
             </p>
-            {invitation.guest_email && (
-              <p>
-                <strong>Email:</strong> {invitation.guest_email}
-              </p>
-            )}
             {invitation.guest_phone && (
               <p>
                 <strong>Phone:</strong> {invitation.guest_phone}
