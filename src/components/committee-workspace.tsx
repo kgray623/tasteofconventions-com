@@ -1237,10 +1237,7 @@ function MyGuestsGroup({
                     const info = buildSmsInfo(guest);
                     if (!info) return null;
                     return (
-                      <>
-                        <SendTextButton guest={guest} info={info} onSent={toggleSent} />
-                        <SmsCopyButton phone={info.phone} body={info.body} guestName={guest.guest_name || "guest"} />
-                      </>
+                      <SendTextButton guest={guest} info={info} onSent={toggleSent} />
                     );
                   })()}
                   <SentTextControl guest={guest} markingSentId={markingSentId} onToggleSent={toggleSent} />
