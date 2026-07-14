@@ -38,6 +38,7 @@ import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 import { useServerFn } from "@tanstack/react-start";
 import { extractContactsFromImages } from "@/lib/extract-contacts.functions";
 import { removeTeamInvitesForPhone } from "@/lib/team.functions";
+import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
 import { Input } from "@/components/ui/input";
 import { Image as ImageIcon, Target } from "lucide-react";
 
@@ -313,7 +314,6 @@ function UploadPage() {
   const [quotaRequestedAt, setQuotaRequestedAt] = useState<string | null>(null);
   const [savingQuotaReq, setSavingQuotaReq] = useState(false);
   const [quotaPool, setQuotaPool] = useState({ total: TOTAL_RSVP_CAP, allocated: 0 });
-  const [rsvpAttendingTotal, setRsvpAttendingTotal] = useState(0);
 
   const loadSavedGuests = async (evId: string) => {
     if (!evId) {
@@ -437,18 +437,9 @@ function UploadPage() {
         0,
       );
 
-      const { data: attendingRows } = await supabase
-        .from("rsvps")
-        .select("party_size,status,attendance_mode")
-        .eq("status", "yes");
-      const attendingTotal = (attendingRows ?? []).reduce(
-        (sum, r) => sum + (r.attendance_mode === "zoom" ? 0 : (r.party_size ?? 1)),
-        0,
-      );
       if (!alive) return;
       setMyQuota(inv?.quota ?? null);
       setQuotaPool({ total: TOTAL_RSVP_CAP, allocated });
-      setRsvpAttendingTotal(attendingTotal);
       setInviterId(inv?.id ?? null);
       setRequestedQuota(inv?.requested_quota ? String(inv.requested_quota) : "");
       setQuotaRequestedAt(inv?.quota_requested_at ?? null);
@@ -497,32 +488,12 @@ function UploadPage() {
 
 
   const duplicateGroups = useMemo(() => {
-    const norm = (s: string | null | undefined) =>
-      (s ?? "").trim().toLowerCase().replace(/\s+/g, " ");
-    const normPhone = (s: string | null | undefined) =>
-      (s ?? "").replace(/\D/g, "");
-    const keyToGroup = new Map<string, string>();
-    const idToGroup = new Map<string, string>();
-    for (const g of savedGuests) {
-      const keys: string[] = [];
-      const n = norm(g.guest_name);
-      const e = norm(g.guest_email);
-      const p = normPhone(g.guest_phone);
-      if (n) keys.push("n:" + n);
-      if (e) keys.push("e:" + e);
-      if (p && p.length >= 7) keys.push("p:" + p.slice(-10));
-      let groupId: string | null = null;
-      for (const k of keys) {
-        const existing = keyToGroup.get(k);
-        if (existing) {
-          groupId = existing;
-          break;
-        }
-      }
-      if (!groupId) groupId = g.id;
-      for (const k of keys) keyToGroup.set(k, groupId);
-      idToGroup.set(g.id, groupId);
-    }
+    const idToGroup = buildDuplicateGroupIds(savedGuests.map((g) => ({
+      id: g.id,
+      guest_name: g.guest_name,
+      guest_email: g.guest_email,
+      guest_phone: g.guest_phone,
+    })));
     const counts = new Map<string, number>();
     for (const gid of idToGroup.values()) counts.set(gid, (counts.get(gid) ?? 0) + 1);
     const dupIds = new Set<string>();
@@ -609,13 +580,16 @@ function UploadPage() {
     }
     return out;
   }, [duplicateGroups, guestById]);
-  const confirmedPeople = confirmedGuests.reduce((s, g) => s + (g.party_size ?? 1), 0);
-  const inPersonPeople = confirmedGuests
-    .filter((g) => g.attendance_mode !== "zoom")
-    .reduce((s, g) => s + (g.party_size ?? 1), 0);
-  const zoomPeople = confirmedGuests
-    .filter((g) => g.attendance_mode === "zoom")
-    .reduce((s, g) => s + (g.party_size ?? 1), 0);
+  const savedGuestRollup = useMemo(() => computeRsvpRollup(savedGuests.map((g) => ({
+    id: g.id,
+    groupId: duplicateGroups.groupOf.get(g.id) ?? g.id,
+    status: g.rsvp_status,
+    party_size: g.party_size,
+    attendance_mode: g.attendance_mode,
+  }))), [savedGuests, duplicateGroups]);
+  const confirmedPeople = savedGuestRollup.people.confirmed;
+  const inPersonPeople = savedGuestRollup.people.inPerson;
+  const zoomPeople = savedGuestRollup.people.zoom;
 
 
   const removeSavedGuest = async (id: string, name: string) => {
@@ -859,10 +833,7 @@ function UploadPage() {
     return <p className="text-muted-foreground">Opening login…</p>;
   }
 
-  const availableRsvps = Math.max(
-    0,
-    quotaPool.total - rsvpAttendingTotal,
-  );
+  const availableRsvps = Math.max(0, quotaPool.total - inPersonPeople);
 
   const flagDuplicates = async (parsed: Parsed[]) => {
     const seenE = new Map<string, number>();
@@ -1517,7 +1488,7 @@ function UploadPage() {
         </Card>
         <Card className="p-5">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Confirmed in-person</p>
-          <p className="font-display text-3xl mt-2">{rsvpAttendingTotal}</p>
+          <p className="font-display text-3xl mt-2">{inPersonPeople}</p>
         </Card>
         <Card className="p-5">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Requested RSVP quota</p>
@@ -1526,7 +1497,7 @@ function UploadPage() {
         <Card className="p-5">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Seats available</p>
           <p className="font-display text-3xl mt-2 text-terracotta">
-            {Math.max(0, quotaPool.total - rsvpAttendingTotal)}
+            {availableRsvps}
           </p>
         </Card>
       </div>
@@ -2209,7 +2180,7 @@ function UploadPage() {
         const requested = parseInt(requestedQuota, 10);
         const requestedNum = Number.isFinite(requested) && requested > 0 ? requested : null;
         const remaining =
-          requestedNum !== null ? Math.max(0, requestedNum - myRsvpCount) : null;
+          requestedNum !== null ? Math.max(0, requestedNum - myRsvpSeats) : null;
         return (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <Card className="p-4">
@@ -2238,7 +2209,12 @@ function UploadPage() {
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
                 In-person RSVP confirmations
               </p>
-              <p className="font-display text-2xl mt-1">{myRsvpCount}</p>
+              <p className="font-display text-2xl mt-1">{myRsvpSeats}</p>
+              {myRsvpSeats !== myRsvpCount && (
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {myRsvpCount} response{myRsvpCount === 1 ? "" : "s"}
+                </p>
+              )}
               {remaining !== null && (
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   {remaining} remaining of {requestedNum}
