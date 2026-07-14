@@ -1493,6 +1493,27 @@ function UploadPage() {
         </Card>
       )}
 
+      {activeInviters.length > 0 && (
+        <Card className="p-6 space-y-2 border-terracotta/30 bg-terracotta/5">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Whose list is this?</p>
+          <p className="text-xs text-muted-foreground">
+            Every guest added below will be recorded as brought by this person.
+          </p>
+          <Select value={uploadInviterId} onValueChange={setUploadInviterId}>
+            <SelectTrigger className="w-full sm:w-[320px]">
+              <SelectValue placeholder="Pick who brought this list…" />
+            </SelectTrigger>
+            <SelectContent>
+              {activeInviters.map((opt) => (
+                <SelectItem key={opt.id} value={opt.id}>{opt.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Card>
+      )}
+
+
+
       <Card className="overflow-hidden border-terracotta/40 bg-terracotta/5">
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 flex-wrap">
