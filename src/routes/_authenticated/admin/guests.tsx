@@ -246,12 +246,13 @@ function GuestsPage() {
 
 
   const exportCsv = () => {
-    const headers = ["name", "phone", "audience", "status", "party_size", "attendance_mode", "responded_at"];
+    const headers = ["name", "phone", "audience", "status", "party_size", "attendance_mode", "responded_at", "brought_by"];
     const lines = [headers.join(",")];
     for (const r of filtered) {
       lines.push([
         r.name, r.phone, r.audience, r.rsvp_status,
         r.party_size, r.attendance_mode, r.responded_at,
+        r.inviter_name ?? "",
       ].map(escapeCsv).join(","));
     }
     const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
@@ -264,6 +265,7 @@ function GuestsPage() {
     a.remove();
     URL.revokeObjectURL(url);
   };
+
 
   const tabs: StatusFilter[] = ["all", "confirmed", "declined", "maybe", "waitlist", "pending"];
 
