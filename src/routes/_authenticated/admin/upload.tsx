@@ -1174,6 +1174,7 @@ function UploadPage() {
         );
       }
       void loadSavedGuests(eventId);
+      void loadEventSeatTotals(eventId);
     } catch (e) {
       console.error("[upload] importAll failed", e);
       toast.error("Import failed", { description: getErrorMessage(e) });
