@@ -105,6 +105,7 @@ function HelperLogin() {
 
   useEffect(() => {
     setName((current) => current || getRememberedLoginName() || "");
+    setPhone((current) => current || getRememberedLoginPhone() || "");
   }, []);
 
   const signIn = async (event?: FormEvent) => {
