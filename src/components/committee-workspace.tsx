@@ -690,17 +690,21 @@ export function CommitteeWorkspace() {
       </Card>
 
       <Card className="overflow-hidden">
+        <Collapsible open={openMyGuestsCard} onOpenChange={() => setOpenMyGuestsCard((v) => !v)}>
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 flex-wrap">
-            <CheckCircle2 className="w-5 h-5 text-ink" />
-            <h2 className="font-semibold">My Guests Uploaded ({loadingGuests ? "…" : `${myGuests.length}${myGuestsFilter === "committee" ? ` of ${myGuestsSorted.length}` : ""}`})</h2>
-          </div>
-          <div className="flex items-center gap-2">
+          <CollapsibleTrigger asChild>
+            <button type="button" className="flex min-w-0 flex-1 items-center gap-2 flex-wrap text-left hover:bg-muted/40 rounded-md">
+              <CheckCircle2 className="w-5 h-5 text-ink shrink-0" />
+              <h2 className="font-semibold truncate">My Guests Uploaded ({loadingGuests ? "…" : `${myGuests.length}${myGuestsFilter === "committee" ? ` of ${myGuestsSorted.length}` : ""}`})</h2>
+              <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${openMyGuestsCard ? "rotate-180" : ""}`} />
+            </button>
+          </CollapsibleTrigger>
+          <div className="flex items-center gap-2 shrink-0">
             <Button
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => void refreshGuestsNow()}
+              onClick={(e) => { e.stopPropagation(); void refreshGuestsNow(); }}
               disabled={manualRefreshingGuests || loadingGuests}
               aria-label="Refresh guest list"
             >
@@ -713,6 +717,7 @@ export function CommitteeWorkspace() {
             </Button>
           </div>
         </div>
+        <CollapsibleContent>
 
         {newYesGuests.length > 0 && (
           <div className="mx-4 mt-3 rounded-md border border-emerald-300 bg-emerald-50 p-3 text-sm space-y-2">
