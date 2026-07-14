@@ -1176,7 +1176,18 @@ function MyGuestsGroup({
                   {buildSmsInfo && (() => {
                     const info = buildSmsInfo(guest);
                     if (!info) return null;
-                    return <SmsCopyButton phone={info.phone} body={info.body} guestName={guest.guest_name || "guest"} />;
+                    return (
+                      <>
+                        <a
+                          href={`sms:${info.phone}?&body=${encodeURIComponent(info.body)}`}
+                          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-sage text-cream text-xs font-medium hover:bg-sage/90"
+                          aria-label={`Send text to ${guest.guest_name || "guest"}`}
+                        >
+                          <MessageSquare className="w-4 h-4" /> Send text
+                        </a>
+                        <SmsCopyButton phone={info.phone} body={info.body} guestName={guest.guest_name || "guest"} />
+                      </>
+                    );
                   })()}
                   <EditGuestButton guest={guest} onSave={saveGuestEdits} />
                   <DeleteGuestButton guest={guest} onDelete={deleteGuest} />
