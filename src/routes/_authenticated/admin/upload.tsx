@@ -1086,7 +1086,9 @@ function UploadPage() {
             guest_phone: r.guest_phone || null,
             notes: r.notes || null,
             is_committee: importAsCommittee,
+            inviter_id: uploadInviterId || null,
           });
+
           if (error) {
             const dup = parseDuplicateGuestError(error);
             if (dup) dupNames.push(`${r.guest_name} (matches ${dup.existingName})`);
