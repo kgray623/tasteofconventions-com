@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AlertCircle, Plus, Calendar as CalendarIcon, Mail, Phone, Trash2, MessageCircle, MessageSquare, Pencil } from "lucide-react";
+import { AlertCircle, Plus, Calendar as CalendarIcon, Phone, Trash2, MessageCircle, MessageSquare, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -32,7 +32,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 type Invite = {
-  id: string; event_id: string; guest_name: string; guest_email: string | null;
+  id: string; event_id: string; guest_name: string;
   guest_phone: string | null; rsvp_token: string; created_at: string; host_id: string;
   invite_sent_at: string | null;
   is_committee: boolean;
@@ -77,7 +77,7 @@ function Dashboard() {
   const load = async () => {
     const [{ data: e }, { data: i }, { data: f }, { data: p }] = await Promise.all([
       supabase.from("events").select("id,title,starts_at,location").order("starts_at"),
-      supabase.from("invitations").select("id,event_id,guest_name,guest_email,guest_phone,rsvp_token,created_at,host_id,invite_sent_at,is_committee,rsvps(status,party_size,attendance_mode)").order("guest_name", { ascending: true }),
+      supabase.from("invitations").select("id,event_id,guest_name,guest_phone,rsvp_token,created_at,host_id,invite_sent_at,is_committee,rsvps(status,party_size,attendance_mode)").order("guest_name", { ascending: true }),
       supabase.from("duplicate_flags").select("*"),
       supabase.from("profiles").select("id,display_name,email"),
     ]);
@@ -170,14 +170,13 @@ function Dashboard() {
 
   const saveInviteEdits = async (
     invite: Invite,
-    edits: { guest_name: string; guest_phone: string; guest_email: string },
+    edits: { guest_name: string; guest_phone: string },
   ) => {
     const { error } = await supabase
       .from("invitations")
       .update({
         guest_name: edits.guest_name.trim(),
         guest_phone: edits.guest_phone.trim() || null,
-        guest_email: edits.guest_email.trim() || null,
       })
       .eq("id", invite.id);
     if (error) {
@@ -222,7 +221,7 @@ function Dashboard() {
             <AlertDialogTitle>Delete this guest?</AlertDialogTitle>
             <AlertDialogDescription>
               This will permanently delete <strong>{invite.guest_name}</strong>
-              {invite.guest_email ? ` (${invite.guest_email})` : ""} and their RSVP. This cannot be undone.
+              {invite.guest_phone ? ` (${invite.guest_phone})` : ""} and their RSVP. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -363,7 +362,6 @@ function Dashboard() {
                     {i.is_committee && <Badge className="bg-terracotta text-cream hover:bg-terracotta text-[10px]">Committee</Badge>}
                   </div>
                   <div className="flex flex-wrap gap-3 mt-1 text-xs text-muted-foreground">
-                    {i.guest_email && <span className="inline-flex items-center gap-1"><Mail className="w-3 h-3" />{i.guest_email}</span>}
                     {i.guest_phone && <span className="inline-flex items-center gap-1"><Phone className="w-3 h-3" />{i.guest_phone}</span>}
                   </div>
                 </div>
@@ -427,7 +425,6 @@ function Dashboard() {
                       {i.host_id === user?.id && <Badge variant="secondary" className="text-[10px]">yours</Badge>}
                     </div>
                     <div className="flex flex-wrap gap-3 mt-1 text-xs text-muted-foreground">
-                      {i.guest_email && <span className="inline-flex items-center gap-1"><Mail className="w-3 h-3" />{i.guest_email}</span>}
                       {i.guest_phone && <span className="inline-flex items-center gap-1"><Phone className="w-3 h-3" />{i.guest_phone}</span>}
                     </div>
                   </div>
@@ -477,7 +474,7 @@ function Dashboard() {
                         <AlertDialogTitle>Delete this invitation?</AlertDialogTitle>
                         <AlertDialogDescription>
                           This will permanently delete the invitation for <strong>{i.guest_name}</strong>
-                          {i.guest_email ? ` (${i.guest_email})` : ""} along with their RSVP. This cannot be undone.
+                          {i.guest_phone ? ` (${i.guest_phone})` : ""} along with their RSVP. This cannot be undone.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -633,19 +630,17 @@ function EditInviteButton({
   onSave,
 }: {
   invite: Invite;
-  onSave: (invite: Invite, edits: { guest_name: string; guest_phone: string; guest_email: string }) => Promise<boolean>;
+  onSave: (invite: Invite, edits: { guest_name: string; guest_phone: string }) => Promise<boolean>;
 }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(invite.guest_name);
   const [phone, setPhone] = useState(invite.guest_phone ?? "");
-  const [email, setEmail] = useState(invite.guest_email ?? "");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
       setName(invite.guest_name);
       setPhone(invite.guest_phone ?? "");
-      setEmail(invite.guest_email ?? "");
     }
   }, [open, invite]);
 
@@ -655,7 +650,7 @@ function EditInviteButton({
       return;
     }
     setSaving(true);
-    const ok = await onSave(invite, { guest_name: name, guest_phone: phone, guest_email: email });
+    const ok = await onSave(invite, { guest_name: name, guest_phone: phone });
     setSaving(false);
     if (ok) setOpen(false);
   };
@@ -685,10 +680,6 @@ function EditInviteButton({
           <div className="space-y-1">
             <Label htmlFor={`edit-invite-phone-${invite.id}`}>Phone</Label>
             <Input id={`edit-invite-phone-${invite.id}`} value={phone} onChange={(event) => setPhone(event.target.value)} />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor={`edit-invite-email-${invite.id}`}>Email</Label>
-            <Input id={`edit-invite-email-${invite.id}`} type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
           </div>
         </div>
         <DialogFooter>
