@@ -39,6 +39,11 @@ export type CommitteeWorkspaceGuestsResult = {
   myHostIds: string[];
 };
 
+export type RsvpEventOption = {
+  id: string;
+  title: string;
+};
+
 type InviterIdentity = {
   id?: string;
   host_id: string | null;
@@ -48,6 +53,19 @@ type InviterIdentity = {
   active?: boolean | null;
   requested_quota?: number | null;
 };
+
+export const getRsvpEvents = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: Record<string, never> | undefined) => input ?? {})
+  .handler(async ({ context }): Promise<RsvpEventOption[]> => {
+    const { supabase } = context;
+    const { data, error } = await supabase
+      .from("events")
+      .select("id,title")
+      .order("starts_at");
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((event) => ({ id: event.id, title: event.title }));
+  });
 
 export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -158,9 +176,14 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
 
 export const getRsvpTotals = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { includePersonal?: boolean } | undefined) => input ?? {})
+  .inputValidator((input: { includePersonal?: boolean; eventId?: string } | undefined) => input ?? {})
   .handler(async ({ data, context }): Promise<RsvpTotalsResult> => {
     const { supabase, userId } = context;
+
+    let invitationsQuery = supabase
+      .from("invitations")
+      .select("id,host_id,guest_name,guest_phone_normalized");
+    if (data.eventId) invitationsQuery = invitationsQuery.eq("event_id", data.eventId);
 
     const [invitersRes, rsvpsRes, invitationsRes] = await Promise.all([
       supabase
@@ -169,9 +192,7 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
       supabase
         .from("rsvps")
         .select("party_size,status,invitation_id,attendance_mode"),
-      supabase
-        .from("invitations")
-        .select("id,host_id,guest_name,guest_phone_normalized"),
+      invitationsQuery,
     ]);
     const inviterRows = invitersRes.data ?? [];
     const rsvpRows = rsvpsRes.data ?? [];

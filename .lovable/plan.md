@@ -1,37 +1,27 @@
-## Reorder RSVP totals card — My RSVPs first
+Plan timestamp: 2026-07-14 UTC
 
-On the committee dashboard, the "RSVP totals" card currently shows the event-wide totals first and the personal "My RSVPs" block underneath. Flip the two blocks so personal totals come first.
+Fix the RSVP seat math where the Upload Guests page is showing `550 - my confirmed in-person guests` instead of `550 - everyone’s confirmed in-person guests`.
 
-### Changes
-
-**`src/components/rsvp-totals-card.tsx`**
-- Move the "My RSVPs" section (currently lines ~124–160: label, personal 4-up stat grid, "My Zoom guests RSVP'd" line, `RequestMoreButton`) to render **before** the event-wide block.
-- Event-wide block (Total seats / RSVP requests / Seats available / In-person confirmed grid, progress bar, "RSVP Zooms" line) moves **below** the personal block.
-- Insert a divider (`border-t pt-3`) above the event-wide block instead of above the personal one, so the visual grouping still reads cleanly.
-- Keep the closing italic disclaimer ("Only in-person guests use spots…") at the very bottom, unchanged.
-- No changes to data fetching, math, `RequestMoreButton`, `Stat`, or props.
-
-### Resulting order inside the card
+Scope:
+- Keep the guest list filtered to only the current committee member’s uploaded guests.
+- Change the top seat-total cards on `/admin/upload?view=committee#add-guests` so event-wide seat math is used:
 
 ```text
-[ My RSVPs ]
-  My RSVP request | My guests uploaded | My in-person RSVP'd | My in-person spots left
-  My Zoom guests RSVP'd: N
-  [Request more] (when applicable)
-────────────────────────
-[ Event totals ]
-  Total seats | RSVP requests | Seats available | In-person confirmed
-  progress bar
-  RSVP Zooms: N
-Only in-person guests use spots…
+Total seats: 550
+Confirmed in-person: everyone’s confirmed in-person RSVP people count
+Requested RSVP quota: everyone’s allocated quota
+Seats available: 550 - everyone’s confirmed in-person RSVP people count
 ```
 
-### Committee dashboard card order (unchanged, matches request)
+Implementation details:
+- Add separate event-wide RSVP totals state on the Upload Guests page.
+- When the selected event loads, fetch all invitations/RSVPs for that event only for the totals calculation, while leaving the visible saved guest list restricted to the logged-in committee member.
+- Reuse the existing duplicate-aware RSVP rollup logic so duplicate guest entries do not inflate confirmed seat usage.
+- Update `availableRsvps` to subtract the event-wide confirmed in-person count, not the current member’s count.
+- Avoid changing the “My guests uploaded” list ordering/filtering from the previous request.
 
-1. RSVP totals card (now My RSVPs → Everyone inside)
-2. My Guests Uploaded card
-
-### Out of scope
-
-- No changes to `committee-workspace.tsx` layout, `My Guests Uploaded`, or the `My RSVP confirmations` section further down.
-- No new data, no schema changes.
+Verification before reporting back:
+- Check the exact route `/admin/upload?view=committee#add-guests` at the current preview viewport.
+- Verify as a committee user that the list still shows only that user’s guests.
+- Verify the cards show event-wide confirmed in-person seats and `Seats available = 550 - event-wide in-person confirmed`.
+- Verify the RSVP totals card still shows “My RSVPs” first and “Everyone” totals below it.

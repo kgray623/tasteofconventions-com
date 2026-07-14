@@ -38,6 +38,7 @@ import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 import { useServerFn } from "@tanstack/react-start";
 import { extractContactsFromImages } from "@/lib/extract-contacts.functions";
 import { removeTeamInvitesForPhone } from "@/lib/team.functions";
+import { getRsvpEvents, getRsvpTotals } from "@/lib/rsvp-totals.functions";
 import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
 import { Input } from "@/components/ui/input";
 import { Image as ImageIcon, Target } from "lucide-react";
@@ -305,13 +306,41 @@ function UploadPage() {
   const [screenshotBusy, setScreenshotBusy] = useState(false);
   const extractContacts = useServerFn(extractContactsFromImages);
   const removeTeamInvitesFn = useServerFn(removeTeamInvitesForPhone);
+  const fetchRsvpTotals = useServerFn(getRsvpTotals);
+  const fetchRsvpEvents = useServerFn(getRsvpEvents);
   const [inviterId, setInviterId] = useState<string | null>(null);
   const [requestedQuota, setRequestedQuota] = useState<string>("");
   const [quotaRequestedAt, setQuotaRequestedAt] = useState<string | null>(null);
   const [savingQuotaReq, setSavingQuotaReq] = useState(false);
   const [quotaPool, setQuotaPool] = useState({ total: TOTAL_RSVP_CAP, allocated: 0 });
+  const [eventSeatTotals, setEventSeatTotals] = useState({ inPerson: 0, zoom: 0, confirmed: 0, responses: 0 });
+  const [eventSeatTotalsLoading, setEventSeatTotalsLoading] = useState(false);
   const [activeInviters, setActiveInviters] = useState<{ id: string; name: string }[]>([]);
   const [uploadInviterId, setUploadInviterId] = useState<string>("");
+
+
+  const loadEventSeatTotals = async (evId: string) => {
+    if (!evId) {
+      setEventSeatTotals({ inPerson: 0, zoom: 0, confirmed: 0, responses: 0 });
+      return;
+    }
+    setEventSeatTotalsLoading(true);
+    try {
+      const result = await fetchRsvpTotals({ data: { includePersonal: false, eventId: evId } });
+      setEventSeatTotals({
+        inPerson: result.event.confirmed,
+        zoom: result.event.virtual,
+        confirmed: result.event.confirmed + result.event.virtual,
+        responses: result.event.requested,
+      });
+    } catch (e) {
+      console.error("[upload] load event seat totals failed", e);
+      toast.error("Couldn't load event-wide RSVP totals", { description: getErrorMessage(e) });
+      setEventSeatTotals({ inPerson: 0, zoom: 0, confirmed: 0, responses: 0 });
+    } finally {
+      setEventSeatTotalsLoading(false);
+    }
+  };
 
 
   const loadSavedGuests = async (evId: string) => {
@@ -393,6 +422,7 @@ function UploadPage() {
 
   useEffect(() => {
     void loadSavedGuests(eventId);
+    void loadEventSeatTotals(eventId);
     if (!eventId) return;
     let alive = true;
     return () => {
@@ -604,6 +634,7 @@ function UploadPage() {
       const { error } = await supabase.from("invitations").delete().eq("id", id);
       if (error) throw error;
       setSavedGuests((prev) => prev.filter((g) => g.id !== id));
+      void loadEventSeatTotals(eventId);
       toast.success(`Removed ${name}`);
     } catch (e) {
       console.error("[upload] remove guest failed", e);
@@ -726,6 +757,7 @@ function UploadPage() {
             row.id === g.id ? { ...row, rsvp_status: null, party_size: 1 } : row,
           ),
         );
+        void loadEventSeatTotals(eventId);
         toast.success(`Cleared RSVP for ${g.guest_name}.`);
         return;
       }
@@ -747,6 +779,7 @@ function UploadPage() {
           row.id === g.id ? { ...row, rsvp_status: status, party_size: partySize } : row,
         ),
       );
+      void loadEventSeatTotals(eventId);
       toast.success(
         status === "no"
           ? `Marked ${g.guest_name} as declined.`
@@ -787,20 +820,15 @@ function UploadPage() {
 
   useEffect(() => {
     let alive = true;
-    supabase
-      .from("events")
-      .select("id,title")
-      .order("starts_at")
-      .then(
-        ({ data }) => {
-          if (!alive) return;
-          setEvents(data ?? []);
-          if (data?.[0]) setEventId(data[0].id);
-        },
-        (err) => {
-          console.error("[upload] events load failed", err);
-        },
-      );
+    void fetchRsvpEvents({ data: {} })
+      .then((data) => {
+        if (!alive) return;
+        setEvents(data ?? []);
+        if (data?.[0]) setEventId(data[0].id);
+      })
+      .catch((err) => {
+        console.error("[upload] events load failed", err);
+      });
     return () => {
       alive = false;
     };
@@ -837,7 +865,7 @@ function UploadPage() {
     return <p className="text-muted-foreground">Opening login…</p>;
   }
 
-  const availableRsvps = Math.max(0, quotaPool.total - inPersonPeople);
+  const availableRsvps = Math.max(0, quotaPool.total - eventSeatTotals.inPerson);
 
   const flagDuplicates = async (parsed: Parsed[]) => {
     const seenP = new Map<string, number>();
@@ -1119,6 +1147,7 @@ function UploadPage() {
         );
       }
       void loadSavedGuests(eventId);
+      void loadEventSeatTotals(eventId);
     } catch (e) {
       console.error("[upload] importAll failed", e);
       toast.error("Import failed", { description: getErrorMessage(e) });
@@ -1231,7 +1260,7 @@ function UploadPage() {
         dupeNames = insertedNames.filter((_, i) => dupeIdSet.has(insertedIds[i]));
       }
 
-      await loadSavedGuests(eventId);
+      await Promise.all([loadSavedGuests(eventId), loadEventSeatTotals(eventId)]);
 
       if (insertedIds.length) {
         toast.success(
@@ -1363,6 +1392,7 @@ function UploadPage() {
       saveUploadDraft(user.id, pasted, { name: "", phone: "" }, rows);
       toast.success(`Added ${name}`);
       void loadSavedGuests(eventId);
+      void loadEventSeatTotals(eventId);
     } catch (e) {
       const dup = parseDuplicateGuestError(e);
       if (dup) {
@@ -1461,7 +1491,7 @@ function UploadPage() {
         </Card>
         <Card className="p-5">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Confirmed in-person</p>
-          <p className="font-display text-3xl mt-2">{inPersonPeople}</p>
+          <p className="font-display text-3xl mt-2">{eventSeatTotalsLoading ? "—" : eventSeatTotals.inPerson}</p>
         </Card>
         <Card className="p-5">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Requested RSVP quota</p>
@@ -1470,7 +1500,7 @@ function UploadPage() {
         <Card className="p-5">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Seats available</p>
           <p className="font-display text-3xl mt-2 text-terracotta">
-            {availableRsvps}
+            {eventSeatTotalsLoading ? "—" : availableRsvps}
           </p>
         </Card>
       </div>
