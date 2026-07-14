@@ -1,11 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-
-async function assertAdmin(supabase: any, userId: string) {
-  const { data } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
-  if (!data) throw new Error("Forbidden");
-}
+import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
+import { parseSelections } from "@/lib/preorder-math";
 
 export type CuisineKey = "Myanmar" | "African" | "Indonesian" | "Other";
 
@@ -47,6 +43,7 @@ type InvRow = {
   id: string;
   guest_name: string | null;
   guest_phone: string | null;
+  guest_email: string | null;
   is_committee: boolean | null;
   invite_sent_at: string | null;
 };
@@ -65,38 +62,17 @@ type PreRow = {
   selections: unknown;
 };
 
-function normalizeCuisine(raw: string): string {
-  const lower = raw.toLowerCase();
-  if (lower.includes("myanmar") || lower.includes("burmese")) return "Myanmar";
-  if (lower.includes("african") || lower.includes("mozambique")) return "African";
-  if (lower.includes("indonesia") || lower.includes("jakarta")) return "Indonesian";
-  return raw.trim() || "Other";
-}
-
-function parseSelections(selections: unknown): { cuisine: string; qty: number }[] {
-  if (!Array.isArray(selections)) return [];
-  const out: { cuisine: string; qty: number }[] = [];
-  for (const item of selections) {
-    if (!item || typeof item !== "object") continue;
-    const raw = String(
-      (item as any).cuisine ?? (item as any).country ?? "",
-    );
-    const qty = Number((item as any).qty ?? (item as any).quantity);
-    if (!Number.isFinite(qty) || qty <= 0) continue;
-    out.push({ cuisine: normalizeCuisine(raw), qty: Math.round(qty) });
-  }
-  return out;
-}
-
 export const getAdminAudit = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdmin(context.supabase, context.userId);
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const [invRes, rsvpRes, preRes] = await Promise.all([
       supabaseAdmin
         .from("invitations")
-        .select("id,guest_name,guest_phone,is_committee,invite_sent_at"),
+        .select("id,guest_name,guest_phone,guest_email,is_committee,invite_sent_at"),
       supabaseAdmin
         .from("rsvps")
         .select("invitation_id,status,party_size,attendance_mode,ordering_food"),
@@ -120,40 +96,41 @@ export const getAdminAudit = createServerFn({ method: "GET" })
     totals.sms_sent = invs.filter((i) => !!i.invite_sent_at).length;
     totals.rsvp_records = rsvps.length;
 
-    const dupSeen = new Set<string>();
+    const rsvpByInv = new Map<string, RsvpRow>();
     const dupInvitationIds: string[] = [];
     for (const r of rsvps) {
       if (!invIds.has(r.invitation_id)) continue;
-      if (dupSeen.has(r.invitation_id)) {
+      if (rsvpByInv.has(r.invitation_id)) {
         dupInvitationIds.push(r.invitation_id);
         continue;
       }
-      dupSeen.add(r.invitation_id);
-
-      const party = r.party_size ?? 1;
-      const status = r.status;
-      const mode = r.attendance_mode;
-      if (status === "yes") {
-        totals.confirmed_total += party;
-        if (mode === "zoom") totals.confirmed_zoom += party;
-        else totals.confirmed_in_person += party;
-      } else if (status === "no") {
-        totals.declined += party;
-      } else if (status === "maybe") {
-        totals.maybe += party;
-      } else if (status === "waitlist") {
-        totals.waitlist += party;
-      }
+      rsvpByInv.set(r.invitation_id, r);
     }
 
-    totals.pending = Math.max(
-      0,
-      totals.guests_uploaded
-        - totals.confirmed_total
-        - totals.declined
-        - totals.maybe
-        - totals.waitlist,
-    );
+    const groupIds = buildDuplicateGroupIds(invs.map((inv) => ({
+      id: inv.id,
+      guest_name: inv.guest_name,
+      guest_phone: inv.guest_phone,
+      guest_email: inv.guest_email,
+    })));
+    const rollup = computeRsvpRollup(invs.map((inv) => {
+      const rsvp = rsvpByInv.get(inv.id);
+      return {
+        id: inv.id,
+        groupId: groupIds.get(inv.id) ?? inv.id,
+        status: rsvp?.status ?? null,
+        party_size: rsvp?.party_size ?? 1,
+        attendance_mode: rsvp?.attendance_mode ?? null,
+      };
+    }));
+
+    totals.confirmed_in_person = rollup.people.inPerson;
+    totals.confirmed_zoom = rollup.people.zoom;
+    totals.confirmed_total = rollup.people.confirmed;
+    totals.declined = rollup.people.declined;
+    totals.maybe = rollup.people.maybe;
+    totals.waitlist = rollup.people.waitlist;
+    totals.pending = rollup.responses.pending;
 
     // Food orders: count meals (quantities), not rows.
     totals.preorder_rows = preorders.length;
@@ -205,7 +182,9 @@ export const getAdminAudit = createServerFn({ method: "GET" })
 export const getReconciliationRows = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdmin(context.supabase, context.userId);
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const [invRes, rsvpRes, preRes] = await Promise.all([
       supabaseAdmin

@@ -1,0 +1,171 @@
+export type RsvpMathRow = {
+  id?: string | null;
+  groupId?: string | null;
+  status?: string | null;
+  party_size?: number | string | null;
+  attendance_mode?: string | null;
+};
+
+export type RsvpIdentityRow = {
+  id: string;
+  guest_name?: string | null;
+  guest_email?: string | null;
+  guest_email_normalized?: string | null;
+  guest_phone?: string | null;
+  guest_phone_normalized?: string | null;
+};
+
+export type RsvpRollup = {
+  responses: {
+    uploaded: number;
+    responded: number;
+    confirmed: number;
+    inPerson: number;
+    zoom: number;
+    declined: number;
+    maybe: number;
+    waitlist: number;
+    pending: number;
+  };
+  people: {
+    allIfEveryoneShowed: number;
+    confirmed: number;
+    inPerson: number;
+    zoom: number;
+    declined: number;
+    maybe: number;
+    waitlist: number;
+    pending: number;
+  };
+};
+
+const statusRank = (status: string | null | undefined) =>
+  status === "yes" ? 4 : status === "waitlist" ? 3 : status === "maybe" ? 2 : status === "no" ? 1 : 0;
+
+export const rsvpPartySize = (value: number | string | null | undefined) => {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : 1;
+};
+
+export const rsvpIsZoom = (attendanceMode: string | null | undefined) => attendanceMode === "zoom";
+
+export const normalizeRsvpStatus = (status: string | null | undefined) =>
+  status === "yes" || status === "no" || status === "maybe" || status === "waitlist" ? status : null;
+
+export function buildDuplicateGroupIds(rows: RsvpIdentityRow[]) {
+  const normName = (value: string | null | undefined) =>
+    (value ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+  const normEmail = (value: string | null | undefined) =>
+    (value ?? "").trim().toLowerCase();
+  const normPhone = (value: string | null | undefined) =>
+    (value ?? "").replace(/\D/g, "").slice(-10);
+
+  const keyToGroup = new Map<string, string>();
+  const idToGroup = new Map<string, string>();
+
+  for (const row of rows) {
+    const keys: string[] = [];
+    const name = normName(row.guest_name);
+    const email = normEmail(row.guest_email_normalized ?? row.guest_email);
+    const phone = normPhone(row.guest_phone_normalized ?? row.guest_phone);
+    if (name) keys.push(`n:${name}`);
+    if (email) keys.push(`e:${email}`);
+    if (phone.length >= 7) keys.push(`p:${phone}`);
+
+    let groupId: string | null = null;
+    for (const key of keys) {
+      const existing = keyToGroup.get(key);
+      if (existing) {
+        groupId = existing;
+        break;
+      }
+    }
+    if (!groupId) groupId = row.id;
+    for (const key of keys) keyToGroup.set(key, groupId);
+    idToGroup.set(row.id, groupId);
+  }
+
+  return idToGroup;
+}
+
+export function computeRsvpRollup(rows: RsvpMathRow[]): RsvpRollup {
+  const grouped = new Map<string, { status: string | null; partySize: number; attendanceMode: string | null }>();
+
+  rows.forEach((row, index) => {
+    const groupId = row.groupId || row.id || `row-${index}`;
+    const candidate = {
+      status: normalizeRsvpStatus(row.status),
+      partySize: rsvpPartySize(row.party_size),
+      attendanceMode: row.attendance_mode ?? null,
+    };
+    const current = grouped.get(groupId);
+    if (
+      !current ||
+      statusRank(candidate.status) > statusRank(current.status) ||
+      (statusRank(candidate.status) === statusRank(current.status) && candidate.partySize > current.partySize)
+    ) {
+      grouped.set(groupId, candidate);
+    }
+  });
+
+  const rollup: RsvpRollup = {
+    responses: {
+      uploaded: grouped.size,
+      responded: 0,
+      confirmed: 0,
+      inPerson: 0,
+      zoom: 0,
+      declined: 0,
+      maybe: 0,
+      waitlist: 0,
+      pending: 0,
+    },
+    people: {
+      allIfEveryoneShowed: grouped.size,
+      confirmed: 0,
+      inPerson: 0,
+      zoom: 0,
+      declined: 0,
+      maybe: 0,
+      waitlist: 0,
+      pending: 0,
+    },
+  };
+
+  for (const row of grouped.values()) {
+    const party = rsvpPartySize(row.partySize);
+    const status = normalizeRsvpStatus(row.status);
+    if (!status) {
+      rollup.responses.pending += 1;
+      rollup.people.pending += 1;
+      continue;
+    }
+
+    rollup.responses.responded += 1;
+    if (status === "yes") {
+      rollup.responses.confirmed += 1;
+      rollup.people.confirmed += party;
+      if (rsvpIsZoom(row.attendanceMode)) {
+        rollup.responses.zoom += 1;
+        rollup.people.zoom += party;
+      } else {
+        rollup.responses.inPerson += 1;
+        rollup.people.inPerson += party;
+      }
+    } else if (status === "no") {
+      rollup.responses.declined += 1;
+      rollup.people.declined += party;
+    } else if (status === "maybe") {
+      rollup.responses.maybe += 1;
+      rollup.people.maybe += party;
+    } else if (status === "waitlist") {
+      rollup.responses.waitlist += 1;
+      rollup.people.waitlist += party;
+    }
+  }
+
+  return rollup;
+}
+
+export const formatPeopleResponses = (people: number, responses: number) =>
+  people === responses ? `${people}` : `${people} people / ${responses} responses`;

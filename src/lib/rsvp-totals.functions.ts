@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
+import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
 
 export type RsvpTotalsResult = {
   event: {
@@ -40,11 +40,6 @@ export type CommitteeWorkspaceGuestsResult = {
   myHostIds: string[];
 };
 
-const digitsOnly = (s: string | null | undefined) =>
-  (s ?? "").replace(/\D/g, "");
-const normName = (s: string | null | undefined) =>
-  (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
-
 type InviterIdentity = {
   id?: string;
   host_id: string | null;
@@ -54,35 +49,6 @@ type InviterIdentity = {
   active?: boolean | null;
   requested_quota?: number | null;
 };
-
-async function resolveMyHostIds(
-  supabase: SupabaseClient<Database>,
-  userId: string,
-  inviterRows: InviterIdentity[],
-) {
-  const { data: authUser } = await supabase.auth.getUser();
-  const myPhoneTail = digitsOnly(authUser?.user?.phone).slice(-10);
-  let myName = "";
-  const { data: prof } = await supabase
-    .from("profiles")
-    .select("display_name")
-    .eq("id", userId)
-    .maybeSingle();
-  myName = normName(prof?.display_name);
-
-  const mineHostIds = new Set<string>([userId]);
-  const myInviters = inviterRows.filter((r) => {
-    if (!r.host_id) return false;
-    if (r.host_id === userId) return true;
-    const rowTail = digitsOnly(r.phone).slice(-10);
-    if (myPhoneTail && rowTail && rowTail === myPhoneTail) return true;
-    if (myName && normName(r.name) === myName) return true;
-    return false;
-  });
-  myInviters.forEach((r) => r.host_id && mineHostIds.add(r.host_id));
-
-  return { mineHostIds, myInviters };
-}
 
 export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -115,7 +81,24 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
     if (rsvpsRes.error) throw new Error(rsvpsRes.error.message);
 
     const inviterRows = (invitersRes.data ?? []) as InviterIdentity[];
-    const { mineHostIds } = await resolveMyHostIds(supabase, userId, inviterRows);
+    const digitsOnly = (s: string | null | undefined) => (s ?? "").replace(/\D/g, "");
+    const normName = (s: string | null | undefined) => (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
+    const { data: authUser } = await supabase.auth.getUser();
+    const myPhoneTail = digitsOnly(authUser?.user?.phone).slice(-10);
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", userId)
+      .maybeSingle();
+    const myName = normName(prof?.display_name);
+    const mineHostIds = new Set<string>([userId]);
+    inviterRows.forEach((r) => {
+      if (!r.host_id) return;
+      if (r.host_id === userId) mineHostIds.add(r.host_id);
+      const rowTail = digitsOnly(r.phone).slice(-10);
+      if (myPhoneTail && rowTail && rowTail === myPhoneTail) mineHostIds.add(r.host_id);
+      if (myName && normName(r.name) === myName) mineHostIds.add(r.host_id);
+    });
 
     const invitationRows = (invitationsRes.data ?? []) as Array<{
       id: string;
@@ -209,29 +192,12 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
     );
 
 
-    // Build the same duplicate groups the admin upload page uses, so
-    // Monahan/Monaghan-style pairs collapse into one confirmation.
-    const normNameKey = (s: string | null | undefined) =>
-      (s ?? "").trim().toLowerCase().replace(/\s+/g, " ");
-    const keyToGroup = new Map<string, string>();
-    const idToGroup = new Map<string, string>();
-    for (const inv of invitationRows) {
-      const keys: string[] = [];
-      const n = normNameKey(inv.guest_name);
-      const e = (inv.guest_email_normalized ?? "").trim().toLowerCase();
-      const p = (inv.guest_phone_normalized ?? "").replace(/\D/g, "");
-      if (n) keys.push("n:" + n);
-      if (e) keys.push("e:" + e);
-      if (p && p.length >= 7) keys.push("p:" + p.slice(-10));
-      let groupId: string | null = null;
-      for (const k of keys) {
-        const existing = keyToGroup.get(k);
-        if (existing) { groupId = existing; break; }
-      }
-      if (!groupId) groupId = inv.id;
-      for (const k of keys) keyToGroup.set(k, groupId);
-      idToGroup.set(inv.id, groupId);
-    }
+    const idToGroup = buildDuplicateGroupIds(invitationRows.map((inv) => ({
+      id: inv.id,
+      guest_name: inv.guest_name,
+      guest_email_normalized: inv.guest_email_normalized,
+      guest_phone_normalized: inv.guest_phone_normalized,
+    })));
 
     // Index RSVPs by invitation id (one row per invitation in practice).
     const rsvpByInvitation = new Map<string, { status: string | null; party_size: number; attendance_mode: string | null }>();
@@ -244,72 +210,59 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
       });
     }
 
-    // Best RSVP per group (yes > waitlist > maybe > no; tie-break on larger party).
-    const rank = (status: string | null) =>
-      status === "yes" ? 4 : status === "waitlist" ? 3 : status === "maybe" ? 2 : status === "no" ? 1 : 0;
-    type Best = { status: string | null; party_size: number; attendance_mode: string | null; hostIds: Set<string> };
-    const groupBest = new Map<string, Best>();
-    for (const inv of invitationRows) {
-      const gid = idToGroup.get(inv.id)!;
-      const r = rsvpByInvitation.get(inv.id);
-      const cand = {
-        status: r?.status ?? null,
-        party_size: r?.party_size ?? 1,
-        attendance_mode: r?.attendance_mode ?? null,
+    const rollup = computeRsvpRollup(invitationRows.map((inv) => {
+      const rsvp = rsvpByInvitation.get(inv.id);
+      return {
+        id: inv.id,
+        groupId: idToGroup.get(inv.id) ?? inv.id,
+        status: rsvp?.status ?? null,
+        party_size: rsvp?.party_size ?? 1,
+        attendance_mode: rsvp?.attendance_mode ?? null,
       };
-      const current = groupBest.get(gid);
-      if (!current) {
-        groupBest.set(gid, { ...cand, hostIds: new Set(inv.host_id ? [inv.host_id] : []) });
-      } else {
-        if (inv.host_id) current.hostIds.add(inv.host_id);
-        if (
-          rank(cand.status) > rank(current.status) ||
-          (rank(cand.status) === rank(current.status) && cand.party_size > current.party_size)
-        ) {
-          current.status = cand.status;
-          current.party_size = cand.party_size;
-          current.attendance_mode = cand.attendance_mode;
-        }
-      }
-    }
-
-    let confirmed = 0;
-    let virtual = 0;
-    for (const best of groupBest.values()) {
-      if (best.status !== "yes") continue;
-      if (best.attendance_mode === "zoom") virtual += best.party_size;
-      else confirmed += best.party_size;
-    }
+    }));
 
 
     let mine: RsvpTotalsResult["mine"] = null;
     if (data.includePersonal) {
-      // Resolve "my" host ids by user id + phone tail + display name.
-      const { mineHostIds, myInviters } = await resolveMyHostIds(supabase, userId, inviterRows);
+      const digitsOnly = (s: string | null | undefined) => (s ?? "").replace(/\D/g, "");
+      const normName = (s: string | null | undefined) => (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
+      const { data: authUser } = await supabase.auth.getUser();
+      const myPhoneTail = digitsOnly(authUser?.user?.phone).slice(-10);
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", userId)
+        .maybeSingle();
+      const myName = normName(prof?.display_name);
+      const mineHostIds = new Set<string>([userId]);
+      const myInviters = inviterRows.filter((r) => {
+        if (!r.host_id) return false;
+        if (r.host_id === userId) return true;
+        const rowTail = digitsOnly(r.phone).slice(-10);
+        if (myPhoneTail && rowTail && rowTail === myPhoneTail) return true;
+        if (myName && normName(r.name) === myName) return true;
+        return false;
+      });
+      myInviters.forEach((r) => r.host_id && mineHostIds.add(r.host_id));
 
-      const hostIdArr = Array.from(mineHostIds);
-      const { data: myInvites } = await supabase
-        .from("invitations")
-        .select("id,host_id")
-        .in("host_id", hostIdArr);
-      const uploaded = (myInvites ?? []).length;
-      const myInviteIds = new Set((myInvites ?? []).map((i) => i.id));
-
-      // Dedupe my confirmations by group: a group counts as "mine" if any
-      // invitation in it belongs to one of my host ids. Personal quota
-      // remaining is seat/person based, so count party-size bodies here.
-      let myConfirmed = 0;
-      let myVirtual = 0;
-      const seenGroups = new Set<string>();
-      for (const invId of myInviteIds) {
-        const gid = idToGroup.get(invId);
-        if (!gid || seenGroups.has(gid)) continue;
-        seenGroups.add(gid);
-        const best = groupBest.get(gid);
-        if (!best || best.status !== "yes") continue;
-        if (best.attendance_mode === "zoom") myVirtual += best.party_size;
-        else myConfirmed += best.party_size;
-      }
+      const myGroupIds = new Set(
+        invitationRows
+          .filter((inv) => inv.host_id && mineHostIds.has(inv.host_id))
+          .map((inv) => idToGroup.get(inv.id) ?? inv.id),
+      );
+      const uploaded = invitationRows.filter((inv) => inv.host_id && mineHostIds.has(inv.host_id)).length;
+      const myRollup = computeRsvpRollup(invitationRows
+        .filter((inv) => myGroupIds.has(idToGroup.get(inv.id) ?? inv.id))
+        .map((inv) => {
+          const rsvp = rsvpByInvitation.get(inv.id);
+          return {
+            id: inv.id,
+            groupId: idToGroup.get(inv.id) ?? inv.id,
+            status: rsvp?.status ?? null,
+            party_size: rsvp?.party_size ?? 1,
+            attendance_mode: rsvp?.attendance_mode ?? null,
+          };
+        }));
 
       // Quota = sum of approved inviter quotas that map to me. Pending
       // requested_quota values are surfaced separately as pendingRequest.
@@ -324,15 +277,15 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
       mine = {
         requested: myQuota,
         uploaded,
-        confirmed: myConfirmed,
-        virtual: myVirtual,
+        confirmed: myRollup.people.inPerson,
+        virtual: myRollup.people.zoom,
         pendingRequest,
           inviterIds: activeMine.map((r) => r.id).filter((id): id is string => !!id),
       };
     }
 
     return {
-      event: { requested, confirmed, virtual },
+      event: { requested, confirmed: rollup.people.inPerson, virtual: rollup.people.zoom },
       mine,
     };
   });

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, ExternalLink, Search, Users } from "lucide-react";
+import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
 
 type StatusFilter = "all" | "confirmed" | "declined" | "maybe" | "waitlist" | "pending";
 type SortMode = "alpha" | "newest" | "oldest";
@@ -81,6 +82,22 @@ function escapeCsv(v: unknown) {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
+function rollupRows(sourceRows: Row[]) {
+  const groupIds = buildDuplicateGroupIds(sourceRows.map((r) => ({
+    id: r.invitation_id,
+    guest_name: r.name,
+    guest_email: r.email,
+    guest_phone: r.phone,
+  })));
+  return computeRsvpRollup(sourceRows.map((r) => ({
+    id: r.invitation_id,
+    groupId: groupIds.get(r.invitation_id) ?? r.invitation_id,
+    status: r.rsvp_status === "pending" ? null : r.rsvp_status,
+    party_size: r.party_size,
+    attendance_mode: r.attendance_mode,
+  })));
+}
+
 function GuestsPage() {
   const { status, mode, audience, sort } = Route.useSearch();
   const navigate = useNavigate({ from: "/admin/guests" });
@@ -105,28 +122,26 @@ function GuestsPage() {
     return () => { alive = false; };
   }, [fetchRows]);
 
-  const partyOf = (r: Row) => {
-    const n = Number(r.party_size);
-    return Number.isFinite(n) && n > 0 ? n : 1;
-  };
-
   const counts = useMemo(() => {
     const c: Record<StatusFilter, number> = { all: 0, confirmed: 0, declined: 0, maybe: 0, waitlist: 0, pending: 0 };
     const rsvps: Record<StatusFilter, number> = { all: 0, confirmed: 0, declined: 0, maybe: 0, waitlist: 0, pending: 0 };
     const modePeople = { in_person: 0, zoom: 0 };
     if (!rows) return { people: c, rsvps, modePeople };
-    for (const r of rows) {
-      const s = statusOfRow(r);
-      const p = partyOf(r);
-      c.all += p;
-      c[s] += p;
-      rsvps.all += 1;
-      rsvps[s] += 1;
-      if (s === "confirmed") {
-        if (r.attendance_mode === "zoom") modePeople.zoom += p;
-        else modePeople.in_person += p;
-      }
-    }
+    const rollup = rollupRows(rows);
+    c.all = rollup.people.allIfEveryoneShowed;
+    c.confirmed = rollup.people.confirmed;
+    c.declined = rollup.people.declined;
+    c.maybe = rollup.people.maybe;
+    c.waitlist = rollup.people.waitlist;
+    c.pending = rollup.responses.pending;
+    rsvps.all = rollup.responses.uploaded;
+    rsvps.confirmed = rollup.responses.confirmed;
+    rsvps.declined = rollup.responses.declined;
+    rsvps.maybe = rollup.responses.maybe;
+    rsvps.waitlist = rollup.responses.waitlist;
+    rsvps.pending = rollup.responses.pending;
+    modePeople.in_person = rollup.people.inPerson;
+    modePeople.zoom = rollup.people.zoom;
     return { people: c, rsvps, modePeople };
   }, [rows]);
 
@@ -181,6 +196,29 @@ function GuestsPage() {
     });
   }, [rows, activeStatus, activeAudience, mode, query, activeSort]);
 
+  const filteredCounts = useMemo(() => {
+    const rollup = rollupRows(filtered);
+    return {
+      people: {
+        all: rollup.people.allIfEveryoneShowed,
+        confirmed: rollup.people.confirmed,
+        declined: rollup.people.declined,
+        maybe: rollup.people.maybe,
+        waitlist: rollup.people.waitlist,
+        pending: rollup.responses.pending,
+      } as Record<StatusFilter, number>,
+      rsvps: {
+        all: rollup.responses.uploaded,
+        confirmed: rollup.responses.confirmed,
+        declined: rollup.responses.declined,
+        maybe: rollup.responses.maybe,
+        waitlist: rollup.responses.waitlist,
+        pending: rollup.responses.pending,
+      } as Record<StatusFilter, number>,
+      modePeople: { in_person: rollup.people.inPerson, zoom: rollup.people.zoom },
+    };
+  }, [filtered]);
+
 
   const exportCsv = () => {
     const headers = ["name", "phone", "email", "audience", "status", "party_size", "attendance_mode", "responded_at"];
@@ -217,8 +255,10 @@ function GuestsPage() {
             {rows === null
               ? "Loading…"
               : activeStatus === "confirmed"
-                ? <>Confirmed: <span className="tabular-nums font-medium text-ink">{counts.people.confirmed}</span> people across <span className="tabular-nums font-medium text-ink">{counts.rsvps.confirmed}</span> RSVPs (<span className="tabular-nums">{counts.modePeople.in_person}</span> in person · <span className="tabular-nums">{counts.modePeople.zoom}</span> Zoom).</>
-                : <>Showing <span className="tabular-nums font-medium text-ink">{counts.people[activeStatus]}</span> people across <span className="tabular-nums font-medium text-ink">{filtered.length}</span> guests (of <span className="tabular-nums font-medium text-ink">{counts.rsvps.all}</span> total uploaded · <span className="tabular-nums">{counts.people.all}</span> people if everyone showed up).</>
+                ? <>Confirmed: <span className="tabular-nums font-medium text-ink">{filteredCounts.people.confirmed}</span> people across <span className="tabular-nums font-medium text-ink">{filteredCounts.rsvps.confirmed}</span> RSVPs (<span className="tabular-nums">{filteredCounts.modePeople.in_person}</span> in person · <span className="tabular-nums">{filteredCounts.modePeople.zoom}</span> Zoom).</>
+                : activeStatus === "pending"
+                  ? <>Pending: <span className="tabular-nums font-medium text-ink">{filteredCounts.rsvps.pending}</span> guests with no RSVP yet (of <span className="tabular-nums font-medium text-ink">{counts.rsvps.all}</span> total uploaded).</>
+                  : <>Showing <span className="tabular-nums font-medium text-ink">{filteredCounts.people[activeStatus]}</span> people across <span className="tabular-nums font-medium text-ink">{filteredCounts.rsvps[activeStatus]}</span> RSVPs (of <span className="tabular-nums font-medium text-ink">{counts.rsvps.all}</span> total uploaded).</>
             }
           </p>
         </div>

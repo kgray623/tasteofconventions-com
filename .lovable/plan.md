@@ -1,22 +1,35 @@
-## Fix: duplicate Upload guests button still visible
+UTC 2026-07-14 — Plan to fix RSVP math consistency
 
-You're right — I said the duplicate was removed and it wasn't. The screenshot shows both buttons still on screen.
+I will make the app use one authoritative RSVP math rule everywhere, instead of each screen calculating totals differently.
 
-### What's there now
-1. Top orange "Upload guests" (directly under "Welcome, Kari") — rendered by `src/routes/_authenticated/admin.tsx` (line ~155-162, admin layout header).
-2. Bottom orange "Upload guests" — rendered by `src/components/committee-workspace.tsx` (line ~609-616, the 2-column grid with "Add one guest").
-3. A third, smaller "Upload guests" outline button inside the "My full guest list" section header (line ~920-926) — not visible in the screenshot but still in the code.
+What I will change:
 
-### Change
-- Remove the top button in `src/routes/_authenticated/admin.tsx` (the one under your name — matches "remove the upload guests under my name" from your prior instruction).
-- Keep the bottom "Upload guests" + "Add one guest" pair in `committee-workspace.tsx` intact (that's your primary action row).
-- Leave the small outline button inside "My full guest list" as-is (contextual, not a duplicate of the header).
+1. Centralize the RSVP math
+- Create one shared helper for RSVP totals.
+- Use the same status rules everywhere:
+  - Confirmed in-person = `status = yes` and not Zoom, summed by `party_size`.
+  - Confirmed Zoom = `status = yes` and Zoom, summed by `party_size`.
+  - Total confirmed = in-person people + Zoom people.
+  - Pending = uploaded guests with no RSVP status, counted as guest records/responses, not party-size people.
+  - Declined / waitlist / maybe will be counted consistently and labeled clearly.
+  - Zoom never reduces in-person seat availability.
+  - Seats available = total seats minus confirmed in-person people only.
 
-No other changes. No logic, no data, no routes touched.
+2. Fix the committee view numbers
+- Fix the “RSVP in person”, “RSVP by Zoom”, “Decline”, and “Pending” section headers so they don’t silently mix guest-record counts with party-size people counts.
+- Show both when needed, for example: `RSVP in person (75 people / 46 responses)`.
+- Make “My RSVP confirmations”, “new guests RSVP’d”, “My RSVP totals”, and “My Guests Uploaded” use the same rules.
 
-### Verification (before saying done)
-- Load `/admin?view=committee` at 384×673 mobile viewport in Playwright as Kari.
-- Screenshot and confirm exactly ONE orange "Upload guests" button is visible above the fold, and it still navigates to `/admin/upload#add-guests`.
-- Confirm nothing else moved or broke on that page.
+3. Fix admin overview / guest roster / upload page consistency
+- Update admin dashboard totals, guest roster filter totals, RSVP totals card, and upload page summary cards to match the same helper.
+- Remove formulas like `uploaded - confirmed people - declined people` for pending, because that creates bad math when party sizes are greater than 1.
 
-Timestamp will be included in the update summary when the fix is verified.
+4. Preserve existing behavior
+- No submitted guests, RSVPs, invitations, quotas, or uploaded information will be deleted, hidden, renamed, or overwritten.
+- This is a calculation/display fix only unless I find an actual corrupted RSVP row; if I do, I will report it before changing data.
+
+5. Verification before I call it fixed
+- Read the database counts directly.
+- Open the admin dashboard, committee preview, guest roster, and upload/guest-list route.
+- Verify on the mobile viewport you are using that the displayed numbers match the database and match each other.
+- Specifically verify in-person seats, Zoom totals, pending totals, declined totals, and response-vs-people labels.
