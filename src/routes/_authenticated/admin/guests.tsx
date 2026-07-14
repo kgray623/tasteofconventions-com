@@ -179,9 +179,14 @@ function GuestsPage() {
       if (mode && r.attendance_mode !== mode) return false;
       if (activeAudience === "guest" && r.is_committee) return false;
       if (activeAudience === "committee" && !r.is_committee) return false;
+      if (activeInviter !== "all") {
+        if (activeInviter === "none") {
+          if (r.inviter_id) return false;
+        } else if ((r.inviter_id ?? "") !== activeInviter) return false;
+      }
       if (q) {
         const nameNorm = r.name.toLowerCase().replace(/[^a-z]/g, "");
-        const hay = `${r.name} ${r.phone}`.toLowerCase();
+        const hay = `${r.name} ${r.phone} ${r.inviter_name ?? ""}`.toLowerCase();
         if (hay.includes(q)) return true;
         if (qNorm && (nameNorm.includes(qNameNorm) || r.phone.replace(/\D/g, "").includes(qNorm))) return true;
         // Fuzzy spelling match (e.g. "Daisy" finds "Deisy")
@@ -198,7 +203,23 @@ function GuestsPage() {
       }
       return a.name.localeCompare(b.name);
     });
-  }, [rows, activeStatus, activeAudience, mode, query, activeSort]);
+  }, [rows, activeStatus, activeAudience, mode, query, activeSort, activeInviter]);
+
+  const inviterOptions = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; count: number }>();
+    for (const r of rows ?? []) {
+      if (!r.inviter_id) continue;
+      const cur = map.get(r.inviter_id);
+      if (cur) cur.count++;
+      else map.set(r.inviter_id, { id: r.inviter_id, name: r.inviter_name || "(unnamed)", count: 1 });
+    }
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [rows]);
+  const unattributedCount = useMemo(
+    () => (rows ?? []).filter((r) => !r.inviter_id).length,
+    [rows],
+  );
+
 
   const filteredCounts = useMemo(() => {
     const rollup = rollupRows(filtered);
