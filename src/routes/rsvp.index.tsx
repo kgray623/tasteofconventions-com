@@ -231,6 +231,29 @@ function PreviewPage() {
               />
             </div>
           </div>
+          {status === "no" && (
+            <div className="rounded-md border-2 border-terracotta bg-terracotta/5 p-4 space-y-3">
+              <p className="text-sm text-ink">
+                Sorry you can't join us in person. Would you like to attend virtually on Zoom instead?
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  className="bg-terracotta text-cream hover:bg-terracotta/90"
+                  onClick={() => {
+                    setStatus("yes");
+                    setAttendanceMode("zoom");
+                    setPartySize(1);
+                  }}
+                >
+                  <Video className="w-4 h-4 mr-2" /> Yes, join by Zoom
+                </Button>
+                <span className="text-xs text-muted-foreground self-center">
+                  Or continue below to decline entirely.
+                </span>
+              </div>
+            </div>
+          )}
           {status !== "no" && (
             <>
               <div className="space-y-1.5">
