@@ -1185,7 +1185,9 @@ function UploadPage() {
             guest_phone: (c.phone || "").trim() || null,
             notes: null,
             is_committee: importAsCommittee,
+            inviter_id: uploadInviterId || null,
           })
+
           .select("id,guest_name")
           .single();
         if (error || !data) {
