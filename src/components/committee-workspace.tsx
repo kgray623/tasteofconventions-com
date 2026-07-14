@@ -850,6 +850,25 @@ export function CommitteeWorkspace() {
               toggleSent={toggleSent}
             />
             <MyGuestsGroup
+              label="Pending"
+              tone="muted"
+              guests={myPending}
+              peopleCount={pendingPeople}
+              responseCount={pendingResponseCount}
+              open={openMyGroup.pending}
+              onToggle={() => setOpenMyGroup((p) => ({ ...p, pending: !p.pending }))}
+              action={pendingSortControl}
+              isCommitteeGuest={isCommitteeGuest}
+              duplicateIds={duplicateIds}
+              settingRsvpId={settingRsvpId}
+              setRsvpFor={setRsvpFor}
+              saveGuestEdits={saveGuestEdits}
+              deleteGuest={deleteGuest}
+              buildSmsInfo={buildSmsInfo}
+              markingSentId={markingSentId}
+              toggleSent={toggleSent}
+            />
+            <MyGuestsGroup
               label="RSVP by Zoom"
               tone="muted"
               guests={myZoom}
@@ -875,25 +894,6 @@ export function CommitteeWorkspace() {
               responseCount={declinedResponseCount}
               open={openMyGroup.declined}
               onToggle={() => setOpenMyGroup((p) => ({ ...p, declined: !p.declined }))}
-              isCommitteeGuest={isCommitteeGuest}
-              duplicateIds={duplicateIds}
-              settingRsvpId={settingRsvpId}
-              setRsvpFor={setRsvpFor}
-              saveGuestEdits={saveGuestEdits}
-              deleteGuest={deleteGuest}
-              buildSmsInfo={buildSmsInfo}
-              markingSentId={markingSentId}
-              toggleSent={toggleSent}
-            />
-            <MyGuestsGroup
-              label="Pending"
-              tone="muted"
-              guests={myPending}
-              peopleCount={pendingPeople}
-              responseCount={pendingResponseCount}
-              open={openMyGroup.pending}
-              onToggle={() => setOpenMyGroup((p) => ({ ...p, pending: !p.pending }))}
-              action={pendingSortControl}
               isCommitteeGuest={isCommitteeGuest}
               duplicateIds={duplicateIds}
               settingRsvpId={settingRsvpId}
