@@ -854,6 +854,8 @@ export function CommitteeWorkspace() {
             />
           </div>
         )}
+        </CollapsibleContent>
+        </Collapsible>
       </Card>
 
 
