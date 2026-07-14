@@ -82,6 +82,22 @@ function escapeCsv(v: unknown) {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
+function rollupRows(sourceRows: Row[]) {
+  const groupIds = buildDuplicateGroupIds(sourceRows.map((r) => ({
+    id: r.invitation_id,
+    guest_name: r.name,
+    guest_email: r.email,
+    guest_phone: r.phone,
+  })));
+  return computeRsvpRollup(sourceRows.map((r) => ({
+    id: r.invitation_id,
+    groupId: groupIds.get(r.invitation_id) ?? r.invitation_id,
+    status: r.rsvp_status === "pending" ? null : r.rsvp_status,
+    party_size: r.party_size,
+    attendance_mode: r.attendance_mode,
+  })));
+}
+
 function GuestsPage() {
   const { status, mode, audience, sort } = Route.useSearch();
   const navigate = useNavigate({ from: "/admin/guests" });
@@ -92,22 +108,6 @@ function GuestsPage() {
   const activeStatus: StatusFilter = status ?? "all";
   const activeAudience = audience ?? "all";
   const activeSort: SortMode = sort ?? "alpha";
-
-  const rollupRows = (sourceRows: Row[]) => {
-    const groupIds = buildDuplicateGroupIds(sourceRows.map((r) => ({
-      id: r.invitation_id,
-      guest_name: r.name,
-      guest_email: r.email,
-      guest_phone: r.phone,
-    })));
-    return computeRsvpRollup(sourceRows.map((r) => ({
-      id: r.invitation_id,
-      groupId: groupIds.get(r.invitation_id) ?? r.invitation_id,
-      status: r.rsvp_status === "pending" ? null : r.rsvp_status,
-      party_size: r.party_size,
-      attendance_mode: r.attendance_mode,
-    })));
-  };
 
   useEffect(() => {
     let alive = true;
