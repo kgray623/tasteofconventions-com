@@ -38,6 +38,7 @@ import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 import { useServerFn } from "@tanstack/react-start";
 import { extractContactsFromImages } from "@/lib/extract-contacts.functions";
 import { removeTeamInvitesForPhone } from "@/lib/team.functions";
+import { getRsvpTotals } from "@/lib/rsvp-totals.functions";
 import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
 import { Input } from "@/components/ui/input";
 import { Image as ImageIcon, Target } from "lucide-react";
@@ -305,6 +306,7 @@ function UploadPage() {
   const [screenshotBusy, setScreenshotBusy] = useState(false);
   const extractContacts = useServerFn(extractContactsFromImages);
   const removeTeamInvitesFn = useServerFn(removeTeamInvitesForPhone);
+  const fetchRsvpTotals = useServerFn(getRsvpTotals);
   const [inviterId, setInviterId] = useState<string | null>(null);
   const [requestedQuota, setRequestedQuota] = useState<string>("");
   const [quotaRequestedAt, setQuotaRequestedAt] = useState<string | null>(null);
@@ -323,40 +325,12 @@ function UploadPage() {
     }
     setEventSeatTotalsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("invitations")
-        .select("id,guest_name,guest_phone,guest_phone_normalized,rsvps(status,party_size,attendance_mode)")
-        .eq("event_id", evId);
-      if (error) throw error;
-
-      type EventSeatRow = {
-        id: string;
-        guest_name: string | null;
-        guest_phone: string | null;
-        guest_phone_normalized: string | null;
-        rsvps: { status: string | null; party_size: number | null; attendance_mode: string | null }[] | { status: string | null; party_size: number | null; attendance_mode: string | null } | null;
-      };
-      const rows = (data ?? []) as unknown as EventSeatRow[];
-      const groups = buildDuplicateGroupIds(rows.map((row) => ({
-        id: row.id,
-        guest_name: row.guest_name,
-        guest_phone: row.guest_phone_normalized ?? row.guest_phone,
-      })));
-      const rollup = computeRsvpRollup(rows.map((row) => {
-        const rsvp = Array.isArray(row.rsvps) ? row.rsvps[0] : row.rsvps;
-        return {
-          id: row.id,
-          groupId: groups.get(row.id) ?? row.id,
-          status: rsvp?.status ?? null,
-          party_size: rsvp?.party_size ?? 1,
-          attendance_mode: rsvp?.attendance_mode ?? null,
-        };
-      }));
+      const result = await fetchRsvpTotals({ data: { includePersonal: false, eventId: evId } });
       setEventSeatTotals({
-        inPerson: rollup.people.inPerson,
-        zoom: rollup.people.zoom,
-        confirmed: rollup.people.confirmed,
-        responses: rollup.responses.confirmed,
+        inPerson: result.event.confirmed,
+        zoom: result.event.virtual,
+        confirmed: result.event.confirmed + result.event.virtual,
+        responses: result.event.requested,
       });
     } catch (e) {
       console.error("[upload] load event seat totals failed", e);
