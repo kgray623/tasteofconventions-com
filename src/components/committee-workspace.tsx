@@ -1,7 +1,7 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, CalendarCog, CheckCircle2, ChevronDown, Clock, Copy, EyeOff, ListChecks, Loader2, MessageCircle, MessageSquare, Pencil, Phone, RefreshCw, Trash2, Upload, UserPlus, Utensils } from "lucide-react";
+import { AlertTriangle, CalendarCog, CheckCircle2, ChevronDown, Clock, EyeOff, ListChecks, Loader2, MessageCircle, MessageSquare, Pencil, Phone, RefreshCw, Trash2, Upload, UserPlus, Utensils } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -75,7 +75,9 @@ export function CommitteeWorkspace() {
   const [committeeNames, setCommitteeNames] = useState<Set<string>>(new Set());
   const [committeePhones, setCommitteePhones] = useState<Set<string>>(new Set());
   const [myGuestsFilter, setMyGuestsFilter] = useState<"all" | "committee">("all");
-  const [openMyGroup, setOpenMyGroup] = useState<{ inPerson: boolean; zoom: boolean; declined: boolean; pending: boolean }>({ inPerson: true, zoom: true, declined: false, pending: true });
+  const [openMyGroup, setOpenMyGroup] = useState<{ inPerson: boolean; zoom: boolean; declined: boolean; pending: boolean }>({ inPerson: false, zoom: false, declined: false, pending: true });
+  const [openTotals, setOpenTotals] = useState(false);
+  const [openMyGuestsCard, setOpenMyGuestsCard] = useState(false);
   const [lastSeenYesAt, setLastSeenYesAt] = useState<number | null>(null);
   const [manualRefreshingGuests, setManualRefreshingGuests] = useState(false);
   const [markingSentId, setMarkingSentId] = useState<string | null>(null);
@@ -666,20 +668,43 @@ export function CommitteeWorkspace() {
         </Button>
       )}
 
-      <RsvpTotalsCard personalHostIds={myHostIds.length ? myHostIds : user ? [user.id] : []} />
+      <Card className="overflow-hidden border-terracotta/30">
+        <Collapsible open={openTotals} onOpenChange={() => setOpenTotals((v) => !v)}>
+          <CollapsibleTrigger asChild>
+            <button
+              type="button"
+              className="w-full flex items-center justify-between gap-2 p-4 text-left hover:bg-muted/40"
+            >
+              <span className="flex items-center gap-2 font-semibold">
+                <ListChecks className="w-5 h-5 text-terracotta" /> RSVP totals
+              </span>
+              <ChevronDown className={`w-4 h-4 transition-transform ${openTotals ? "rotate-180" : ""}`} />
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="p-4 pt-0">
+              <RsvpTotalsCard personalHostIds={myHostIds.length ? myHostIds : user ? [user.id] : []} />
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      </Card>
 
       <Card className="overflow-hidden">
+        <Collapsible open={openMyGuestsCard} onOpenChange={() => setOpenMyGuestsCard((v) => !v)}>
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 flex-wrap">
-            <CheckCircle2 className="w-5 h-5 text-ink" />
-            <h2 className="font-semibold">My Guests Uploaded ({loadingGuests ? "…" : `${myGuests.length}${myGuestsFilter === "committee" ? ` of ${myGuestsSorted.length}` : ""}`})</h2>
-          </div>
-          <div className="flex items-center gap-2">
+          <CollapsibleTrigger asChild>
+            <button type="button" className="flex min-w-0 flex-1 items-center gap-2 flex-wrap text-left hover:bg-muted/40 rounded-md">
+              <CheckCircle2 className="w-5 h-5 text-ink shrink-0" />
+              <h2 className="font-semibold truncate">My Guests Uploaded ({loadingGuests ? "…" : `${myGuests.length}${myGuestsFilter === "committee" ? ` of ${myGuestsSorted.length}` : ""}`})</h2>
+              <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${openMyGuestsCard ? "rotate-180" : ""}`} />
+            </button>
+          </CollapsibleTrigger>
+          <div className="flex items-center gap-2 shrink-0">
             <Button
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => void refreshGuestsNow()}
+              onClick={(e) => { e.stopPropagation(); void refreshGuestsNow(); }}
               disabled={manualRefreshingGuests || loadingGuests}
               aria-label="Refresh guest list"
             >
@@ -692,6 +717,7 @@ export function CommitteeWorkspace() {
             </Button>
           </div>
         </div>
+        <CollapsibleContent>
 
         {newYesGuests.length > 0 && (
           <div className="mx-4 mt-3 rounded-md border border-emerald-300 bg-emerald-50 p-3 text-sm space-y-2">
@@ -828,6 +854,8 @@ export function CommitteeWorkspace() {
             />
           </div>
         )}
+        </CollapsibleContent>
+        </Collapsible>
       </Card>
 
 
@@ -873,7 +901,6 @@ export function CommitteeWorkspace() {
                   )}
                   <RsvpActionSelect guest={guest} settingRsvpId={settingRsvpId} setRsvpFor={setRsvpFor} />
                   {smsInfo && <SendTextButton guest={guest} info={smsInfo} onSent={toggleSent} />}
-                  {smsInfo && <SmsCopyButton phone={smsInfo.phone} body={smsInfo.body} guestName={guest.guest_name || "guest"} />}
                   <SentTextControl guest={guest} markingSentId={markingSentId} onToggleSent={toggleSent} />
                   <EditGuestButton guest={guest} onSave={saveGuestEdits} />
                   <DeleteGuestButton guest={guest} onDelete={deleteGuest} />
@@ -899,15 +926,8 @@ export function CommitteeWorkspace() {
           </Button>
         }
       >
-        <div className="p-4 border-b border-border flex justify-end">
-          <Button asChild className="bg-terracotta text-cream hover:bg-terracotta/90">
-            <Link to="/admin/upload" search={{ view: "committee" }} hash="add-guests">
-              <span className="inline-flex items-center gap-2">
-                <Upload className="w-4 h-4" /> Upload guests
-              </span>
-            </Link>
-          </Button>
-        </div>
+
+
 
 
         {loadingGuests ? (
@@ -944,7 +964,7 @@ export function CommitteeWorkspace() {
                 <div className="flex flex-wrap items-center gap-2">
                   <RsvpActionSelect guest={guest} settingRsvpId={settingRsvpId} setRsvpFor={setRsvpFor} />
                   {smsInfo && <SendTextButton guest={guest} info={smsInfo} onSent={toggleSent} />}
-                  {smsInfo && <SmsCopyButton phone={smsInfo.phone} body={smsInfo.body} guestName={guest.guest_name || "guest"} />}
+                  
                   <SentTextControl guest={guest} markingSentId={markingSentId} onToggleSent={toggleSent} />
                   <EditGuestButton guest={guest} onSave={saveGuestEdits} />
                   <DeleteGuestButton guest={guest} onDelete={deleteGuest} />
@@ -1209,10 +1229,7 @@ function MyGuestsGroup({
                     const info = buildSmsInfo(guest);
                     if (!info) return null;
                     return (
-                      <>
-                        <SendTextButton guest={guest} info={info} onSent={toggleSent} />
-                        <SmsCopyButton phone={info.phone} body={info.body} guestName={guest.guest_name || "guest"} />
-                      </>
+                      <SendTextButton guest={guest} info={info} onSent={toggleSent} />
                     );
                   })()}
                   <SentTextControl guest={guest} markingSentId={markingSentId} onToggleSent={toggleSent} />
@@ -1309,41 +1326,6 @@ function SentTextControl({
   );
 }
 
-function SmsCopyButton({ phone, body, guestName }: { phone: string; body: string; guestName: string }) {
-  const onClick = async () => {
-    let copied = false;
-    try {
-      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(body);
-        copied = true;
-      }
-    } catch {
-      copied = false;
-    }
-    if (copied) {
-      toast.success("Message copied — paste it into Messages", { duration: 6000 });
-    } else {
-      toast.message("Copy this message, then paste in Messages", {
-        description: body,
-        duration: 15000,
-      });
-    }
-    // Open the phone's Messages app on the correct contact.
-    if (typeof window !== "undefined") {
-      window.location.href = `sms:${phone}`;
-    }
-  };
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={`Copy invitation to ${guestName} and open Messages`}
-      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-terracotta text-cream text-xs font-medium hover:bg-terracotta/90"
-    >
-      <Copy className="w-4 h-4" /> Copy & open Messages
-    </button>
-  );
-}
 
 
 
