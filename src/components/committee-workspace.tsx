@@ -643,14 +643,37 @@ export function CommitteeWorkspace() {
   return (
     <div className="space-y-6">
 
-
-
-      <div className="grid gap-3">
-        <Button asChild className="bg-terracotta text-cream hover:bg-terracotta/90 justify-start h-14">
-          <Link to="/admin/upload" search={{ view: "committee" }} hash="add-guests">
-            <span className="inline-flex items-center gap-2">
-              <Upload className="w-4 h-4" /> Upload guests
-            </span>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Button asChild className="bg-ink text-cream hover:bg-ink/90 justify-start h-14">
+          <Link to="/admin/categories" search={{ view: "committee" }}>
+            <ListChecks className="w-4 h-4" /> Volunteer
+          </Link>
+        </Button>
+        <Button asChild variant="outline" className="justify-start h-14">
+          <Link to="/admin/upload" search={{ view: "committee" }}>
+            <Upload className="w-4 h-4" /> Guest list
+          </Link>
+        </Button>
+        <Button asChild variant="outline" className="justify-start h-14">
+          <Link to="/admin/chat" search={{ view: "committee" }}>
+            <MessageSquare className="w-4 h-4" /> Committee chat
+          </Link>
+        </Button>
+        <Button asChild variant="outline" className="justify-start h-14">
+          <a href="/#datetime" target="_blank" rel="noopener noreferrer">
+            <CalendarCog className="w-4 h-4" /> Event details
+          </a>
+        </Button>
+        {isAdmin && (
+          <Button asChild variant="outline" className="justify-start h-14">
+            <Link to="/admin/team" search={{ view: "committee" }}>
+              <UserPlus className="w-4 h-4" /> Add committee member
+            </Link>
+          </Button>
+        )}
+        <Button asChild variant="outline" className="justify-start h-14">
+          <Link to="/admin/preorders" search={{ view: "committee" }}>
+            <Utensils className="w-4 h-4" /> Food report
           </Link>
         </Button>
       </div>
@@ -740,11 +763,6 @@ export function CommitteeWorkspace() {
               aria-label="Refresh guest list"
             >
               {manualRefreshingGuests ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-            </Button>
-            <Button asChild variant="outline" size="sm">
-              <Link to="/invitations/new">
-                <UserPlus className="w-4 h-4 mr-2" /> Add guest
-              </Link>
             </Button>
           </div>
         </div>
@@ -837,6 +855,25 @@ export function CommitteeWorkspace() {
               toggleSent={toggleSent}
             />
             <MyGuestsGroup
+              label="Pending"
+              tone="muted"
+              guests={myPending}
+              peopleCount={pendingPeople}
+              responseCount={pendingResponseCount}
+              open={openMyGroup.pending}
+              onToggle={() => setOpenMyGroup((p) => ({ ...p, pending: !p.pending }))}
+              action={pendingSortControl}
+              isCommitteeGuest={isCommitteeGuest}
+              duplicateIds={duplicateIds}
+              settingRsvpId={settingRsvpId}
+              setRsvpFor={setRsvpFor}
+              saveGuestEdits={saveGuestEdits}
+              deleteGuest={deleteGuest}
+              buildSmsInfo={buildSmsInfo}
+              markingSentId={markingSentId}
+              toggleSent={toggleSent}
+            />
+            <MyGuestsGroup
               label="RSVP by Zoom"
               tone="muted"
               guests={myZoom}
@@ -862,25 +899,6 @@ export function CommitteeWorkspace() {
               responseCount={declinedResponseCount}
               open={openMyGroup.declined}
               onToggle={() => setOpenMyGroup((p) => ({ ...p, declined: !p.declined }))}
-              isCommitteeGuest={isCommitteeGuest}
-              duplicateIds={duplicateIds}
-              settingRsvpId={settingRsvpId}
-              setRsvpFor={setRsvpFor}
-              saveGuestEdits={saveGuestEdits}
-              deleteGuest={deleteGuest}
-              buildSmsInfo={buildSmsInfo}
-              markingSentId={markingSentId}
-              toggleSent={toggleSent}
-            />
-            <MyGuestsGroup
-              label="Pending"
-              tone="muted"
-              guests={myPending}
-              peopleCount={pendingPeople}
-              responseCount={pendingResponseCount}
-              open={openMyGroup.pending}
-              onToggle={() => setOpenMyGroup((p) => ({ ...p, pending: !p.pending }))}
-              action={pendingSortControl}
               isCommitteeGuest={isCommitteeGuest}
               duplicateIds={duplicateIds}
               settingRsvpId={settingRsvpId}
@@ -955,15 +973,6 @@ export function CommitteeWorkspace() {
         onToggle={() => toggleSection("all")}
         icon={<CheckCircle2 className="w-5 h-5 text-emerald-600" />}
         title={`My full guest list (${loadingGuests ? "…" : myGuests.length})`}
-        action={
-          <Button asChild variant="outline" size="sm" onClick={(e) => e.stopPropagation()}>
-            <Link to="/admin/upload" search={{ view: "committee" }} hash="add-guests">
-              <span className="inline-flex items-center gap-2">
-                <Upload className="w-4 h-4" /> Upload guests
-              </span>
-            </Link>
-          </Button>
-        }
       >
 
 
@@ -1083,45 +1092,6 @@ export function CommitteeWorkspace() {
         />
       ))}
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Button asChild className="bg-ink text-cream hover:bg-ink/90 justify-start h-14">
-          <Link to="/admin/categories" search={{ view: "committee" }}>
-            <ListChecks className="w-4 h-4" /> Volunteer
-          </Link>
-        </Button>
-        <Button asChild variant="outline" className="justify-start h-14">
-          <Link to="/admin/upload" search={{ view: "committee" }} hash="add-guests">
-            <span className="inline-flex items-center gap-2">
-              <Upload className="w-4 h-4" /> Guest list / Add guests
-            </span>
-          </Link>
-        </Button>
-
-
-        <Button asChild variant="outline" className="justify-start h-14">
-          <Link to="/admin/chat" search={{ view: "committee" }}>
-            <MessageSquare className="w-4 h-4" /> Committee chat
-          </Link>
-        </Button>
-        <Button asChild variant="outline" className="justify-start h-14">
-          <a href="/#datetime" target="_blank" rel="noopener noreferrer">
-            <CalendarCog className="w-4 h-4" /> Event details
-          </a>
-        </Button>
-        {isAdmin && (
-          <Button asChild variant="outline" className="justify-start h-14">
-            <Link to="/admin/team" search={{ view: "committee" }}>
-              <UserPlus className="w-4 h-4" /> Add committee member
-            </Link>
-          </Button>
-        )}
-
-        <Button asChild variant="outline" className="justify-start h-14">
-          <Link to="/admin/preorders" search={{ view: "committee" }}>
-            <Utensils className="w-4 h-4" /> Food report
-          </Link>
-        </Button>
-      </div>
     </div>
   );
 }
