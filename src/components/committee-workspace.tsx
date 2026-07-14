@@ -1,7 +1,7 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, CalendarCog, CheckCircle2, ChevronDown, Clock, Copy, EyeOff, ListChecks, Loader2, MessageCircle, MessageSquare, Pencil, Phone, RefreshCw, Trash2, Upload, UserPlus, Utensils } from "lucide-react";
+import { AlertTriangle, CalendarCog, CheckCircle2, ChevronDown, Clock, EyeOff, ListChecks, Loader2, MessageCircle, MessageSquare, Pencil, Phone, RefreshCw, Trash2, Upload, UserPlus, Utensils } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
