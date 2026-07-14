@@ -485,7 +485,6 @@ function UploadPage() {
     const idToGroup = buildDuplicateGroupIds(savedGuests.map((g) => ({
       id: g.id,
       guest_name: g.guest_name,
-      guest_email: g.guest_email,
       guest_phone: g.guest_phone,
     })));
     const counts = new Map<string, number>();
@@ -807,7 +806,6 @@ function UploadPage() {
       setQuick((current) => ({
         name: current.name || draft.quick?.name || "",
         phone: current.phone || draft.quick?.phone || "",
-        email: current.email || draft.quick?.email || "",
       }));
       setRows((current) => current.length ? current : draft.rows ?? []);
     }
@@ -830,15 +828,9 @@ function UploadPage() {
   const availableRsvps = Math.max(0, quotaPool.total - inPersonPeople);
 
   const flagDuplicates = async (parsed: Parsed[]) => {
-    const seenE = new Map<string, number>();
     const seenP = new Map<string, number>();
     parsed.forEach((r, idx) => {
-      const e = norm(r.guest_email);
       const p = phoneNorm(r.guest_phone);
-      if (e) {
-        if (seenE.has(e)) r._dupReason = `email duplicates row ${parsed[seenE.get(e)!]._row}`;
-        else seenE.set(e, idx);
-      }
       if (p.length >= 7 && !r._dupReason) {
         if (seenP.has(p)) r._dupReason = `phone duplicates row ${parsed[seenP.get(p)!]._row}`;
         else seenP.set(p, idx);
@@ -848,20 +840,15 @@ function UploadPage() {
       try {
         const { data: existing } = await supabase
           .from("invitations")
-          .select("guest_name,guest_email_normalized,guest_phone_normalized")
+          .select("guest_name,guest_phone_normalized")
           .eq("event_id", eventId);
-        const existE = new Set(
-          (existing ?? []).map((r) => r.guest_email_normalized).filter(Boolean) as string[],
-        );
         const existP = new Set(
           (existing ?? []).map((r) => r.guest_phone_normalized).filter(Boolean) as string[],
         );
         parsed.forEach((r) => {
           if (r._dupReason) return;
-          const e = norm(r.guest_email);
           const p = phoneNorm(r.guest_phone);
-          if (e && existE.has(e)) r._dupReason = "already on the guest list (email match)";
-          else if (p.length >= 7 && existP.has(p))
+          if (p.length >= 7 && existP.has(p))
             r._dupReason = "already on the guest list (phone match)";
         });
       } catch (e) {
@@ -935,15 +922,14 @@ function UploadPage() {
     }
     try {
       setDone(null);
-      const picked = await api.select(["name", "email", "tel"], { multiple: true });
+      const picked = await api.select(["name", "tel"], { multiple: true });
       const raw = picked
         .map((c) => ({
           name: (c.name?.[0] ?? "").trim(),
-          email: (c.email?.[0] ?? "").trim(),
           phone: (c.tel?.[0] ?? "").trim(),
           notes: "",
         }))
-        .filter((r) => r.name || r.email || r.phone);
+        .filter((r) => r.name || r.phone);
       if (!raw.length) {
         toast.message("No contacts selected.");
         return;
@@ -976,7 +962,6 @@ function UploadPage() {
       setQuick((q) => ({
         name: parsed.name || q.name,
         phone: parsed.phone || q.phone,
-        email: parsed.email || q.email,
       }));
       setPasted(text);
       toast.success("Pasted contact details");
@@ -1095,7 +1080,6 @@ function UploadPage() {
             event_id: eventId,
             host_id: user.id,
             guest_name: r.guest_name,
-            guest_email: r.guest_email || null,
             guest_phone: r.guest_phone || null,
             notes: r.notes || null,
             is_committee: importAsCommittee,
@@ -1339,8 +1323,8 @@ function UploadPage() {
       toast.error("Add a name first.");
       return;
     }
-    if (!quick.phone.trim() && !quick.email.trim()) {
-      toast.error("Add a phone number or email so we can reach them.");
+    if (!quick.phone.trim()) {
+      toast.error("Add a phone number so we can reach them.");
       return;
     }
     // Fuzzy "did you mean" check against already-loaded guests (spelling variants).
@@ -1360,15 +1344,14 @@ function UploadPage() {
         event_id: eventId,
         host_id: user.id,
         guest_name: name,
-        guest_email: quick.email.trim() || null,
         guest_phone: quick.phone.trim() || null,
         notes: null,
         is_committee: importAsCommittee,
       });
       if (error) throw error;
       setQuickAdded((n) => n + 1);
-      setQuick({ name: "", phone: "", email: "" });
-      saveUploadDraft(user.id, pasted, { name: "", phone: "", email: "" }, rows);
+      setQuick({ name: "", phone: "" });
+      saveUploadDraft(user.id, pasted, { name: "", phone: "" }, rows);
       toast.success(`Added ${name}`);
       void loadSavedGuests(eventId);
     } catch (e) {
@@ -1428,22 +1411,9 @@ function UploadPage() {
               autoComplete="tel"
             />
           </div>
-          <div className="space-y-1.5">
-            <label htmlFor="top-quick-guest-email" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Email
-            </label>
-            <Input
-              id="top-quick-guest-email"
-              value={quick.email}
-              onChange={(event) => setQuick((current) => ({ ...current, email: event.target.value }))}
-              placeholder="Email"
-              type="email"
-              autoComplete="email"
-            />
-          </div>
           <Button
             type="submit"
-            disabled={quickBusy || !eventId || !quick.name.trim() || (!quick.phone.trim() && !quick.email.trim())}
+            disabled={quickBusy || !eventId || !quick.name.trim() || !quick.phone.trim()}
             className="bg-terracotta text-cream hover:bg-terracotta/90"
           >
             {quickBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <><UserPlus className="w-4 h-4 mr-2" /> Add guest</>}
@@ -1927,22 +1897,9 @@ function UploadPage() {
               autoComplete="tel"
             />
           </div>
-          <div className="space-y-1.5">
-            <label htmlFor="quick-guest-email" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Email
-            </label>
-            <Input
-              id="quick-guest-email"
-              value={quick.email}
-              onChange={(event) => setQuick((current) => ({ ...current, email: event.target.value }))}
-              placeholder="Email"
-              type="email"
-              autoComplete="email"
-            />
-          </div>
           <Button
             type="submit"
-            disabled={quickBusy || !eventId || !quick.name.trim() || (!quick.phone.trim() && !quick.email.trim())}
+            disabled={quickBusy || !eventId || !quick.name.trim() || !quick.phone.trim()}
             className="bg-terracotta text-cream hover:bg-terracotta/90"
           >
             {quickBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <><UserPlus className="w-4 h-4 mr-2" /> Add guest</>}
@@ -2134,9 +2091,6 @@ function UploadPage() {
                     <Pencil className="w-3 h-3 opacity-40" />
                   </button>
                 )}
-                <span className="text-muted-foreground min-w-[160px] break-all">
-                  {r.guest_email}
-                </span>
                 <span className="text-muted-foreground min-w-[110px]">{r.guest_phone}</span>
                 {r._dupReason && (
                   <Badge
