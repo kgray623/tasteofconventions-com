@@ -18,7 +18,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { useRoles } from "@/hooks/use-roles";
+import { useAdminView } from "@/hooks/use-admin-view";
 import { useChatUnread } from "@/hooks/use-chat-unread";
 import { CategoryChat } from "@/components/CategoryChat";
 import { RsvpTotalsCard } from "@/components/rsvp-totals-card";
