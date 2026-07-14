@@ -726,7 +726,7 @@ export function CommitteeWorkspace() {
           <CollapsibleTrigger asChild>
             <button type="button" className="flex min-w-0 flex-1 items-center gap-2 flex-wrap text-left hover:bg-muted/40 rounded-md">
               <CheckCircle2 className="w-5 h-5 text-ink shrink-0" />
-              <h2 className="font-semibold truncate">My Guests Uploaded ({loadingGuests ? "…" : `${myGuests.length}${myGuestsFilter === "committee" ? ` of ${myGuestsSorted.length}` : ""}`})</h2>
+              <h2 className="font-semibold truncate">My Guests ({loadingGuests ? "…" : `${myGuests.length}${myGuestsFilter === "committee" ? ` of ${myGuestsSorted.length}` : ""}`})</h2>
               <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${openMyGuestsCard ? "rotate-180" : ""}`} />
             </button>
           </CollapsibleTrigger>
