@@ -357,7 +357,6 @@ function GuestsPage() {
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {r.phone || "no phone"}
-                    {r.email && <> · {r.email}</>}
                   </p>
                   {(s === "confirmed" || s === "maybe" || s === "waitlist" || (s === "declined" && r.party_size)) && (
                     <p className="text-xs text-muted-foreground mt-0.5">
