@@ -424,7 +424,11 @@ function InvitersPage() {
                   const guests = guestsForInviter(i);
                   const used = confirmedResponseCount(guests);
                   const virtual = virtualResponseCount(guests);
-                  const invited = guests.length || (i.host_id ? (invitedCounts[i.host_id] ?? 0) : 0);
+                  const broughtDirect = broughtCounts[i.id] ?? 0;
+                  const hostBased = guests.length || (i.host_id ? (invitedCounts[i.host_id] ?? 0) : 0);
+                  // Prefer the explicit inviter_id link when it's higher (backfilled/new uploads).
+                  const invited = Math.max(broughtDirect, hostBased);
+
                   const remaining = Math.max(0, i.quota - used);
                   const isOpen = expandedHost === i.id;
                   const rows: ReactNode[] = [];
