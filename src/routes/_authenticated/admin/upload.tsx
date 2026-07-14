@@ -892,7 +892,7 @@ function UploadPage() {
     return <p className="text-muted-foreground">Opening login…</p>;
   }
 
-  const availableRsvps = Math.max(0, quotaPool.total - inPersonPeople);
+  const availableRsvps = Math.max(0, quotaPool.total - eventSeatTotals.inPerson);
 
   const flagDuplicates = async (parsed: Parsed[]) => {
     const seenP = new Map<string, number>();
