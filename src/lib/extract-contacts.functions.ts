@@ -8,7 +8,7 @@ const Input = z.object({
   images: z.array(z.string().min(20).max(15_000_000)).min(1).max(10),
 });
 
-type ExtractedContact = { name: string; phone: string; email: string };
+type ExtractedContact = { name: string; phone: string };
 
 export const extractContactsFromImages = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -62,9 +62,8 @@ export const extractContactsFromImages = createServerFn({ method: "POST" })
                       properties: {
                         name: { type: "string" },
                         phone: { type: "string" },
-                        email: { type: "string" },
                       },
-                      required: ["name", "phone", "email"],
+                      required: ["name", "phone"],
                       additionalProperties: false,
                     },
                   },
@@ -101,8 +100,7 @@ export const extractContactsFromImages = createServerFn({ method: "POST" })
       .map((c) => ({
         name: String(c?.name ?? "").trim(),
         phone: String(c?.phone ?? "").trim(),
-        email: String(c?.email ?? "").trim(),
       }))
-      .filter((c) => c.name || c.phone || c.email);
+      .filter((c) => c.name || c.phone);
     return { contacts };
   });
