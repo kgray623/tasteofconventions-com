@@ -280,7 +280,7 @@ function UploadPage() {
     }[]
   >([]);
   const [activeListTab, setActiveListTab] = useState<"all" | "latest">("all");
-  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({ "No": true });
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({ "Declined": true });
 
 
 
@@ -330,8 +330,9 @@ function UploadPage() {
         )
         .eq("event_id", evId)
         .order("created_at", { ascending: false });
-      // Everyone on the steering committee (team + admin) sees the full
-      // guest list across all inviters.
+      // Show only the current user's own guests — each committee member's
+      // upload list is their own focus, not everyone's.
+      if (user?.id) query = query.eq("host_id", user.id);
       const { data, error } = await query;
       if (error) throw error;
       type Row = {
@@ -1684,9 +1685,9 @@ function UploadPage() {
               })
               .sort(byName);
             sections = [
-              { label: "RSVP", rows: rsvp },
-              { label: "Pending", rows: pending },
-              { label: "No", rows: no },
+              { label: "Not confirmed yet", rows: pending },
+              { label: "Confirmed", rows: rsvp },
+              { label: "Declined", rows: no },
             ];
           }
 
@@ -1718,7 +1719,7 @@ function UploadPage() {
 
             {sections.map((sec) => sec.rows.length === 0 ? null : (
               <div key={sec.label}>
-                {sec.label === "No" ? (
+                {sec.label === "Declined" ? (
                   <button
                     type="button"
                     onClick={() => setCollapsedSections((prev) => ({ ...prev, [sec.label]: !prev[sec.label] }))}
@@ -1732,7 +1733,7 @@ function UploadPage() {
                     {sec.label} ({sec.rows.length})
                   </div>
                 )}
-                {!(sec.label === "No" && collapsedSections[sec.label]) && (
+                {!(sec.label === "Declined" && collapsedSections[sec.label]) && (
                 <div className="divide-y divide-border">
 
 
