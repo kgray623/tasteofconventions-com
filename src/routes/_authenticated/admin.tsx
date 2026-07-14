@@ -148,17 +148,6 @@ function AdminLayout() {
           <h1 className="font-display text-3xl mt-1">{headingTitle}</h1>
         </div>
 
-        {isTeam && (
-          <Link
-            to="/admin/upload"
-            search={committeeSearch}
-            hash="add-guests"
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-terracotta px-4 text-sm font-semibold text-cream shadow-sm transition hover:bg-terracotta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-2 sm:w-auto"
-          >
-            <Upload className="w-4 h-4" />
-            Upload guests
-          </Link>
-        )}
 
       </div>
       {(["main", "committee"] as const).map((group) => {
