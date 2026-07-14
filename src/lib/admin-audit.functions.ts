@@ -43,7 +43,6 @@ type InvRow = {
   id: string;
   guest_name: string | null;
   guest_phone: string | null;
-  guest_email: string | null;
   is_committee: boolean | null;
   invite_sent_at: string | null;
 };
@@ -72,7 +71,7 @@ export const getAdminAudit = createServerFn({ method: "GET" })
     const [invRes, rsvpRes, preRes] = await Promise.all([
       supabaseAdmin
         .from("invitations")
-        .select("id,guest_name,guest_phone,guest_email,is_committee,invite_sent_at"),
+        .select("id,guest_name,guest_phone,is_committee,invite_sent_at"),
       supabaseAdmin
         .from("rsvps")
         .select("invitation_id,status,party_size,attendance_mode,ordering_food"),
@@ -111,7 +110,6 @@ export const getAdminAudit = createServerFn({ method: "GET" })
       id: inv.id,
       guest_name: inv.guest_name,
       guest_phone: inv.guest_phone,
-      guest_email: inv.guest_email,
     })));
     const rollup = computeRsvpRollup(invs.map((inv) => {
       const rsvp = rsvpByInv.get(inv.id);
@@ -189,7 +187,7 @@ export const getReconciliationRows = createServerFn({ method: "GET" })
     const [invRes, rsvpRes, preRes] = await Promise.all([
       supabaseAdmin
         .from("invitations")
-        .select("id,guest_name,guest_phone,guest_email,is_committee,invite_sent_at,created_at,rsvp_token")
+        .select("id,guest_name,guest_phone,is_committee,invite_sent_at,created_at,rsvp_token")
         .order("created_at", { ascending: true }),
       supabaseAdmin
         .from("rsvps")
@@ -224,7 +222,6 @@ export const getReconciliationRows = createServerFn({ method: "GET" })
         created_at: inv.created_at ?? "",
         name: inv.guest_name ?? "",
         phone: inv.guest_phone ?? "",
-        email: inv.guest_email ?? "",
         audience: inv.is_committee ? "Committee" : "Guest",
         is_committee: !!inv.is_committee,
         sms_sent: inv.invite_sent_at ? "yes" : "no",

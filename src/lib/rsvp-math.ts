@@ -9,8 +9,6 @@ export type RsvpMathRow = {
 export type RsvpIdentityRow = {
   id: string;
   guest_name?: string | null;
-  guest_email?: string | null;
-  guest_email_normalized?: string | null;
   guest_phone?: string | null;
   guest_phone_normalized?: string | null;
 };
@@ -55,8 +53,6 @@ export const normalizeRsvpStatus = (status: string | null | undefined) =>
 export function buildDuplicateGroupIds(rows: RsvpIdentityRow[]) {
   const normName = (value: string | null | undefined) =>
     (value ?? "").trim().toLowerCase().replace(/\s+/g, " ");
-  const normEmail = (value: string | null | undefined) =>
-    (value ?? "").trim().toLowerCase();
   const normPhone = (value: string | null | undefined) =>
     (value ?? "").replace(/\D/g, "").slice(-10);
 
@@ -66,10 +62,8 @@ export function buildDuplicateGroupIds(rows: RsvpIdentityRow[]) {
   for (const row of rows) {
     const keys: string[] = [];
     const name = normName(row.guest_name);
-    const email = normEmail(row.guest_email_normalized ?? row.guest_email);
     const phone = normPhone(row.guest_phone_normalized ?? row.guest_phone);
     if (name) keys.push(`n:${name}`);
-    if (email) keys.push(`e:${email}`);
     if (phone.length >= 7) keys.push(`p:${phone}`);
 
     let groupId: string | null = null;
