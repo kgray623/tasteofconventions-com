@@ -64,16 +64,15 @@ function AdminLayout() {
     if (!user?.id) { setDisplayName(""); return; }
     let alive = true;
     void (async () => {
-      const { data } = await supabase.from("profiles").select("display_name,email").eq("id", user.id).maybeSingle();
+      const { data } = await supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
       if (!alive) return;
       const fromProfile = data?.display_name?.trim();
       const fromMeta = (user.user_metadata?.display_name as string | undefined)?.trim();
-      const fromEmail = (data?.email || user.email || "").split("@")[0];
-      const full = fromProfile || fromMeta || fromEmail || "";
+      const full = fromProfile || fromMeta || "";
       setDisplayName(full.split(" ")[0] || full);
     })();
     return () => { alive = false; };
-  }, [user?.id, user?.email, user?.user_metadata]);
+  }, [user?.id, user?.user_metadata]);
 
   const signOut = async () => {
     markExplicitSignOut();

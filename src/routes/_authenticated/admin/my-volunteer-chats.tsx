@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_authenticated/admin/my-volunteer-chats")
 });
 
 type MyCategory = { id: string; name: string; description: string | null };
-type ProfileRow = { id: string; display_name: string | null; email: string | null };
+type ProfileRow = { id: string; display_name: string | null };
 
 function MyVolunteerChatsPage() {
   const { user } = useAuth();
@@ -46,7 +46,7 @@ function MyVolunteerChatsPage() {
           .order("sort_order");
         if (alive) setMyCats((cats ?? []) as MyCategory[]);
       }
-      const { data: p } = await supabase.from("profiles").select("id,display_name,email");
+      const { data: p } = await supabase.from("profiles").select("id,display_name");
       if (alive) setProfiles((p ?? []) as ProfileRow[]);
     })();
     return () => {
@@ -56,7 +56,7 @@ function MyVolunteerChatsPage() {
 
   const nameForUser = (uid: string) => {
     const p = profiles.find((x) => x.id === uid);
-    return p?.display_name || p?.email || "Member";
+    return p?.display_name || "Member";
   };
 
   const unreadForCategory = (catId: string) =>

@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_authenticated/admin/categories")({
 
 type Cat = { id: string; name: string; sort_order: number; description: string | null };
 type Assign = { id: string; category_id: string; user_id: string | null; volunteer_name: string | null; notes: string | null };
-type Profile = { id: string; display_name: string | null; email: string | null };
+type Profile = { id: string; display_name: string | null };
 
 function CategoriesPage() {
   const { isAdmin: isActualAdmin, loading: rolesLoading } = useRoles();
@@ -39,7 +39,7 @@ function CategoriesPage() {
     const [c, a, p] = await Promise.all([
       supabase.from("categories").select("*").order("sort_order"),
       supabase.from("category_assignments").select("*"),
-      supabase.from("profiles").select("id,display_name,email"),
+      supabase.from("profiles").select("id,display_name"),
     ]);
     setCats(c.data ?? []);
     setAssigns(a.data ?? []);
@@ -99,7 +99,7 @@ function CategoriesPage() {
     }
     const value = (drafts[catId] || "").trim();
     if (!value) return;
-    const profile = profiles.find((p) => p.email === value || p.display_name === value);
+    const profile = profiles.find((p) => p.display_name === value);
     const { error } = await supabase.from("category_assignments").insert({
       category_id: catId,
       user_id: profile?.id ?? null,
@@ -119,12 +119,12 @@ function CategoriesPage() {
   const labelFor = (a: Assign) => {
     if (a.volunteer_name) return a.volunteer_name;
     const p = profiles.find((x) => x.id === a.user_id);
-    return p?.display_name || p?.email || "Unknown";
+    return p?.display_name || "Unknown";
   };
 
   const nameForUser = (uid: string) => {
     const p = profiles.find((x) => x.id === uid);
-    return p?.display_name || p?.email || "Member";
+    return p?.display_name || "Member";
   };
 
   const isCurrentUserAssignment = (a: Assign) => {
@@ -283,7 +283,7 @@ function CategoriesPage() {
                           />
                           <datalist id={`profiles-${c.id}`}>
                             {profiles.map((p) => (
-                              <option key={p.id} value={p.email ?? p.display_name ?? ""}>{p.display_name}</option>
+                              <option key={p.id} value={p.display_name ?? ""}>{p.display_name}</option>
                             ))}
                           </datalist>
                           <Button size="sm" variant="outline" onClick={() => addAssign(c.id)}>

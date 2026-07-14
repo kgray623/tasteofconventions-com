@@ -30,7 +30,7 @@ const TABLES = [
 
 function summary(table: string, row: Record<string, unknown>) {
   const get = (k: string) => (row[k] == null ? "" : String(row[k]));
-  if (table === "invitations") return `${get("guest_name") || "—"} · ${get("guest_phone") || get("guest_email")}`;
+  if (table === "invitations") return `${get("guest_name") || "—"} · ${get("guest_phone") || "No phone"}`;
   if (table === "rsvps") return `${get("status")} · party ${get("party_size") || "—"}`;
   if (table === "inviters") return `${get("name")} · quota ${get("quota")}`;
   if (table === "team_invites") return `${get("name")} · ${get("phone")} · ${get("role")}`;
