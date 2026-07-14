@@ -65,11 +65,13 @@ function InvitersPage() {
   const { loading: rolesLoading, isAdmin } = useAdminView();
   const [inviters, setInviters] = useState<Inviter[]>([]);
   const [invitedCounts, setInvitedCounts] = useState<Record<string, number>>({});
+  const [broughtCounts, setBroughtCounts] = useState<Record<string, number>>({});
   const [guestsByHost, setGuestsByHost] = useState<Record<string, GuestRow[]>>({});
   const [expandedHost, setExpandedHost] = useState<string | null>(null);
   const [rowBusy, setRowBusy] = useState<string | null>(null);
   const [committee, setCommittee] = useState<CommitteeRow[]>([]);
   const [loading, setLoading] = useState(true);
+
 
   const load = async () => {
     setLoading(true);
