@@ -38,7 +38,7 @@ import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 import { useServerFn } from "@tanstack/react-start";
 import { extractContactsFromImages } from "@/lib/extract-contacts.functions";
 import { removeTeamInvitesForPhone } from "@/lib/team.functions";
-import { getRsvpTotals } from "@/lib/rsvp-totals.functions";
+import { getRsvpEvents, getRsvpTotals } from "@/lib/rsvp-totals.functions";
 import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
 import { Input } from "@/components/ui/input";
 import { Image as ImageIcon, Target } from "lucide-react";
@@ -307,6 +307,7 @@ function UploadPage() {
   const extractContacts = useServerFn(extractContactsFromImages);
   const removeTeamInvitesFn = useServerFn(removeTeamInvitesForPhone);
   const fetchRsvpTotals = useServerFn(getRsvpTotals);
+  const fetchRsvpEvents = useServerFn(getRsvpEvents);
   const [inviterId, setInviterId] = useState<string | null>(null);
   const [requestedQuota, setRequestedQuota] = useState<string>("");
   const [quotaRequestedAt, setQuotaRequestedAt] = useState<string | null>(null);
@@ -819,20 +820,15 @@ function UploadPage() {
 
   useEffect(() => {
     let alive = true;
-    supabase
-      .from("events")
-      .select("id,title")
-      .order("starts_at")
-      .then(
-        ({ data }) => {
-          if (!alive) return;
-          setEvents(data ?? []);
-          if (data?.[0]) setEventId(data[0].id);
-        },
-        (err) => {
-          console.error("[upload] events load failed", err);
-        },
-      );
+    void fetchRsvpEvents({ data: {} })
+      .then((data) => {
+        if (!alive) return;
+        setEvents(data ?? []);
+        if (data?.[0]) setEventId(data[0].id);
+      })
+      .catch((err) => {
+        console.error("[upload] events load failed", err);
+      });
     return () => {
       alive = false;
     };
