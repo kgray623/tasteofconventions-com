@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Plus, Calendar as CalendarIcon, Mail, Phone, Trash2, MessageCircle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { AlertCircle, Plus, Calendar as CalendarIcon, Mail, Phone, Trash2, MessageCircle, MessageSquare, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -15,6 +18,9 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+} from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { NewBadge } from "@/components/new-badge";
 import { CategoryChat } from "@/components/CategoryChat";
@@ -28,9 +34,11 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 type Invite = {
   id: string; event_id: string; guest_name: string; guest_email: string | null;
   guest_phone: string | null; rsvp_token: string; created_at: string; host_id: string;
+  invite_sent_at: string | null;
   is_committee: boolean;
   rsvps?: { status: string; party_size: number; attendance_mode: string | null } | null;
 };
+type RsvpAction = "inperson1" | "inperson2" | "inperson3" | "inperson4" | "zoom1" | "zoom2" | "zoom3" | "zoom4" | "no" | "clear";
 type Flag = { id: string; invitation_a: string; invitation_b: string; match_type: string };
 type EventRow = { id: string; title: string; starts_at: string; location: string | null };
 type MyCategory = { id: string; name: string; description: string | null };
@@ -45,6 +53,7 @@ function Dashboard() {
   const [myCats, setMyCats] = useState<MyCategory[]>([]);
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [chatOpen, setChatOpen] = useState<string | null>(null);
+  const [markingSentId, setMarkingSentId] = useState<string | null>(null);
   const chatUnread = useChatUnread();
 
   const loadVolunteerChats = async (uid: string) => {
@@ -68,7 +77,7 @@ function Dashboard() {
   const load = async () => {
     const [{ data: e }, { data: i }, { data: f }, { data: p }] = await Promise.all([
       supabase.from("events").select("id,title,starts_at,location").order("starts_at"),
-      supabase.from("invitations").select("id,event_id,guest_name,guest_email,guest_phone,rsvp_token,created_at,host_id,is_committee,rsvps(status,party_size,attendance_mode)").order("guest_name", { ascending: true }),
+      supabase.from("invitations").select("id,event_id,guest_name,guest_email,guest_phone,rsvp_token,created_at,host_id,invite_sent_at,is_committee,rsvps(status,party_size,attendance_mode)").order("guest_name", { ascending: true }),
       supabase.from("duplicate_flags").select("*"),
       supabase.from("profiles").select("id,display_name,email"),
     ]);
@@ -105,7 +114,7 @@ function Dashboard() {
 
   const setRsvpFor = async (
     invite: Invite,
-    value: "yes1" | "yes2" | "yes3" | "yes4" | "no" | "clear",
+    value: RsvpAction,
   ) => {
     setSettingRsvpId(invite.id);
     try {
@@ -115,13 +124,14 @@ function Dashboard() {
         toast.success(`Cleared RSVP for ${invite.guest_name}.`);
       } else {
         const status = value === "no" ? "no" : "yes";
-        const partySize = value === "no" ? 1 : Number(value.replace("yes", ""));
+        const attendanceMode = value.startsWith("zoom") ? "zoom" : "in_person";
+        const partySize = value === "no" ? 1 : Number(value.replace("inperson", "").replace("zoom", ""));
         const { error } = await supabase.from("rsvps").upsert(
           {
             invitation_id: invite.id,
             status,
             party_size: partySize,
-            attendance_mode: "in_person",
+            attendance_mode: attendanceMode,
             responded_at: new Date().toISOString(),
           },
           { onConflict: "invitation_id" },
@@ -130,7 +140,7 @@ function Dashboard() {
         toast.success(
           status === "no"
             ? `Marked ${invite.guest_name} as declined.`
-            : `Marked ${invite.guest_name} attending (${partySize}).`,
+            : `Marked ${invite.guest_name} attending ${attendanceMode === "zoom" ? "by Zoom" : "in person"} (${partySize}).`,
         );
       }
       await load();
@@ -140,6 +150,57 @@ function Dashboard() {
     } finally {
       setSettingRsvpId(null);
     }
+  };
+
+  const toggleSent = async (invite: Invite, checked: boolean) => {
+    setMarkingSentId(invite.id);
+    const sentAt = checked ? new Date().toISOString() : null;
+    const { error } = await supabase
+      .from("invitations")
+      .update({ invite_sent_at: sentAt })
+      .eq("id", invite.id);
+    setMarkingSentId(null);
+    if (error) {
+      toast.error("Couldn't update sent text", { description: error.message });
+      return;
+    }
+    setInvites((prev) => prev.map((row) => (row.id === invite.id ? { ...row, invite_sent_at: sentAt } : row)));
+    toast.success(checked ? "Marked text as sent." : "Marked text as not sent.");
+  };
+
+  const saveInviteEdits = async (
+    invite: Invite,
+    edits: { guest_name: string; guest_phone: string; guest_email: string },
+  ) => {
+    const { error } = await supabase
+      .from("invitations")
+      .update({
+        guest_name: edits.guest_name.trim(),
+        guest_phone: edits.guest_phone.trim() || null,
+        guest_email: edits.guest_email.trim() || null,
+      })
+      .eq("id", invite.id);
+    if (error) {
+      toast.error(`Couldn't save: ${error.message}`);
+      return false;
+    }
+    toast.success(`Updated ${edits.guest_name.trim() || invite.guest_name}.`);
+    await load();
+    return true;
+  };
+
+  const siteOrigin = typeof window !== "undefined" ? window.location.origin : "https://tasteofconventions.com";
+  const senderName = user?.id ? nameForUser(user.id) : "your friend";
+  const rsvpLinkToken = (token: string) => encodeURIComponent(token.trim().replace(/\+/g, "-").replace(/\//g, "_"));
+  const buildSmsInfo = (invite: Invite): { phone: string; body: string } | null => {
+    if (!invite.guest_phone || !invite.rsvp_token) return null;
+    const firstName = (invite.guest_name || "Friend").split(/\s+/)[0];
+    const senderFirst = senderName.split(/\s+/)[0] || "your friend";
+    const link = `${siteOrigin}/rsvp/${rsvpLinkToken(invite.rsvp_token)}`;
+    return {
+      phone: invite.guest_phone,
+      body: `Hi ${firstName}, it's ${senderFirst}. You're invited to A Taste of Special Conventions on Sunday, August 30, 2026. Please RSVP here: ${link}`,
+    };
   };
 
   const duplicateGuestButton = (invite: Invite) => (
@@ -292,7 +353,9 @@ function Dashboard() {
                 <Link to="/invitations/new" className="text-terracotta underline">Add your first guest</Link>.
               </div>
             )}
-            {myInvites.map((i) => (
+            {myInvites.map((i) => {
+              const smsInfo = buildSmsInfo(i);
+              return (
               <div key={i.id} className="p-4 flex flex-wrap items-center gap-3">
                 <div className="flex-1 min-w-[200px]">
                   <div className="flex items-center gap-2">
@@ -309,28 +372,35 @@ function Dashboard() {
                   value=""
                   disabled={settingRsvpId === i.id}
                   onValueChange={(v) =>
-                    void setRsvpFor(i, v as "yes1" | "yes2" | "yes3" | "yes4" | "no" | "clear")
+                    void setRsvpFor(i, v as RsvpAction)
                   }
                 >
                   <SelectTrigger className="h-8 w-[160px] text-xs">
                     <SelectValue
-                      placeholder={settingRsvpId === i.id ? "Saving…" : "Record RSVP"}
+                      placeholder={settingRsvpId === i.id ? "Saving…" : i.rsvps?.status ? "Change RSVP" : "Record RSVP"}
                     />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="no">No / declined</SelectItem>
-                    <SelectItem value="yes1">Yes — 1 person</SelectItem>
-                    <SelectItem value="yes2">Yes — 2 people</SelectItem>
-                    <SelectItem value="yes3">Yes — 3 people</SelectItem>
-                    <SelectItem value="yes4">Yes — 4 people</SelectItem>
+                    <SelectItem value="inperson1">In person — 1</SelectItem>
+                    <SelectItem value="inperson2">In person — 2</SelectItem>
+                    <SelectItem value="inperson3">In person — 3</SelectItem>
+                    <SelectItem value="inperson4">In person — 4</SelectItem>
+                    <SelectItem value="zoom1">Zoom — 1</SelectItem>
+                    <SelectItem value="zoom2">Zoom — 2</SelectItem>
+                    <SelectItem value="zoom3">Zoom — 3</SelectItem>
+                    <SelectItem value="zoom4">Zoom — 4</SelectItem>
                     <SelectItem value="clear">Clear RSVP</SelectItem>
                   </SelectContent>
                 </Select>
+                {smsInfo && <SendTextButton invite={i} info={smsInfo} onSent={toggleSent} />}
+                <SentTextControl invite={i} markingSentId={markingSentId} onToggleSent={toggleSent} />
+                <EditInviteButton invite={i} onSave={saveInviteEdits} />
                 <Link to="/rsvp/$token" params={{ token: i.rsvp_token }} className="text-xs text-terracotta hover:underline">
                   Open RSVP link →
                 </Link>
               </div>
-            ))}
+            );})}
           </div>
         </Card>
       </div>
@@ -346,6 +416,7 @@ function Dashboard() {
             )}
             {invites.map((i) => {
               const isDupe = flaggedIds.has(i.id);
+              const smsInfo = buildSmsInfo(i);
               return (
                 <div key={i.id} className="p-4 flex flex-wrap items-center gap-3">
                   <div className="flex-1 min-w-[200px]">
@@ -361,6 +432,32 @@ function Dashboard() {
                     </div>
                   </div>
                   <RsvpBadge status={i.rsvps?.status} attendanceMode={i.rsvps?.attendance_mode} />
+                  {i.host_id === user?.id && (
+                    <Select
+                      value=""
+                      disabled={settingRsvpId === i.id}
+                      onValueChange={(v) => void setRsvpFor(i, v as RsvpAction)}
+                    >
+                      <SelectTrigger className="h-8 w-[160px] text-xs">
+                        <SelectValue placeholder={settingRsvpId === i.id ? "Saving…" : i.rsvps?.status ? "Change RSVP" : "Record RSVP"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="no">No / declined</SelectItem>
+                        <SelectItem value="inperson1">In person — 1</SelectItem>
+                        <SelectItem value="inperson2">In person — 2</SelectItem>
+                        <SelectItem value="inperson3">In person — 3</SelectItem>
+                        <SelectItem value="inperson4">In person — 4</SelectItem>
+                        <SelectItem value="zoom1">Zoom — 1</SelectItem>
+                        <SelectItem value="zoom2">Zoom — 2</SelectItem>
+                        <SelectItem value="zoom3">Zoom — 3</SelectItem>
+                        <SelectItem value="zoom4">Zoom — 4</SelectItem>
+                        <SelectItem value="clear">Clear RSVP</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {smsInfo && i.host_id === user?.id && <SendTextButton invite={i} info={smsInfo} onSent={toggleSent} />}
+                  {i.host_id === user?.id && <SentTextControl invite={i} markingSentId={markingSentId} onToggleSent={toggleSent} />}
+                  {i.host_id === user?.id && <EditInviteButton invite={i} onSave={saveInviteEdits} />}
                   <Link to="/rsvp/$token" params={{ token: i.rsvp_token }} className="text-xs text-terracotta hover:underline">
                     Open RSVP link →
                   </Link>
