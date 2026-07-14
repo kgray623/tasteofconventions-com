@@ -643,14 +643,32 @@ export function CommitteeWorkspace() {
   return (
     <div className="space-y-6">
 
-
-
-      <div className="grid gap-3">
-        <Button asChild className="bg-terracotta text-cream hover:bg-terracotta/90 justify-start h-14">
-          <Link to="/admin/upload" search={{ view: "committee" }} hash="add-guests">
-            <span className="inline-flex items-center gap-2">
-              <Upload className="w-4 h-4" /> Upload guests
-            </span>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Button asChild className="bg-ink text-cream hover:bg-ink/90 justify-start h-14">
+          <Link to="/admin/categories" search={{ view: "committee" }}>
+            <ListChecks className="w-4 h-4" /> Volunteer
+          </Link>
+        </Button>
+        <Button asChild variant="outline" className="justify-start h-14">
+          <Link to="/admin/chat" search={{ view: "committee" }}>
+            <MessageSquare className="w-4 h-4" /> Committee chat
+          </Link>
+        </Button>
+        <Button asChild variant="outline" className="justify-start h-14">
+          <a href="/#datetime" target="_blank" rel="noopener noreferrer">
+            <CalendarCog className="w-4 h-4" /> Event details
+          </a>
+        </Button>
+        {isAdmin && (
+          <Button asChild variant="outline" className="justify-start h-14">
+            <Link to="/admin/team" search={{ view: "committee" }}>
+              <UserPlus className="w-4 h-4" /> Add committee member
+            </Link>
+          </Button>
+        )}
+        <Button asChild variant="outline" className="justify-start h-14">
+          <Link to="/admin/preorders" search={{ view: "committee" }}>
+            <Utensils className="w-4 h-4" /> Food report
           </Link>
         </Button>
       </div>
