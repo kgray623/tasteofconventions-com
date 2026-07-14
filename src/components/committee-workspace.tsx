@@ -57,7 +57,7 @@ const pickSingleRsvp = (
 
 export function CommitteeWorkspace() {
   const { user } = useAuth();
-  const { isAdmin } = useRoles();
+  const { isAdmin } = useAdminView();
   const unread = useChatUnread();
   const fetchCommitteeGuests = useServerFn(getCommitteeWorkspaceGuests);
   const search = useSearch({ strict: false }) as { chat?: string; pendingSort?: string };
