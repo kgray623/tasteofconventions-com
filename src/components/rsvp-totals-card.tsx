@@ -98,31 +98,8 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
         <p className="text-xs text-brand-red">Couldn't load totals: {loadError}</p>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-        <Stat label="Total seats" value={TOTAL_SEATS} />
-        <Stat label="RSVP requests" value={loading ? "—" : event.requested} />
-        <Stat label="Seats available" value={loading ? "—" : available} />
-        <Stat label="In-person confirmed" value={loading ? "—" : event.confirmed} emphasis />
-      </div>
-
-      <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
-        <div
-          className="h-full bg-terracotta transition-all"
-          style={{ width: `${pct}%` }}
-          aria-label={`${pct} percent filled`}
-        />
-      </div>
-
-      <p className="text-xs text-muted-foreground">
-        RSVP Zooms:{" "}
-        <span className="font-semibold text-ink tabular-nums">
-          {loading ? "—" : event.virtual}
-        </span>
-        {" — unlimited, doesn't use seats."}
-      </p>
-
       {showPersonal && (
-        <div className="pt-3 border-t space-y-3">
+        <div className="space-y-3">
           <div className="flex items-center gap-1.5">
             <NewBadge target="committee:my-rsvp-label" />
             <p className="text-xs uppercase tracking-wider text-muted-foreground">My RSVPs</p>
@@ -158,6 +135,33 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
           )}
         </div>
       )}
+
+      <div className={`space-y-4 ${showPersonal ? "pt-3 border-t" : ""}`}>
+        <p className="text-xs uppercase tracking-wider text-muted-foreground">Everyone</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+          <Stat label="Total seats" value={TOTAL_SEATS} />
+          <Stat label="RSVP requests" value={loading ? "—" : event.requested} />
+          <Stat label="Seats available" value={loading ? "—" : available} />
+          <Stat label="In-person confirmed" value={loading ? "—" : event.confirmed} emphasis />
+        </div>
+
+        <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
+          <div
+            className="h-full bg-terracotta transition-all"
+            style={{ width: `${pct}%` }}
+            aria-label={`${pct} percent filled`}
+          />
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          RSVP Zooms:{" "}
+          <span className="font-semibold text-ink tabular-nums">
+            {loading ? "—" : event.virtual}
+          </span>
+          {" — unlimited, doesn't use seats."}
+        </p>
+      </div>
+
 
       <p className="text-xs text-muted-foreground italic leading-relaxed">
         Only in-person guests use spots. Not everyone you invite will say yes, so plan to invite
