@@ -926,15 +926,8 @@ export function CommitteeWorkspace() {
           </Button>
         }
       >
-        <div className="p-4 border-b border-border flex justify-end">
-          <Button asChild className="bg-terracotta text-cream hover:bg-terracotta/90">
-            <Link to="/admin/upload" search={{ view: "committee" }} hash="add-guests">
-              <span className="inline-flex items-center gap-2">
-                <Upload className="w-4 h-4" /> Upload guests
-              </span>
-            </Link>
-          </Button>
-        </div>
+
+
 
 
         {loadingGuests ? (
