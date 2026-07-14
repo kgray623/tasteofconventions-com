@@ -22,6 +22,7 @@ export type RsvpTotalsResult = {
 export type CommitteeWorkspaceGuest = {
   id: string;
   created_at: string | null;
+  invite_sent_at: string | null;
   guest_name: string;
   guest_phone: string | null;
   guest_email: string | null;
@@ -103,7 +104,7 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
       supabase.from("inviters").select("host_id,phone,name"),
       supabase
         .from("invitations")
-        .select("id,guest_name,guest_phone,guest_email,host_id,created_at,rsvp_token")
+        .select("id,guest_name,guest_phone,guest_email,host_id,created_at,invite_sent_at,rsvp_token")
         .eq("event_id", eventId)
         .order("created_at", { ascending: false }),
       supabase.from("rsvps").select("invitation_id,status,party_size,attendance_mode,responded_at"),
@@ -119,6 +120,7 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
     const invitationRows = (invitationsRes.data ?? []) as Array<{
       id: string;
       created_at: string | null;
+      invite_sent_at: string | null;
       guest_name: string;
       guest_phone: string | null;
       guest_email: string | null;
@@ -158,6 +160,7 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
         return {
           id: row.id,
           created_at: row.created_at ?? null,
+          invite_sent_at: row.invite_sent_at ?? null,
           guest_name: row.guest_name,
           guest_phone: row.guest_phone,
           guest_email: row.guest_email,
