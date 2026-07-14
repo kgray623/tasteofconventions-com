@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
+import { parseSelections } from "@/lib/preorder-math";
 
 export type CuisineKey = "Myanmar" | "African" | "Indonesian" | "Other";
 
@@ -60,29 +61,6 @@ type PreRow = {
   phone: string | null;
   selections: unknown;
 };
-
-function normalizeCuisine(raw: string): string {
-  const lower = raw.toLowerCase();
-  if (lower.includes("myanmar") || lower.includes("burmese")) return "Myanmar";
-  if (lower.includes("african") || lower.includes("mozambique")) return "African";
-  if (lower.includes("indonesia") || lower.includes("jakarta")) return "Indonesian";
-  return raw.trim() || "Other";
-}
-
-function parseSelections(selections: unknown): { cuisine: string; qty: number }[] {
-  if (!Array.isArray(selections)) return [];
-  const out: { cuisine: string; qty: number }[] = [];
-  for (const item of selections) {
-    if (!item || typeof item !== "object") continue;
-    const raw = String(
-      (item as any).cuisine ?? (item as any).country ?? "",
-    );
-    const qty = Number((item as any).qty ?? (item as any).quantity);
-    if (!Number.isFinite(qty) || qty <= 0) continue;
-    out.push({ cuisine: normalizeCuisine(raw), qty: Math.round(qty) });
-  }
-  return out;
-}
 
 export const getAdminAudit = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
