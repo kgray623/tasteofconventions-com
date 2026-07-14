@@ -1079,11 +1079,14 @@ export function CommitteeWorkspace() {
             <CalendarCog className="w-4 h-4" /> Event details
           </a>
         </Button>
-        <Button asChild variant="outline" className="justify-start h-14">
-          <Link to="/admin/team" search={{ view: "committee" }}>
-            <UserPlus className="w-4 h-4" /> Add committee member
-          </Link>
-        </Button>
+        {isAdmin && (
+          <Button asChild variant="outline" className="justify-start h-14">
+            <Link to="/admin/team" search={{ view: "committee" }}>
+              <UserPlus className="w-4 h-4" /> Add committee member
+            </Link>
+          </Button>
+        )}
+
         <Button asChild variant="outline" className="justify-start h-14">
           <Link to="/admin/preorders" search={{ view: "committee" }}>
             <Utensils className="w-4 h-4" /> Food report
