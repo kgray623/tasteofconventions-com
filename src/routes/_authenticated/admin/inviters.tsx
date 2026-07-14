@@ -538,7 +538,7 @@ function InvitersPage() {
                                           </div>
                                         </td>
                                         <td className="px-2 py-2 text-muted-foreground">
-                                          {g.guest_email || g.guest_phone || "—"}
+                                          {g.guest_phone || "—"}
                                         </td>
                                         <td className="px-2 py-2">
                                           <span
