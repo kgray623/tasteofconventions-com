@@ -39,6 +39,11 @@ export type CommitteeWorkspaceGuestsResult = {
   myHostIds: string[];
 };
 
+export type RsvpEventOption = {
+  id: string;
+  title: string;
+};
+
 type InviterIdentity = {
   id?: string;
   host_id: string | null;
@@ -48,6 +53,19 @@ type InviterIdentity = {
   active?: boolean | null;
   requested_quota?: number | null;
 };
+
+export const getRsvpEvents = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: Record<string, never> | undefined) => input ?? {})
+  .handler(async ({ context }): Promise<RsvpEventOption[]> => {
+    const { supabase } = context;
+    const { data, error } = await supabase
+      .from("events")
+      .select("id,title")
+      .order("starts_at");
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((event) => ({ id: event.id, title: event.title }));
+  });
 
 export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
