@@ -75,7 +75,9 @@ export function CommitteeWorkspace() {
   const [committeeNames, setCommitteeNames] = useState<Set<string>>(new Set());
   const [committeePhones, setCommitteePhones] = useState<Set<string>>(new Set());
   const [myGuestsFilter, setMyGuestsFilter] = useState<"all" | "committee">("all");
-  const [openMyGroup, setOpenMyGroup] = useState<{ inPerson: boolean; zoom: boolean; declined: boolean; pending: boolean }>({ inPerson: true, zoom: true, declined: false, pending: true });
+  const [openMyGroup, setOpenMyGroup] = useState<{ inPerson: boolean; zoom: boolean; declined: boolean; pending: boolean }>({ inPerson: false, zoom: false, declined: false, pending: true });
+  const [openTotals, setOpenTotals] = useState(false);
+  const [openMyGuestsCard, setOpenMyGuestsCard] = useState(false);
   const [lastSeenYesAt, setLastSeenYesAt] = useState<number | null>(null);
   const [manualRefreshingGuests, setManualRefreshingGuests] = useState(false);
   const [markingSentId, setMarkingSentId] = useState<string | null>(null);
