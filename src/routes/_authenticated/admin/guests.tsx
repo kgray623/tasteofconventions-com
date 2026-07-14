@@ -101,7 +101,7 @@ function rollupRows(sourceRows: Row[]) {
 }
 
 function GuestsPage() {
-  const { status, mode, audience, sort } = Route.useSearch();
+  const { status, mode, audience, sort, inviter } = Route.useSearch();
   const navigate = useNavigate({ from: "/admin/guests" });
   const fetchRows = useServerFn(getReconciliationRows);
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -110,6 +110,8 @@ function GuestsPage() {
   const activeStatus: StatusFilter = status ?? "all";
   const activeAudience = audience ?? "all";
   const activeSort: SortMode = sort ?? "alpha";
+  const activeInviter = inviter ?? "all";
+
 
   useEffect(() => {
     let alive = true;
