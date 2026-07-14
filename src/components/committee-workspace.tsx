@@ -973,15 +973,6 @@ export function CommitteeWorkspace() {
         onToggle={() => toggleSection("all")}
         icon={<CheckCircle2 className="w-5 h-5 text-emerald-600" />}
         title={`My full guest list (${loadingGuests ? "…" : myGuests.length})`}
-        action={
-          <Button asChild variant="outline" size="sm" onClick={(e) => e.stopPropagation()}>
-            <Link to="/admin/upload" search={{ view: "committee" }} hash="add-guests">
-              <span className="inline-flex items-center gap-2">
-                <Upload className="w-4 h-4" /> Upload guests
-              </span>
-            </Link>
-          </Button>
-        }
       >
 
 
