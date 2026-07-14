@@ -793,7 +793,7 @@ export function CommitteeWorkspace() {
               setRsvpFor={setRsvpFor}
               saveGuestEdits={saveGuestEdits}
               deleteGuest={deleteGuest}
-              buildSmsHref={buildSmsHref}
+              buildSmsInfo={buildSmsInfo}
             />
           </div>
         )}
@@ -1068,7 +1068,7 @@ function MyGuestsGroup({
   setRsvpFor,
   saveGuestEdits,
   deleteGuest,
-  buildSmsHref,
+  buildSmsInfo,
 }: {
   label: string;
   tone: "emerald" | "muted" | "rose";
@@ -1085,7 +1085,7 @@ function MyGuestsGroup({
     edits: { guest_name: string; guest_phone: string; guest_email: string },
   ) => Promise<boolean>;
   deleteGuest: (guest: CommitteeGuest) => Promise<void>;
-  buildSmsHref?: (guest: CommitteeGuest) => string | null;
+  buildSmsInfo?: (guest: CommitteeGuest) => { phone: string; body: string } | null;
 }) {
   const toneClasses =
     tone === "emerald"
@@ -1152,41 +1152,31 @@ function MyGuestsGroup({
                       {guest.party_size || 1} {guest.attendance_mode === "zoom" ? "Zoom" : "in person"}
                     </Badge>
                   )}
-                  {guest.rsvp_status !== "yes" && guest.rsvp_status !== "no" && (
-                    <Select
-                      value=""
-                      disabled={settingRsvpId === guest.id}
-                      onValueChange={(v) => void setRsvpFor(guest, v as RsvpAction)}
-                    >
-                      <SelectTrigger className="h-8 w-[160px] text-xs">
-                        <SelectValue placeholder={settingRsvpId === guest.id ? "Saving…" : "Record RSVP"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="no">Decline</SelectItem>
-                        <SelectItem value="inperson1">RSVP in person — 1</SelectItem>
-                        <SelectItem value="inperson2">RSVP in person — 2</SelectItem>
-                        <SelectItem value="inperson3">RSVP in person — 3</SelectItem>
-                        <SelectItem value="inperson4">RSVP in person — 4</SelectItem>
-                        <SelectItem value="zoom1">RSVP by Zoom — 1</SelectItem>
-                        <SelectItem value="zoom2">RSVP by Zoom — 2</SelectItem>
-                        <SelectItem value="zoom3">RSVP by Zoom — 3</SelectItem>
-                        <SelectItem value="zoom4">RSVP by Zoom — 4</SelectItem>
-                        <SelectItem value="clear">Clear RSVP</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                  {buildSmsHref && (() => {
-                    const href = buildSmsHref(guest);
-                    if (!href) return null;
-                    return (
-                      <a
-                        href={href}
-                        aria-label={`Send text to ${guest.guest_name}`}
-                        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-terracotta text-cream text-xs font-medium hover:bg-terracotta/90"
-                      >
-                        <MessageSquare className="w-4 h-4" /> Send text
-                      </a>
-                    );
+                  <Select
+                    value=""
+                    disabled={settingRsvpId === guest.id}
+                    onValueChange={(v) => void setRsvpFor(guest, v as RsvpAction)}
+                  >
+                    <SelectTrigger className="h-8 w-[160px] text-xs">
+                      <SelectValue placeholder={settingRsvpId === guest.id ? "Saving…" : (guest.rsvp_status === "yes" || guest.rsvp_status === "no" ? "Change RSVP" : "Record RSVP")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="no">Decline</SelectItem>
+                      <SelectItem value="inperson1">RSVP in person — 1</SelectItem>
+                      <SelectItem value="inperson2">RSVP in person — 2</SelectItem>
+                      <SelectItem value="inperson3">RSVP in person — 3</SelectItem>
+                      <SelectItem value="inperson4">RSVP in person — 4</SelectItem>
+                      <SelectItem value="zoom1">RSVP by Zoom — 1</SelectItem>
+                      <SelectItem value="zoom2">RSVP by Zoom — 2</SelectItem>
+                      <SelectItem value="zoom3">RSVP by Zoom — 3</SelectItem>
+                      <SelectItem value="zoom4">RSVP by Zoom — 4</SelectItem>
+                      <SelectItem value="clear">Clear RSVP</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {buildSmsInfo && (() => {
+                    const info = buildSmsInfo(guest);
+                    if (!info) return null;
+                    return <SmsCopyButton phone={info.phone} body={info.body} guestName={guest.guest_name || "guest"} />;
                   })()}
                   <EditGuestButton guest={guest} onSave={saveGuestEdits} />
                   <DeleteGuestButton guest={guest} onDelete={deleteGuest} />
@@ -1197,6 +1187,42 @@ function MyGuestsGroup({
         </CollapsibleContent>
       </div>
     </Collapsible>
+  );
+}
+
+function SmsCopyButton({ phone, body, guestName }: { phone: string; body: string; guestName: string }) {
+  const onClick = async () => {
+    let copied = false;
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(body);
+        copied = true;
+      }
+    } catch {
+      copied = false;
+    }
+    if (copied) {
+      toast.success("Message copied — paste it into Messages", { duration: 6000 });
+    } else {
+      toast.message("Copy this message, then paste in Messages", {
+        description: body,
+        duration: 15000,
+      });
+    }
+    // Open the phone's Messages app on the correct contact.
+    if (typeof window !== "undefined") {
+      window.location.href = `sms:${phone}`;
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={`Copy invitation to ${guestName} and open Messages`}
+      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-terracotta text-cream text-xs font-medium hover:bg-terracotta/90"
+    >
+      <Copy className="w-4 h-4" /> Copy & open Messages
+    </button>
   );
 }
 
