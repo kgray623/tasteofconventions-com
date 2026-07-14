@@ -659,6 +659,7 @@ function UploadPage() {
       const { error } = await supabase.from("invitations").delete().eq("id", id);
       if (error) throw error;
       setSavedGuests((prev) => prev.filter((g) => g.id !== id));
+      void loadEventSeatTotals(eventId);
       toast.success(`Removed ${name}`);
     } catch (e) {
       console.error("[upload] remove guest failed", e);
@@ -781,6 +782,7 @@ function UploadPage() {
             row.id === g.id ? { ...row, rsvp_status: null, party_size: 1 } : row,
           ),
         );
+        void loadEventSeatTotals(eventId);
         toast.success(`Cleared RSVP for ${g.guest_name}.`);
         return;
       }
@@ -802,6 +804,7 @@ function UploadPage() {
           row.id === g.id ? { ...row, rsvp_status: status, party_size: partySize } : row,
         ),
       );
+      void loadEventSeatTotals(eventId);
       toast.success(
         status === "no"
           ? `Marked ${g.guest_name} as declined.`
