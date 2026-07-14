@@ -184,10 +184,10 @@ export const getReconciliationRows = createServerFn({ method: "GET" })
     if (!isAdmin) throw new Error("Forbidden");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const [invRes, rsvpRes, preRes] = await Promise.all([
+    const [invRes, rsvpRes, preRes, inviterRes] = await Promise.all([
       supabaseAdmin
         .from("invitations")
-        .select("id,guest_name,guest_phone,is_committee,invite_sent_at,created_at,rsvp_token")
+        .select("id,guest_name,guest_phone,is_committee,invite_sent_at,created_at,rsvp_token,inviter_id")
         .order("created_at", { ascending: true }),
       supabaseAdmin
         .from("rsvps")
@@ -195,6 +195,7 @@ export const getReconciliationRows = createServerFn({ method: "GET" })
       supabaseAdmin
         .from("cuisine_preorders")
         .select("invitation_id,selections,updated_at"),
+      supabaseAdmin.from("inviters").select("id,name"),
     ]);
 
     if (invRes.error) throw new Error(invRes.error.message);
@@ -208,6 +209,10 @@ export const getReconciliationRows = createServerFn({ method: "GET" })
     const preByInv = new Map<string, any>();
     for (const p of (preRes.data ?? []) as any[]) {
       if (p.invitation_id) preByInv.set(p.invitation_id, p);
+    }
+    const inviterNameById = new Map<string, string>();
+    for (const inv of (inviterRes.data ?? []) as { id: string; name: string }[]) {
+      inviterNameById.set(inv.id, inv.name);
     }
 
     const rows = ((invRes.data ?? []) as any[]).map((inv) => {
@@ -232,8 +237,11 @@ export const getReconciliationRows = createServerFn({ method: "GET" })
         responded_at: r?.responded_at ?? "",
         preorder_selections: selectionText,
         preorder_meals: meals,
+        inviter_id: (inv.inviter_id as string | null) ?? "",
+        inviter_name: inv.inviter_id ? (inviterNameById.get(inv.inviter_id) ?? "") : "",
       };
     });
 
     return { rows };
   });
+
