@@ -115,7 +115,17 @@ export function CommitteeWorkspace() {
     loadingGuestsRef.current = true;
     if (alive()) setLoadingGuests(true);
     try {
+      // Wait for the Supabase session to hydrate before calling the
+      // authenticated server fn — otherwise attachSupabaseAuth sends no
+      // bearer and the middleware 401s ("No authorization header provided").
+      for (let i = 0; i < 10; i++) {
+        const { data } = await supabase.auth.getSession();
+        if (data.session?.access_token) break;
+        await new Promise((r) => setTimeout(r, 200));
+        if (!alive()) return;
+      }
       const result = await withTimeout(fetchCommitteeGuests({ data: {} }), LOAD_TIMEOUT_MS);
+
       if (!alive()) return;
       setMyHostIds(result.myHostIds);
       setGuests(result.guests);
