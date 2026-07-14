@@ -580,3 +580,126 @@ function RsvpBadge({ status, attendanceMode }: { status?: string; attendanceMode
   if (status === "no") return <Badge variant="secondary">declined</Badge>;
   return <Badge variant="outline">maybe</Badge>;
 }
+
+function SendTextButton({
+  invite,
+  info,
+  onSent,
+}: {
+  invite: Invite;
+  info: { phone: string; body: string };
+  onSent: (invite: Invite, checked: boolean) => Promise<void>;
+}) {
+  return (
+    <a
+      href={`sms:${info.phone}?&body=${encodeURIComponent(info.body)}`}
+      onClick={() => {
+        if (!invite.invite_sent_at) void onSent(invite, true);
+      }}
+      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-sage text-cream text-xs font-medium hover:bg-sage/90"
+      aria-label={`Send text to ${invite.guest_name || "guest"}`}
+    >
+      <MessageSquare className="w-4 h-4" /> {invite.invite_sent_at ? "Resend text" : "Send text"}
+    </a>
+  );
+}
+
+function SentTextControl({
+  invite,
+  markingSentId,
+  onToggleSent,
+}: {
+  invite: Invite;
+  markingSentId: string | null;
+  onToggleSent: (invite: Invite, checked: boolean) => Promise<void>;
+}) {
+  const sentLabel = invite.invite_sent_at
+    ? `Text sent ${new Date(invite.invite_sent_at).toLocaleDateString()}`
+    : "I sent the text";
+  return (
+    <label className="inline-flex items-center gap-2 min-h-8 px-2 rounded-md border border-input text-xs cursor-pointer hover:bg-accent">
+      <Checkbox
+        checked={!!invite.invite_sent_at}
+        disabled={markingSentId === invite.id}
+        onCheckedChange={(value) => void onToggleSent(invite, value === true)}
+      />
+      <span>{markingSentId === invite.id ? "Saving…" : sentLabel}</span>
+    </label>
+  );
+}
+
+function EditInviteButton({
+  invite,
+  onSave,
+}: {
+  invite: Invite;
+  onSave: (invite: Invite, edits: { guest_name: string; guest_phone: string; guest_email: string }) => Promise<boolean>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState(invite.guest_name);
+  const [phone, setPhone] = useState(invite.guest_phone ?? "");
+  const [email, setEmail] = useState(invite.guest_email ?? "");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setName(invite.guest_name);
+      setPhone(invite.guest_phone ?? "");
+      setEmail(invite.guest_email ?? "");
+    }
+  }, [open, invite]);
+
+  const handleSave = async () => {
+    if (!name.trim()) {
+      toast.error("Name can't be empty");
+      return;
+    }
+    setSaving(true);
+    const ok = await onSave(invite, { guest_name: name, guest_phone: phone, guest_email: email });
+    setSaving(false);
+    if (ok) setOpen(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-muted-foreground hover:text-ink"
+          aria-label={`Edit ${invite.guest_name}`}
+        >
+          <Pencil className="w-4 h-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit guest</DialogTitle>
+          <DialogDescription>Update {invite.guest_name}'s contact info.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <Label htmlFor={`edit-invite-name-${invite.id}`}>Name</Label>
+            <Input id={`edit-invite-name-${invite.id}`} value={name} onChange={(event) => setName(event.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor={`edit-invite-phone-${invite.id}`}>Phone</Label>
+            <Input id={`edit-invite-phone-${invite.id}`} value={phone} onChange={(event) => setPhone(event.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor={`edit-invite-email-${invite.id}`}>Email</Label>
+            <Input id={`edit-invite-email-${invite.id}`} type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? "Saving…" : "Save"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
