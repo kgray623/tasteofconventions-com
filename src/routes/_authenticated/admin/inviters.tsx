@@ -64,7 +64,7 @@ const normalizePhone = (value: string) => value.replace(/\D/g, "");
 const normalizeName = (value: string) => value.toLowerCase().replace(/[^a-z]/g, "");
 
 function InvitersPage() {
-  const { loading: rolesLoading } = useRoles();
+  const { loading: rolesLoading, isAdmin } = useAdminView();
   const [inviters, setInviters] = useState<Inviter[]>([]);
   const [invitedCounts, setInvitedCounts] = useState<Record<string, number>>({});
   const [guestsByHost, setGuestsByHost] = useState<Record<string, GuestRow[]>>({});
