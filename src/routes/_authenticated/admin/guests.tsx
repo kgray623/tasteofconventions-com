@@ -345,10 +345,34 @@ function GuestsPage() {
             <SelectItem value="oldest">Oldest first</SelectItem>
           </SelectContent>
         </Select>
+        {(inviterOptions.length > 0 || unattributedCount > 0) && (
+          <Select
+            value={activeInviter}
+            onValueChange={(v) =>
+              navigate({
+                search: (prev: Record<string, unknown>) => ({ ...prev, inviter: v === "all" ? undefined : v }),
+              })
+            }
+          >
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Brought by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Brought by: anyone</SelectItem>
+              {unattributedCount > 0 && (
+                <SelectItem value="none">Not attributed ({unattributedCount})</SelectItem>
+              )}
+              {inviterOptions.map((opt) => (
+                <SelectItem key={opt.id} value={opt.id}>{opt.name} ({opt.count})</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         <Button variant="outline" onClick={exportCsv} disabled={filtered.length === 0}>
           <Download className="w-4 h-4 mr-2" /> Export CSV ({filtered.length})
         </Button>
       </div>
+
 
       {error && (
         <Card className="p-4 border-destructive/40 bg-destructive/5">
