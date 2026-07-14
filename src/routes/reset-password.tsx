@@ -5,12 +5,6 @@ export const Route = createFileRoute("/reset-password")({
   component: ResetPasswordPage,
 });
 
-function getAuthParam(name: string) {
-  const search = new URLSearchParams(window.location.search);
-  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-  return search.get(name) ?? hash.get(name);
-}
-
 function ResetPasswordPage() {
   return <Navigate to="/login" replace />;
 }
