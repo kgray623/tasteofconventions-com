@@ -1,27 +1,29 @@
-Plan timestamp: 2026-07-14 UTC
+## Guest Search Feature
 
-Fix the RSVP seat math where the Upload Guests page is showing `550 - my confirmed in-person guests` instead of `550 - everyone’s confirmed in-person guests`.
+Add a sticky search bar to `/admin/upload` that lets a committee member look up any guest across the entire event by name, phone, or inviter — and see their RSVP status at a glance.
 
-Scope:
-- Keep the guest list filtered to only the current committee member’s uploaded guests.
-- Change the top seat-total cards on `/admin/upload?view=committee#add-guests` so event-wide seat math is used:
+### UX
+- Sticky header bar at the top of the Upload Guests page (below the existing page header), visible while scrolling.
+- Single text input with placeholder "Search guests by name, phone, or committee member".
+- As the user types (debounced ~200ms, min 2 chars), a results dropdown/panel opens showing matches.
+- Each result row shows:
+  - Guest name + phone
+  - RSVP status badge: **Not confirmed** (gray), **Confirmed – In person** (green), **Confirmed – Virtual** (blue), **Declined** (red), **Waitlist** (amber)
+  - Added by: committee member name
+- Empty state: "No guests match '<query>'".
+- Clicking outside or pressing Esc closes the panel.
 
-```text
-Total seats: 550
-Confirmed in-person: everyone’s confirmed in-person RSVP people count
-Requested RSVP quota: everyone’s allocated quota
-Seats available: 550 - everyone’s confirmed in-person RSVP people count
-```
+### Data
+- New server function `searchGuests({ q })` in `src/lib/rsvp-totals.functions.ts` (or a new `guest-search.functions.ts`):
+  - Uses `requireSupabaseAuth` (any signed-in committee/admin user).
+  - Queries `invitations` joined with `inviters` (for committee member name) and latest `rsvps` row (for status).
+  - Matches `ilike` on guest first/last name, phone (digits-only compare), and inviter name.
+  - Returns top 25 results ordered by name.
 
-Implementation details:
-- Add separate event-wide RSVP totals state on the Upload Guests page.
-- When the selected event loads, fetch all invitations/RSVPs for that event only for the totals calculation, while leaving the visible saved guest list restricted to the logged-in committee member.
-- Reuse the existing duplicate-aware RSVP rollup logic so duplicate guest entries do not inflate confirmed seat usage.
-- Update `availableRsvps` to subtract the event-wide confirmed in-person count, not the current member’s count.
-- Avoid changing the “My guests uploaded” list ordering/filtering from the previous request.
+### Placement details
+- Wrap the sticky bar inside the existing page container in `src/routes/_authenticated/admin/upload.tsx` with `sticky top-0 z-40 bg-background border-b`.
+- Does not replace or move any existing sections (My RSVPs, guest list, totals remain unchanged).
 
-Verification before reporting back:
-- Check the exact route `/admin/upload?view=committee#add-guests` at the current preview viewport.
-- Verify as a committee user that the list still shows only that user’s guests.
-- Verify the cards show event-wide confirmed in-person seats and `Seats available = 550 - event-wide in-person confirmed`.
-- Verify the RSVP totals card still shows “My RSVPs” first and “Everyone” totals below it.
+### Verification
+- Playwright at `/admin/upload?view=committee` at 1070×639: type a partial name → confirm matching guests appear with correct status + inviter; type a phone fragment → same; type a committee member's name → their guests appear.
+- DB read-back to confirm status shown matches `rsvps` table.
