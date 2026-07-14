@@ -1353,7 +1353,9 @@ function UploadPage() {
         guest_phone: quick.phone.trim() || null,
         notes: null,
         is_committee: importAsCommittee,
+        inviter_id: uploadInviterId || null,
       });
+
       if (error) throw error;
       setQuickAdded((n) => n + 1);
       setQuick({ name: "", phone: "" });
