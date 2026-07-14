@@ -409,6 +409,12 @@ function GuestsPage() {
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {r.phone || "no phone"}
                   </p>
+                  {r.inviter_name && (
+                    <p className="text-[11px] text-muted-foreground/80 mt-0.5">
+                      Brought by <span className="text-ink/80 font-medium">{r.inviter_name}</span>
+                    </p>
+                  )}
+
                   {(s === "confirmed" || s === "maybe" || s === "waitlist" || (s === "declined" && r.party_size)) && (
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Party of {r.party_size || 1}
