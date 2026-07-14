@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -77,6 +78,7 @@ export function CommitteeWorkspace() {
   const [openMyGroup, setOpenMyGroup] = useState<{ inPerson: boolean; zoom: boolean; declined: boolean; pending: boolean }>({ inPerson: true, zoom: true, declined: false, pending: true });
   const [lastSeenYesAt, setLastSeenYesAt] = useState<number | null>(null);
   const [manualRefreshingGuests, setManualRefreshingGuests] = useState(false);
+  const [markingSentId, setMarkingSentId] = useState<string | null>(null);
   const handledChatParamRef = useRef<string | null>(null);
   const loadingGuestsRef = useRef(false);
   const activePendingSort: PendingSortMode =
@@ -175,7 +177,7 @@ export function CommitteeWorkspace() {
     const { data, error: invitationsError } = await withTimeout(
       supabase
         .from("invitations")
-          .select("id,created_at,guest_name,guest_phone,guest_email,host_id,rsvp_token,rsvps(status,party_size,attendance_mode,responded_at)")
+          .select("id,created_at,invite_sent_at,guest_name,guest_phone,guest_email,host_id,rsvp_token,rsvps(status,party_size,attendance_mode,responded_at)")
         .eq("event_id", eventId)
         .order("created_at", { ascending: false }),
       LOAD_TIMEOUT_MS,
@@ -185,6 +187,7 @@ export function CommitteeWorkspace() {
     const rows = (data ?? []) as unknown as Array<{
       id: string;
       created_at: string | null;
+      invite_sent_at: string | null;
       guest_name: string;
       guest_phone: string | null;
       guest_email: string | null;
@@ -217,6 +220,7 @@ export function CommitteeWorkspace() {
         return {
           id: row.id,
           created_at: row.created_at ?? null,
+          invite_sent_at: row.invite_sent_at ?? null,
           guest_name: row.guest_name,
           guest_phone: row.guest_phone,
           guest_email: row.guest_email,
@@ -423,6 +427,22 @@ export function CommitteeWorkspace() {
     toast.success(`Updated ${edits.guest_name.trim() || guest.guest_name}.`);
     await loadGuests();
     return true;
+  };
+
+  const toggleSent = async (guest: CommitteeGuest, checked: boolean) => {
+    setMarkingSentId(guest.id);
+    const sentAt = checked ? new Date().toISOString() : null;
+    const { error } = await supabase
+      .from("invitations")
+      .update({ invite_sent_at: sentAt })
+      .eq("id", guest.id);
+    setMarkingSentId(null);
+    if (error) {
+      toast.error("Couldn't update sent text", { description: error.message });
+      return;
+    }
+    setGuests((prev) => prev.map((row) => (row.id === guest.id ? { ...row, invite_sent_at: sentAt } : row)));
+    toast.success(checked ? "Marked text as sent." : "Marked text as not sent.");
   };
 
   const mineHostIdSet = new Set(myHostIds.length ? myHostIds : user ? [user.id] : []);
@@ -753,6 +773,9 @@ export function CommitteeWorkspace() {
               setRsvpFor={setRsvpFor}
               saveGuestEdits={saveGuestEdits}
               deleteGuest={deleteGuest}
+              buildSmsInfo={buildSmsInfo}
+              markingSentId={markingSentId}
+              toggleSent={toggleSent}
             />
             <MyGuestsGroup
               label="RSVP by Zoom"
@@ -766,6 +789,9 @@ export function CommitteeWorkspace() {
               setRsvpFor={setRsvpFor}
               saveGuestEdits={saveGuestEdits}
               deleteGuest={deleteGuest}
+              buildSmsInfo={buildSmsInfo}
+              markingSentId={markingSentId}
+              toggleSent={toggleSent}
             />
             <MyGuestsGroup
               label="Decline"
@@ -779,6 +805,9 @@ export function CommitteeWorkspace() {
               setRsvpFor={setRsvpFor}
               saveGuestEdits={saveGuestEdits}
               deleteGuest={deleteGuest}
+              buildSmsInfo={buildSmsInfo}
+              markingSentId={markingSentId}
+              toggleSent={toggleSent}
             />
             <MyGuestsGroup
               label="Pending"
@@ -794,6 +823,8 @@ export function CommitteeWorkspace() {
               saveGuestEdits={saveGuestEdits}
               deleteGuest={deleteGuest}
               buildSmsInfo={buildSmsInfo}
+              markingSentId={markingSentId}
+              toggleSent={toggleSent}
             />
           </div>
         )}
@@ -817,6 +848,7 @@ export function CommitteeWorkspace() {
           <div className="divide-y divide-border md:max-h-[360px] md:overflow-auto">
             {confirmedGuests.map((guest) => {
               const isVirtual = guest.attendance_mode === "zoom";
+              const smsInfo = buildSmsInfo(guest);
               return (
                 <div key={guest.id} className="p-4 flex flex-wrap items-center gap-3 text-sm">
                   <p className="font-medium flex-1 min-w-[160px]">
@@ -839,6 +871,12 @@ export function CommitteeWorkspace() {
                   {guest.invited_by && (
                     <span className="text-muted-foreground">Invited by {guest.invited_by}</span>
                   )}
+                  <RsvpActionSelect guest={guest} settingRsvpId={settingRsvpId} setRsvpFor={setRsvpFor} />
+                  {smsInfo && <SendTextButton guest={guest} info={smsInfo} onSent={toggleSent} />}
+                  {smsInfo && <SmsCopyButton phone={smsInfo.phone} body={smsInfo.body} guestName={guest.guest_name || "guest"} />}
+                  <SentTextControl guest={guest} markingSentId={markingSentId} onToggleSent={toggleSent} />
+                  <EditGuestButton guest={guest} onSave={saveGuestEdits} />
+                  <DeleteGuestButton guest={guest} onDelete={deleteGuest} />
                 </div>
               );
             })}
@@ -880,7 +918,9 @@ export function CommitteeWorkspace() {
           <div className="p-4 text-sm text-muted-foreground">You haven't invited anyone yet.</div>
         ) : (
           <div className="divide-y divide-border md:max-h-[520px] md:overflow-auto">
-            {myGuests.map((guest) => (
+            {myGuests.map((guest) => {
+              const smsInfo = buildSmsInfo(guest);
+              return (
               <div key={guest.id} className="p-4 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-medium flex-1 min-w-[160px]">
@@ -901,8 +941,16 @@ export function CommitteeWorkspace() {
                   )}
                   {guest.invited_by && <span>Invited by {guest.invited_by}</span>}
                 </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <RsvpActionSelect guest={guest} settingRsvpId={settingRsvpId} setRsvpFor={setRsvpFor} />
+                  {smsInfo && <SendTextButton guest={guest} info={smsInfo} onSent={toggleSent} />}
+                  {smsInfo && <SmsCopyButton phone={smsInfo.phone} body={smsInfo.body} guestName={guest.guest_name || "guest"} />}
+                  <SentTextControl guest={guest} markingSentId={markingSentId} onToggleSent={toggleSent} />
+                  <EditGuestButton guest={guest} onSave={saveGuestEdits} />
+                  <DeleteGuestButton guest={guest} onDelete={deleteGuest} />
+                </div>
               </div>
-            ))}
+            );})}
           </div>
         )}
       </CollapsibleSection>
@@ -1069,6 +1117,8 @@ function MyGuestsGroup({
   saveGuestEdits,
   deleteGuest,
   buildSmsInfo,
+  markingSentId,
+  toggleSent,
 }: {
   label: string;
   tone: "emerald" | "muted" | "rose";
@@ -1086,6 +1136,8 @@ function MyGuestsGroup({
   ) => Promise<boolean>;
   deleteGuest: (guest: CommitteeGuest) => Promise<void>;
   buildSmsInfo?: (guest: CommitteeGuest) => { phone: string; body: string } | null;
+  markingSentId: string | null;
+  toggleSent: (guest: CommitteeGuest, checked: boolean) => Promise<void>;
 }) {
   const toneClasses =
     tone === "emerald"
@@ -1152,43 +1204,18 @@ function MyGuestsGroup({
                       {guest.party_size || 1} {guest.attendance_mode === "zoom" ? "Zoom" : "in person"}
                     </Badge>
                   )}
-                  <Select
-                    value=""
-                    disabled={settingRsvpId === guest.id}
-                    onValueChange={(v) => void setRsvpFor(guest, v as RsvpAction)}
-                  >
-                    <SelectTrigger className="h-8 w-[160px] text-xs">
-                      <SelectValue placeholder={settingRsvpId === guest.id ? "Saving…" : (guest.rsvp_status === "yes" || guest.rsvp_status === "no" ? "Change RSVP" : "Record RSVP")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="no">Decline</SelectItem>
-                      <SelectItem value="inperson1">RSVP in person — 1</SelectItem>
-                      <SelectItem value="inperson2">RSVP in person — 2</SelectItem>
-                      <SelectItem value="inperson3">RSVP in person — 3</SelectItem>
-                      <SelectItem value="inperson4">RSVP in person — 4</SelectItem>
-                      <SelectItem value="zoom1">RSVP by Zoom — 1</SelectItem>
-                      <SelectItem value="zoom2">RSVP by Zoom — 2</SelectItem>
-                      <SelectItem value="zoom3">RSVP by Zoom — 3</SelectItem>
-                      <SelectItem value="zoom4">RSVP by Zoom — 4</SelectItem>
-                      <SelectItem value="clear">Clear RSVP</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <RsvpActionSelect guest={guest} settingRsvpId={settingRsvpId} setRsvpFor={setRsvpFor} />
                   {buildSmsInfo && (() => {
                     const info = buildSmsInfo(guest);
                     if (!info) return null;
                     return (
                       <>
-                        <a
-                          href={`sms:${info.phone}?&body=${encodeURIComponent(info.body)}`}
-                          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-sage text-cream text-xs font-medium hover:bg-sage/90"
-                          aria-label={`Send text to ${guest.guest_name || "guest"}`}
-                        >
-                          <MessageSquare className="w-4 h-4" /> Send text
-                        </a>
+                        <SendTextButton guest={guest} info={info} onSent={toggleSent} />
                         <SmsCopyButton phone={info.phone} body={info.body} guestName={guest.guest_name || "guest"} />
                       </>
                     );
                   })()}
+                  <SentTextControl guest={guest} markingSentId={markingSentId} onToggleSent={toggleSent} />
                   <EditGuestButton guest={guest} onSave={saveGuestEdits} />
                   <DeleteGuestButton guest={guest} onDelete={deleteGuest} />
                 </div>
@@ -1198,6 +1225,87 @@ function MyGuestsGroup({
         </CollapsibleContent>
       </div>
     </Collapsible>
+  );
+}
+
+function RsvpActionSelect({
+  guest,
+  settingRsvpId,
+  setRsvpFor,
+}: {
+  guest: CommitteeGuest;
+  settingRsvpId: string | null;
+  setRsvpFor: (guest: CommitteeGuest, value: RsvpAction) => Promise<void>;
+}) {
+  return (
+    <Select
+      value=""
+      disabled={settingRsvpId === guest.id}
+      onValueChange={(v) => void setRsvpFor(guest, v as RsvpAction)}
+    >
+      <SelectTrigger className="h-8 w-[160px] text-xs">
+        <SelectValue placeholder={settingRsvpId === guest.id ? "Saving…" : (guest.rsvp_status === "yes" || guest.rsvp_status === "no" ? "Change RSVP" : "Record RSVP")} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="no">Decline</SelectItem>
+        <SelectItem value="inperson1">RSVP in person — 1</SelectItem>
+        <SelectItem value="inperson2">RSVP in person — 2</SelectItem>
+        <SelectItem value="inperson3">RSVP in person — 3</SelectItem>
+        <SelectItem value="inperson4">RSVP in person — 4</SelectItem>
+        <SelectItem value="zoom1">RSVP by Zoom — 1</SelectItem>
+        <SelectItem value="zoom2">RSVP by Zoom — 2</SelectItem>
+        <SelectItem value="zoom3">RSVP by Zoom — 3</SelectItem>
+        <SelectItem value="zoom4">RSVP by Zoom — 4</SelectItem>
+        <SelectItem value="clear">Clear RSVP</SelectItem>
+      </SelectContent>
+    </Select>
+  );
+}
+
+function SendTextButton({
+  guest,
+  info,
+  onSent,
+}: {
+  guest: CommitteeGuest;
+  info: { phone: string; body: string };
+  onSent: (guest: CommitteeGuest, checked: boolean) => Promise<void>;
+}) {
+  return (
+    <a
+      href={`sms:${info.phone}?&body=${encodeURIComponent(info.body)}`}
+      onClick={() => {
+        if (!guest.invite_sent_at) void onSent(guest, true);
+      }}
+      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-sage text-cream text-xs font-medium hover:bg-sage/90"
+      aria-label={`Send text to ${guest.guest_name || "guest"}`}
+    >
+      <MessageSquare className="w-4 h-4" /> {guest.invite_sent_at ? "Resend text" : "Send text"}
+    </a>
+  );
+}
+
+function SentTextControl({
+  guest,
+  markingSentId,
+  onToggleSent,
+}: {
+  guest: CommitteeGuest;
+  markingSentId: string | null;
+  onToggleSent: (guest: CommitteeGuest, checked: boolean) => Promise<void>;
+}) {
+  const sentLabel = guest.invite_sent_at
+    ? `Text sent ${new Date(guest.invite_sent_at).toLocaleDateString()}`
+    : "I sent the text";
+  return (
+    <label className="inline-flex items-center gap-2 min-h-8 px-2 rounded-md border border-input text-xs cursor-pointer hover:bg-accent">
+      <Checkbox
+        checked={!!guest.invite_sent_at}
+        disabled={markingSentId === guest.id}
+        onCheckedChange={(value) => void onToggleSent(guest, value === true)}
+      />
+      <span>{markingSentId === guest.id ? "Saving…" : sentLabel}</span>
+    </label>
   );
 }
 
