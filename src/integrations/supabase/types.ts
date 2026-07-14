@@ -579,6 +579,7 @@ export type Database = {
           host_id: string
           id: string
           invite_sent_at: string | null
+          inviter_id: string | null
           is_committee: boolean
           notes: string | null
           rsvp_token: string
@@ -594,6 +595,7 @@ export type Database = {
           host_id: string
           id?: string
           invite_sent_at?: string | null
+          inviter_id?: string | null
           is_committee?: boolean
           notes?: string | null
           rsvp_token?: string
@@ -609,6 +611,7 @@ export type Database = {
           host_id?: string
           id?: string
           invite_sent_at?: string | null
+          inviter_id?: string | null
           is_committee?: boolean
           notes?: string | null
           rsvp_token?: string
@@ -619,6 +622,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitations_inviter_id_fkey"
+            columns: ["inviter_id"]
+            isOneToOne: false
+            referencedRelation: "inviters"
             referencedColumns: ["id"]
           },
         ]

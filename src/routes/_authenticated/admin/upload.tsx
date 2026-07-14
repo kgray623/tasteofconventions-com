@@ -310,6 +310,9 @@ function UploadPage() {
   const [quotaRequestedAt, setQuotaRequestedAt] = useState<string | null>(null);
   const [savingQuotaReq, setSavingQuotaReq] = useState(false);
   const [quotaPool, setQuotaPool] = useState({ total: TOTAL_RSVP_CAP, allocated: 0 });
+  const [activeInviters, setActiveInviters] = useState<{ id: string; name: string }[]>([]);
+  const [uploadInviterId, setUploadInviterId] = useState<string>("");
+
 
   const loadSavedGuests = async (evId: string) => {
     if (!evId) {
@@ -424,7 +427,8 @@ function UploadPage() {
       }
       const { data: allInviters } = await supabase
         .from("inviters")
-        .select("quota,requested_quota,active");
+        .select("id,name,quota,requested_quota,active")
+        .order("name");
       const allocated = (allInviters ?? []).reduce(
         (sum, row) => sum + (row.active === false ? 0 : (row.quota ?? 0)),
         0,
@@ -437,6 +441,14 @@ function UploadPage() {
       setRequestedQuota(inv?.requested_quota ? String(inv.requested_quota) : "");
       setQuotaRequestedAt(inv?.quota_requested_at ?? null);
       setInviterName(inv?.name || fallbackName);
+      setActiveInviters(
+        (allInviters ?? [])
+          .filter((row) => row.active !== false)
+          .map((row) => ({ id: row.id as string, name: row.name as string })),
+      );
+      // Default the upload dropdown to the current user's own inviter row if any.
+      setUploadInviterId((prev) => prev || (inv?.id ?? ""));
+
     })();
     return () => {
       alive = false;
@@ -1074,7 +1086,9 @@ function UploadPage() {
             guest_phone: r.guest_phone || null,
             notes: r.notes || null,
             is_committee: importAsCommittee,
+            inviter_id: uploadInviterId || null,
           });
+
           if (error) {
             const dup = parseDuplicateGuestError(error);
             if (dup) dupNames.push(`${r.guest_name} (matches ${dup.existingName})`);
@@ -1171,7 +1185,9 @@ function UploadPage() {
             guest_phone: (c.phone || "").trim() || null,
             notes: null,
             is_committee: importAsCommittee,
+            inviter_id: uploadInviterId || null,
           })
+
           .select("id,guest_name")
           .single();
         if (error || !data) {
@@ -1337,7 +1353,9 @@ function UploadPage() {
         guest_phone: quick.phone.trim() || null,
         notes: null,
         is_committee: importAsCommittee,
+        inviter_id: uploadInviterId || null,
       });
+
       if (error) throw error;
       setQuickAdded((n) => n + 1);
       setQuick({ name: "", phone: "" });
@@ -1474,6 +1492,27 @@ function UploadPage() {
           </Select>
         </Card>
       )}
+
+      {activeInviters.length > 0 && (
+        <Card className="p-6 space-y-2 border-terracotta/30 bg-terracotta/5">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Whose list is this?</p>
+          <p className="text-xs text-muted-foreground">
+            Every guest added below will be recorded as brought by this person.
+          </p>
+          <Select value={uploadInviterId} onValueChange={setUploadInviterId}>
+            <SelectTrigger className="w-full sm:w-[320px]">
+              <SelectValue placeholder="Pick who brought this list…" />
+            </SelectTrigger>
+            <SelectContent>
+              {activeInviters.map((opt) => (
+                <SelectItem key={opt.id} value={opt.id}>{opt.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Card>
+      )}
+
+
 
       <Card className="overflow-hidden border-terracotta/40 bg-terracotta/5">
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">

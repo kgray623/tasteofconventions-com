@@ -21,6 +21,7 @@ export const Route = createFileRoute("/_authenticated/admin/guests")({
       mode: z.enum(["in_person", "zoom"]).optional(),
       audience: z.enum(["all", "guest", "committee"]).optional(),
       sort: z.enum(["alpha", "newest", "oldest"]).optional(),
+      inviter: z.string().optional(),
     }).parse(s),
   component: GuestsPage,
 });
@@ -41,7 +42,10 @@ type Row = {
   responded_at: string;
   preorder_selections: string;
   preorder_meals: number;
+  inviter_id?: string;
+  inviter_name?: string;
 };
+
 
 const STATUS_LABEL: Record<StatusFilter, string> = {
   all: "All",
@@ -97,7 +101,7 @@ function rollupRows(sourceRows: Row[]) {
 }
 
 function GuestsPage() {
-  const { status, mode, audience, sort } = Route.useSearch();
+  const { status, mode, audience, sort, inviter } = Route.useSearch();
   const navigate = useNavigate({ from: "/admin/guests" });
   const fetchRows = useServerFn(getReconciliationRows);
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -106,6 +110,8 @@ function GuestsPage() {
   const activeStatus: StatusFilter = status ?? "all";
   const activeAudience = audience ?? "all";
   const activeSort: SortMode = sort ?? "alpha";
+  const activeInviter = inviter ?? "all";
+
 
   useEffect(() => {
     let alive = true;
@@ -173,9 +179,14 @@ function GuestsPage() {
       if (mode && r.attendance_mode !== mode) return false;
       if (activeAudience === "guest" && r.is_committee) return false;
       if (activeAudience === "committee" && !r.is_committee) return false;
+      if (activeInviter !== "all") {
+        if (activeInviter === "none") {
+          if (r.inviter_id) return false;
+        } else if ((r.inviter_id ?? "") !== activeInviter) return false;
+      }
       if (q) {
         const nameNorm = r.name.toLowerCase().replace(/[^a-z]/g, "");
-        const hay = `${r.name} ${r.phone}`.toLowerCase();
+        const hay = `${r.name} ${r.phone} ${r.inviter_name ?? ""}`.toLowerCase();
         if (hay.includes(q)) return true;
         if (qNorm && (nameNorm.includes(qNameNorm) || r.phone.replace(/\D/g, "").includes(qNorm))) return true;
         // Fuzzy spelling match (e.g. "Daisy" finds "Deisy")
@@ -192,7 +203,23 @@ function GuestsPage() {
       }
       return a.name.localeCompare(b.name);
     });
-  }, [rows, activeStatus, activeAudience, mode, query, activeSort]);
+  }, [rows, activeStatus, activeAudience, mode, query, activeSort, activeInviter]);
+
+  const inviterOptions = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; count: number }>();
+    for (const r of rows ?? []) {
+      if (!r.inviter_id) continue;
+      const cur = map.get(r.inviter_id);
+      if (cur) cur.count++;
+      else map.set(r.inviter_id, { id: r.inviter_id, name: r.inviter_name || "(unnamed)", count: 1 });
+    }
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [rows]);
+  const unattributedCount = useMemo(
+    () => (rows ?? []).filter((r) => !r.inviter_id).length,
+    [rows],
+  );
+
 
   const filteredCounts = useMemo(() => {
     const rollup = rollupRows(filtered);
@@ -219,12 +246,13 @@ function GuestsPage() {
 
 
   const exportCsv = () => {
-    const headers = ["name", "phone", "audience", "status", "party_size", "attendance_mode", "responded_at"];
+    const headers = ["name", "phone", "audience", "status", "party_size", "attendance_mode", "responded_at", "brought_by"];
     const lines = [headers.join(",")];
     for (const r of filtered) {
       lines.push([
         r.name, r.phone, r.audience, r.rsvp_status,
         r.party_size, r.attendance_mode, r.responded_at,
+        r.inviter_name ?? "",
       ].map(escapeCsv).join(","));
     }
     const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
@@ -237,6 +265,7 @@ function GuestsPage() {
     a.remove();
     URL.revokeObjectURL(url);
   };
+
 
   const tabs: StatusFilter[] = ["all", "confirmed", "declined", "maybe", "waitlist", "pending"];
 
@@ -316,10 +345,34 @@ function GuestsPage() {
             <SelectItem value="oldest">Oldest first</SelectItem>
           </SelectContent>
         </Select>
+        {(inviterOptions.length > 0 || unattributedCount > 0) && (
+          <Select
+            value={activeInviter}
+            onValueChange={(v) =>
+              navigate({
+                search: (prev: Record<string, unknown>) => ({ ...prev, inviter: v === "all" ? undefined : v }),
+              })
+            }
+          >
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Brought by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Brought by: anyone</SelectItem>
+              {unattributedCount > 0 && (
+                <SelectItem value="none">Not attributed ({unattributedCount})</SelectItem>
+              )}
+              {inviterOptions.map((opt) => (
+                <SelectItem key={opt.id} value={opt.id}>{opt.name} ({opt.count})</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         <Button variant="outline" onClick={exportCsv} disabled={filtered.length === 0}>
           <Download className="w-4 h-4 mr-2" /> Export CSV ({filtered.length})
         </Button>
       </div>
+
 
       {error && (
         <Card className="p-4 border-destructive/40 bg-destructive/5">
@@ -356,6 +409,12 @@ function GuestsPage() {
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {r.phone || "no phone"}
                   </p>
+                  {r.inviter_name && (
+                    <p className="text-[11px] text-muted-foreground/80 mt-0.5">
+                      Brought by <span className="text-ink/80 font-medium">{r.inviter_name}</span>
+                    </p>
+                  )}
+
                   {(s === "confirmed" || s === "maybe" || s === "waitlist" || (s === "declined" && r.party_size)) && (
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Party of {r.party_size || 1}

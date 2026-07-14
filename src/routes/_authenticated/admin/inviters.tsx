@@ -65,11 +65,13 @@ function InvitersPage() {
   const { loading: rolesLoading, isAdmin } = useAdminView();
   const [inviters, setInviters] = useState<Inviter[]>([]);
   const [invitedCounts, setInvitedCounts] = useState<Record<string, number>>({});
+  const [broughtCounts, setBroughtCounts] = useState<Record<string, number>>({});
   const [guestsByHost, setGuestsByHost] = useState<Record<string, GuestRow[]>>({});
   const [expandedHost, setExpandedHost] = useState<string | null>(null);
   const [rowBusy, setRowBusy] = useState<string | null>(null);
   const [committee, setCommittee] = useState<CommitteeRow[]>([]);
   const [loading, setLoading] = useState(true);
+
 
   const load = async () => {
     setLoading(true);
@@ -82,7 +84,7 @@ function InvitersPage() {
       ] = await withTimeout(
         Promise.all([
           supabase.from("inviters").select("*").order("name"),
-          supabase.from("invitations").select("host_id"),
+          supabase.from("invitations").select("host_id,inviter_id"),
           supabase
             .from("invitations")
             .select("id,host_id,guest_name,guest_phone,invite_sent_at")
@@ -94,11 +96,14 @@ function InvitersPage() {
       const inviterRows = (inv as Inviter[]) ?? [];
       setInviters(inviterRows);
       const invByHost: Record<string, number> = {};
-      for (const row of invites ?? []) {
-        if (!row.host_id) continue;
-        invByHost[row.host_id] = (invByHost[row.host_id] ?? 0) + 1;
+      const broughtByInviter: Record<string, number> = {};
+      for (const row of (invites ?? []) as { host_id: string | null; inviter_id: string | null }[]) {
+        if (row.host_id) invByHost[row.host_id] = (invByHost[row.host_id] ?? 0) + 1;
+        if (row.inviter_id) broughtByInviter[row.inviter_id] = (broughtByInviter[row.inviter_id] ?? 0) + 1;
       }
       setInvitedCounts(invByHost);
+      setBroughtCounts(broughtByInviter);
+
 
       const rsvpByInvite = new Map<string, { id: string; status: string; party_size: number; attendance_mode: string | null }>();
       for (const r of (rsvpsFull as { id: string; invitation_id: string; status: string; party_size: number; attendance_mode: string | null }[]) ?? []) {
@@ -419,7 +424,11 @@ function InvitersPage() {
                   const guests = guestsForInviter(i);
                   const used = confirmedResponseCount(guests);
                   const virtual = virtualResponseCount(guests);
-                  const invited = guests.length || (i.host_id ? (invitedCounts[i.host_id] ?? 0) : 0);
+                  const broughtDirect = broughtCounts[i.id] ?? 0;
+                  const hostBased = guests.length || (i.host_id ? (invitedCounts[i.host_id] ?? 0) : 0);
+                  // Prefer the explicit inviter_id link when it's higher (backfilled/new uploads).
+                  const invited = Math.max(broughtDirect, hostBased);
+
                   const remaining = Math.max(0, i.quota - used);
                   const isOpen = expandedHost === i.id;
                   const rows: ReactNode[] = [];
