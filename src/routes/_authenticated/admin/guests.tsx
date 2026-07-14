@@ -106,11 +106,6 @@ function GuestsPage() {
     return () => { alive = false; };
   }, [fetchRows]);
 
-  const partyOf = (r: Row) => {
-    const n = Number(r.party_size);
-    return Number.isFinite(n) && n > 0 ? n : 1;
-  };
-
   const counts = useMemo(() => {
     const c: Record<StatusFilter, number> = { all: 0, confirmed: 0, declined: 0, maybe: 0, waitlist: 0, pending: 0 };
     const rsvps: Record<StatusFilter, number> = { all: 0, confirmed: 0, declined: 0, maybe: 0, waitlist: 0, pending: 0 };
@@ -236,7 +231,7 @@ function GuestsPage() {
                 ? <>Confirmed: <span className="tabular-nums font-medium text-ink">{counts.people.confirmed}</span> people across <span className="tabular-nums font-medium text-ink">{counts.rsvps.confirmed}</span> RSVPs (<span className="tabular-nums">{counts.modePeople.in_person}</span> in person · <span className="tabular-nums">{counts.modePeople.zoom}</span> Zoom).</>
                 : activeStatus === "pending"
                   ? <>Pending: <span className="tabular-nums font-medium text-ink">{counts.rsvps.pending}</span> guests with no RSVP yet (of <span className="tabular-nums font-medium text-ink">{counts.rsvps.all}</span> total uploaded).</>
-                  : <>Showing <span className="tabular-nums font-medium text-ink">{counts.people[activeStatus]}</span> people across <span className="tabular-nums font-medium text-ink">{filtered.length}</span> guests (of <span className="tabular-nums font-medium text-ink">{counts.rsvps.all}</span> total uploaded).</>
+                  : <>Showing <span className="tabular-nums font-medium text-ink">{counts.people[activeStatus]}</span> people across <span className="tabular-nums font-medium text-ink">{counts.rsvps[activeStatus]}</span> RSVPs (of <span className="tabular-nums font-medium text-ink">{counts.rsvps.all}</span> total uploaded).</>
             }
           </p>
         </div>
