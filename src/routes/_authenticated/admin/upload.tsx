@@ -1685,9 +1685,9 @@ function UploadPage() {
               })
               .sort(byName);
             sections = [
-              { label: "RSVP", rows: rsvp },
-              { label: "Pending", rows: pending },
-              { label: "No", rows: no },
+              { label: "Not confirmed yet", rows: pending },
+              { label: "Confirmed", rows: rsvp },
+              { label: "Declined", rows: no },
             ];
           }
 
