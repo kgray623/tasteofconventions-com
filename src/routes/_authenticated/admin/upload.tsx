@@ -427,7 +427,8 @@ function UploadPage() {
       }
       const { data: allInviters } = await supabase
         .from("inviters")
-        .select("quota,requested_quota,active");
+        .select("id,name,quota,requested_quota,active")
+        .order("name");
       const allocated = (allInviters ?? []).reduce(
         (sum, row) => sum + (row.active === false ? 0 : (row.quota ?? 0)),
         0,
@@ -440,6 +441,14 @@ function UploadPage() {
       setRequestedQuota(inv?.requested_quota ? String(inv.requested_quota) : "");
       setQuotaRequestedAt(inv?.quota_requested_at ?? null);
       setInviterName(inv?.name || fallbackName);
+      setActiveInviters(
+        (allInviters ?? [])
+          .filter((row) => row.active !== false)
+          .map((row) => ({ id: row.id as string, name: row.name as string })),
+      );
+      // Default the upload dropdown to the current user's own inviter row if any.
+      setUploadInviterId((prev) => prev || (inv?.id ?? ""));
+
     })();
     return () => {
       alive = false;
