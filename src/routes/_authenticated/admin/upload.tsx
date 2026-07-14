@@ -161,6 +161,7 @@ function parseVCards(text: string): Record<string, string>[] {
         else if (!name && left.startsWith("N")) {
           const [last, first] = value.split(";");
           name = [first, last].filter(Boolean).join(" ").trim();
+        }
         else if (!phone && left.startsWith("TEL")) phone = value;
       }
       return { name, phone, notes: "" };
