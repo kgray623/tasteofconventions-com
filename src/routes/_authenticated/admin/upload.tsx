@@ -1518,7 +1518,7 @@ function UploadPage() {
         </Card>
         <Card className="p-5">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Confirmed in-person</p>
-          <p className="font-display text-3xl mt-2">{inPersonPeople}</p>
+          <p className="font-display text-3xl mt-2">{eventSeatTotalsLoading ? "—" : eventSeatTotals.inPerson}</p>
         </Card>
         <Card className="p-5">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Requested RSVP quota</p>
@@ -1527,7 +1527,7 @@ function UploadPage() {
         <Card className="p-5">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Seats available</p>
           <p className="font-display text-3xl mt-2 text-terracotta">
-            {availableRsvps}
+            {eventSeatTotalsLoading ? "—" : availableRsvps}
           </p>
         </Card>
       </div>
