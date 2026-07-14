@@ -300,12 +300,15 @@ function InvitersPage() {
           <h2 className="font-display text-xl flex items-center gap-2">
             <Users className="w-5 h-5 text-terracotta" /> Committee members
           </h2>
-          <Link
-            to="/admin/team"
-            className="inline-flex h-9 items-center gap-2 rounded-md bg-ink px-3 text-sm font-semibold text-cream hover:bg-ink/90"
-          >
-            <Users className="w-4 h-4" /> Add committee member
-          </Link>
+          {isAdmin && (
+            <Link
+              to="/admin/team"
+              className="inline-flex h-9 items-center gap-2 rounded-md bg-ink px-3 text-sm font-semibold text-cream hover:bg-ink/90"
+            >
+              <Users className="w-4 h-4" /> Add committee member
+            </Link>
+          )}
+
         </div>
 
         {committee.length === 0 ? (
