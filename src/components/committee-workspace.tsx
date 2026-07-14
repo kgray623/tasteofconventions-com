@@ -901,7 +901,6 @@ export function CommitteeWorkspace() {
                   )}
                   <RsvpActionSelect guest={guest} settingRsvpId={settingRsvpId} setRsvpFor={setRsvpFor} />
                   {smsInfo && <SendTextButton guest={guest} info={smsInfo} onSent={toggleSent} />}
-                  {smsInfo && <SmsCopyButton phone={smsInfo.phone} body={smsInfo.body} guestName={guest.guest_name || "guest"} />}
                   <SentTextControl guest={guest} markingSentId={markingSentId} onToggleSent={toggleSent} />
                   <EditGuestButton guest={guest} onSave={saveGuestEdits} />
                   <DeleteGuestButton guest={guest} onDelete={deleteGuest} />
