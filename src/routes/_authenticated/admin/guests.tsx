@@ -21,6 +21,7 @@ export const Route = createFileRoute("/_authenticated/admin/guests")({
       mode: z.enum(["in_person", "zoom"]).optional(),
       audience: z.enum(["all", "guest", "committee"]).optional(),
       sort: z.enum(["alpha", "newest", "oldest"]).optional(),
+      inviter: z.string().optional(),
     }).parse(s),
   component: GuestsPage,
 });
@@ -41,7 +42,10 @@ type Row = {
   responded_at: string;
   preorder_selections: string;
   preorder_meals: number;
+  inviter_id?: string;
+  inviter_name?: string;
 };
+
 
 const STATUS_LABEL: Record<StatusFilter, string> = {
   all: "All",
