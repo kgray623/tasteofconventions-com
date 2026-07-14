@@ -114,15 +114,9 @@ function NewInvite() {
           <Label>Guest name *</Label>
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Doe" />
         </div>
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label>Email</Label>
-            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jane@example.com" />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Phone</Label>
-            <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 555 0100" />
-          </div>
+        <div className="space-y-1.5">
+          <Label>Phone</Label>
+          <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 555 0100" />
         </div>
         {warning && (
           <div className="flex items-start gap-2 text-sm bg-terracotta/10 border border-terracotta/30 text-terracotta rounded-md p-3">

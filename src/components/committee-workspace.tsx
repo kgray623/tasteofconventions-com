@@ -1457,10 +1457,6 @@ function EditGuestButton({
             <Label htmlFor="edit-guest-phone">Phone</Label>
             <Input id="edit-guest-phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="edit-guest-email">Email</Label>
-            <Input id="edit-guest-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>
