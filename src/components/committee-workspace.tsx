@@ -1333,41 +1333,6 @@ function SentTextControl({
   );
 }
 
-function SmsCopyButton({ phone, body, guestName }: { phone: string; body: string; guestName: string }) {
-  const onClick = async () => {
-    let copied = false;
-    try {
-      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(body);
-        copied = true;
-      }
-    } catch {
-      copied = false;
-    }
-    if (copied) {
-      toast.success("Message copied — paste it into Messages", { duration: 6000 });
-    } else {
-      toast.message("Copy this message, then paste in Messages", {
-        description: body,
-        duration: 15000,
-      });
-    }
-    // Open the phone's Messages app on the correct contact.
-    if (typeof window !== "undefined") {
-      window.location.href = `sms:${phone}`;
-    }
-  };
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={`Copy invitation to ${guestName} and open Messages`}
-      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-terracotta text-cream text-xs font-medium hover:bg-terracotta/90"
-    >
-      <Copy className="w-4 h-4" /> Copy & open Messages
-    </button>
-  );
-}
 
 
 
