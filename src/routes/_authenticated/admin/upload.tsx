@@ -310,8 +310,62 @@ function UploadPage() {
   const [quotaRequestedAt, setQuotaRequestedAt] = useState<string | null>(null);
   const [savingQuotaReq, setSavingQuotaReq] = useState(false);
   const [quotaPool, setQuotaPool] = useState({ total: TOTAL_RSVP_CAP, allocated: 0 });
+  const [eventSeatTotals, setEventSeatTotals] = useState({ inPerson: 0, zoom: 0, confirmed: 0, responses: 0 });
+  const [eventSeatTotalsLoading, setEventSeatTotalsLoading] = useState(false);
   const [activeInviters, setActiveInviters] = useState<{ id: string; name: string }[]>([]);
   const [uploadInviterId, setUploadInviterId] = useState<string>("");
+
+
+  const loadEventSeatTotals = async (evId: string) => {
+    if (!evId) {
+      setEventSeatTotals({ inPerson: 0, zoom: 0, confirmed: 0, responses: 0 });
+      return;
+    }
+    setEventSeatTotalsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("invitations")
+        .select("id,guest_name,guest_phone,guest_phone_normalized,rsvps(status,party_size,attendance_mode)")
+        .eq("event_id", evId);
+      if (error) throw error;
+
+      type EventSeatRow = {
+        id: string;
+        guest_name: string | null;
+        guest_phone: string | null;
+        guest_phone_normalized: string | null;
+        rsvps: { status: string | null; party_size: number | null; attendance_mode: string | null }[] | { status: string | null; party_size: number | null; attendance_mode: string | null } | null;
+      };
+      const rows = (data ?? []) as unknown as EventSeatRow[];
+      const groups = buildDuplicateGroupIds(rows.map((row) => ({
+        id: row.id,
+        guest_name: row.guest_name,
+        guest_phone: row.guest_phone_normalized ?? row.guest_phone,
+      })));
+      const rollup = computeRsvpRollup(rows.map((row) => {
+        const rsvp = Array.isArray(row.rsvps) ? row.rsvps[0] : row.rsvps;
+        return {
+          id: row.id,
+          groupId: groups.get(row.id) ?? row.id,
+          status: rsvp?.status ?? null,
+          party_size: rsvp?.party_size ?? 1,
+          attendance_mode: rsvp?.attendance_mode ?? null,
+        };
+      }));
+      setEventSeatTotals({
+        inPerson: rollup.people.inPerson,
+        zoom: rollup.people.zoom,
+        confirmed: rollup.people.confirmed,
+        responses: rollup.responses.confirmed,
+      });
+    } catch (e) {
+      console.error("[upload] load event seat totals failed", e);
+      toast.error("Couldn't load event-wide RSVP totals", { description: getErrorMessage(e) });
+      setEventSeatTotals({ inPerson: 0, zoom: 0, confirmed: 0, responses: 0 });
+    } finally {
+      setEventSeatTotalsLoading(false);
+    }
+  };
 
 
   const loadSavedGuests = async (evId: string) => {
@@ -393,6 +447,7 @@ function UploadPage() {
 
   useEffect(() => {
     void loadSavedGuests(eventId);
+    void loadEventSeatTotals(eventId);
     if (!eventId) return;
     let alive = true;
     return () => {
