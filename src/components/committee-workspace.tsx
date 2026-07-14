@@ -1,7 +1,7 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, CalendarCog, CheckCircle2, ChevronDown, Clock, EyeOff, ListChecks, Loader2, MessageCircle, MessageSquare, Pencil, Phone, RefreshCw, Trash2, Upload, UserPlus, Utensils } from "lucide-react";
+import { AlertTriangle, CalendarCog, CheckCircle2, ChevronDown, Clock, Copy, EyeOff, ListChecks, Loader2, MessageCircle, MessageSquare, Pencil, Phone, RefreshCw, Trash2, Upload, UserPlus, Utensils } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -540,13 +540,15 @@ export function CommitteeWorkspace() {
     "your friend";
   const rsvpLinkToken = (token: string) =>
     encodeURIComponent(token.trim().replace(/\+/g, "-").replace(/\//g, "_"));
-  const buildSmsHref = (guest: CommitteeGuest): string | null => {
+  const buildSmsInfo = (
+    guest: CommitteeGuest,
+  ): { phone: string; body: string } | null => {
     if (!guest.guest_phone || !guest.rsvp_token) return null;
     const firstName = (guest.guest_name || "Friend").split(/\s+/)[0];
     const senderFirst = senderName.split(/\s+/)[0];
     const link = `${siteOrigin}/rsvp/${rsvpLinkToken(guest.rsvp_token)}`;
     const body = `Hi ${firstName}, it's ${senderFirst}. You're invited to A Taste of Special Conventions on Sunday, August 30, 2026. Please RSVP here: ${link}`;
-    return `sms:${guest.guest_phone}?&body=${encodeURIComponent(body)}`;
+    return { phone: guest.guest_phone, body };
   };
 
   // "New guests RSVP'd" since user last acknowledged.
