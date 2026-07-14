@@ -2,11 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
 
-async function assertAdmin(supabase: any, userId: string) {
-  const { data } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
-  if (!data) throw new Error("Forbidden");
-}
-
 export type CuisineKey = "Myanmar" | "African" | "Indonesian" | "Other";
 
 export type AudienceTotals = {
@@ -92,7 +87,8 @@ function parseSelections(selections: unknown): { cuisine: string; qty: number }[
 export const getAdminAudit = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdmin(context.supabase, context.userId);
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const [invRes, rsvpRes, preRes] = await Promise.all([
@@ -208,7 +204,8 @@ export const getAdminAudit = createServerFn({ method: "GET" })
 export const getReconciliationRows = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdmin(context.supabase, context.userId);
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const [invRes, rsvpRes, preRes] = await Promise.all([
