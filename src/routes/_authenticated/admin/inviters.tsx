@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-import { useRoles } from "@/hooks/use-roles";
+import { useAdminView } from "@/hooks/use-admin-view";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,7 +64,7 @@ const normalizePhone = (value: string) => value.replace(/\D/g, "");
 const normalizeName = (value: string) => value.toLowerCase().replace(/[^a-z]/g, "");
 
 function InvitersPage() {
-  const { loading: rolesLoading } = useRoles();
+  const { loading: rolesLoading, isAdmin } = useAdminView();
   const [inviters, setInviters] = useState<Inviter[]>([]);
   const [invitedCounts, setInvitedCounts] = useState<Record<string, number>>({});
   const [guestsByHost, setGuestsByHost] = useState<Record<string, GuestRow[]>>({});
@@ -300,12 +300,15 @@ function InvitersPage() {
           <h2 className="font-display text-xl flex items-center gap-2">
             <Users className="w-5 h-5 text-terracotta" /> Committee members
           </h2>
-          <Link
-            to="/admin/team"
-            className="inline-flex h-9 items-center gap-2 rounded-md bg-ink px-3 text-sm font-semibold text-cream hover:bg-ink/90"
-          >
-            <Users className="w-4 h-4" /> Add committee member
-          </Link>
+          {isAdmin && (
+            <Link
+              to="/admin/team"
+              className="inline-flex h-9 items-center gap-2 rounded-md bg-ink px-3 text-sm font-semibold text-cream hover:bg-ink/90"
+            >
+              <Users className="w-4 h-4" /> Add committee member
+            </Link>
+          )}
+
         </div>
 
         {committee.length === 0 ? (

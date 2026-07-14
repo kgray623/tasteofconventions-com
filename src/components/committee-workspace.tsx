@@ -18,7 +18,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { useRoles } from "@/hooks/use-roles";
+import { useAdminView } from "@/hooks/use-admin-view";
 import { useChatUnread } from "@/hooks/use-chat-unread";
 import { CategoryChat } from "@/components/CategoryChat";
 import { RsvpTotalsCard } from "@/components/rsvp-totals-card";
@@ -57,7 +57,7 @@ const pickSingleRsvp = (
 
 export function CommitteeWorkspace() {
   const { user } = useAuth();
-  const { isAdmin } = useRoles();
+  const { isAdmin } = useAdminView();
   const unread = useChatUnread();
   const fetchCommitteeGuests = useServerFn(getCommitteeWorkspaceGuests);
   const search = useSearch({ strict: false }) as { chat?: string; pendingSort?: string };
@@ -1079,11 +1079,14 @@ export function CommitteeWorkspace() {
             <CalendarCog className="w-4 h-4" /> Event details
           </a>
         </Button>
-        <Button asChild variant="outline" className="justify-start h-14">
-          <Link to="/admin/team" search={{ view: "committee" }}>
-            <UserPlus className="w-4 h-4" /> Add committee member
-          </Link>
-        </Button>
+        {isAdmin && (
+          <Button asChild variant="outline" className="justify-start h-14">
+            <Link to="/admin/team" search={{ view: "committee" }}>
+              <UserPlus className="w-4 h-4" /> Add committee member
+            </Link>
+          </Button>
+        )}
+
         <Button asChild variant="outline" className="justify-start h-14">
           <Link to="/admin/preorders" search={{ view: "committee" }}>
             <Utensils className="w-4 h-4" /> Food report
