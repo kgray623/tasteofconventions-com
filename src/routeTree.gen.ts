@@ -51,6 +51,7 @@ import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_auth
 import { Route as AuthenticatedAdminBackupsRouteImport } from './routes/_authenticated/admin/backups'
 import { Route as AuthenticatedAdminAuditLogRouteImport } from './routes/_authenticated/admin/audit-log'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
@@ -285,6 +286,11 @@ const Char91DotmcpChar93InvokeToolToolRoute =
     path: '/.mcp/invoke-tool/$tool',
     getParentRoute: () => rootRouteImport,
   } as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LovableEmailTransactionalSendRoute =
   LovableEmailTransactionalSendRouteImport.update({
     id: '/lovable/email/transactional/send',
@@ -334,6 +340,7 @@ export interface FileRoutesByFullPath {
   '/exports/$filename': typeof ExportsFilenameRoute
   '/rsvp/$token': typeof RsvpTokenRoute
   '/rsvp/': typeof RsvpIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/audit-log': typeof AuthenticatedAdminAuditLogRoute
   '/admin/backups': typeof AuthenticatedAdminBackupsRoute
@@ -381,6 +388,7 @@ export interface FileRoutesByTo {
   '/exports/$filename': typeof ExportsFilenameRoute
   '/rsvp/$token': typeof RsvpTokenRoute
   '/rsvp': typeof RsvpIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/audit-log': typeof AuthenticatedAdminAuditLogRoute
   '/admin/backups': typeof AuthenticatedAdminBackupsRoute
@@ -431,6 +439,7 @@ export interface FileRoutesById {
   '/exports/$filename': typeof ExportsFilenameRoute
   '/rsvp/$token': typeof RsvpTokenRoute
   '/rsvp/': typeof RsvpIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/admin/audit-log': typeof AuthenticatedAdminAuditLogRoute
   '/_authenticated/admin/backups': typeof AuthenticatedAdminBackupsRoute
@@ -481,6 +490,7 @@ export interface FileRouteTypes {
     | '/exports/$filename'
     | '/rsvp/$token'
     | '/rsvp/'
+    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/audit-log'
     | '/admin/backups'
@@ -528,6 +538,7 @@ export interface FileRouteTypes {
     | '/exports/$filename'
     | '/rsvp/$token'
     | '/rsvp'
+    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/audit-log'
     | '/admin/backups'
@@ -577,6 +588,7 @@ export interface FileRouteTypes {
     | '/exports/$filename'
     | '/rsvp/$token'
     | '/rsvp/'
+    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/admin/audit-log'
     | '/_authenticated/admin/backups'
@@ -625,6 +637,7 @@ export interface RootRouteChildren {
   ExportsFilenameRoute: typeof ExportsFilenameRoute
   RsvpTokenRoute: typeof RsvpTokenRoute
   RsvpIndexRoute: typeof RsvpIndexRoute
+  DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
@@ -930,6 +943,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lovable/email/transactional/send': {
       id: '/lovable/email/transactional/send'
       path: '/lovable/email/transactional/send'
@@ -1054,6 +1074,7 @@ const rootRouteChildren: RootRouteChildren = {
   ExportsFilenameRoute: ExportsFilenameRoute,
   RsvpTokenRoute: RsvpTokenRoute,
   RsvpIndexRoute: RsvpIndexRoute,
+  DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,

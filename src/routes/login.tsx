@@ -31,7 +31,13 @@ type RouteDestination = { to: "/admin" } | { to: "/admin/upload" } | { to: "/das
 const allowedRedirects = new Set(["/admin", "/admin/upload", "/my-rsvp", "/dashboard"]);
 
 function safeRedirect(value: string | undefined) {
-  return value && allowedRedirects.has(value) ? value : undefined;
+  if (!value) return undefined;
+  if (allowedRedirects.has(value)) return value;
+  // Allow the managed OAuth consent route so external clients (e.g. ChatGPT,
+  // Claude) can send users through login and back to the consent screen with
+  // the same authorization_id. Same-origin relative path only.
+  if (value.startsWith("/.lovable/oauth/consent")) return value;
+  return undefined;
 }
 
 function normalizeMobilePhone(value: string) {
