@@ -757,8 +757,7 @@ export function CommitteeWorkspace() {
             <div className="flex flex-wrap items-center gap-2">
               <NewBadge target="committee:new-yes-rsvps" />
               <span className="font-semibold text-emerald-900">
-                {newYesPeople} new guest{newYesPeople === 1 ? "" : "s"} RSVP'd
-                {newYesPeople !== newYesResponses && ` (across ${newYesResponses} response${newYesResponses === 1 ? "" : "s"})`}:
+                {newYesPeople} new guest{newYesPeople === 1 ? "" : "s"} RSVP'd:
               </span>
               <Button
                 type="button"
