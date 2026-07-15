@@ -469,18 +469,34 @@ export function InvitationPage() {
             </AccordionContent>
           </AccordionItem>
 
-          {/* Attendance */}
-          <AccordionItem value="attendance" id="attendance" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
+          {/* Who may attend? */}
+          <AccordionItem value="who-may-attend" id="who-may-attend" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
             <AccordionTrigger className="hover:no-underline">
               <span className="flex items-center gap-3 text-2xl">
-                <Users className="w-5 h-5 text-sunset" /> Attendance
+                <Users className="w-5 h-5 text-sunset" /> Who may attend?
               </span>
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-3">
-              <ul className="list-disc pl-5 space-y-1">
-                <li>Only those in good standing in the congregation are invited.</li>
-                <li>Children and young people are encouraged to attend who are behaved with their parent or guardian.</li>
-              </ul>
+              <p>
+                Those who have been invited, are in good standing in the congregation, and have
+                RSVP'd may attend. Attendees must have been personally invited by someone on our
+                committee.
+              </p>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* May children attend? */}
+          <AccordionItem value="children" id="children" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
+            <AccordionTrigger className="hover:no-underline">
+              <span className="flex items-center gap-3 text-2xl">
+                <Baby className="w-5 h-5 text-sunset" /> May children attend?
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="pb-6 text-muted-foreground space-y-3">
+              <p>
+                We encourage children and young people to attend who are with a parent or guardian,
+                are well-behaved, and have RSVP'd.
+              </p>
             </AccordionContent>
           </AccordionItem>
         </Accordion>
