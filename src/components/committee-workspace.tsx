@@ -843,24 +843,60 @@ export function CommitteeWorkspace() {
           </div>
         ) : (
           <div className="p-4 space-y-3">
-            <MyGuestsGroup
-              label="RSVP in person"
-              tone="emerald"
-              guests={myInPerson}
-              peopleCount={confirmedInPersonPeople}
-              responseCount={inPersonResponseCount}
-              open={openMyGroup.inPerson}
-              onToggle={() => setOpenMyGroup((p) => ({ ...p, inPerson: !p.inPerson }))}
-              isCommitteeGuest={isCommitteeGuest}
-              duplicateIds={duplicateIds}
-              settingRsvpId={settingRsvpId}
-              setRsvpFor={setRsvpFor}
-              saveGuestEdits={saveGuestEdits}
-              deleteGuest={deleteGuest}
-              buildSmsInfo={buildSmsInfo}
-              markingSentId={markingSentId}
-              toggleSent={toggleSent}
-            />
+            <Collapsible open={openConfirmed} onOpenChange={() => setOpenConfirmed((v) => !v)}>
+              <div className="rounded-md border border-emerald-200 bg-emerald-50/30 overflow-hidden">
+                <CollapsibleTrigger asChild>
+                  <button
+                    type="button"
+                    className="w-full p-3 flex items-center justify-between gap-2 text-left cursor-pointer hover:bg-emerald-100/50 transition-colors"
+                  >
+                    <span className="flex items-center gap-2 font-semibold text-sm">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      Confirmed RSVPs ({formatPeopleResponses(confirmedInPersonPeople + confirmedVirtualPeople, inPersonResponseCount + zoomResponseCount)})
+                    </span>
+                    <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${openConfirmed ? "rotate-180" : ""}`} />
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-2 p-2 pt-0">
+                  <MyGuestsGroup
+                    label="RSVP in person"
+                    tone="emerald"
+                    guests={myInPerson}
+                    peopleCount={confirmedInPersonPeople}
+                    responseCount={inPersonResponseCount}
+                    open={openMyGroup.inPerson}
+                    onToggle={() => setOpenMyGroup((p) => ({ ...p, inPerson: !p.inPerson }))}
+                    isCommitteeGuest={isCommitteeGuest}
+                    duplicateIds={duplicateIds}
+                    settingRsvpId={settingRsvpId}
+                    setRsvpFor={setRsvpFor}
+                    saveGuestEdits={saveGuestEdits}
+                    deleteGuest={deleteGuest}
+                    buildSmsInfo={buildSmsInfo}
+                    markingSentId={markingSentId}
+                    toggleSent={toggleSent}
+                  />
+                  <MyGuestsGroup
+                    label="RSVP by Zoom"
+                    tone="muted"
+                    guests={myZoom}
+                    peopleCount={confirmedVirtualPeople}
+                    responseCount={zoomResponseCount}
+                    open={openMyGroup.zoom}
+                    onToggle={() => setOpenMyGroup((p) => ({ ...p, zoom: !p.zoom }))}
+                    isCommitteeGuest={isCommitteeGuest}
+                    duplicateIds={duplicateIds}
+                    settingRsvpId={settingRsvpId}
+                    setRsvpFor={setRsvpFor}
+                    saveGuestEdits={saveGuestEdits}
+                    deleteGuest={deleteGuest}
+                    buildSmsInfo={buildSmsInfo}
+                    markingSentId={markingSentId}
+                    toggleSent={toggleSent}
+                  />
+                </CollapsibleContent>
+              </div>
+            </Collapsible>
             <MyGuestsGroup
               label="Pending"
               tone="muted"
@@ -880,24 +916,7 @@ export function CommitteeWorkspace() {
               markingSentId={markingSentId}
               toggleSent={toggleSent}
             />
-            <MyGuestsGroup
-              label="RSVP by Zoom"
-              tone="muted"
-              guests={myZoom}
-              peopleCount={confirmedVirtualPeople}
-              responseCount={zoomResponseCount}
-              open={openMyGroup.zoom}
-              onToggle={() => setOpenMyGroup((p) => ({ ...p, zoom: !p.zoom }))}
-              isCommitteeGuest={isCommitteeGuest}
-              duplicateIds={duplicateIds}
-              settingRsvpId={settingRsvpId}
-              setRsvpFor={setRsvpFor}
-              saveGuestEdits={saveGuestEdits}
-              deleteGuest={deleteGuest}
-              buildSmsInfo={buildSmsInfo}
-              markingSentId={markingSentId}
-              toggleSent={toggleSent}
-            />
+
             <MyGuestsGroup
               label="Decline"
               tone="rose"
