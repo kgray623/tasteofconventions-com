@@ -1,26 +1,10 @@
-## Reassign the 9 screenshot-confirmed guests to Tina
+I found the issue: at least one admin/committee usage table is still calculating “confirmed” as the number of RSVP rows, so Kari shows 25 even though the attending people total is 34 total / 30 in-person / 4 Zoom.
 
-Timestamp: 2026-07-15 22:55 UTC
+Plan:
+1. Update the admin “Steering committee invitations & usage” page so each inviter’s used/remaining counts are based on total attending people from `party_size`, not the number of confirmed RSVP rows.
+2. Rename/clarify labels where needed so “confirmed guests” means attending people, while response-row counts are only shown as “responses” when intentionally needed.
+3. Keep the existing in-person vs Zoom separation: in-person attending people count against quota/remaining; Zoom attending people display separately and do not use seats.
+4. Verify specifically for Kari Gray (`kgray`) that the route no longer shows 25 as her confirmed guest total; it should reflect attending people from her RSVP party sizes.
+5. Verify on the exact admin/committee route after implementation and read the database totals back before calling it fixed.
 
-Confirmed: the "BW NE Tina…" SMS screenshots are Tina's list. I'll set `inviter_id` to Tina's inviter record (`d52a0902…`) for exactly these 9 phone numbers, matched by last-10 digits:
-
-1. Laquita Jones — 402-208-6599
-2. Latea Glenn — 402-686-5008
-3. Delali & Kodjovi Pinto — 402-306-9752
-4. Bob & Deanna Sadler — 402-637-2304
-5. Faviola and Israel Gamino family — 402-298-6695
-6. Jackie Williams — 402-378-5424
-7. Brittany Avery — 402-676-1298
-8. Margaret Gibson — 402-917-4152
-9. Whitney Hopkins — 402-598-6777
-
-### What will not change
-- No changes to any other invitation.
-- Kari's remaining guests stay Kari's.
-- No deletions, no RSVP/token/phone/quota edits, no name rewrites.
-- The prior 10-row plan in `.lovable/plan.md` is superseded by this list.
-
-### Verification (after the data change)
-- Read back: these 9 phones show Tina as inviter on `/admin/guests`.
-- Tina's "Brought by" count increases by exactly 9.
-- All other inviters' counts unchanged.
+No guest rows, RSVP rows, inviter ownership, names, phones, or submitted information will be changed.
