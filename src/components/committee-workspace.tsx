@@ -935,42 +935,61 @@ export function CommitteeWorkspace() {
         ) : confirmedGuests.length === 0 ? (
           <div className="p-4 text-sm text-muted-foreground">None of your guests have RSVP'd yet.</div>
         ) : (
-          <div className="divide-y divide-border md:max-h-[360px] md:overflow-auto">
-            {confirmedGuests.map((guest) => {
-              const isVirtual = guest.attendance_mode === "zoom";
-              const smsInfo = buildSmsInfo(guest);
-              return (
-                <div key={guest.id} className="p-4 flex flex-wrap items-center gap-3 text-sm">
-                  <p className="font-medium flex-1 min-w-[160px]">
-                    {guest.guest_name}
-                    {isCommitteeGuest(guest) && (
-                      <span className="ml-2 inline-flex items-center rounded-full bg-ink px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cream align-middle">
-                        Committee
-                      </span>
+          <>
+            <div id="confirmed-rsvps-list" className="divide-y divide-border md:max-h-[360px] md:overflow-auto">
+              {confirmedGuests.map((guest) => {
+                const isVirtual = guest.attendance_mode === "zoom";
+                const smsInfo = buildSmsInfo(guest);
+                return (
+                  <div key={guest.id} className="p-4 flex flex-wrap items-center gap-3 text-sm">
+                    <p className="font-medium flex-1 min-w-[160px]">
+                      {guest.guest_name}
+                      {isCommitteeGuest(guest) && (
+                        <span className="ml-2 inline-flex items-center rounded-full bg-ink px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cream align-middle">
+                          Committee
+                        </span>
+                      )}
+                    </p>
+                    <Badge
+                      className={
+                        isVirtual
+                          ? "bg-ink/10 text-ink hover:bg-ink/10"
+                          : "bg-gold text-ink hover:bg-gold"
+                      }
+                    >
+                      {guest.party_size} {isVirtual ? "virtual" : "in person"}
+                    </Badge>
+                    {guest.invited_by && (
+                      <span className="text-muted-foreground">Invited by {guest.invited_by}</span>
                     )}
-                  </p>
-                  <Badge
-                    className={
-                      isVirtual
-                        ? "bg-ink/10 text-ink hover:bg-ink/10"
-                        : "bg-gold text-ink hover:bg-gold"
-                    }
-                  >
-                    {guest.party_size} {isVirtual ? "virtual" : "in person"}
-                  </Badge>
-                  {guest.invited_by && (
-                    <span className="text-muted-foreground">Invited by {guest.invited_by}</span>
-                  )}
-                  <RsvpActionSelect guest={guest} settingRsvpId={settingRsvpId} setRsvpFor={setRsvpFor} />
-                  {smsInfo && <SendTextButton guest={guest} info={smsInfo} onSent={toggleSent} />}
-                  <SentTextControl guest={guest} markingSentId={markingSentId} onToggleSent={toggleSent} />
-                  <EditGuestButton guest={guest} onSave={saveGuestEdits} />
-                  <DeleteGuestButton guest={guest} onDelete={deleteGuest} />
-                </div>
-              );
-            })}
-          </div>
+                    <RsvpActionSelect guest={guest} settingRsvpId={settingRsvpId} setRsvpFor={setRsvpFor} />
+                    {smsInfo && <SendTextButton guest={guest} info={smsInfo} onSent={toggleSent} />}
+                    <SentTextControl guest={guest} markingSentId={markingSentId} onToggleSent={toggleSent} />
+                    <EditGuestButton guest={guest} onSave={saveGuestEdits} />
+                    <DeleteGuestButton guest={guest} onDelete={deleteGuest} />
+                  </div>
+                );
+              })}
+            </div>
+            <div className="p-3 border-t border-border flex justify-center">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  toggleSection("confirmed");
+                  requestAnimationFrame(() => {
+                    document.getElementById("confirmed-rsvps-header")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  });
+                }}
+                className="gap-2"
+              >
+                <ChevronUp className="w-4 h-4" /> Collapse confirmed RSVPs
+              </Button>
+            </div>
+          </>
         )}
+
       </CollapsibleSection>
 
       <CollapsibleSection
