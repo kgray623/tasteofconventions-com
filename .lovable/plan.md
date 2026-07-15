@@ -1,19 +1,25 @@
-## Goal
-Remove the duplicate "Add one guest" and "Upload your guest list" cards from `/admin/upload` because the top "Add guests" card already provides the same functionality.
+Add the same organizing controls to the committee dashboard (`/admin`) "My Guests" section that were added on `/admin/upload`.
 
-## Plan
+## What to change
 
-### 1. Consolidate the upload page (`src/routes/_authenticated/admin/upload.tsx`)
-- Keep the top **"Add guests"** card (quick-add + screenshot + spreadsheet labels).
-- Move the actual `<input type="file">` elements for screenshots and spreadsheets into the top card so the existing labels work.
-- Add `ref={quickNameRef}` to the top name input so the post-add focus behavior is preserved.
-- Remove the entire lower **"Add one guest"** card.
-- Remove the entire lower **"Upload your guest list"** card.
-- Keep the **"Sample message"** card and the stats/RSVP cards above it untouched.
+File: `src/components/committee-workspace.tsx` — the "My Guests" card that currently splits into In person / Zoom / Pending / Declined sub-lists.
 
-### 2. Verify
-- Run TypeScript type check (`tsgo --noEmit`).
-- Use Playwright to open `/admin/upload`, confirm only one add/upload section exists, and verify the file inputs still trigger correctly.
+Add above the list:
 
-## What will change for the user
-The `/admin/upload` page will show one clean "Add guests" section at the top instead of the duplicated forms below it. No functionality is lost — quick-add, screenshot upload, and spreadsheet upload will all still work from the top card.
+1. **Filter tabs** — All / Confirmed / Pending / Declined / Latest upload
+   - "Confirmed" merges In-person + Zoom
+   - "Latest upload" = rows uploaded within 60 min of the newest `created_at` (same rule as the upload page)
+   - Each tab shows a live count
+2. **Sort dropdown** — Grouped by status (default when tab = All) / Alphabetical (A–Z) / Newest first / Oldest first
+   - When any status tab is active, "Grouped by status" is hidden and default is Alphabetical
+   - "Latest upload" is fixed to Newest first (dropdown hidden, like the upload page)
+3. Keep the existing collapsible section headers (Pending / Confirmed / Declined) for the default grouped view.
+4. Keep the existing "Pending order" select (already there for the pending subsection) — the new global Sort supersedes it when a flat view is chosen, so remove the now-redundant "Pending order" control to avoid two competing sorts.
+
+No changes to data fetching, RSVP logic, duplicate detection, quotas, or the sticky "Upload guest list" button. Only the presentation of the "My Guests" list.
+
+## Verification
+
+After the edit I will run Playwright against `/admin` on 384×673, sign in with the injected committee session, screenshot: (a) default view, (b) after clicking Confirmed tab, (c) after switching sort to Newest first, (d) after switching to Latest upload — and confirm counts and ordering match the DB.
+
+Timestamp: 2026-07-15 18:34 UTC.

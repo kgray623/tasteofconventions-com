@@ -80,6 +80,9 @@ export function CommitteeWorkspace() {
   const [openTotals, setOpenTotals] = useState(true);
   const [openMyGuestsCard, setOpenMyGuestsCard] = useState(true);
   const [openConfirmed, setOpenConfirmed] = useState(false);
+  const [myGuestsTab, setMyGuestsTab] = useState<"all" | "confirmed" | "pending" | "declined" | "latest">("all");
+  const [myGuestsSort, setMyGuestsSort] = useState<"grouped" | "alpha" | "newest" | "oldest">("grouped");
+  const [openFlatGroup, setOpenFlatGroup] = useState(true);
 
 
   const [lastSeenYesAt, setLastSeenYesAt] = useState<number | null>(null);
@@ -550,32 +553,6 @@ export function CommitteeWorkspace() {
     .sort(byPendingSort);
   const myDeclined = myGuests.filter((g) => g.rsvp_status === "no").sort(byName);
 
-  const pendingSortControl = (
-    <div className="flex flex-wrap items-center gap-2 pt-3">
-      <span className="text-xs font-medium text-muted-foreground">Pending order</span>
-      <Select
-        value={activePendingSort}
-        onValueChange={(value) =>
-          navigate({
-            to: ".",
-            search: (prev: Record<string, unknown>) => ({
-              ...prev,
-              pendingSort: value === "alpha" ? undefined : (value as PendingSortMode),
-            }),
-          })
-        }
-      >
-        <SelectTrigger className="h-8 w-[150px] bg-background text-xs" aria-label="Sort pending guests">
-          <SelectValue placeholder="Sort pending" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="alpha">Alphabetical</SelectItem>
-          <SelectItem value="newest">Newest first</SelectItem>
-          <SelectItem value="oldest">Oldest first</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-  );
 
   // Build a sms: link for the phone's Messages app. Same wording as the
   // Upload page's Send SMS button so committee members send a consistent
@@ -841,102 +818,207 @@ export function CommitteeWorkspace() {
           <div className="p-4 text-sm text-muted-foreground">
             You haven't invited anyone yet.
           </div>
-        ) : (
-          <div className="p-4 space-y-3">
-            <Collapsible open={openConfirmed} onOpenChange={() => setOpenConfirmed((v) => !v)}>
-              <div className="rounded-md border border-emerald-200 bg-emerald-50/30 overflow-hidden">
-                <CollapsibleTrigger asChild>
-                  <button
-                    type="button"
-                    className="w-full p-3 flex items-center justify-between gap-2 text-left cursor-pointer hover:bg-emerald-100/50 transition-colors"
-                  >
-                    <span className="flex items-center gap-2 font-semibold text-sm">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      Confirmed RSVPs ({formatPeopleResponses(confirmedInPersonPeople + confirmedVirtualPeople, inPersonResponseCount + zoomResponseCount)})
-                    </span>
-                    <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${openConfirmed ? "rotate-180" : ""}`} />
-                  </button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-2 p-2 pt-0">
-                  <MyGuestsGroup
-                    label="RSVP in person"
-                    tone="emerald"
-                    guests={myInPerson}
-                    peopleCount={confirmedInPersonPeople}
-                    responseCount={inPersonResponseCount}
-                    open={openMyGroup.inPerson}
-                    onToggle={() => setOpenMyGroup((p) => ({ ...p, inPerson: !p.inPerson }))}
-                    isCommitteeGuest={isCommitteeGuest}
-                    duplicateIds={duplicateIds}
-                    settingRsvpId={settingRsvpId}
-                    setRsvpFor={setRsvpFor}
-                    saveGuestEdits={saveGuestEdits}
-                    deleteGuest={deleteGuest}
-                    buildSmsInfo={buildSmsInfo}
-                    markingSentId={markingSentId}
-                    toggleSent={toggleSent}
-                  />
-                  <MyGuestsGroup
-                    label="RSVP by Zoom"
-                    tone="muted"
-                    guests={myZoom}
-                    peopleCount={confirmedVirtualPeople}
-                    responseCount={zoomResponseCount}
-                    open={openMyGroup.zoom}
-                    onToggle={() => setOpenMyGroup((p) => ({ ...p, zoom: !p.zoom }))}
-                    isCommitteeGuest={isCommitteeGuest}
-                    duplicateIds={duplicateIds}
-                    settingRsvpId={settingRsvpId}
-                    setRsvpFor={setRsvpFor}
-                    saveGuestEdits={saveGuestEdits}
-                    deleteGuest={deleteGuest}
-                    buildSmsInfo={buildSmsInfo}
-                    markingSentId={markingSentId}
-                    toggleSent={toggleSent}
-                  />
-                </CollapsibleContent>
-              </div>
-            </Collapsible>
-            <MyGuestsGroup
-              label="Pending"
-              tone="muted"
-              guests={myPending}
-              peopleCount={pendingPeople}
-              responseCount={pendingResponseCount}
-              open={openMyGroup.pending}
-              onToggle={() => setOpenMyGroup((p) => ({ ...p, pending: !p.pending }))}
-              action={pendingSortControl}
-              isCommitteeGuest={isCommitteeGuest}
-              duplicateIds={duplicateIds}
-              settingRsvpId={settingRsvpId}
-              setRsvpFor={setRsvpFor}
-              saveGuestEdits={saveGuestEdits}
-              deleteGuest={deleteGuest}
-              buildSmsInfo={buildSmsInfo}
-              markingSentId={markingSentId}
-              toggleSent={toggleSent}
-            />
+        ) : (() => {
+          const byAlpha = byName;
+          const byNewest = (a: CommitteeGuest, b: CommitteeGuest) =>
+            (b.created_at ? Date.parse(b.created_at) : 0) - (a.created_at ? Date.parse(a.created_at) : 0);
+          const byOldest = (a: CommitteeGuest, b: CommitteeGuest) =>
+            (a.created_at ? Date.parse(a.created_at) : 0) - (b.created_at ? Date.parse(b.created_at) : 0);
+          const sorterFor = (mode: typeof myGuestsSort) =>
+            mode === "newest" ? byNewest : mode === "oldest" ? byOldest : byAlpha;
 
-            <MyGuestsGroup
-              label="Decline"
-              tone="rose"
-              guests={myDeclined}
-              peopleCount={declinedPeople}
-              responseCount={declinedResponseCount}
-              open={openMyGroup.declined}
-              onToggle={() => setOpenMyGroup((p) => ({ ...p, declined: !p.declined }))}
-              isCommitteeGuest={isCommitteeGuest}
-              duplicateIds={duplicateIds}
-              settingRsvpId={settingRsvpId}
-              setRsvpFor={setRsvpFor}
-              saveGuestEdits={saveGuestEdits}
-              deleteGuest={deleteGuest}
-              buildSmsInfo={buildSmsInfo}
-              markingSentId={markingSentId}
-              toggleSent={toggleSent}
-            />
+          const times = myGuests.map((g) => (g.created_at ? Date.parse(g.created_at) : 0)).filter((n) => Number.isFinite(n) && n > 0);
+          const maxTs = times.length ? Math.max(...times) : 0;
+          const latestBatch = maxTs
+            ? myGuests.filter((g) => g.created_at && maxTs - Date.parse(g.created_at) <= 60 * 60 * 1000).sort(byNewest)
+            : [];
+
+          const confirmedFlat = myGuests.filter((g) => g.rsvp_status === "yes");
+          const pendingFlat = myGuests.filter((g) => !g.rsvp_status || g.rsvp_status === "waitlist" || g.rsvp_status === "maybe");
+          const declinedFlat = myGuests.filter((g) => g.rsvp_status === "no");
+
+          const rollupFor = (rows: CommitteeGuest[]) => {
+            const groupIds = buildDuplicateGroupIds(rows.map((g) => ({ id: g.id, guest_name: g.guest_name, guest_phone: g.guest_phone })));
+            return computeRsvpRollup(rows.map((g) => ({
+              id: g.id,
+              groupId: groupIds.get(g.id) ?? g.id,
+              status: g.rsvp_status,
+              party_size: g.party_size,
+              attendance_mode: g.attendance_mode,
+            })));
+          };
+
+          const tabs: { key: typeof myGuestsTab; label: string; count: number }[] = [
+            { key: "all", label: "All", count: myGuests.length },
+            { key: "confirmed", label: "Confirmed", count: confirmedFlat.length },
+            { key: "pending", label: "Pending", count: pendingFlat.length },
+            { key: "declined", label: "Declined", count: declinedFlat.length },
+            { key: "latest", label: "Latest upload", count: latestBatch.length },
+          ];
+
+          const useGrouped = myGuestsTab === "all" && myGuestsSort === "grouped";
+
+          let flatRows: CommitteeGuest[] = [];
+          let flatLabel = "";
+          let flatTone: "emerald" | "muted" | "rose" = "muted";
+          if (!useGrouped) {
+            if (myGuestsTab === "confirmed") { flatRows = confirmedFlat; flatLabel = "Confirmed"; flatTone = "emerald"; }
+            else if (myGuestsTab === "pending") { flatRows = pendingFlat; flatLabel = "Pending"; flatTone = "muted"; }
+            else if (myGuestsTab === "declined") { flatRows = declinedFlat; flatLabel = "Declined"; flatTone = "rose"; }
+            else if (myGuestsTab === "latest") { flatRows = latestBatch; flatLabel = "Latest upload"; flatTone = "muted"; }
+            else { flatRows = myGuests; flatLabel = "All guests"; flatTone = "muted"; }
+            const effectiveSort = myGuestsTab === "latest" ? "newest" : (myGuestsSort === "grouped" ? "alpha" : myGuestsSort);
+            flatRows = [...flatRows].sort(sorterFor(effectiveSort));
+          }
+          const flatRollup = useGrouped ? null : rollupFor(flatRows);
+
+          return (
+          <div className="p-4 space-y-3">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {tabs.map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setMyGuestsTab(t.key)}
+                  className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs border transition ${myGuestsTab === t.key ? "bg-ink text-cream border-ink" : "bg-background hover:bg-muted border-border"}`}
+                >
+                  {t.label} ({t.count})
+                </button>
+              ))}
+              {myGuestsTab !== "latest" && (
+                <div className="ml-auto flex items-center gap-1.5">
+                  <span className="text-[11px] text-muted-foreground">Sort</span>
+                  <Select value={myGuestsSort} onValueChange={(v) => setMyGuestsSort(v as typeof myGuestsSort)}>
+                    <SelectTrigger className="h-8 w-[160px] text-xs" aria-label="Sort my guests">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {myGuestsTab === "all" && <SelectItem value="grouped">Grouped by status</SelectItem>}
+                      <SelectItem value="alpha">Alphabetical (A–Z)</SelectItem>
+                      <SelectItem value="newest">Newest first</SelectItem>
+                      <SelectItem value="oldest">Oldest first</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+
+            {useGrouped ? (
+              <>
+                <Collapsible open={openConfirmed} onOpenChange={() => setOpenConfirmed((v) => !v)}>
+                  <div className="rounded-md border border-emerald-200 bg-emerald-50/30 overflow-hidden">
+                    <CollapsibleTrigger asChild>
+                      <button
+                        type="button"
+                        className="w-full p-3 flex items-center justify-between gap-2 text-left cursor-pointer hover:bg-emerald-100/50 transition-colors"
+                      >
+                        <span className="flex items-center gap-2 font-semibold text-sm">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                          Confirmed RSVPs ({formatPeopleResponses(confirmedInPersonPeople + confirmedVirtualPeople, inPersonResponseCount + zoomResponseCount)})
+                        </span>
+                        <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${openConfirmed ? "rotate-180" : ""}`} />
+                      </button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="space-y-2 p-2 pt-0">
+                      <MyGuestsGroup
+                        label="RSVP in person"
+                        tone="emerald"
+                        guests={myInPerson}
+                        peopleCount={confirmedInPersonPeople}
+                        responseCount={inPersonResponseCount}
+                        open={openMyGroup.inPerson}
+                        onToggle={() => setOpenMyGroup((p) => ({ ...p, inPerson: !p.inPerson }))}
+                        isCommitteeGuest={isCommitteeGuest}
+                        duplicateIds={duplicateIds}
+                        settingRsvpId={settingRsvpId}
+                        setRsvpFor={setRsvpFor}
+                        saveGuestEdits={saveGuestEdits}
+                        deleteGuest={deleteGuest}
+                        buildSmsInfo={buildSmsInfo}
+                        markingSentId={markingSentId}
+                        toggleSent={toggleSent}
+                      />
+                      <MyGuestsGroup
+                        label="RSVP by Zoom"
+                        tone="muted"
+                        guests={myZoom}
+                        peopleCount={confirmedVirtualPeople}
+                        responseCount={zoomResponseCount}
+                        open={openMyGroup.zoom}
+                        onToggle={() => setOpenMyGroup((p) => ({ ...p, zoom: !p.zoom }))}
+                        isCommitteeGuest={isCommitteeGuest}
+                        duplicateIds={duplicateIds}
+                        settingRsvpId={settingRsvpId}
+                        setRsvpFor={setRsvpFor}
+                        saveGuestEdits={saveGuestEdits}
+                        deleteGuest={deleteGuest}
+                        buildSmsInfo={buildSmsInfo}
+                        markingSentId={markingSentId}
+                        toggleSent={toggleSent}
+                      />
+                    </CollapsibleContent>
+                  </div>
+                </Collapsible>
+                <MyGuestsGroup
+                  label="Pending"
+                  tone="muted"
+                  guests={myPending}
+                  peopleCount={pendingPeople}
+                  responseCount={pendingResponseCount}
+                  open={openMyGroup.pending}
+                  onToggle={() => setOpenMyGroup((p) => ({ ...p, pending: !p.pending }))}
+                  isCommitteeGuest={isCommitteeGuest}
+                  duplicateIds={duplicateIds}
+                  settingRsvpId={settingRsvpId}
+                  setRsvpFor={setRsvpFor}
+                  saveGuestEdits={saveGuestEdits}
+                  deleteGuest={deleteGuest}
+                  buildSmsInfo={buildSmsInfo}
+                  markingSentId={markingSentId}
+                  toggleSent={toggleSent}
+                />
+                <MyGuestsGroup
+                  label="Decline"
+                  tone="rose"
+                  guests={myDeclined}
+                  peopleCount={declinedPeople}
+                  responseCount={declinedResponseCount}
+                  open={openMyGroup.declined}
+                  onToggle={() => setOpenMyGroup((p) => ({ ...p, declined: !p.declined }))}
+                  isCommitteeGuest={isCommitteeGuest}
+                  duplicateIds={duplicateIds}
+                  settingRsvpId={settingRsvpId}
+                  setRsvpFor={setRsvpFor}
+                  saveGuestEdits={saveGuestEdits}
+                  deleteGuest={deleteGuest}
+                  buildSmsInfo={buildSmsInfo}
+                  markingSentId={markingSentId}
+                  toggleSent={toggleSent}
+                />
+              </>
+            ) : flatRollup && (
+              <MyGuestsGroup
+                label={flatLabel}
+                tone={flatTone}
+                guests={flatRows}
+                peopleCount={flatRollup.people.allIfEveryoneShowed}
+                responseCount={flatRollup.responses.uploaded}
+                open={openFlatGroup}
+                onToggle={() => setOpenFlatGroup((v) => !v)}
+                isCommitteeGuest={isCommitteeGuest}
+                duplicateIds={duplicateIds}
+                settingRsvpId={settingRsvpId}
+                setRsvpFor={setRsvpFor}
+                saveGuestEdits={saveGuestEdits}
+                deleteGuest={deleteGuest}
+                buildSmsInfo={buildSmsInfo}
+                markingSentId={markingSentId}
+                toggleSent={toggleSent}
+              />
+            )}
           </div>
-        )}
+          );
+        })()}
         </CollapsibleContent>
         </Collapsible>
       </Card>
