@@ -467,6 +467,21 @@ export function InvitationPage() {
               <p>Adult beverages will be available for purchase from the venue. Bringing alcohol is not allowed and is strctly prohibited.</p>
             </AccordionContent>
           </AccordionItem>
+
+          {/* Attendance */}
+          <AccordionItem value="attendance" id="attendance" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
+            <AccordionTrigger className="hover:no-underline">
+              <span className="flex items-center gap-3 text-2xl">
+                <Users className="w-5 h-5 text-sunset" /> Attendance
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="pb-6 text-muted-foreground space-y-3">
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Only those in good standing in the congregation are invited.</li>
+                <li>Children and young people are encouraged to attend who are behaved with their parent or guardian.</li>
+              </ul>
+            </AccordionContent>
+          </AccordionItem>
         </Accordion>
         </section>
       </main>
