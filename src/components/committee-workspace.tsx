@@ -921,7 +921,9 @@ export function CommitteeWorkspace() {
       </Card>
 
 
+      <div id="confirmed-rsvps-header" />
       <CollapsibleSection
+
         open={openSection === "confirmed"}
         onToggle={() => toggleSection("confirmed")}
         icon={<CheckCircle2 className="w-5 h-5 text-terracotta" />}
