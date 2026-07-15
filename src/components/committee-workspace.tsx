@@ -644,7 +644,7 @@ export function CommitteeWorkspace() {
   return (
     <div className="space-y-6">
 
-      <Button asChild className="w-full bg-terracotta text-cream hover:bg-terracotta/90 justify-center h-14 text-base">
+      <Button asChild className="sticky top-3 z-20 w-full bg-terracotta text-cream hover:bg-terracotta/90 justify-center h-14 text-base shadow-lg">
         <Link to="/admin/upload" search={{ view: "committee" }}>
           <Upload className="w-4 h-4" /> Upload guest list
         </Link>
