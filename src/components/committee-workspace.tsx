@@ -80,6 +80,9 @@ export function CommitteeWorkspace() {
   const [openTotals, setOpenTotals] = useState(true);
   const [openMyGuestsCard, setOpenMyGuestsCard] = useState(true);
   const [openConfirmed, setOpenConfirmed] = useState(false);
+  const [myGuestsTab, setMyGuestsTab] = useState<"all" | "confirmed" | "pending" | "declined" | "latest">("all");
+  const [myGuestsSort, setMyGuestsSort] = useState<"grouped" | "alpha" | "newest" | "oldest">("grouped");
+  const [openFlatGroup, setOpenFlatGroup] = useState(true);
 
 
   const [lastSeenYesAt, setLastSeenYesAt] = useState<number | null>(null);
