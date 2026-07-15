@@ -26,7 +26,7 @@ import {
   Clock,
   Globe2,
   UtensilsCrossed,
-  
+  Users,
   Heart,
   Wine,
   Plus,
