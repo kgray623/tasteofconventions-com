@@ -2178,19 +2178,13 @@ function UploadPage() {
                 <span>Tag these as Committee</span>
               </label>
               <Button
-                variant="outline"
-                disabled={busy || dupCount === 0}
-                onClick={() => importAll(true)}
-              >
-                Skip duplicates
-              </Button>
-              <Button
                 disabled={busy}
-                onClick={() => importAll(false)}
+                onClick={() => importAll()}
                 className="bg-ink text-cream hover:bg-ink/90"
               >
-                <Upload className="w-4 h-4 mr-2" /> Add all
+                <Upload className="w-4 h-4 mr-2" /> Add all (duplicates auto-skipped)
               </Button>
+
             </div>
           </div>
           <div className="divide-y divide-border md:max-h-[480px] md:overflow-auto">
