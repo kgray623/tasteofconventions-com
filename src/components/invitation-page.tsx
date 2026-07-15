@@ -27,6 +27,7 @@ import {
   Globe2,
   UtensilsCrossed,
   Users,
+  Baby,
   Heart,
   Wine,
   Plus,
