@@ -89,6 +89,12 @@ function HelperLogin() {
     try {
       const destination = await routeForUser(userId);
       const redirect = safeRedirect(search.redirect);
+      // The managed OAuth consent route is a full URL path with query params
+      // — navigate to it directly instead of the role-based destination.
+      if (redirect && redirect.startsWith("/.lovable/oauth/consent")) {
+        window.location.replace(redirect);
+        return;
+      }
       const nextTo =
         redirect === "/admin/upload" && destination.to === "/admin"
           ? "/admin/upload"
