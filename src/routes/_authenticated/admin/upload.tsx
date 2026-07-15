@@ -260,6 +260,10 @@ function UploadPage() {
   const [done, setDone] = useState<{ inserted: number; flagged: number; skipped: number } | null>(
     null,
   );
+  const [rejectedDuplicates, setRejectedDuplicates] = useState<
+    { name: string; phone: string; reason: string }[]
+  >([]);
+
   const [pasted, setPasted] = useState("");
   const [quick, setQuick] = useState({ name: "", phone: "" });
   const [quickBusy, setQuickBusy] = useState(false);
@@ -1095,16 +1099,21 @@ function UploadPage() {
     if (!raw.some((r) => r.name)) toast.error("I couldn't find any guest names in that paste.");
   };
 
-  const importAll = async (skipDupes: boolean) => {
+  const importAll = async (_skipDupes?: boolean) => {
     if (!eventId || !user) return;
     setBusy(true);
-    let inserted = 0,
-      flagged = 0,
-      skipped = 0;
-    const dupNames: string[] = [];
+    let inserted = 0;
+    let skipped = 0;
+    const rejected: { name: string; phone: string; reason: string }[] = [];
     try {
       for (const r of rows) {
-        if (skipDupes && r._dupReason) {
+        // Never insert client-flagged duplicates — report them instead.
+        if (r._dupReason) {
+          rejected.push({
+            name: r.guest_name,
+            phone: r.guest_phone || "",
+            reason: r._dupReason,
+          });
           skipped++;
           continue;
         }
@@ -1121,29 +1130,45 @@ function UploadPage() {
 
           if (error) {
             const dup = parseDuplicateGuestError(error);
-            if (dup) dupNames.push(`${r.guest_name} (matches ${dup.existingName})`);
-            else console.error("[upload] insert failed", error);
+            if (dup) {
+              rejected.push({
+                name: r.guest_name,
+                phone: r.guest_phone || "",
+                reason: `already invited — matches ${dup.existingName}`,
+              });
+            } else {
+              console.error("[upload] insert failed", error);
+            }
             skipped++;
             continue;
           }
           inserted++;
-          if (r._dupReason) flagged++;
         } catch (e) {
           const dup = parseDuplicateGuestError(e);
-          if (dup) dupNames.push(`${r.guest_name} (matches ${dup.existingName})`);
-          else console.error("[upload] insert failed", e);
+          if (dup) {
+            rejected.push({
+              name: r.guest_name,
+              phone: r.guest_phone || "",
+              reason: `already invited — matches ${dup.existingName}`,
+            });
+          } else {
+            console.error("[upload] insert failed", e);
+          }
           skipped++;
         }
       }
-      setDone({ inserted, flagged, skipped });
+      setDone({ inserted, flagged: rejected.length, skipped });
+      setRejectedDuplicates(rejected);
       setRows([]);
       setPasted("");
       clearUploadDraft(user.id);
       if (fileRef.current) fileRef.current.value = "";
-      toast.success(`Added ${inserted} guest${inserted === 1 ? "" : "s"}`);
-      if (dupNames.length) {
+      if (inserted > 0) {
+        toast.success(`Added ${inserted} guest${inserted === 1 ? "" : "s"}`);
+      }
+      if (rejected.length) {
         toast.warning(
-          `${dupNames.length} already on the list — not added again: ${dupNames.slice(0, 5).join(", ")}${dupNames.length > 5 ? "…" : ""}`,
+          `${rejected.length} duplicate${rejected.length === 1 ? "" : "s"} not added — see the red list below.`,
           { duration: 9000 },
         );
       }
@@ -1156,6 +1181,8 @@ function UploadPage() {
       setBusy(false);
     }
   };
+
+
 
 
   const dupCount = rows.filter((r) => r._dupReason).length;
@@ -2079,11 +2106,53 @@ function UploadPage() {
           <div>
             <p className="font-medium">Import complete</p>
             <p className="text-sm text-muted-foreground">
-              {done.inserted} added · {done.flagged} flagged as duplicates · {done.skipped} skipped
+              {done.inserted} added · {rejectedDuplicates.length} duplicate
+              {rejectedDuplicates.length === 1 ? "" : "s"} not added
             </p>
           </div>
         </Card>
       )}
+
+      {rejectedDuplicates.length > 0 && (
+        <Card className="overflow-hidden border-2 border-red-600 bg-red-50">
+          <div className="p-4 border-b-2 border-red-600 bg-red-600 text-white flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5" />
+              <p className="font-bold uppercase tracking-wide">
+                Duplicate guests — NOT uploaded ({rejectedDuplicates.length})
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="bg-white text-red-700 border-white hover:bg-red-50"
+              onClick={() => setRejectedDuplicates([])}
+            >
+              Dismiss
+            </Button>
+          </div>
+          <div className="p-3 text-sm text-red-800 bg-red-100 border-b border-red-300">
+            These people were already on the guest list — probably invited by another committee
+            member. They were <strong>not</strong> added again, but they are already being invited.
+          </div>
+          <div className="divide-y divide-red-300">
+            {rejectedDuplicates.map((d, i) => (
+              <div
+                key={`${d.name}-${d.phone}-${i}`}
+                className="px-4 py-2.5 flex flex-wrap items-center gap-3 text-sm text-red-900"
+              >
+                <span className="font-semibold flex-1 min-w-[140px]">{d.name}</span>
+                {d.phone && <span className="text-red-700 min-w-[110px]">{d.phone}</span>}
+                <span className="text-xs font-medium uppercase tracking-wide text-red-700">
+                  {d.reason}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
 
       {rows.length > 0 && (
         <Card className="overflow-hidden">
@@ -2109,19 +2178,13 @@ function UploadPage() {
                 <span>Tag these as Committee</span>
               </label>
               <Button
-                variant="outline"
-                disabled={busy || dupCount === 0}
-                onClick={() => importAll(true)}
-              >
-                Skip duplicates
-              </Button>
-              <Button
                 disabled={busy}
-                onClick={() => importAll(false)}
+                onClick={() => importAll()}
                 className="bg-ink text-cream hover:bg-ink/90"
               >
-                <Upload className="w-4 h-4 mr-2" /> Add all
+                <Upload className="w-4 h-4 mr-2" /> Add all (duplicates auto-skipped)
               </Button>
+
             </div>
           </div>
           <div className="divide-y divide-border md:max-h-[480px] md:overflow-auto">
