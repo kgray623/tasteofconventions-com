@@ -1,25 +1,27 @@
-Add the same organizing controls to the committee dashboard (`/admin`) "My Guests" section that were added on `/admin/upload`.
+On the `/admin` "My Guests" card, every count should be **people (seats in the building)** only — never a response count.
 
-## What to change
+## Changes (single file: `src/components/committee-workspace.tsx`)
 
-File: `src/components/committee-workspace.tsx` — the "My Guests" card that currently splits into In person / Zoom / Pending / Declined sub-lists.
+1. **Filter tabs** (All / Confirmed / Pending / Declined / Latest upload): show people count.
+   - The last edit already switched these to `peopleCountFor(...)`. The screenshot shows the old "Confirmed (25)" — likely a stale PWA cache. I'll re-verify in the browser after the edit; if it's still 25 I'll bump a version marker on the section to bust the service worker cache for that route.
+2. **Section headers inside the card** — replace `formatPeopleResponses(people, responses)` (which renders "35 people / 25 responses") with just the people number:
+   - "Confirmed RSVPs (35)"
+   - "RSVP in person (N)"
+   - "RSVP by Zoom (N)"
+   - "Pending (N)"
+   - "Decline (N)"
+   - Flat-view group header (Confirmed / Pending / Declined / All / Latest upload) — same: people only.
+3. **"My Guests (91)" card title** — leave as-is (that's already row count = 91 uploaded guests, which matches "All (91)" tab; user has not complained about it, and it's the number of records they uploaded).
+4. **"New guests RSVP'd" banner** — same rule: show just people count, drop the "(across N responses)" suffix.
 
-Add above the list:
-
-1. **Filter tabs** — All / Confirmed / Pending / Declined / Latest upload
-   - "Confirmed" merges In-person + Zoom
-   - "Latest upload" = rows uploaded within 60 min of the newest `created_at` (same rule as the upload page)
-   - Each tab shows a live count
-2. **Sort dropdown** — Grouped by status (default when tab = All) / Alphabetical (A–Z) / Newest first / Oldest first
-   - When any status tab is active, "Grouped by status" is hidden and default is Alphabetical
-   - "Latest upload" is fixed to Newest first (dropdown hidden, like the upload page)
-3. Keep the existing collapsible section headers (Pending / Confirmed / Declined) for the default grouped view.
-4. Keep the existing "Pending order" select (already there for the pending subsection) — the new global Sort supersedes it when a flat view is chosen, so remove the now-redundant "Pending order" control to avoid two competing sorts.
-
-No changes to data fetching, RSVP logic, duplicate detection, quotas, or the sticky "Upload guest list" button. Only the presentation of the "My Guests" list.
+Nothing else changes — no data fetching, RSVP logic, duplicate detection, or column changes. Response-count math stays in the code (used by other pages via `formatPeopleResponses`); this card just stops displaying it.
 
 ## Verification
 
-After the edit I will run Playwright against `/admin` on 384×673, sign in with the injected committee session, screenshot: (a) default view, (b) after clicking Confirmed tab, (c) after switching sort to Newest first, (d) after switching to Latest upload — and confirm counts and ordering match the DB.
+After the edit, Playwright at 384×673 on `/admin` signed in as committee → screenshot the My Guests card and confirm:
+- Confirmed tab shows 35 (not 25)
+- "Confirmed RSVPs" header shows "(35)" only
+- Pending header shows just a single number
+- No "X / Y responses" text anywhere in the card
 
-Timestamp: 2026-07-15 18:34 UTC.
+Timestamp: 2026-07-15 20:41 UTC.
