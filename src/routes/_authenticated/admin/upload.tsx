@@ -41,7 +41,7 @@ import { removeTeamInvitesForPhone } from "@/lib/team.functions";
 import { getRsvpEvents, getRsvpTotals } from "@/lib/rsvp-totals.functions";
 import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
 import { Input } from "@/components/ui/input";
-import { Image as ImageIcon, Target } from "lucide-react";
+import { Target } from "lucide-react";
 import { GuestSearchBar } from "@/components/guest-search-bar";
 
 
