@@ -553,32 +553,6 @@ export function CommitteeWorkspace() {
     .sort(byPendingSort);
   const myDeclined = myGuests.filter((g) => g.rsvp_status === "no").sort(byName);
 
-  const pendingSortControl = (
-    <div className="flex flex-wrap items-center gap-2 pt-3">
-      <span className="text-xs font-medium text-muted-foreground">Pending order</span>
-      <Select
-        value={activePendingSort}
-        onValueChange={(value) =>
-          navigate({
-            to: ".",
-            search: (prev: Record<string, unknown>) => ({
-              ...prev,
-              pendingSort: value === "alpha" ? undefined : (value as PendingSortMode),
-            }),
-          })
-        }
-      >
-        <SelectTrigger className="h-8 w-[150px] bg-background text-xs" aria-label="Sort pending guests">
-          <SelectValue placeholder="Sort pending" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="alpha">Alphabetical</SelectItem>
-          <SelectItem value="newest">Newest first</SelectItem>
-          <SelectItem value="oldest">Oldest first</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-  );
 
   // Build a sms: link for the phone's Messages app. Same wording as the
   // Upload page's Send SMS button so committee members send a consistent
