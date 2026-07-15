@@ -176,7 +176,7 @@ export const getInvitationByToken = createServerFn({ method: "GET" })
     const { data: inv, error } = await supabaseAdmin
       .from("invitations")
       .select(
-        "id,event_id,guest_name,guest_phone,notes,invite_sent_at,events(title,description,starts_at,ends_at,location,virtual_link)",
+        "id,event_id,guest_name,guest_phone,invite_sent_at,events(title,description,starts_at,ends_at,location,virtual_link)",
       )
       .in("rsvp_token", rsvpTokenCandidates(data.token))
       .maybeSingle();
