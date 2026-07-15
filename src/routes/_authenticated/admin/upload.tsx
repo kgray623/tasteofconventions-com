@@ -1724,6 +1724,10 @@ function UploadPage() {
           const batchDate = maxTs ? new Date(maxTs) : null;
 
           let sections: { label: string; rows: typeof savedGuests }[];
+          const byOldest = (a: typeof savedGuests[number], b: typeof savedGuests[number]) =>
+            +new Date(a.created_at) - +new Date(b.created_at);
+          const sorterFor = (mode: typeof listSortMode) =>
+            mode === "newest" ? byNewest : mode === "oldest" ? byOldest : byName;
           if (activeListTab === "latest") {
             sections = [
               {
@@ -1733,15 +1737,28 @@ function UploadPage() {
                 rows: latestBatch,
               },
             ];
+          } else if (activeListTab === "confirmed" || activeListTab === "pending" || activeListTab === "declined") {
+            const filtered = savedGuests.filter((g) => {
+              const s = effStatus(g);
+              if (activeListTab === "confirmed") return s === "yes";
+              if (activeListTab === "declined") return s === "no";
+              return s !== "yes" && s !== "no";
+            });
+            const mode = listSortMode === "grouped" ? "alpha" : listSortMode;
+            const label = activeListTab === "confirmed" ? "Confirmed" : activeListTab === "declined" ? "Declined" : "Pending";
+            sections = [{ label: `${label} (${filtered.length})`, rows: [...filtered].sort(sorterFor(mode)) }];
+          } else if (listSortMode !== "grouped") {
+            sections = [{ label: `All guests (${savedGuests.length})`, rows: [...savedGuests].sort(sorterFor(listSortMode)) }];
           } else {
-            const rsvp = savedGuests.filter((g) => effStatus(g) === "yes").sort(byName);
-            const no = savedGuests.filter((g) => effStatus(g) === "no").sort(byName);
+            const sorter = sorterFor("alpha");
+            const rsvp = savedGuests.filter((g) => effStatus(g) === "yes").sort(sorter);
+            const no = savedGuests.filter((g) => effStatus(g) === "no").sort(sorter);
             const pending = savedGuests
               .filter((g) => {
                 const s = effStatus(g);
                 return s !== "yes" && s !== "no";
               })
-              .sort(byName);
+              .sort(sorter);
             sections = [
               { label: "Pending", rows: pending },
               { label: "Confirmed", rows: rsvp },
@@ -1750,29 +1767,50 @@ function UploadPage() {
           }
 
 
+          const tabs: { key: typeof activeListTab; label: string; count: number }[] = [
+            { key: "all", label: "All guests", count: savedGuests.length },
+            { key: "confirmed", label: "Confirmed", count: savedGuests.filter((g) => effStatus(g) === "yes").length },
+            { key: "pending", label: "Pending", count: savedGuests.filter((g) => { const s = effStatus(g); return s !== "yes" && s !== "no"; }).length },
+            { key: "declined", label: "Declined", count: savedGuests.filter((g) => effStatus(g) === "no").length },
+            { key: "latest", label: "Latest upload", count: latestBatch.length },
+          ];
+
           return (
           <div>
             <div className="px-4 py-2 border-b border-border flex items-center gap-1.5 flex-wrap">
-              <button
-                type="button"
-                onClick={() => setActiveListTab("all")}
-                className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs border transition ${activeListTab === "all" ? "bg-ink text-cream border-ink" : "bg-background hover:bg-muted border-border"}`}
-              >
-                All guests ({savedGuests.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveListTab("latest")}
-                className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs border transition ${activeListTab === "latest" ? "bg-ink text-cream border-ink" : "bg-background hover:bg-muted border-border"}`}
-              >
-                Latest upload ({latestBatch.length})
-              </button>
+              {tabs.map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setActiveListTab(t.key)}
+                  className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs border transition ${activeListTab === t.key ? "bg-ink text-cream border-ink" : "bg-background hover:bg-muted border-border"}`}
+                >
+                  {t.label} ({t.count})
+                </button>
+              ))}
+              {activeListTab !== "latest" && (
+                <div className="ml-auto flex items-center gap-1.5">
+                  <span className="text-[11px] text-muted-foreground">Sort</span>
+                  <Select value={listSortMode} onValueChange={(v) => setListSortMode(v as typeof listSortMode)}>
+                    <SelectTrigger className="h-8 w-[160px] text-xs" aria-label="Sort guest list">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {activeListTab === "all" && <SelectItem value="grouped">Grouped by status</SelectItem>}
+                      <SelectItem value="alpha">Alphabetical (A–Z)</SelectItem>
+                      <SelectItem value="newest">Newest first</SelectItem>
+                      <SelectItem value="oldest">Oldest first</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               {activeListTab === "latest" && (
                 <span className="text-[11px] text-muted-foreground ml-1">
                   Newest first · tap Send SMS to text each guest.
                 </span>
               )}
             </div>
+
             <div className="md:max-h-[480px] md:overflow-auto">
 
             {sections.map((sec) => {
