@@ -1,20 +1,21 @@
-## Goal
-Add a new FAQ accordion item on the public landing page (`/`) under the existing "Tap to open" section, with two bullet points:
-1. Only those in good standing in the congregation are invited.
-2. Children and young people are encouraged to attend who are behaved with their parent or guardian.
+On the landing page FAQ, the single "Attendance" accordion currently combines the two ideas. Split it into two distinct accordion items and update the wording per the user's request.
 
-## Implementation
-1. **Update `src/components/invitation-page.tsx`**
-   - Import a suitable icon (e.g., `Users` from `lucide-react`) alongside the existing icon imports.
-   - Insert a new `<AccordionItem value="attendance" id="attendance">` inside the existing `<Accordion>` block, placed logically with the other FAQ items.
-   - Use the same styling pattern as existing items: trigger label with icon + "Attendance / Eligibility", content with the two bullet points in `text-muted-foreground`.
+Changes to `src/components/invitation-page.tsx`:
 
-2. **No other files need changes.** This is a presentation-only content addition; no data fetching, routes, or backend updates are required.
+1. Replace the single "Attendance" `AccordionItem` with two items:
 
-## Verification
-- Run `tsgo --noEmit` to confirm the new import and JSX typecheck cleanly.
-- Visually confirm on the preview at `/` that the new accordion item appears and opens correctly, and that the two points read as requested.
+   - **"Who may attend?"**
+     - Trigger icon: keep `Users` (or a suitable alternative from the existing icon set).
+     - Content:
+       `Those who have been invited, are in good standing in the congregation, and have RSVP'd may attend. Attendees must have been personally invited by someone on our committee.`
 
-## Notes
-- The new item will be collapsible like all other FAQ items, controlled by the existing `openItems` state.
-- No metadata or route head changes are needed for this content-only update.
+   - **"May children attend?"**
+     - Trigger icon: choose a child/family-friendly icon from the existing `lucide-react` imports if available, otherwise reuse `Users`.
+     - Content:
+       `We encourage children and young people to attend who are with a parent or guardian, are well-behaved, and have RSVP'd.`
+
+2. Keep the same styling pattern as the other FAQ items (`border border-border rounded-2xl bg-card px-5`, trigger with icon + label, content `text-muted-foreground`).
+
+3. Verify the `Users` icon is already imported; if a second icon is added, import it from `lucide-react`.
+
+No other files need changes. After implementation, verify by opening the landing page FAQ section and confirming the two tabs are separate and contain the updated text.
