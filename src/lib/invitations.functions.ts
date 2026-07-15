@@ -110,7 +110,7 @@ export const getMyInvitation = createServerFn({ method: "GET" })
     const { data: inv, error } = await supabaseAdmin
       .from("invitations")
       .select(
-        "id,event_id,guest_name,guest_phone,notes,rsvp_token,created_at,events(title,description,starts_at,ends_at,location,virtual_link)",
+        "id,event_id,guest_name,guest_phone,rsvp_token,created_at,events(title,description,starts_at,ends_at,location,virtual_link)",
       )
       .in("guest_phone_normalized", candidates)
       .order("created_at", { ascending: false })
