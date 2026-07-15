@@ -41,7 +41,7 @@ import { removeTeamInvitesForPhone } from "@/lib/team.functions";
 import { getRsvpEvents, getRsvpTotals } from "@/lib/rsvp-totals.functions";
 import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
 import { Input } from "@/components/ui/input";
-import { Image as ImageIcon, Target } from "lucide-react";
+import { Target } from "lucide-react";
 import { GuestSearchBar } from "@/components/guest-search-bar";
 
 
@@ -1472,6 +1472,7 @@ function UploadPage() {
             </label>
             <Input
               id="top-quick-guest-name"
+              ref={quickNameRef}
               value={quick.name}
               onChange={(event) => setQuick((current) => ({ ...current, name: event.target.value }))}
               placeholder="Name"
@@ -1518,6 +1519,24 @@ function UploadPage() {
             <FileSpreadsheet className="w-4 h-4" /> Choose spreadsheet
           </label>
         </div>
+        <input
+          id="screenshot-file-input"
+          ref={screenshotRef}
+          type="file"
+          accept="image/*"
+          multiple
+          disabled={screenshotBusy}
+          onChange={(e) => e.target.files && e.target.files.length > 0 && onScreenshots(e.target.files)}
+          className="sr-only"
+        />
+        <input
+          id="spreadsheet-file-input"
+          ref={fileRef}
+          type="file"
+          accept=".csv,.xlsx,.xls,.vcf"
+          onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
+          className="sr-only"
+        />
         {quickAdded > 0 && (
           <p className="text-xs text-muted-foreground">
             {quickAdded} guest{quickAdded === 1 ? "" : "s"} added this session.
@@ -1960,121 +1979,6 @@ function UploadPage() {
         })()}
       </Card>
 
-      <Card className="p-6 space-y-4 border-terracotta/40 bg-terracotta/5">
-        <div className="flex items-center gap-2">
-          <UserPlus className="w-5 h-5 text-terracotta" />
-          <h2 className="text-lg font-semibold">Add one guest</h2>
-        </div>
-        <form
-          className="grid gap-3 md:grid-cols-[1.2fr_1fr_1fr_auto] md:items-end"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void onQuickAdd();
-          }}
-        >
-          <div className="space-y-1.5">
-            <label htmlFor="quick-guest-name" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Guest name
-            </label>
-            <Input
-              id="quick-guest-name"
-              ref={quickNameRef}
-              value={quick.name}
-              onChange={(event) => setQuick((current) => ({ ...current, name: event.target.value }))}
-              placeholder="Name"
-              autoComplete="name"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label htmlFor="quick-guest-phone" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Phone
-            </label>
-            <Input
-              id="quick-guest-phone"
-              value={quick.phone}
-              onChange={(event) => setQuick((current) => ({ ...current, phone: event.target.value }))}
-              placeholder="Phone"
-              inputMode="tel"
-              autoComplete="tel"
-            />
-          </div>
-          <Button
-            type="submit"
-            disabled={quickBusy || !eventId || !quick.name.trim() || !quick.phone.trim()}
-            className="bg-terracotta text-cream hover:bg-terracotta/90"
-          >
-            {quickBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <><UserPlus className="w-4 h-4 mr-2" /> Add guest</>}
-          </Button>
-        </form>
-        {quickAdded > 0 && (
-          <p className="text-xs text-muted-foreground">
-            {quickAdded} guest{quickAdded === 1 ? "" : "s"} added this session.
-          </p>
-        )}
-      </Card>
-
-      <Card className="p-6 space-y-4 border-terracotta/40 bg-terracotta/5">
-        <div className="flex items-center gap-2">
-          <Upload className="w-5 h-5 text-terracotta" />
-          <h2 className="text-lg font-semibold">Upload your guest list</h2>
-        </div>
-        <p className="text-sm text-muted-foreground whitespace-pre-line">
-          Option 1: Add your guests BEFORE TEXTING THEM THE INVITATION to ensure they receive only ONE INVITATION. We all know many of the same peope, this ensures no duplicate invitations. (8 screenshots max at a time).{"\n\n"}
-          Option 2: You can add a spreadsheet of your guests by listing each by name and phone number per seperate line and collumn.{"\n\n"}
-          The system crosschecks your guest list with the rest of the comittee volunteers flagging duplicate invitations. Only invite those in good standing in the congregation.
-        </p>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <ImageIcon className="w-4 h-4 text-terracotta" />
-              <p className="text-sm font-medium">Upload Guest Screenshots (8 max at a time)</p>
-            </div>
-            <label
-              htmlFor="screenshot-file-input"
-              aria-disabled={screenshotBusy}
-              className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors h-11 px-4 py-2 w-full bg-terracotta text-cream hover:bg-terracotta/90 shadow ${screenshotBusy ? "opacity-50 pointer-events-none cursor-not-allowed" : "cursor-pointer"}`}
-            >
-              {screenshotBusy ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Reading…</>
-              ) : (
-                <><Upload className="w-4 h-4 mr-2" /> Choose screenshots</>
-              )}
-            </label>
-            <input
-              id="screenshot-file-input"
-              ref={screenshotRef}
-              type="file"
-              accept="image/*"
-              multiple
-              disabled={screenshotBusy}
-              onChange={(e) => e.target.files && e.target.files.length > 0 && onScreenshots(e.target.files)}
-              className="sr-only"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <FileSpreadsheet className="w-4 h-4 text-terracotta" />
-              <p className="text-sm font-medium">Option 2 — Upload spreadsheet</p>
-            </div>
-            <label
-              htmlFor="spreadsheet-file-input"
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors h-11 px-4 py-2 w-full bg-terracotta text-cream hover:bg-terracotta/90 shadow cursor-pointer"
-            >
-              <Upload className="w-4 h-4 mr-2" /> Choose spreadsheet
-            </label>
-            <input
-              id="spreadsheet-file-input"
-              ref={fileRef}
-              type="file"
-              accept=".csv,.xlsx,.xls,.vcf"
-              onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
-              className="sr-only"
-            />
-          </div>
-        </div>
-      </Card>
 
       <Card className="p-6 space-y-3 max-w-2xl">
         <div className="flex items-center gap-2">
