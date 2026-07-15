@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "categories readable by authenticated" ON public.categories;
