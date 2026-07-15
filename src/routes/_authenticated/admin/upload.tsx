@@ -1158,7 +1158,19 @@ function UploadPage() {
         }
       }
       setDone({ inserted, flagged: rejected.length, skipped });
-      setRejectedDuplicates(rejected);
+      // Accumulate across imports — only the Dismiss button clears this list.
+      setRejectedDuplicates((prev) => {
+        const seen = new Set(prev.map((p) => `${p.name}|${p.phone}`));
+        const merged = [...prev];
+        for (const r of rejected) {
+          const key = `${r.name}|${r.phone}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            merged.push(r);
+          }
+        }
+        return merged;
+      });
       setRows([]);
       setPasted("");
       clearUploadDraft(user.id);
@@ -2106,8 +2118,9 @@ function UploadPage() {
           <div>
             <p className="font-medium">Import complete</p>
             <p className="text-sm text-muted-foreground">
-              {done.inserted} added · {rejectedDuplicates.length} duplicate
-              {rejectedDuplicates.length === 1 ? "" : "s"} not added
+              {done.inserted} added · {done.flagged} duplicate
+              {done.flagged === 1 ? "" : "s"} not added
+
             </p>
           </div>
         </Card>
