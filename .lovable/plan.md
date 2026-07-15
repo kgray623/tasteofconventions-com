@@ -1,35 +1,20 @@
-## The real bug
+## Goal
+Add a new FAQ accordion item on the public landing page (`/`) under the existing "Tap to open" section, with two bullet points:
+1. Only those in good standing in the congregation are invited.
+2. Children and young people are encouraged to attend who are behaved with their parent or guardian.
 
-In `src/components/committee-workspace.tsx`, tab counts call:
+## Implementation
+1. **Update `src/components/invitation-page.tsx`**
+   - Import a suitable icon (e.g., `Users` from `lucide-react`) alongside the existing icon imports.
+   - Insert a new `<AccordionItem value="attendance" id="attendance">` inside the existing `<Accordion>` block, placed logically with the other FAQ items.
+   - Use the same styling pattern as existing items: trigger label with icon + "Attendance / Eligibility", content with the two bullet points in `text-muted-foreground`.
 
-```ts
-const peopleCountFor = (rows) => rollupFor(rows).people.allIfEveryoneShowed;
-```
-
-But in `src/lib/rsvp-math.ts`, `people.allIfEveryoneShowed` is defined as `grouped.size` — that's the number of dedup'd rows (25 for confirmed), NOT the sum of `party_size` (35 seats). That's why the tab still says "Confirmed (25)" while the section header correctly says "Confirmed RSVPs (35)".
-
-The previous edits changed *which field* was read but not the underlying math, so nothing visibly changed. That's on me.
-
-## Fix (one file: `src/components/committee-workspace.tsx`)
-
-Replace `peopleCountFor` so each tab returns actual seats (sum of `party_size`) for the rows that belong to it, matching the section header math:
-
-- Confirmed tab → `rollup.people.confirmed` (= inPerson + zoom seats, i.e. 35)
-- Pending tab → `rollup.people.pending`
-- Declined tab → `rollup.people.declined`
-- All tab → sum of `people.confirmed + pending + declined + maybe + waitlist` (total seats if every row were honored at its party_size)
-- Latest upload tab → same "total seats" sum applied to the latest batch only
-
-No changes to `rsvp-math.ts` (other pages depend on `allIfEveryoneShowed` meaning "group count"), no data-fetching changes, no header/banner changes (those already show people-only after the last edit).
+2. **No other files need changes.** This is a presentation-only content addition; no data fetching, routes, or backend updates are required.
 
 ## Verification
+- Run `tsgo --noEmit` to confirm the new import and JSX typecheck cleanly.
+- Visually confirm on the preview at `/` that the new accordion item appears and opens correctly, and that the two points read as requested.
 
-After the edit, at 384×673 on `/admin` signed in as committee, hard-reload (bypass the PWA cache) and confirm:
-- Confirmed tab shows **(35)**, matching the "Confirmed RSVPs (35)" header
-- Pending tab count matches the "Pending (N)" header
-- Declined tab count matches the "Decline (N)" header
-- All tab count = sum of the three above (+ any maybe/waitlist seats)
-
-If the browser still shows the old numbers, it's the service worker — I'll bump the SW version to force refresh.
-
-Timestamp: 2026-07-15 20:55 UTC.
+## Notes
+- The new item will be collapsible like all other FAQ items, controlled by the existing `openItems` state.
+- No metadata or route head changes are needed for this content-only update.
