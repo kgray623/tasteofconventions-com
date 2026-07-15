@@ -2106,11 +2106,53 @@ function UploadPage() {
           <div>
             <p className="font-medium">Import complete</p>
             <p className="text-sm text-muted-foreground">
-              {done.inserted} added · {done.flagged} flagged as duplicates · {done.skipped} skipped
+              {done.inserted} added · {rejectedDuplicates.length} duplicate
+              {rejectedDuplicates.length === 1 ? "" : "s"} not added
             </p>
           </div>
         </Card>
       )}
+
+      {rejectedDuplicates.length > 0 && (
+        <Card className="overflow-hidden border-2 border-red-600 bg-red-50">
+          <div className="p-4 border-b-2 border-red-600 bg-red-600 text-white flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5" />
+              <p className="font-bold uppercase tracking-wide">
+                Duplicate guests — NOT uploaded ({rejectedDuplicates.length})
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="bg-white text-red-700 border-white hover:bg-red-50"
+              onClick={() => setRejectedDuplicates([])}
+            >
+              Dismiss
+            </Button>
+          </div>
+          <div className="p-3 text-sm text-red-800 bg-red-100 border-b border-red-300">
+            These people were already on the guest list — probably invited by another committee
+            member. They were <strong>not</strong> added again, but they are already being invited.
+          </div>
+          <div className="divide-y divide-red-300">
+            {rejectedDuplicates.map((d, i) => (
+              <div
+                key={`${d.name}-${d.phone}-${i}`}
+                className="px-4 py-2.5 flex flex-wrap items-center gap-3 text-sm text-red-900"
+              >
+                <span className="font-semibold flex-1 min-w-[140px]">{d.name}</span>
+                {d.phone && <span className="text-red-700 min-w-[110px]">{d.phone}</span>}
+                <span className="text-xs font-medium uppercase tracking-wide text-red-700">
+                  {d.reason}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
 
       {rows.length > 0 && (
         <Card className="overflow-hidden">
