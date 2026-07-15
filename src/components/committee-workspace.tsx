@@ -848,14 +848,21 @@ export function CommitteeWorkspace() {
           };
 
           // Tab counts show PEOPLE (seats in the building), not response rows.
-          const peopleCountFor = (rows: CommitteeGuest[]) => rollupFor(rows).people.allIfEveryoneShowed;
+          const peopleSeatsFor = (rows: CommitteeGuest[]) => {
+            const p = rollupFor(rows).people;
+            return p.confirmed + p.pending + p.declined + p.maybe + p.waitlist;
+          };
+          const confirmedSeats = (rows: CommitteeGuest[]) => rollupFor(rows).people.confirmed;
+          const pendingSeats = (rows: CommitteeGuest[]) => rollupFor(rows).people.pending;
+          const declinedSeats = (rows: CommitteeGuest[]) => rollupFor(rows).people.declined;
           const tabs: { key: typeof myGuestsTab; label: string; count: number }[] = [
-            { key: "all", label: "All", count: peopleCountFor(myGuests) },
-            { key: "confirmed", label: "Confirmed", count: peopleCountFor(confirmedFlat) },
-            { key: "pending", label: "Pending", count: peopleCountFor(pendingFlat) },
-            { key: "declined", label: "Declined", count: peopleCountFor(declinedFlat) },
-            { key: "latest", label: "Latest upload", count: peopleCountFor(latestBatch) },
+            { key: "all", label: "All", count: peopleSeatsFor(myGuests) },
+            { key: "confirmed", label: "Confirmed", count: confirmedSeats(confirmedFlat) },
+            { key: "pending", label: "Pending", count: pendingSeats(pendingFlat) },
+            { key: "declined", label: "Declined", count: declinedSeats(declinedFlat) },
+            { key: "latest", label: "Latest upload", count: peopleSeatsFor(latestBatch) },
           ];
+
 
           const useGrouped = myGuestsTab === "all" && myGuestsSort === "grouped";
 

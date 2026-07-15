@@ -1,27 +1,35 @@
-On the `/admin` "My Guests" card, every count should be **people (seats in the building)** only — never a response count.
+## The real bug
 
-## Changes (single file: `src/components/committee-workspace.tsx`)
+In `src/components/committee-workspace.tsx`, tab counts call:
 
-1. **Filter tabs** (All / Confirmed / Pending / Declined / Latest upload): show people count.
-   - The last edit already switched these to `peopleCountFor(...)`. The screenshot shows the old "Confirmed (25)" — likely a stale PWA cache. I'll re-verify in the browser after the edit; if it's still 25 I'll bump a version marker on the section to bust the service worker cache for that route.
-2. **Section headers inside the card** — replace `formatPeopleResponses(people, responses)` (which renders "35 people / 25 responses") with just the people number:
-   - "Confirmed RSVPs (35)"
-   - "RSVP in person (N)"
-   - "RSVP by Zoom (N)"
-   - "Pending (N)"
-   - "Decline (N)"
-   - Flat-view group header (Confirmed / Pending / Declined / All / Latest upload) — same: people only.
-3. **"My Guests (91)" card title** — leave as-is (that's already row count = 91 uploaded guests, which matches "All (91)" tab; user has not complained about it, and it's the number of records they uploaded).
-4. **"New guests RSVP'd" banner** — same rule: show just people count, drop the "(across N responses)" suffix.
+```ts
+const peopleCountFor = (rows) => rollupFor(rows).people.allIfEveryoneShowed;
+```
 
-Nothing else changes — no data fetching, RSVP logic, duplicate detection, or column changes. Response-count math stays in the code (used by other pages via `formatPeopleResponses`); this card just stops displaying it.
+But in `src/lib/rsvp-math.ts`, `people.allIfEveryoneShowed` is defined as `grouped.size` — that's the number of dedup'd rows (25 for confirmed), NOT the sum of `party_size` (35 seats). That's why the tab still says "Confirmed (25)" while the section header correctly says "Confirmed RSVPs (35)".
+
+The previous edits changed *which field* was read but not the underlying math, so nothing visibly changed. That's on me.
+
+## Fix (one file: `src/components/committee-workspace.tsx`)
+
+Replace `peopleCountFor` so each tab returns actual seats (sum of `party_size`) for the rows that belong to it, matching the section header math:
+
+- Confirmed tab → `rollup.people.confirmed` (= inPerson + zoom seats, i.e. 35)
+- Pending tab → `rollup.people.pending`
+- Declined tab → `rollup.people.declined`
+- All tab → sum of `people.confirmed + pending + declined + maybe + waitlist` (total seats if every row were honored at its party_size)
+- Latest upload tab → same "total seats" sum applied to the latest batch only
+
+No changes to `rsvp-math.ts` (other pages depend on `allIfEveryoneShowed` meaning "group count"), no data-fetching changes, no header/banner changes (those already show people-only after the last edit).
 
 ## Verification
 
-After the edit, Playwright at 384×673 on `/admin` signed in as committee → screenshot the My Guests card and confirm:
-- Confirmed tab shows 35 (not 25)
-- "Confirmed RSVPs" header shows "(35)" only
-- Pending header shows just a single number
-- No "X / Y responses" text anywhere in the card
+After the edit, at 384×673 on `/admin` signed in as committee, hard-reload (bypass the PWA cache) and confirm:
+- Confirmed tab shows **(35)**, matching the "Confirmed RSVPs (35)" header
+- Pending tab count matches the "Pending (N)" header
+- Declined tab count matches the "Decline (N)" header
+- All tab count = sum of the three above (+ any maybe/waitlist seats)
 
-Timestamp: 2026-07-15 20:41 UTC.
+If the browser still shows the old numbers, it's the service worker — I'll bump the SW version to force refresh.
+
+Timestamp: 2026-07-15 20:55 UTC.
