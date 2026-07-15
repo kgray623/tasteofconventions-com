@@ -188,11 +188,15 @@ function InvitersPage() {
     return guests;
   };
 
-  const confirmedResponseCount = (guests: GuestRow[]) =>
-    guests.filter((guest) => guest.rsvp_status === "yes" && guest.rsvp_attendance_mode !== "zoom").length;
+  const confirmedInPersonPeopleCount = (guests: GuestRow[]) =>
+    guests
+      .filter((guest) => guest.rsvp_status === "yes" && guest.rsvp_attendance_mode !== "zoom")
+      .reduce((sum, guest) => sum + (guest.rsvp_party_size ?? 1), 0);
 
-  const virtualResponseCount = (guests: GuestRow[]) =>
-    guests.filter((guest) => guest.rsvp_status === "yes" && guest.rsvp_attendance_mode === "zoom").length;
+  const virtualPeopleCount = (guests: GuestRow[]) =>
+    guests
+      .filter((guest) => guest.rsvp_status === "yes" && guest.rsvp_attendance_mode === "zoom")
+      .reduce((sum, guest) => sum + (guest.rsvp_party_size ?? 1), 0);
 
   const updateQuota = async (id: string, q: number) => {
     // Clear any pending request fields so a stale requested_quota can't linger
@@ -394,9 +398,9 @@ function InvitersPage() {
 
       <Card className="p-0 overflow-hidden">
         <div className="px-6 py-4 border-b border-border">
-          <h2 className="font-display text-xl">Steering committee invitations &amp; usage</h2>
+            <h2 className="font-display text-xl">Steering committee invitations &amp; usage</h2>
           <p className="text-sm text-muted-foreground">
-            Remaining is approved RSVP requests minus in-person confirmations. Uploaded guests are tracked separately.
+            Remaining is approved in-person guest spots minus confirmed in-person people attending. Uploaded guests are tracked separately.
           </p>
         </div>
         {loading ? (
@@ -422,8 +426,8 @@ function InvitersPage() {
               <tbody>
                 {inviters.slice().sort((a, b) => a.name.localeCompare(b.name)).flatMap((i) => {
                   const guests = guestsForInviter(i);
-                  const used = confirmedResponseCount(guests);
-                  const virtual = virtualResponseCount(guests);
+                  const used = confirmedInPersonPeopleCount(guests);
+                  const virtual = virtualPeopleCount(guests);
                   const broughtDirect = broughtCounts[i.id] ?? 0;
                   const hostBased = guests.length || (i.host_id ? (invitedCounts[i.host_id] ?? 0) : 0);
                   // Prefer the explicit inviter_id link when it's higher (backfilled/new uploads).
