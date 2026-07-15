@@ -260,6 +260,10 @@ function UploadPage() {
   const [done, setDone] = useState<{ inserted: number; flagged: number; skipped: number } | null>(
     null,
   );
+  const [rejectedDuplicates, setRejectedDuplicates] = useState<
+    { name: string; phone: string; reason: string }[]
+  >([]);
+
   const [pasted, setPasted] = useState("");
   const [quick, setQuick] = useState({ name: "", phone: "" });
   const [quickBusy, setQuickBusy] = useState(false);
