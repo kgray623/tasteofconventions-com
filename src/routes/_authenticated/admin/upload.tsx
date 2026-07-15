@@ -1472,6 +1472,7 @@ function UploadPage() {
             </label>
             <Input
               id="top-quick-guest-name"
+              ref={quickNameRef}
               value={quick.name}
               onChange={(event) => setQuick((current) => ({ ...current, name: event.target.value }))}
               placeholder="Name"
@@ -1518,6 +1519,24 @@ function UploadPage() {
             <FileSpreadsheet className="w-4 h-4" /> Choose spreadsheet
           </label>
         </div>
+        <input
+          id="screenshot-file-input"
+          ref={screenshotRef}
+          type="file"
+          accept="image/*"
+          multiple
+          disabled={screenshotBusy}
+          onChange={(e) => e.target.files && e.target.files.length > 0 && onScreenshots(e.target.files)}
+          className="sr-only"
+        />
+        <input
+          id="spreadsheet-file-input"
+          ref={fileRef}
+          type="file"
+          accept=".csv,.xlsx,.xls,.vcf"
+          onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
+          className="sr-only"
+        />
         {quickAdded > 0 && (
           <p className="text-xs text-muted-foreground">
             {quickAdded} guest{quickAdded === 1 ? "" : "s"} added this session.
