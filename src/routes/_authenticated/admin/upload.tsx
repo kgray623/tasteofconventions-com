@@ -2118,8 +2118,9 @@ function UploadPage() {
           <div>
             <p className="font-medium">Import complete</p>
             <p className="text-sm text-muted-foreground">
-              {done.inserted} added · {rejectedDuplicates.length} duplicate
-              {rejectedDuplicates.length === 1 ? "" : "s"} not added
+              {done.inserted} added · {done.flagged} duplicate
+              {done.flagged === 1 ? "" : "s"} not added
+
             </p>
           </div>
         </Card>
