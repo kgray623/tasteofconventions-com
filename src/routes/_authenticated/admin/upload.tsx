@@ -286,7 +286,8 @@ function UploadPage() {
     }[]
   >([]);
   const [activeListTab, setActiveListTab] = useState<"all" | "latest">("all");
-  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({ "Declined": true });
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({ Pending: true, Confirmed: true, Declined: true });
+  const [confirmedRsvpsCollapsed, setConfirmedRsvpsCollapsed] = useState(true);
 
 
 
@@ -304,9 +305,6 @@ function UploadPage() {
   const [markingSentId, setMarkingSentId] = useState<string | null>(null);
   const [settingRsvpId, setSettingRsvpId] = useState<string | null>(null);
   const [inviterName, setInviterName] = useState<string>("");
-  const [myQuota, setMyQuota] = useState<number | null>(null);
-  const [myRsvpSeats, setMyRsvpSeats] = useState(0);
-  const [myRsvpCount, setMyRsvpCount] = useState(0);
   const screenshotRef = useRef<HTMLInputElement>(null);
   const [screenshotBusy, setScreenshotBusy] = useState(false);
   const extractContacts = useServerFn(extractContactsFromImages);
@@ -471,7 +469,6 @@ function UploadPage() {
       );
 
       if (!alive) return;
-      setMyQuota(inv?.quota ?? null);
       setQuotaPool({ total: TOTAL_RSVP_CAP, allocated });
       setInviterId(inv?.id ?? null);
       setRequestedQuota(inv?.requested_quota ? String(inv.requested_quota) : "");
@@ -490,43 +487,6 @@ function UploadPage() {
       alive = false;
     };
   }, [user?.id]);
-
-  // Load this team member's RSVP totals for the selected event
-  useEffect(() => {
-    if (!user?.id || !eventId) {
-      setMyRsvpSeats(0);
-      setMyRsvpCount(0);
-      return;
-    }
-    let alive = true;
-    void (async () => {
-      const { data: invs } = await supabase
-        .from("invitations")
-        .select("id")
-        .eq("event_id", eventId)
-        .eq("host_id", user.id);
-      const ids = (invs ?? []).map((i) => i.id);
-      if (ids.length === 0) {
-        if (alive) {
-          setMyRsvpSeats(0);
-          setMyRsvpCount(0);
-        }
-        return;
-      }
-      const { data: rs } = await supabase
-        .from("rsvps")
-        .select("party_size,status,attendance_mode")
-        .in("invitation_id", ids);
-      if (!alive) return;
-      const yes = (rs ?? []).filter((r) => r.status === "yes" && r.attendance_mode !== "zoom");
-      setMyRsvpCount(yes.length);
-      setMyRsvpSeats(yes.reduce((s, r) => s + (r.party_size ?? 1), 0));
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [user?.id, eventId, savedGuests.length]);
-
 
   const duplicateGroups = useMemo(() => {
     const idToGroup = buildDuplicateGroupIds(savedGuests.map((g) => ({
@@ -1606,16 +1566,23 @@ function UploadPage() {
 
 
       <Card className="overflow-hidden border-terracotta/40 bg-terracotta/5">
-        <div className="p-4 border-b border-border flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => setConfirmedRsvpsCollapsed((prev) => !prev)}
+          className="w-full p-4 border-b border-border flex items-center justify-between gap-3 text-left hover:bg-terracotta/10"
+        >
           <div className="flex items-center gap-2 flex-wrap">
             <CheckCircle2 className="w-5 h-5 text-terracotta" />
             <p className="font-medium">
               Confirmed RSVPs — {inPersonPeople} in person · {zoomPeople} on Zoom ({confirmedPeople} people / {savedGuestRollup.responses.confirmed} responses)
             </p>
           </div>
-          {savedLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
-        </div>
-        {confirmedGuests.length === 0 ? (
+          <div className="flex items-center gap-2 shrink-0">
+            {savedLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+            {confirmedRsvpsCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </div>
+        </button>
+        {!confirmedRsvpsCollapsed && (confirmedGuests.length === 0 ? (
           <div className="p-4 text-sm text-muted-foreground">
             {savedLoading ? "Loading confirmed RSVPs…" : "No confirmed RSVPs yet."}
           </div>
@@ -1674,7 +1641,7 @@ function UploadPage() {
               </>
             )}
           </div>
-        )}
+        ))}
       </Card>
 
       <form onSubmit={submitQuotaRequest} className="max-w-xl">
@@ -1775,7 +1742,7 @@ function UploadPage() {
               })
               .sort(byName);
             sections = [
-              { label: "Not confirmed yet", rows: pending },
+              { label: "Pending", rows: pending },
               { label: "Confirmed", rows: rsvp },
               { label: "Declined", rows: no },
             ];
@@ -1807,9 +1774,11 @@ function UploadPage() {
             </div>
             <div className="md:max-h-[480px] md:overflow-auto">
 
-            {sections.map((sec) => sec.rows.length === 0 ? null : (
+            {sections.map((sec) => {
+              const collapsible = activeListTab === "all" && ["Pending", "Confirmed", "Declined"].includes(sec.label);
+              return sec.rows.length === 0 ? null : (
               <div key={sec.label}>
-                {sec.label === "Declined" ? (
+                {collapsible ? (
                   <button
                     type="button"
                     onClick={() => setCollapsedSections((prev) => ({ ...prev, [sec.label]: !prev[sec.label] }))}
@@ -1823,7 +1792,7 @@ function UploadPage() {
                     {sec.label} ({sec.rows.length})
                   </div>
                 )}
-                {!(sec.label === "Declined" && collapsedSections[sec.label]) && (
+                {!(collapsible && collapsedSections[sec.label]) && (
                 <div className="divide-y divide-border">
 
 
@@ -1971,7 +1940,7 @@ function UploadPage() {
                 )}
               </div>
 
-            ))}
+            );})}
             </div>
           </div>
           );
@@ -2164,56 +2133,6 @@ function UploadPage() {
           </div>
         </Card>
       )}
-      {(() => {
-        const sentCount = savedGuests.filter((g) => g.invite_sent_at).length;
-        const pendingCount = savedGuests.filter((g) => !g.invite_sent_at).length;
-        const requested = parseInt(requestedQuota, 10);
-        const requestedNum = Number.isFinite(requested) && requested > 0 ? requested : null;
-        const remaining =
-          requestedNum !== null ? Math.max(0, requestedNum - myRsvpSeats) : null;
-        return (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <Card className="p-4">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                RSVP requests
-              </p>
-              <p className="font-display text-2xl mt-1">{requestedNum ?? "—"}</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
-                {requestedNum === null
-                  ? "Send a request above"
-                  : "How many you asked for"}
-              </p>
-            </Card>
-            <Card className="p-4">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                Invites sent
-              </p>
-              <p className="font-display text-2xl mt-1">{sentCount}</p>
-              {pendingCount > 0 && (
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {pendingCount} not sent yet
-                </p>
-              )}
-            </Card>
-            <Card className="p-4">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                In-person RSVP confirmations
-              </p>
-              <p className="font-display text-2xl mt-1">{myRsvpSeats}</p>
-              {myRsvpSeats !== myRsvpCount && (
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {myRsvpCount} response{myRsvpCount === 1 ? "" : "s"}
-                </p>
-              )}
-              {remaining !== null && (
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {remaining} remaining of {requestedNum}
-                </p>
-              )}
-            </Card>
-          </div>
-        );
-      })()}
     </div>
   );
 }
