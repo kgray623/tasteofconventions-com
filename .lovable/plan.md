@@ -1,45 +1,43 @@
-## Retag guests to Tina Santana + fix mislabeled names
+## Retag only the screenshot-confirmed Tina guests
 
-Both new screenshots (Bob & Deanna Sadler / Laquita / Latea / Delali & Kodjovi, and the handwritten "Friends to Invite" list) are already covered — those phone numbers are in the DB, and the Sadler/Laquita/Latea/Delali/handwritten-list guests are already tagged to Tina. The 10 rows below are the only ones from your combined set that aren't tagged to her.
+Timestamp: 2026-07-15 22:06 UTC
 
-Tina's inviter row: `d52a0902…` (quota 25, kept as-is per your call — extra "yes" RSVPs beyond 25 will auto-waitlist).
-Tina's user id (host_id): `00651c0f…`.
+You’re right: the screenshots you gave identify Tina’s guests, and Kari’s list must stay separate. I will not bulk-tag all unassigned rows to either person.
 
-### 1. Reassign these 10 invitations to Tina
+### What will change
 
-Set `inviter_id` → Tina's inviter and `host_id` → Tina's user for each row:
+Apply the screenshot-specific correction already captured in the current plan:
 
-| Phone | Guest | Currently tagged to |
-|---|---|---|
-| 402-676-1298 | Brittany Avery *(name fix below)* | Kari Gray |
-| 402-298-6695 | Faviola & Israel Gamino family *(name fix below)* | Kari Gray |
-| 402-378-5424 | Jackie Williams *(name fix below)* | Kari Gray |
-| 402-917-4152 | Margaret Gibson *(name fix below)* | Kari Gray |
-| 402-598-6777 | Whitney Hopkins *(name fix below)* | Kari Gray |
-| 402-297-5224 | Jennifer Gray | other host, no inviter |
-| 402-981-5972 | Gina Moore | other host, no inviter |
-| 402-990-8704 | Margie Rice | other host, no inviter |
-| 402-290-6120 | Jessica Diaz | other host, no inviter |
-| 904-442-4513 | Jacqueline Graves | Tina's user, no inviter |
+1. Reassign these 10 invitations to Tina’s inviter record:
+   - Brittany Avery — 402-676-1298
+   - Faviola and Israel Gamino family — 402-298-6695
+   - Jackie Williams — 402-378-5424
+   - Margaret Gibson — 402-917-4152
+   - Whitney Hopkins — 402-598-6777
+   - Jennifer Gray — 402-297-5224
+   - Gina Moore — 402-981-5972
+   - Margie Rice — 402-990-8704
+   - Jessica Diaz — 402-290-6120
+   - Jacqueline Graves — 904-442-4513
 
-### 2. Rename mislabeled rows to match the screenshots
+2. Correct the mislabeled names shown by the screenshots:
+   - 402-676-1298: Brittany Avery
+   - 402-917-4152: Margaret Gibson
+   - 402-598-6777: Whitney Hopkins
+   - 402-378-5424: Jackie Williams
+   - 402-298-6695: Faviola and Israel Gamino family
 
-Existing DB rows have the wrong name on these phone numbers. Update `guest_name` to what the SMS screenshots show:
+### What will not change
 
-| Phone | Current name | New name (per screenshot) |
-|---|---|---|
-| 402-676-1298 | Jackie Williams | Brittany Avery |
-| 402-917-4152 | Brittany Avery | Margaret Gibson |
-| 402-598-6777 | Margaret Gibson | Whitney Hopkins |
-| 402-378-5424 | Gamino | Jackie Williams |
-| 402-298-6695 | Faviola Israel | Faviola and Israel Gamino family |
+- No bulk update of the 65 unassigned rows.
+- No deletion.
+- No RSVP, token, phone, quota, or history changes.
+- Kari’s guests remain Kari’s unless a screenshot/list explicitly says Tina.
 
-### 3. Verification
+### Verification
 
-After the update, re-query `invitations` for these 10 phone numbers and confirm every row shows `inviter_id = d52a0902…` (Tina), `host_id = 00651c0f…`, and the corrected `guest_name`. Confirm the count of invitations tagged to Tina rises from 25 → 35, and Kari Gray drops from 6 → 1.
-
-### Technical notes
-
-- Two `UPDATE` statements via the data tool (one retag, one rename), keyed on `guest_phone_normalized` scoped to the event.
-- No schema change, no code change, no migration.
-- Nothing is deleted; the 5 renamed rows keep their RSVPs, tokens, and history — only `guest_name` changes.
+After the data update, I will read the database back and confirm:
+- These exact 10 phone numbers show Tina as inviter.
+- The five corrected names match the screenshot labels.
+- Tina’s invitation count increases only by these 10 rows, not by the 65 unassigned rows.
+- Kari’s separate list remains separate.
