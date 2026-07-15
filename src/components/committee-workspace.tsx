@@ -757,8 +757,7 @@ export function CommitteeWorkspace() {
             <div className="flex flex-wrap items-center gap-2">
               <NewBadge target="committee:new-yes-rsvps" />
               <span className="font-semibold text-emerald-900">
-                {newYesPeople} new guest{newYesPeople === 1 ? "" : "s"} RSVP'd
-                {newYesPeople !== newYesResponses && ` (across ${newYesResponses} response${newYesResponses === 1 ? "" : "s"})`}:
+                {newYesPeople} new guest{newYesPeople === 1 ? "" : "s"} RSVP'd:
               </span>
               <Button
                 type="button"
@@ -916,7 +915,7 @@ export function CommitteeWorkspace() {
                       >
                         <span className="flex items-center gap-2 font-semibold text-sm">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                          Confirmed RSVPs ({formatPeopleResponses(confirmedInPersonPeople + confirmedVirtualPeople, inPersonResponseCount + zoomResponseCount)})
+                          Confirmed RSVPs ({confirmedInPersonPeople + confirmedVirtualPeople})
                         </span>
                         <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${openConfirmed ? "rotate-180" : ""}`} />
                       </button>
@@ -1195,7 +1194,7 @@ function MyGuestsGroup({
             type="button"
             className="w-full p-3 flex items-center justify-between gap-2 text-left cursor-pointer hover:bg-black/[0.03] transition-colors"
           >
-            <span className="font-semibold text-sm">{label} ({formatPeopleResponses(peopleCount, responseCount)})</span>
+            <span className="font-semibold text-sm">{label} ({peopleCount})</span>
             <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
           </button>
         </CollapsibleTrigger>
