@@ -1345,7 +1345,7 @@ function DeleteGuestButton({
           <Trash2 className="w-4 h-4" />
         </Button>
       </AlertDialogTrigger>
-      <AlertDialogContent>
+      <AlertDialogContent onCloseAutoFocus={(e) => e.preventDefault()}>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete this guest?</AlertDialogTitle>
           <AlertDialogDescription>
