@@ -285,7 +285,8 @@ function UploadPage() {
       created_at: string;
     }[]
   >([]);
-  const [activeListTab, setActiveListTab] = useState<"all" | "latest">("all");
+  const [activeListTab, setActiveListTab] = useState<"all" | "latest" | "confirmed" | "pending" | "declined">("all");
+  const [listSortMode, setListSortMode] = useState<"grouped" | "alpha" | "newest" | "oldest">("grouped");
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({ Pending: true, Confirmed: true, Declined: true });
   const [confirmedRsvpsCollapsed, setConfirmedRsvpsCollapsed] = useState(true);
 
