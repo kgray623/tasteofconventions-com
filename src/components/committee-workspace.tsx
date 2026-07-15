@@ -916,7 +916,7 @@ export function CommitteeWorkspace() {
                       >
                         <span className="flex items-center gap-2 font-semibold text-sm">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                          Confirmed RSVPs ({formatPeopleResponses(confirmedInPersonPeople + confirmedVirtualPeople, inPersonResponseCount + zoomResponseCount)})
+                          Confirmed RSVPs ({confirmedInPersonPeople + confirmedVirtualPeople})
                         </span>
                         <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${openConfirmed ? "rotate-180" : ""}`} />
                       </button>
