@@ -848,12 +848,14 @@ export function CommitteeWorkspace() {
             })));
           };
 
+          // Tab counts show PEOPLE (seats in the building), not response rows.
+          const peopleCountFor = (rows: CommitteeGuest[]) => rollupFor(rows).people.allIfEveryoneShowed;
           const tabs: { key: typeof myGuestsTab; label: string; count: number }[] = [
-            { key: "all", label: "All", count: myGuests.length },
-            { key: "confirmed", label: "Confirmed", count: confirmedFlat.length },
-            { key: "pending", label: "Pending", count: pendingFlat.length },
-            { key: "declined", label: "Declined", count: declinedFlat.length },
-            { key: "latest", label: "Latest upload", count: latestBatch.length },
+            { key: "all", label: "All", count: peopleCountFor(myGuests) },
+            { key: "confirmed", label: "Confirmed", count: peopleCountFor(confirmedFlat) },
+            { key: "pending", label: "Pending", count: peopleCountFor(pendingFlat) },
+            { key: "declined", label: "Declined", count: peopleCountFor(declinedFlat) },
+            { key: "latest", label: "Latest upload", count: peopleCountFor(latestBatch) },
           ];
 
           const useGrouped = myGuestsTab === "all" && myGuestsSort === "grouped";
