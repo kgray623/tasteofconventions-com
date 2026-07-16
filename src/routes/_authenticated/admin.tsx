@@ -14,6 +14,7 @@ import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlu
 import { NewBadge } from "@/components/new-badge";
 import { useChatUnread } from "@/hooks/use-chat-unread";
 import { Badge } from "@/components/ui/badge";
+import { GuestSearchBar } from "@/components/guest-search-bar";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — A Taste of Special Conventions" }] }),
@@ -106,7 +107,12 @@ function AdminLayout() {
   }, [loading, isAdmin, isTeam, path, navigate, previewCommittee]);
 
   if (loading) {
-    return <div className="mx-auto max-w-6xl px-6 py-10 text-muted-foreground">Loading…</div>;
+    return (
+      <div className="mx-auto max-w-6xl px-6 py-6 space-y-4">
+        <GuestSearchBar />
+        <div className="py-4 text-muted-foreground">Loading…</div>
+      </div>
+    );
   }
 
   if (!isTeam) {
@@ -148,6 +154,9 @@ function AdminLayout() {
         </div>
 
 
+      </div>
+      <div className="mb-4">
+        <GuestSearchBar />
       </div>
       {(["main", "committee"] as const).map((group) => {
         const groupTabs = visibleTabs.filter((t) => t.group === group);
