@@ -416,6 +416,14 @@ export function MyRsvpContent() {
             </Button>
           </Link>
         </Card>
+        <Dialog open={lightbox !== null} onOpenChange={(o) => !o && setLightbox(null)}>
+          <DialogContent className="max-w-2xl p-2 bg-ink border-ink">
+            <DialogTitle className="sr-only">Cultural meal photo</DialogTitle>
+            {lightbox && (
+              <img src={lightbox} alt="Cultural meal" className="w-full h-auto rounded-md" />
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
