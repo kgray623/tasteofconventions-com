@@ -390,7 +390,7 @@ for line in [
 story.append(P("11. Critical Conventions & Out-of-Scope", H1))
 story.append(P("Always", H2))
 for line in [
-    "Phone-only for guest contact. Never collect / display / import / search / export guest email.",
+    "Phone/SMS-only for guest contact. Never collect / display / import / search / export guest email.",
     "Use <b>createServerFn</b> for app logic. Never introduce Supabase Edge Functions for app logic.",
     "Every new public.* table: GRANT + ENABLE RLS + policies in the SAME migration.",
     "Roles in <b>user_roles</b> table only — never on profile / users tables.",
@@ -429,7 +429,7 @@ for i, line in enumerate([
     story.append(P(f"{i}. {line}"))
 
 story.append(Spacer(1, 12))
-story.append(P("End of guide — v4, generated 2026-07-16 UTC. Sign in via §1, then open every link in §3 "
+story.append(P("End of guide — v5, generated 2026-07-16 UTC. Sign in via §1, then open every link in §3 "
                "against the live site to see what to replicate.",
                ParagraphStyle("End", parent=SMALL, alignment=1, textColor=colors.grey)))
 
