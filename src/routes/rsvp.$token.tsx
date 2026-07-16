@@ -583,6 +583,24 @@ function RsvpPage() {
                     key={cuisine.key}
                     className="rounded-md border border-border bg-card p-4 space-y-3"
                   >
+                    {cuisine.photos && (
+                      <div className="grid grid-cols-3 gap-2">
+                        {cuisine.photos.map((src, i) => (
+                          <button
+                            key={src}
+                            type="button"
+                            onClick={() => setLightbox(src)}
+                            className="relative aspect-square overflow-hidden rounded-md border border-border bg-muted"
+                            aria-label={`${cuisine.label} meal photo ${i + 1}`}
+                          >
+                            <img src={src} alt={`${cuisine.label} meal ${i + 1}`} className="h-full w-full object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {cuisine.note && (
+                      <p className="text-sm italic text-muted-foreground">{cuisine.note}</p>
+                    )}
                     <div className="flex items-center justify-between gap-3">
                       <Label className="text-base font-display text-ink">{cuisine.label}</Label>
                       <div className="grid grid-cols-2 gap-2 w-36">
