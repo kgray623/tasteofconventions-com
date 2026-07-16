@@ -180,9 +180,6 @@ function RsvpPage() {
 
   const handleSubmit = async () => {
     try {
-      const phoneDigits = guestPhone.replace(/\D/g, "");
-      if (!guestName.trim()) return toast.error("Please enter your full name");
-      if (phoneDigits.length < 7) return toast.error("Please enter your mobile number");
       const finalInvitedBy = invitedBy === "__other__" ? invitedByOther.trim() : invitedBy;
       if (!finalInvitedBy) return toast.error("Please select who invited you");
       // Derive ordering_food from the meal pre-order: any meals = yes, none = no.
