@@ -1,10 +1,20 @@
-I found the issue: at least one admin/committee usage table is still calculating “confirmed” as the number of RSVP rows, so Kari shows 25 even though the attending people total is 34 total / 30 in-person / 4 Zoom.
+## Add sort control to the Pending guests list
 
-Plan:
-1. Update the admin “Steering committee invitations & usage” page so each inviter’s used/remaining counts are based on total attending people from `party_size`, not the number of confirmed RSVP rows.
-2. Rename/clarify labels where needed so “confirmed guests” means attending people, while response-row counts are only shown as “responses” when intentionally needed.
-3. Keep the existing in-person vs Zoom separation: in-person attending people count against quota/remaining; Zoom attending people display separately and do not use seats.
-4. Verify specifically for Kari Gray (`kgray`) that the route no longer shows 25 as her confirmed guest total; it should reflect attending people from her RSVP party sizes.
-5. Verify on the exact admin/committee route after implementation and read the database totals back before calling it fixed.
+The Pending group on the committee workspace already has sort logic wired to a `?pendingSort=` URL param (values: `alpha`, `newest`, `oldest`), but there is no visible control — so it always ends up alphabetical. Add a small sort selector directly on the Pending group header.
 
-No guest rows, RSVP rows, inviter ownership, names, phones, or submitted information will be changed.
+### Change (frontend only, `src/components/committee-workspace.tsx`)
+
+1. Add a compact Select above (or inside the header of) the "Pending" `MyGuestsGroup` with three options:
+   - **A → Z (name)** — `alpha`
+   - **Newest uploaded first** — `newest`
+   - **Oldest uploaded first** — `oldest`
+2. Selecting an option calls `navigate({ search: (prev) => ({ ...prev, pendingSort: value }) })` so the choice sticks in the URL and the existing `activePendingSort` / `byPendingSort` logic picks it up. Default remains `alpha`.
+3. Only render the control when the Pending group has more than one guest, and only for the Pending group (RSVP in person, RSVP by Zoom, Declined are untouched).
+
+### Verification
+
+- Load `/` as a committee member on mobile viewport (matches the screenshot). Confirm the Pending header shows the sort selector.
+- Switch to Newest / Oldest and confirm the Pending list re-orders by upload date (`created_at`), and A → Z re-orders alphabetically.
+- Confirm no other groups, counts, or data change.
+
+Timestamp: 2026-07-15 23:15 UTC.
