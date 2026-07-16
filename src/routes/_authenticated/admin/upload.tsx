@@ -319,7 +319,7 @@ function UploadPage() {
   const [quotaPool, setQuotaPool] = useState({ total: TOTAL_RSVP_CAP, allocated: 0 });
   const [eventSeatTotals, setEventSeatTotals] = useState({ inPerson: 0, zoom: 0, confirmed: 0, responses: 0 });
   const [eventSeatTotalsLoading, setEventSeatTotalsLoading] = useState(false);
-  const [activeInviters, setActiveInviters] = useState<{ id: string; name: string }[]>([]);
+  const [activeInviters, setActiveInviters] = useState<{ id: string; name: string; host_id: string | null }[]>([]);
   const [uploadInviterId, setUploadInviterId] = useState<string>("");
 
 
@@ -449,20 +449,20 @@ function UploadPage() {
         profile?.display_name || "your friend";
       let { data: inv } = await supabase
         .from("inviters")
-        .select("id,quota,name,requested_quota,quota_request_note,quota_requested_at")
+        .select("id,quota,name,host_id,requested_quota,quota_request_note,quota_requested_at")
         .eq("host_id", user.id)
         .maybeSingle();
       if (!inv && fallbackName) {
         const { data: namedInv } = await supabase
           .from("inviters")
-          .select("id,quota,name,requested_quota,quota_request_note,quota_requested_at")
+          .select("id,quota,name,host_id,requested_quota,quota_request_note,quota_requested_at")
           .eq("name", fallbackName)
           .maybeSingle();
         inv = namedInv;
       }
       const { data: allInviters } = await supabase
         .from("inviters")
-        .select("id,name,quota,requested_quota,active")
+        .select("id,name,host_id,quota,requested_quota,active")
         .order("name");
       const allocated = (allInviters ?? []).reduce(
         (sum, row) => sum + (row.active === false ? 0 : (row.quota ?? 0)),
@@ -478,7 +478,7 @@ function UploadPage() {
       setActiveInviters(
         (allInviters ?? [])
           .filter((row) => row.active !== false)
-          .map((row) => ({ id: row.id as string, name: row.name as string })),
+          .map((row) => ({ id: row.id as string, name: row.name as string, host_id: (row.host_id as string | null) ?? null })),
       );
       // Default the upload dropdown to the current user's own inviter row if any.
       setUploadInviterId((prev) => prev || (inv?.id ?? ""));
@@ -488,6 +488,9 @@ function UploadPage() {
       alive = false;
     };
   }, [user?.id]);
+
+  const uploadInviterHostId = activeInviters.find((row) => row.id === uploadInviterId)?.host_id ?? null;
+  const uploadOwnerHostId = uploadInviterHostId || user?.id;
 
   const duplicateGroups = useMemo(() => {
     const idToGroup = buildDuplicateGroupIds(savedGuests.map((g) => ({
@@ -1081,7 +1084,7 @@ function UploadPage() {
         try {
           const { error } = await supabase.from("invitations").insert({
             event_id: eventId,
-            host_id: user.id,
+            host_id: uploadOwnerHostId,
             guest_name: r.guest_name,
             guest_phone: r.guest_phone || null,
             notes: r.notes || null,
@@ -1211,7 +1214,7 @@ function UploadPage() {
           .from("invitations")
           .insert({
             event_id: eventId,
-            host_id: user.id,
+            host_id: uploadOwnerHostId,
             guest_name: name,
             guest_phone: (c.phone || "").trim() || null,
             notes: null,
@@ -1379,7 +1382,7 @@ function UploadPage() {
     try {
       const { error } = await supabase.from("invitations").insert({
         event_id: eventId,
-        host_id: user.id,
+        host_id: uploadOwnerHostId,
         guest_name: name,
         guest_phone: quick.phone.trim() || null,
         notes: null,
