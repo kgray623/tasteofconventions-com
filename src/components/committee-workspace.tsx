@@ -975,7 +975,7 @@ export function CommitteeWorkspace() {
                       onValueChange={(v) =>
                         navigate({
                           to: ".",
-                          search: (prev: Record<string, unknown>) => ({ ...prev, pendingSort: v }),
+                          search: (prev: Record<string, unknown>) => ({ ...prev, pendingSort: v as PendingSortMode }),
                           replace: true,
                         })
                       }

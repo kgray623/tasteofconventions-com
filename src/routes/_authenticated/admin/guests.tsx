@@ -283,9 +283,11 @@ function GuestsPage() {
               ? "Loading…"
               : activeStatus === "confirmed"
                 ? <>Confirmed: <span className="tabular-nums font-medium text-ink">{filteredCounts.people.confirmed}</span> people across <span className="tabular-nums font-medium text-ink">{filteredCounts.rsvps.confirmed}</span> RSVPs (<span className="tabular-nums">{filteredCounts.modePeople.in_person}</span> in person · <span className="tabular-nums">{filteredCounts.modePeople.zoom}</span> Zoom).</>
+                : activeStatus === "declined"
+                  ? <>Declined: <span className="tabular-nums font-medium text-ink">{filteredCounts.rsvps.declined}</span> guests/RSVPs (<span className="tabular-nums font-medium text-ink">{filteredCounts.people.declined}</span> people by party size) of <span className="tabular-nums font-medium text-ink">{counts.rsvps.all}</span> reconciled uploaded guests.</>
                 : activeStatus === "pending"
                   ? <>Pending: <span className="tabular-nums font-medium text-ink">{filteredCounts.rsvps.pending}</span> guests with no RSVP yet (of <span className="tabular-nums font-medium text-ink">{counts.rsvps.all}</span> total uploaded).</>
-                  : <>Showing <span className="tabular-nums font-medium text-ink">{filteredCounts.people[activeStatus]}</span> people across <span className="tabular-nums font-medium text-ink">{filteredCounts.rsvps[activeStatus]}</span> RSVPs (of <span className="tabular-nums font-medium text-ink">{counts.rsvps.all}</span> total uploaded).</>
+                  : <>Showing <span className="tabular-nums font-medium text-ink">{filteredCounts.rsvps[activeStatus]}</span> guests/RSVPs (<span className="tabular-nums font-medium text-ink">{filteredCounts.people[activeStatus]}</span> people by party size) of <span className="tabular-nums font-medium text-ink">{counts.rsvps.all}</span> reconciled uploaded guests.</>
             }
           </p>
         </div>
@@ -306,16 +308,16 @@ function GuestsPage() {
               >
                 {STATUS_LABEL[t]}
                 <span className={`tabular-nums text-xs ${active ? "text-cream/80" : "text-muted-foreground"}`}>
-                  {counts.people[t]}
+                  {counts.rsvps[t]}
                 </span>
                 <span className={`tabular-nums text-[10px] ${active ? "text-cream/60" : "text-muted-foreground/70"}`}>
-                  ({counts.rsvps[t]})
+                  ({counts.people[t]})
                 </span>
               </Link>
             );
           })}
         </div>
-        <p className="text-[11px] text-muted-foreground mt-2">Big number = <strong>people</strong> (party-size totals). (small) = RSVP guest count.</p>
+        <p className="text-[11px] text-muted-foreground mt-2">Big number = <strong>guests/RSVPs</strong>. (small) = people by party size.</p>
       </Card>
 
       <div className="flex flex-wrap items-center gap-2">
