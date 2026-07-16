@@ -13,8 +13,13 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import africanMeal1 from "@/assets/african-meal-1.jpg.asset.json";
 import africanMeal2 from "@/assets/african-meal-2.jpg.asset.json";
 import africanMeal3 from "@/assets/african-meal-3.jpg.asset.json";
+import indonesianMeal1 from "@/assets/indonesian-meal-1.jpg.asset.json";
+import indonesianMeal2 from "@/assets/indonesian-meal-2.jpg.asset.json";
+import indonesianMeal3 from "@/assets/indonesian-meal-3.jpg.asset.json";
 
 const africanPhotos = [africanMeal1.url, africanMeal2.url, africanMeal3.url];
+const indonesianPhotos = [indonesianMeal1.url, indonesianMeal2.url, indonesianMeal3.url];
+
 
 type CuisineSelection = { cuisine: string; qty: number };
 type MyRsvpData = {
@@ -128,7 +133,7 @@ export function MyRsvpContent() {
     const cuisines: { key: string; label: string; photos?: string[] }[] = [
       { key: "Myanmar", label: "Myanmar/Burmese" },
       { key: "African", label: "African", photos: africanPhotos },
-      { key: "Indonesian", label: "Indonesian" },
+      { key: "Indonesian", label: "Indonesian", photos: indonesianPhotos },
     ];
     const preorderTotal = Object.values(cuisineCounts).reduce(
       (sum, qty) => sum + (Number(qty) || 0),
