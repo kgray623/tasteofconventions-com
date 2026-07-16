@@ -9,6 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Users, Check, X, UtensilsCrossed, Minus, Plus } from "lucide-react";
 import { withTimeout } from "@/lib/async-safety";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import africanMeal1 from "@/assets/african-meal-1.jpg.asset.json";
+import africanMeal2 from "@/assets/african-meal-2.jpg.asset.json";
+import africanMeal3 from "@/assets/african-meal-3.jpg.asset.json";
+
+const africanPhotos = [africanMeal1.url, africanMeal2.url, africanMeal3.url];
 
 type CuisineSelection = { cuisine: string; qty: number };
 type MyRsvpData = {
@@ -54,6 +60,7 @@ export function MyRsvpContent() {
   const [data, setData] = useState<MyRsvpData | null>(null);
   const [cuisineCounts, setCuisineCounts] = useState<Record<string, number>>({});
   const [savingMeals, setSavingMeals] = useState(false);
+  const [lightbox, setLightbox] = useState<string | null>(null);
 
   useEffect(() => {
     if (loading) return;
@@ -118,9 +125,9 @@ export function MyRsvpContent() {
     )
       ? order.items
       : [];
-    const cuisines = [
+    const cuisines: { key: string; label: string; photos?: string[] }[] = [
       { key: "Myanmar", label: "Myanmar/Burmese" },
-      { key: "African", label: "African" },
+      { key: "African", label: "African", photos: africanPhotos },
       { key: "Indonesian", label: "Indonesian" },
     ];
     const preorderTotal = Object.values(cuisineCounts).reduce(
@@ -298,6 +305,26 @@ export function MyRsvpContent() {
                         </button>
                       </div>
                     </div>
+                    {cuisine.photos && cuisine.photos.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2">
+                        {cuisine.photos.map((src, i) => (
+                          <button
+                            key={src}
+                            type="button"
+                            onClick={() => setLightbox(src)}
+                            className="relative aspect-square overflow-hidden rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-terracotta"
+                            aria-label={`View ${cuisine.label} meal photo ${i + 1}`}
+                          >
+                            <img
+                              src={src}
+                              alt={`${cuisine.label} cultural meal — example dish ${i + 1}`}
+                              loading="lazy"
+                              className="absolute inset-0 h-full w-full object-cover"
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    )}
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-sm text-muted-foreground">
                         How many meals do you want?
@@ -389,6 +416,14 @@ export function MyRsvpContent() {
             </Button>
           </Link>
         </Card>
+        <Dialog open={lightbox !== null} onOpenChange={(o) => !o && setLightbox(null)}>
+          <DialogContent className="max-w-2xl p-2 bg-ink border-ink">
+            <DialogTitle className="sr-only">Cultural meal photo</DialogTitle>
+            {lightbox && (
+              <img src={lightbox} alt="Cultural meal" className="w-full h-auto rounded-md" />
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
