@@ -70,7 +70,7 @@ function AiAccessPage() {
         </header>
 
         <div className="space-y-3">
-          {accounts.map((acc) => (
+          {accounts.map((acc: { role: string; displayName: string; phone: string; landing: string }) => (
             <div
               key={acc.role}
               className="bg-card border border-border rounded-xl p-5 shadow-elegant space-y-3"
