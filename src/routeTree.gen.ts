@@ -19,6 +19,7 @@ import { Route as MyRsvpRouteImport } from './routes/my-rsvp'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AiAccessRouteImport } from './routes/ai-access'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RsvpIndexRouteImport } from './routes/rsvp.index'
@@ -106,6 +107,11 @@ const LoginRoute = LoginRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AiAccessRoute = AiAccessRouteImport.update({
+  id: '/ai-access',
+  path: '/ai-access',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -322,6 +328,7 @@ const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/ai-access': typeof AiAccessRoute
   '/auth': typeof AuthRoute
   '/index': typeof Char91indexChar93Route
   '/login': typeof LoginRoute
@@ -371,6 +378,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ai-access': typeof AiAccessRoute
   '/auth': typeof AuthRoute
   '/index': typeof Char91indexChar93Route
   '/login': typeof LoginRoute
@@ -421,6 +429,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/ai-access': typeof AiAccessRoute
   '/auth': typeof AuthRoute
   '/index': typeof Char91indexChar93Route
   '/login': typeof LoginRoute
@@ -472,6 +481,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/ai-access'
     | '/auth'
     | '/index'
     | '/login'
@@ -521,6 +531,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/ai-access'
     | '/auth'
     | '/index'
     | '/login'
@@ -570,6 +581,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/ai-access'
     | '/auth'
     | '/index'
     | '/login'
@@ -621,6 +633,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AiAccessRoute: typeof AiAccessRoute
   AuthRoute: typeof AuthRoute
   Char91indexChar93Route: typeof Char91indexChar93Route
   LoginRoute: typeof LoginRoute
@@ -717,6 +730,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ai-access': {
+      id: '/ai-access'
+      path: '/ai-access'
+      fullPath: '/ai-access'
+      preLoaderRoute: typeof AiAccessRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -1057,6 +1077,7 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AiAccessRoute: AiAccessRoute,
   AuthRoute: AuthRoute,
   Char91indexChar93Route: Char91indexChar93Route,
   LoginRoute: LoginRoute,
