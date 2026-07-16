@@ -1,20 +1,23 @@
-## Add sort control to the Pending guests list
+**Plan**
 
-The Pending group on the committee workspace already has sort logic wired to a `?pendingSort=` URL param (values: `alpha`, `newest`, `oldest`), but there is no visible control — so it always ends up alphabetical. Add a small sort selector directly on the Pending group header.
+1. **Reassign the guests shown in your screenshots to Tina Santana**
+   - Use Tina Santana’s existing inviter record.
+   - Update the matching pending invitation rows so their `inviter_id` is Tina Santana’s, not yours.
+   - Do not delete guests, change names, change phones, change RSVP status, or change sent dates.
 
-### Change (frontend only, `src/components/committee-workspace.tsx`)
+2. **Include the screenshot-visible Tina guest names**
+   - Christian Toscano, Patty Hererra, Jenni Aguilar, Odelia Olvera, Nancy Castillo, Kammie Kudrna, Janeth Nevarete, Kristina Regnier, Brenda Perez, Tonya Richardson, Ana Coronado, Tiffany Barbosa, Teresa Paiz, Veronica Del Hoyo, Jenny Sicard, Carol Torres, Lupita Madrid, Maria DeAnda.
+   - The database check shows most of these are already tagged to Tina Santana; I’ll correct any that still are not.
+   - I will also look for close spelling matches from the screenshots, such as Alitta Pitmam and Alma Hauz, so they do not stay incorrectly visible under you if they belong to Tina.
 
-1. Add a compact Select above (or inside the header of) the "Pending" `MyGuestsGroup` with three options:
-   - **A → Z (name)** — `alpha`
-   - **Newest uploaded first** — `newest`
-   - **Oldest uploaded first** — `oldest`
-2. Selecting an option calls `navigate({ search: (prev) => ({ ...prev, pendingSort: value }) })` so the choice sticks in the URL and the existing `activePendingSort` / `byPendingSort` logic picks it up. Default remains `alpha`.
-3. Only render the control when the Pending group has more than one guest, and only for the Pending group (RSVP in person, RSVP by Zoom, Declined are untouched).
+3. **Verify on the exact committee guest-list route**
+   - Sign in/view the committee workspace as Tina’s/your applicable user role where possible.
+   - Confirm those guests are no longer in your pending guest list.
+   - Confirm they are visible under Tina Santana for authorized staff/admin views.
+   - Read back the database ownership after the update before saying it is corrected.
 
-### Verification
+**Technical details**
 
-- Load `/` as a committee member on mobile viewport (matches the screenshot). Confirm the Pending header shows the sort selector.
-- Switch to Newest / Oldest and confirm the Pending list re-orders by upload date (`created_at`), and A → Z re-orders alphabetically.
-- Confirm no other groups, counts, or data change.
-
-Timestamp: 2026-07-15 23:15 UTC.
+- This is a data correction, not a schema change.
+- I will use the backend data-update tool/approved data path, not a migration.
+- I will preserve all submitted guest information and only change ownership/tagging.
