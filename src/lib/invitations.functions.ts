@@ -126,34 +126,48 @@ export const getMyInvitation = createServerFn({ method: "GET" })
     return { invitation: inv, rsvp, order, preorder };
   });
 
+const BUILDING_IN_PERSON_CAPACITY = 550;
+
 // Determine if a "yes" RSVP should be placed on the waiting list because
-// the inviter's quota is already full. Counts existing "yes" seats for
-// every invitation tied to the same inviter (host_id) and compares to quota.
-async function shouldWaitlist(invitationId: string, partySize: number): Promise<boolean> {
-  const { data: inv } = await supabaseAdmin
+// the building's in-person attendance cap is full. Inviter/member quotas do
+// not create a waitlist; they are only committee allocation/admin numbers.
+async function shouldWaitlist(invitationId: string, partySize: number, attendanceMode: string): Promise<boolean> {
+  if (attendanceMode === "zoom") return false;
+
+  const { data: inv, error: invitationError } = await supabaseAdmin
     .from("invitations")
-    .select("host_id")
+    .select("event_id")
     .eq("id", invitationId)
     .maybeSingle();
-  const hostId = (inv as any)?.host_id;
-  if (!hostId) return false;
-  const { data: inviter } = await supabaseAdmin
-    .from("inviters")
-    .select("quota")
-    .eq("host_id", hostId)
-    .maybeSingle();
-  const quota = (inviter as any)?.quota;
-  if (!quota || quota <= 0) return false;
-  const { data: invs } = await supabaseAdmin.from("invitations").select("id").eq("host_id", hostId);
-  const otherIds = ((invs as any[]) ?? []).map((r) => r.id).filter((id) => id !== invitationId);
-  if (otherIds.length === 0) return partySize > quota;
-  const { data: yesRsvps } = await supabaseAdmin
+  if (invitationError) throw publicDbError(invitationError);
+
+  const eventId = (inv as { event_id?: string | null } | null)?.event_id;
+  if (!eventId) return false;
+
+  const { data: invitations, error: invitationsError } = await supabaseAdmin
+    .from("invitations")
+    .select("id")
+    .eq("event_id", eventId);
+  if (invitationsError) throw publicDbError(invitationsError);
+
+  const otherInvitationIds = ((invitations ?? []) as Array<{ id: string }>)
+    .map((row) => row.id)
+    .filter((id) => id !== invitationId);
+
+  if (otherInvitationIds.length === 0) return partySize > BUILDING_IN_PERSON_CAPACITY;
+
+  const { data: yesRsvps, error: rsvpsError } = await supabaseAdmin
     .from("rsvps")
-    .select("party_size,status")
-    .in("invitation_id", otherIds)
+    .select("party_size,attendance_mode")
+    .in("invitation_id", otherInvitationIds)
     .eq("status", "yes");
-  const used = ((yesRsvps as any[]) ?? []).reduce((s, r) => s + (r.party_size ?? 1), 0);
-  return used + partySize > quota;
+  if (rsvpsError) throw publicDbError(rsvpsError);
+
+  const confirmedInPerson = ((yesRsvps ?? []) as Array<{ party_size?: number | null; attendance_mode?: string | null }>)
+    .filter((row) => row.attendance_mode !== "zoom")
+    .reduce((sum, row) => sum + (row.party_size ?? 1), 0);
+
+  return confirmedInPerson + partySize > BUILDING_IN_PERSON_CAPACITY;
 }
 
 function rsvpTokenCandidates(token: string) {
@@ -232,7 +246,7 @@ export const submitRsvp = createServerFn({ method: "POST" })
     const orderingFood = mode === "in_person" ? (data.ordering_food ?? null) : null;
     let finalStatus: "yes" | "no" | "maybe" | "waitlist" = data.status;
     let waitlisted = false;
-    if (data.status === "yes" && (await shouldWaitlist(inv.id, effectivePartySize))) {
+    if (data.status === "yes" && (await shouldWaitlist(inv.id, effectivePartySize, mode))) {
       finalStatus = "waitlist";
       waitlisted = true;
     }
@@ -587,7 +601,7 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
     const orderingFood = mode === "in_person" ? (data.ordering_food ?? null) : null;
     let finalStatus: "yes" | "no" | "waitlist" = data.status;
     let waitlisted = false;
-    if (data.status === "yes" && (await shouldWaitlist(invitationId, effectivePartySize))) {
+    if (data.status === "yes" && (await shouldWaitlist(invitationId, effectivePartySize, mode))) {
       finalStatus = "waitlist";
       waitlisted = true;
     }
