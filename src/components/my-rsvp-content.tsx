@@ -305,6 +305,26 @@ export function MyRsvpContent() {
                         </button>
                       </div>
                     </div>
+                    {cuisine.photos && cuisine.photos.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2">
+                        {cuisine.photos.map((src, i) => (
+                          <button
+                            key={src}
+                            type="button"
+                            onClick={() => setLightbox(src)}
+                            className="relative aspect-square overflow-hidden rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-terracotta"
+                            aria-label={`View ${cuisine.label} meal photo ${i + 1}`}
+                          >
+                            <img
+                              src={src}
+                              alt={`${cuisine.label} cultural meal — example dish ${i + 1}`}
+                              loading="lazy"
+                              className="absolute inset-0 h-full w-full object-cover"
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    )}
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-sm text-muted-foreground">
                         How many meals do you want?
