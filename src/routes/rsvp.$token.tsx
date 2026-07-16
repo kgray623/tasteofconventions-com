@@ -247,9 +247,9 @@ function RsvpPage() {
   if (!data?.invitation) return <InvitationPage />;
   const ev = data.invitation.events;
   const cuisines = [
-    { key: "Myanmar", label: "Myanmar/Burmese" },
-    { key: "African", label: "African" },
-    { key: "Indonesian", label: "Indonesian" },
+    { key: "Myanmar", label: "Myanmar/Burmese", note: "Photos coming next week" },
+    { key: "African", label: "African", photos: africanPhotos },
+    { key: "Indonesian", label: "Indonesian", photos: indonesianPhotos },
   ];
   const preorderTotal = Object.values(cuisineCounts).reduce(
     (sum, qty) => sum + (Number(qty) || 0),
