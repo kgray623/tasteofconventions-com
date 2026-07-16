@@ -107,7 +107,12 @@ function AdminLayout() {
   }, [loading, isAdmin, isTeam, path, navigate, previewCommittee]);
 
   if (loading) {
-    return <div className="mx-auto max-w-6xl px-6 py-10 text-muted-foreground">Loading…</div>;
+    return (
+      <div className="mx-auto max-w-6xl px-6 py-6 space-y-4">
+        <GuestSearchBar />
+        <div className="py-4 text-muted-foreground">Loading…</div>
+      </div>
+    );
   }
 
   if (!isTeam) {
