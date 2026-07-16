@@ -689,6 +689,13 @@ function RsvpPage() {
           </p>
         </Card>
       </div>
+      <Dialog open={!!lightbox} onOpenChange={(o) => !o && setLightbox(null)}>
+        <DialogContent className="max-w-2xl bg-ink border-ink p-2">
+          <DialogTitle className="sr-only">Meal photo</DialogTitle>
+          {lightbox && <img src={lightbox} alt="Meal" className="w-full h-auto rounded" />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
