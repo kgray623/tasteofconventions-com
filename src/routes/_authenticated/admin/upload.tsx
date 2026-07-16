@@ -490,7 +490,7 @@ function UploadPage() {
   }, [user?.id]);
 
   const uploadInviterHostId = activeInviters.find((row) => row.id === uploadInviterId)?.host_id ?? null;
-  const uploadOwnerHostId = uploadInviterHostId || user?.id;
+  const uploadOwnerHostId = uploadInviterHostId || user?.id || "";
 
   const duplicateGroups = useMemo(() => {
     const idToGroup = buildDuplicateGroupIds(savedGuests.map((g) => ({
