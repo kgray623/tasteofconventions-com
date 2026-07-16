@@ -1,36 +1,37 @@
-## Full dataset export (XLSX)
+I checked the database read-only before proposing changes:
 
-Generate a single Excel workbook with every relevant record from the live database so it can be uploaded to another AI. Data-read only — no app code changes.
+- The app is showing **31** because the current UI's big status count is **people / party-size total**.
+- There are **28 declined RSVP rows** in the database right now.
+- The declined party-size sum is **31**.
+- Robin/Robn Droz is present as two separate invitation records:
+  - `Robin Droz` / `402740672` / party of 2
+  - `Robn Droz` / `(402) 740-6722` / party of 1
+- Those are not being grouped because one stored phone has **9 digits** and the other has **10 digits**. This is why the current duplicate grouping misses it.
 
-**Timestamp:** 2026-07-16 UTC
+Plan:
 
-### Workbook: `taste-of-conventions_full-dataset_2026-07-16.xlsx`
+1. **Fix the admin guest list counts**
+   - Change the status tabs/header so Declined uses the RSVP/guest-record count as the primary displayed number, not party-size people total.
+   - Keep party-size totals visible only where they are explicitly labeled as people.
+   - This will prevent “Declined 31” when the expected admin reconciliation count is the declined guest/RSVP count.
 
-One sheet per table/view, no filtering, no column omissions (except password/token secrets that would be useless outside the app — see note):
+2. **Strengthen duplicate grouping for phone-number typos**
+   - Update the duplicate-group logic to normalize phones and also catch likely missing-digit/extra-digit variants when the name is a close match.
+   - Specifically, `402740672` and `4027406722` should be treated as the same likely duplicate because the shorter phone is contained in the longer one and the names are nearly identical.
 
-1. **Guests (Invitations)** — id, guest_name, guest_phone, is_committee, invite_sent_at, inviter_id, host_id, event_id, rsvp_token, created_at
-2. **RSVPs** — invitation_id, status (yes/no/maybe/waitlist/pending), party_size, attendance_mode (in-person/zoom), ordering_food, responded_at
-3. **Committee / Subcommittee (Inviters)** — id, name, phone, host_id, quota, requested_quota, active, created_at
-4. **Team members (user_roles + profiles + auth phone)** — user_id, display_name, phone, role (admin/team/host)
-5. **Team invites** — name, phone, role, accepted_at, created_at
-6. **Cuisine pre-orders (meals)** — id, invitation_id, name, phone, selections (expanded: one row per cuisine × qty), updated_at
-7. **Meals summary** — per guest: name, phone, Myanmar qty, African qty, Indonesian qty, Other qty, total
-8. **Reconciliation roll-up** — one row per invitation joining guest + RSVP + meal totals + inviter name (same shape as the admin Reconciliation export)
-9. **Entertainment submissions** — name, phone, act description, media info, created_at
-10. **Donations summary** — all rows
-11. **Events** — all rows
-12. **Restaurants / Menu items** — for cuisine reference
-13. **Categories / Category assignments** — volunteer group structure
+3. **Collapse duplicate-looking guest rows in admin display/export**
+   - For duplicate groups, show one canonical row in the admin guests list and CSV export.
+   - Preserve the strongest RSVP status and safest party-size handling so data is not lost.
+   - Keep submitted information retained in the database; this is display/export reconciliation, not deletion.
 
-### Method
+4. **Regenerate the full Excel dataset**
+   - Rebuild the spreadsheet with corrected reconciliation logic.
+   - Add a duplicate-review sheet showing grouped duplicate candidates, including the Robin/Robn Droz pair, so nothing is hidden.
+   - Validate the declined counts from the rebuilt workbook against database queries before providing it.
 
-- Query the database directly via psql (read-only) for each table.
-- Build the workbook with openpyxl following the xlsx skill (frozen header row, autosize columns, bold headers).
-- QA: open the file, verify row counts match `SELECT count(*)` per table, spot-check 3 guests end-to-end (guest → RSVP → meals).
-- Save to `/mnt/documents/` and share via `<presentation-artifact>`.
+5. **Verify end-to-end before saying it is corrected**
+   - Check the admin guests route on the same mobile-sized viewport shown in your screenshots.
+   - Confirm the Declined tab/header no longer presents the misleading 31 as the guest count.
+   - Confirm Robin/Robn Droz no longer appears as two ordinary declined rows in the reconciled admin list/export, while still appearing in duplicate review.
 
-### Notes
-
-- Phone numbers included in full (needed for the credential rule: username = last name, password = phone number).
-- Auth password hashes, RSVP tokens beyond what's already in invitations, and internal Supabase system columns are excluded — they are not useful to an external AI and are sensitive.
-- No email columns will be included for guests/submissions (per project rule: phone/SMS only).
+Timestamp: 2026-07-16 UTC
