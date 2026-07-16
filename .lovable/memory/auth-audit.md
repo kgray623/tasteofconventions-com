@@ -7,4 +7,4 @@ Login credentials are explicit: username = last name; password = phone number. B
 
 Audit log table: `public.audit_log` (admin-only SELECT via has_role). Auto-populated by trigger `audit_row_change` on: rsvps, team_messages, category_messages, invitations, user_roles, category_assignments, inviters, team_invites, guest_messages, cuisine_preorders, entertainment_submissions. Trigger captures auth.uid(), user phone/name, action (INSERT/UPDATE/DELETE + table), full old/new row in metadata, plus IP/UA from PostgREST request headers when available. Admin view at `/admin/audit-log`.
 
-Do NOT describe login as passwordless. Do NOT remove the name field from /login or weaken the audit triggers — user requirement.
+Never say there is no password: the password is the phone number. Do NOT remove the name field from /login or weaken the audit triggers — user requirement.
