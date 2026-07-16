@@ -1,44 +1,68 @@
-## Goal
-Ship `taste-of-conventions-replication-guide_v3.pdf` — a single, complete replication guide that opens with a working AI Access section, followed by the full technical brief updated with everything an agent needs to sign in, navigate each dashboard, and rebuild the project.
+# Restore the Purpose Description + Full Link Map in the Replication PDF
 
-## Contents (in order)
+Produce `taste-of-conventions-replication-guide_v4.pdf` in `/mnt/documents/`. Keep every existing section from v3, and add back the detailed platform-purpose description you dictated plus a complete, clickable link map of both the front-end and the back-office so any AI can open each page and see what to replicate.
 
-1. **AI Access Portal (page 1)**
-   - Portal URL, one-click sign-in explanation
-   - Test-account table (Admin / Committee / Guest — phone, last name, landing route)
-   - Manual `/login` fallback (phone + last name only, no password/OTP)
-   - "Test accounts — do not share publicly" warning
+Timestamp: 2026-07-16 03:55 UTC
 
-2. **Live URLs & role dashboards**
-   - Production, preview, custom domain
-   - Admin dashboard route map (/admin + every subroute: guests, inviters, categories, team, audit-log, recently-deleted, donations, preorders, restaurants, upload, committee-message, chat, event, invitation, backups, subcommittee, my-rsvp, my-volunteer-chats)
-   - Committee view of /admin, Guest /my-rsvp, public /, /rsvp, /restaurants, /preorder, /share
-   - Step-by-step "what each role does after sign-in"
+## What was missing (and is being restored)
 
-3. **Project identity & event facts** (brand, date Aug 30 2026, venue, phone-only SMS rule, no-email rule)
+The "purpose of the platform" description you dictated. It gets its own prominent section near the front of the PDF (right after the AI Access Portal), verbatim in intent:
 
-4. **Tech stack** (TanStack Start v1, React 19, Vite 7, Tailwind v4, Lovable Cloud/Supabase, createServerFn, no Edge Functions for app logic)
+- Purpose: fill a 550-seat event center for "A Taste of Special Conventions" on Sunday, Aug 30, 2026.
+- Tracked numbers: guests invited, RSVPs received, total RSVPs per inviter, meal selections per guest, in-person attendance in the building.
+- Three restaurant-catered meal options per guest (tracked for catering).
+- Attendance modes: in-person OR Zoom. Zoom has no cap — not a concern.
+- Waitlist: only activates if in-person hits 550. Currently 400+ seats remain, so waitlist is inactive.
+- Guest experience must be seamless: choose in-person vs Zoom, choose a restaurant-catered meal or none.
+- Admin invites committee members; committee members invite guests by SMS from their own phones.
+- RSVPs are first-come-first-served, linked to the inviter chosen by the guest.
+- Login is phone-only (mobile + web). No OTP. No password field in the UI.
+- No guest email is ever collected.
+- Three access tiers: Admin, Committee, Guest.
 
-5. **Repo layout** (routes, components, hooks, lib, integrations)
+## New "Link Map" section — every URL, clickable
 
-6. **Data model & RLS** (tables, key relationships, GRANT pattern, has_role, user_roles enum)
+Two tables of live links (all as clickable hyperlinks in the PDF) so the AI can open each and see exactly what to replicate.
 
-7. **Auth model** (phone-only sign-in via signInWithPhoneOnly, ensure_committee_team_role, role routing)
+**Front-end (public + guest):**
+- `/` home
+- `/rsvp` guest RSVP flow
+- `/restaurants` meal browsing
+- `/preorder` meal preorder
+- `/share` inviter share page
+- `/login` phone-only login
+- `/ai-access` test-account portal
+- `/my-rsvp` guest dashboard
 
-8. **Server functions inventory** (auth-phone, invitations, rsvp-totals, guest-search, entertainment-*, admin-audit, team, ai-access, email/*)
+**Back-office (admin + committee):**
+- `/admin` dashboard
+- `/admin/guests`
+- `/admin/inviters`
+- `/admin/categories`
+- `/admin/team`
+- `/admin/audit-log`
+- `/admin/donations`
+- `/admin/preorders`
+- `/admin/restaurants`
+- `/admin/upload`
+- `/admin/chat`
+- `/admin/event`
+- `/admin/invitation`
+- `/admin/backups`
+- `/admin/subcommittee`
+- `/admin/my-rsvp`
+- `/admin/my-volunteer-chats`
 
-9. **Email infra** (notify.cellibratehealth.com sender, templates registry, queue processor, suppression, webhook)
+Each link is prefixed with the preview host `https://id-preview--e8411fba-4f86-4ec1-8aae-cc2299e2724a.lovable.app` and the published host `https://tasteofconventions.com` so the AI can hit either environment. AI-access test-account credentials (already on page 1) let it actually load the admin/committee/guest views.
 
-10. **Critical conventions & out-of-scope** (no 7-day expiry, no password field, no email collection, no Edge Functions, waitlist only at 550 in-person cap)
+## Everything from v3 stays
 
-11. **Rebuild checklist** (migrations first, seed inviters/categories/invitation_content, verify on 384×672 viewport)
+AI Access Portal, URLs & role dashboards, project identity, tech stack, repo layout, data model + RLS, auth model, server-functions inventory, email infra, critical conventions, rebuild checklist — unchanged.
 
-## Process
-- Generate with reportlab (Platypus, Letter, DejaVu Sans registered for any non-ASCII).
-- Convert every page to JPEG (`pdftoppm -r 100`) and inspect all pages for clipping, overflow, blank pages, table misalignment, broken links before delivering.
-- Fix and re-render until a full pass shows no issues; report QA findings in the reply.
-- Write to `/mnt/documents/taste-of-conventions-replication-guide_v3.pdf` and deliver via `<presentation-artifact>`.
+## Technical details
 
-No app code changes.
-
-Timestamp: 2026-07-16 02:48 UTC
+- Build with Python `reportlab` (Platypus, Letter, DejaVu Sans font).
+- Links rendered with `<link href="...">...</link>` inline markup so they're clickable in the PDF.
+- QA: `pdftoppm -r 100` every page → view each JPEG → fix any clipping/overflow/broken link → re-render until clean.
+- Output: `/mnt/documents/taste-of-conventions-replication-guide_v4.pdf`, then delivered via `<presentation-artifact>`.
+- No app code changes.
