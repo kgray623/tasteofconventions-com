@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build taste-of-conventions-replication-guide_v4.pdf"""
+"""Build taste-of-conventions-replication-guide_v5.pdf"""
 import subprocess
 from reportlab.lib.pagesizes import LETTER
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -55,7 +55,7 @@ story = []
 
 # Title
 story.append(P("Taste of Conventions", ParagraphStyle("T", parent=H1, fontSize=20, alignment=1)))
-story.append(P("Full Replication Guide — v4 (2026-07-16 UTC)",
+story.append(P("Full Replication Guide — v5 (2026-07-16 UTC)",
                ParagraphStyle("Sub", parent=BODY, alignment=1, fontSize=10, textColor=colors.grey)))
 story.append(Spacer(1, 8))
 story.append(P("Single-source brief for any AI agent (Claude Code, Cursor, ChatGPT, Lovable) to sign in, "
@@ -89,10 +89,9 @@ story.append(tbl)
 story.append(Spacer(1, 6))
 story.append(P("Manual sign-in fallback", H2))
 story.append(P(f"Go to {link(PROD + '/login')} and enter the last name + phone above. "
-               "Login is phone-only — no password, no OTP. The server function <b>signInWithPhoneOnly</b> "
-               "looks up the auth user by phone (rpc <b>get_auth_user_id_by_phone</b>), rotates the "
-               "password to a random value, signs in server-side, and returns tokens for "
-               "<b>supabase.auth.setSession</b>."))
+               "Credential rule: <b>username = last name</b>; <b>password = phone number</b>. "
+               "The server function <b>signInWithPhoneOnly</b> validates both fields against the allowed "
+               "guest/team records, signs in server-side, and returns tokens for <b>supabase.auth.setSession</b>."))
 story.append(P("Warning: Test accounts — do not share the portal publicly. Anyone with the numbers above "
                "can sign in as that role.", SMALL))
 
@@ -120,8 +119,9 @@ story.append(P("<b>Invitations.</b> The admin invites committee members. Committ
                "guests <b>by SMS from their own phones</b> (the app prefills an <b>sms:</b> link — "
                "the platform never sends SMS itself; &quot;Mark as sent&quot; is a manual flag). "
                "RSVPs are <b>first-come, first-served</b> and are linked to the inviter the guest chose."))
-story.append(P("<b>Login.</b> Phone-only, on both mobile and web. No password field. No one-time code. "
-               "Identity is derived from the phone number against invitations / inviters / team_invites."))
+story.append(P("<b>Login.</b> On both mobile and web, the <b>username is the guest/team member's last name</b> "
+               "and the <b>password is their phone number</b>. Both values must match invitations / inviters / "
+               "team_invites records before access is granted."))
 story.append(P("<b>No guest email is ever collected.</b> Guest contact is SMS only, always."))
 story.append(P("<b>Three access tiers:</b> Admin, Committee, Guest. Each has a distinct dashboard "
                "(§3 Link Map)."))
@@ -149,7 +149,7 @@ story.append(Spacer(1, 8))
 
 front_routes = [
     ("/", "Invitation landing page (hero, event facts, RSVP CTA)"),
-    ("/login", "Phone + last-name sign-in (no password, no OTP)"),
+    ("/login", "Username = last name; password = phone number"),
     ("/ai-access", "AI sign-in portal (this doc's §1). noindex."),
     ("/rsvp", "RSVP intake index"),
     ("/my-rsvp", "Guest's own RSVP + preorder view (authenticated)"),
@@ -252,7 +252,7 @@ for line in [
     "Lovable Cloud backend (Supabase under the hood — never referenced by name to users).",
     "Server logic: <b>createServerFn</b> from @tanstack/react-start. NOT Supabase Edge Functions for app logic.",
     "Deploy target: Cloudflare Workers (edge) with nodejs_compat.",
-    "Auth: Supabase auth, phone-only sign-in path (custom server fn), no OTP.",
+    "Auth: Supabase auth with last-name username + phone-number password credential path (custom server fn).",
     "Email: templates in src/lib/email-templates/, sender notify.cellibratehealth.com.",
     "PWA: manifest + service worker (public/sw.js, src/pwa-register.ts).",
 ]:
@@ -328,23 +328,23 @@ story.append(P("Guest identity = <b>invitations.is_committee=false</b> AND no us
 # 9. Auth
 story.append(P("8. Auth Model", H1))
 for line in [
-    "Sign-in surface: <b>/login</b> — mobile phone + last name only.",
-    "Server fn: <b>signInWithPhoneOnly</b> (src/lib/auth-phone.functions.ts).",
+    "Sign-in surface: <b>/login</b> — <b>username = last name</b>; <b>password = phone number</b>.",
+    "Server fn: <b>signInWithPhoneOnly</b> (legacy function name) validates the last-name username and phone-number password.",
     "Phone lookup: rpc <b>get_auth_user_id_by_phone</b> / <b>get_auth_user_id_by_phone_digits</b>.",
-    "Phone must already exist in invitations / inviters / team_invites — otherwise sign-in refused.",
-    "Server rotates password to random value, signs in server-side, returns tokens.",
+    "Phone number must already exist in invitations / inviters / team_invites, and the last name must match — otherwise sign-in is refused.",
+    "Server signs in server-side after validating both credential fields, then returns tokens.",
     "Client calls <b>supabase.auth.setSession({access_token, refresh_token})</b>.",
     "Post-sign-in routing: <b>routeForUser(userId)</b> reads user_roles → /admin or /my-rsvp.",
     "Client middleware <b>attachSupabaseAuth</b> in src/start.ts attaches bearer to every serverFn call.",
     "Route gate: src/routes/_authenticated.tsx redirects unauthenticated users to /login.",
-    "Intentional tradeoffs — <b>DO NOT re-introduce</b>: password field on /login, OTP flow, 7-day RSVP expiry.",
+    "Intentional tradeoffs — <b>DO NOT re-introduce</b>: OTP flow or 7-day RSVP expiry. Keep credentials as last-name username + phone-number password.",
 ]:
     story.append(P("• " + line))
 
 # 10. Server Functions
 story.append(P("9. Server Functions Inventory", H1))
 sf = [
-    ("auth-phone.functions.ts", "signInWithPhoneOnly — phone+lastname login"),
+    ("auth-phone.functions.ts", "signInWithPhoneOnly — last-name username + phone-number password login"),
     ("ai-access.functions.ts", "signInAsAiRole, listAiAccessAccounts — /ai-access portal"),
     ("invitations.functions.ts", "CRUD for invitations + tokens"),
     ("rsvp-totals.functions.ts", "Rollups for admin + committee cards"),
@@ -403,8 +403,8 @@ for line in [
 story.append(P("Never / removed", H2))
 for line in [
     "7-day RSVP expiry window — removed intentionally, do not re-add.",
-    "Password field on /login — removed intentionally, do not re-add.",
-    "OTP / SMS-code login — not used. Phone-only lookup is the only path.",
+    "Do not call login passwordless. The password is the phone number; the username is the last name.",
+    "OTP / SMS-code login — not used. Last-name username + phone-number password is the only path.",
     "Supabase Edge Functions for app-internal logic.",
     "Cellibrate Health copy / dates in this project — different brand.",
     "Emails to guests — SMS only.",
@@ -433,10 +433,10 @@ story.append(P("End of guide — v4, generated 2026-07-16 UTC. Sign in via §1, 
                "against the live site to see what to replicate.",
                ParagraphStyle("End", parent=SMALL, alignment=1, textColor=colors.grey)))
 
-out = "/mnt/documents/taste-of-conventions-replication-guide_v4.pdf"
+out = "/mnt/documents/taste-of-conventions-replication-guide_v5.pdf"
 doc = SimpleDocTemplate(out, pagesize=LETTER,
                         leftMargin=0.7*inch, rightMargin=0.7*inch,
                         topMargin=0.7*inch, bottomMargin=0.7*inch,
-                        title="Taste of Conventions — Replication Guide v4")
+                        title="Taste of Conventions — Replication Guide v5")
 doc.build(story)
 print("wrote", out)
