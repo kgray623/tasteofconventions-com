@@ -43,6 +43,7 @@ type InvRow = {
   id: string;
   guest_name: string | null;
   guest_phone: string | null;
+  guest_phone_normalized?: string | null;
   is_committee: boolean | null;
   invite_sent_at: string | null;
 };
@@ -71,7 +72,7 @@ export const getAdminAudit = createServerFn({ method: "GET" })
     const [invRes, rsvpRes, preRes] = await Promise.all([
       supabaseAdmin
         .from("invitations")
-        .select("id,guest_name,guest_phone,is_committee,invite_sent_at"),
+        .select("id,guest_name,guest_phone,guest_phone_normalized,is_committee,invite_sent_at"),
       supabaseAdmin
         .from("rsvps")
         .select("invitation_id,status,party_size,attendance_mode,ordering_food"),
@@ -110,6 +111,7 @@ export const getAdminAudit = createServerFn({ method: "GET" })
       id: inv.id,
       guest_name: inv.guest_name,
       guest_phone: inv.guest_phone,
+      guest_phone_normalized: inv.guest_phone_normalized,
     })));
     const rollup = computeRsvpRollup(invs.map((inv) => {
       const rsvp = rsvpByInv.get(inv.id);
@@ -187,7 +189,7 @@ export const getReconciliationRows = createServerFn({ method: "GET" })
     const [invRes, rsvpRes, preRes, inviterRes] = await Promise.all([
       supabaseAdmin
         .from("invitations")
-        .select("id,guest_name,guest_phone,is_committee,invite_sent_at,created_at,rsvp_token,inviter_id")
+        .select("id,guest_name,guest_phone,guest_phone_normalized,is_committee,invite_sent_at,created_at,rsvp_token,inviter_id")
         .order("created_at", { ascending: true }),
       supabaseAdmin
         .from("rsvps")
@@ -215,7 +217,7 @@ export const getReconciliationRows = createServerFn({ method: "GET" })
       inviterNameById.set(inv.id, inv.name);
     }
 
-    const rows = ((invRes.data ?? []) as any[]).map((inv) => {
+    const rawRows = ((invRes.data ?? []) as any[]).map((inv) => {
       const r = rsvpByInv.get(inv.id);
       const p = preByInv.get(inv.id);
       const sels = parseSelections(p?.selections);
@@ -239,8 +241,34 @@ export const getReconciliationRows = createServerFn({ method: "GET" })
         preorder_meals: meals,
         inviter_id: (inv.inviter_id as string | null) ?? "",
         inviter_name: inv.inviter_id ? (inviterNameById.get(inv.inviter_id) ?? "") : "",
+        guest_phone_normalized: inv.guest_phone_normalized ?? "",
       };
     });
+
+    const groupIds = buildDuplicateGroupIds(rawRows.map((row) => ({
+      id: row.invitation_id,
+      guest_name: row.name,
+      guest_phone: row.phone,
+      guest_phone_normalized: row.guest_phone_normalized,
+    })));
+    const statusScore = (status: string | null | undefined) =>
+      status === "yes" ? 4 : status === "waitlist" ? 3 : status === "maybe" ? 2 : status === "no" ? 1 : 0;
+    const grouped = new Map<string, any>();
+    for (const row of rawRows) {
+      const groupId = groupIds.get(row.invitation_id) ?? row.invitation_id;
+      const current = grouped.get(groupId);
+      const rowParty = Number(row.party_size) || 1;
+      const currentParty = Number(current?.party_size) || 1;
+      if (
+        !current ||
+        statusScore(row.rsvp_status) > statusScore(current.rsvp_status) ||
+        (statusScore(row.rsvp_status) === statusScore(current.rsvp_status) && rowParty > currentParty)
+      ) {
+        grouped.set(groupId, { ...row, duplicate_group_id: groupId });
+      }
+    }
+
+    const rows = Array.from(grouped.values()).map(({ guest_phone_normalized, ...row }) => row);
 
     return { rows };
   });
