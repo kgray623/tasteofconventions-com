@@ -133,7 +133,7 @@ export function MyRsvpContent() {
     const cuisines: { key: string; label: string; photos?: string[] }[] = [
       { key: "Myanmar", label: "Myanmar/Burmese" },
       { key: "African", label: "African", photos: africanPhotos },
-      { key: "Indonesian", label: "Indonesian" },
+      { key: "Indonesian", label: "Indonesian", photos: indonesianPhotos },
     ];
     const preorderTotal = Object.values(cuisineCounts).reduce(
       (sum, qty) => sum + (Number(qty) || 0),
