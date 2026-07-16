@@ -1,44 +1,28 @@
-## Plan: correct RSVP waitlist/capacity behavior
+## Guest reassignment (2026-07-16 UTC)
 
-**UTC timestamp:** 2026-07-16 00:00 UTC
+Three invitations currently show under Kari Gray's "My Guests" but shouldn't. All three fixes are one-time data updates — no code changes.
 
-### What will change
-- Stop using a committee member/inviter quota to automatically move RSVP “yes” responses to `waitlist`.
-- Treat over-quota guests as normal RSVP records: `yes`, `no`, `maybe`, or pending/no response.
-- Only allow `waitlist` after the total in-person confirmed attendance reaches the building cap of **550 people**.
-- Remove guest-facing “waiting list because your inviter is full” messaging.
-- Update public invitation copy so it says in-person space is first-reserved up to 550, not waitlist per inviter quota.
+### What I found in the database
 
-### Database/data handling
-- Read current RSVP data before and after the change.
-- Existing database check found current attendance is far below the cap: **82 confirmed in-person people**.
-- Current RSVP rows include only `yes` and `no`; there are no current `waitlist` rows in the read-back I ran.
-- If any `waitlist` rows appear during implementation verification, convert them back to `yes` only if total confirmed in-person attendance is still below 550, so no submitted people are hidden or dropped.
+| Guest | Current host | Current inviter tag | Notes |
+|---|---|---|---|
+| Rosa Gutiérrez | Kari Gray | (none) | Betsaida Ruiz exists as both a committee member and an inviter. Abel is not a separate record — treated as her spouse. |
+| Jennifer Gray | Kari Gray | Tina Santana | Shelley & Pat Monahan exists as a committee member (profile) but has no inviter record. |
+| Margie Rice | Kari Gray | Tina Santana | Not linked to any other committee member. Nobody else has her on their list. |
 
-### Logic rule to implement
-```text
-If RSVP status is not "yes":
-  save exactly what the guest selected.
+### Changes I will make
 
-If RSVP status is "yes" and attendance is virtual/Zoom:
-  save as "yes"; virtual attendance does not count against the building cap.
+1. **Rosa Gutiérrez** → reassign host to **Betsaida Ruiz** and set inviter tag to Betsaida's inviter record. She'll disappear from Kari's list and appear under Betsaida's.
+2. **Jennifer Gray** → reassign host to **Shelley & Pat Monahan**. Clear the incorrect "Tina Santana" inviter tag (no inviter record exists for Shelley, so inviter stays blank). She'll appear under Shelley's list.
+3. **Margie Rice** → delete the invitation record. The system automatically archives deleted invitations to `deleted_rows_archive`, so the original submission is preserved for audit but no longer counts against Kari or anyone else. Her Pending RSVP row (if any) is also removed with the invitation. This is a reversible archive, not a permanent drop.
 
-If RSVP status is "yes" and attendance is in person:
-  count existing confirmed in-person people, excluding this invitation if it already has an RSVP.
-  if existing confirmed in-person people + this party size <= 550:
-    save as "yes"
-  else:
-    save as "waitlist"
-```
+### Verification steps I will run after the update
 
-### Files/surfaces to update
-- RSVP server function logic in `src/lib/invitations.functions.ts`.
-- Public RSVP page toast copy in `src/routes/rsvp.$token.tsx`.
-- Public invitation page copy in `src/components/invitation-page.tsx`.
-- Any status display that labels `waitlist` should remain available, but it should only be reachable after the 550-person cap.
+- Re-query `invitations` for all three guests and confirm the new `host_id` / `inviter_id` values.
+- Confirm Margie Rice is gone from `invitations` and present in `deleted_rows_archive`.
+- Open Kari's committee workspace on mobile viewport and confirm the three names no longer appear under "My Guests".
+- Confirm Rosa appears under Betsaida's list and Jennifer under Shelley's.
 
-### Verification before I call it complete
-- Submit/read-back behavior will be tested on the RSVP route.
-- Confirm in the database that a normal in-person `yes` RSVP below 550 saves as `yes`, not `waitlist`.
-- Confirm no existing guest submissions are dropped, hidden, or overwritten.
-- Confirm guest-facing text no longer says guests are waitlisted because an inviter quota is full.
+### If you'd rather NOT delete Margie
+
+Say "keep Margie" and I'll instead leave the invitation in place but strip the incorrect Tina Santana inviter tag, so she still shows on Kari's list but isn't miscounted anywhere else. `host_id` cannot be null in the schema, so keeping the record requires some owner — Kari is the only safe choice unless you name a different committee member.
