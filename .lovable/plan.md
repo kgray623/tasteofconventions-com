@@ -1,41 +1,34 @@
-Regenerate the migration guide as `lovable-migration-guide_v3.pdf` with the corrections below. v1 and v2 are left untouched.
+## Goal
+Give any AI agent working links + credentials to sign in as each of the three roles (admin, committee, guest) and reach their dashboards on the live site.
 
-## Corrections to apply
+## Dashboard URLs (already exist)
+- Admin: https://www.tasteofconventions.com/admin
+- Committee: https://www.tasteofconventions.com/dashboard (committee view)
+- Guest: https://www.tasteofconventions.com/dashboard (guest view)
+- Sign-in page (phone-only): https://www.tasteofconventions.com/login
 
-**Login (was wrong in v1 and v2 — fix definitively)**
-- There IS a password. The **password is the individual's mobile phone number**.
-- The **username is the last name** (as it appears on the invitation).
-- There is **no one-time password (OTP)**.
-- Works on mobile and desktop web.
-- Each login is tied to a phone number, and the phone number determines which of the three dashboards the user sees.
+All three dashboards are behind `_authenticated`, so an AI must sign in at `/login` first. Sign-in uses phone number only (per project rule) — the phone IS the credential; whoever holds the phone number can sign in.
 
-**Three login / access types (each tied to a phone number)**
-- **Admin** — sees the admin dashboard.
-- **Committee** — sees the committee dashboard (their own guest list, RSVPs, meal choices).
-- **Guest** — sees the guest dashboard (their own RSVP, attendance mode, meal choice).
+## What I'll build
 
-**Invitation hierarchy (rewrite this section)**
-1. Admin invites guests.
-2. Guests RSVP.
-3. Admin can promote any RSVP guest into a committee member.
-4. Once someone is a committee member, they can invite more guests (by SMS from their own phone).
-5. Those new guests can also opt to become committee members — the admin makes the connection.
+1. **Seed three AI test accounts** in a new migration:
+   - Admin AI — phone `+15550000001`, name "AI Admin"
+   - Committee AI — phone `+15550000002`, name "AI Committee"
+   - Guest AI — phone `+15550000003`, name "AI Guest"
 
-**Venue / tracking (keep the v2 callout, refine wording)**
-- 550-seat in-person cap; 400+ seats still open.
-- Track: uploaded/invited guests, RSVP confirmations, **party size per RSVP — one RSVP with 5 people counts as 5, not 1** (call this out explicitly).
-- Zoom attendance is unlimited.
-- Three cuisine / restaurant meal options, tracked per guest and per meal chosen.
-- Waitlist logic only triggers when in-person attendance reaches 550. Inviter quotas never trigger waitlist.
+   For each: create the `auth.users` row, add matching `invitations` row (with `is_committee=true` for the committee one), and insert the correct `user_roles` entry (`admin` for admin AI; guest/committee derived from invitations).
 
-**Day-one AI prompt in Step 5** — update the domain rules block to match:
-- Login = phone number (password) + last name (username); no OTP.
-- Hierarchy: admin → guest → RSVP → (admin promotes) → committee → invites more guests → ...
-- Party size counts as people, not as 1 RSVP.
-- Three roles: admin, committee, guest — dashboard chosen by the phone number's role.
+2. **AI quick-access page** at `/ai-access` (public, noindex):
+   - Lists the three role links with the seeded phone numbers.
+   - One-click "Sign in as {role}" buttons that call the existing `signInWithPhoneOnly` server fn with the seeded phone, then redirect to the correct dashboard.
+   - Clearly labeled "TEST ACCOUNTS — do not share publicly".
 
-## Deliverable
-- New file: `/mnt/documents/lovable-migration-guide_v3.pdf`.
-- Original `lovable-migration-guide.pdf` and `lovable-migration-guide_v2.pdf` left in place.
-- Rebuild with the PDF skill; render each page to an image and visually QA (no overflow, no clipped text, callouts still readable) before delivering.
-- Reply with a `<presentation-artifact>` tag for v3 and a short bullet list of what changed vs v2.
+3. **Document the URLs** in the reply so any AI can log in with just:
+   - URL: /ai-access (or /login + phone)
+   - Phone numbers above
+
+## Confirm before I build
+1. **OK to seed the three `+15550000xxx` phones as permanent test accounts?** (They'll be real rows in `invitations` / `auth.users` / `user_roles`.) If you prefer different phone numbers, tell me which.
+2. **Should `/ai-access` be publicly reachable** (anyone with the URL can one-click sign in as admin), or **gated behind a shared passcode** you set? Public = easiest for AI; passcode = safer.
+
+Timestamp: 2026-07-16 02:35 UTC
