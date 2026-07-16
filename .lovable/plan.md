@@ -1,18 +1,29 @@
-Add the three uploaded food photos to the African cuisine option in the RSVP pre-order flow.
+## Add Indonesian meal photos to RSVP
 
-**Where they'll appear**
-In the "Pre-order your cultural meal" card on the My RSVP page (`src/components/my-rsvp-content.tsx`), under the "African" choice — a small photo strip (3 thumbnails, tap to enlarge in a lightbox) shown below the label, only for the African cuisine row.
+Add the 3 uploaded Indonesian meal photos under the **Indonesian** cuisine row on `/my-rsvp`, using the same pattern already in place for African.
 
-**Assets**
-Upload the three JPGs (`20260628_180020.jpg`, `20260628_180027.jpg`, `20260628_180030.jpg`) via `lovable-assets` from `/mnt/user-uploads/` and store `.asset.json` pointers under `src/assets/`. No binaries added to the repo.
+### Steps
 
-**Code changes (UI only, no business logic)**
-- Import the three asset pointers in `src/components/my-rsvp-content.tsx`.
-- Extend the cuisines array so the African entry carries a `photos` array; render the strip only when photos exist.
-- Reuse existing shadcn `Dialog` for the enlarge-on-tap view; alt text: "African cultural meal — example dish".
+1. Upload the 3 photos as CDN assets (no binaries in repo):
+   - `/mnt/user-uploads/20260621_172750.jpg` → `src/assets/indonesian-meal-1.jpg.asset.json`
+   - `/mnt/user-uploads/20260621_183629.jpg` → `src/assets/indonesian-meal-2.jpg.asset.json`
+   - `/mnt/user-uploads/20260621_183635.jpg` → `src/assets/indonesian-meal-3.jpg.asset.json`
 
-**Out of scope**
-No DB changes, no changes to Myanmar/Indonesian rows, no changes to the invitation page (which is separate content). Meal-count logic and totals are unchanged.
+2. In `src/components/my-rsvp-content.tsx`:
+   - Import the 3 new `.asset.json` files
+   - Add an `indonesianPhotos` array to the `Indonesian` entry in `cuisines`
+   - Render a 3-column thumbnail grid under the Indonesian cuisine row (identical markup to the African grid), each tapping into the existing `lightbox` `Dialog`
 
-**Verification**
-Load `/my-rsvp` as an attending guest at mobile viewport (matching current 384px preview), confirm the three photos render under African, tap to enlarge works, and existing Yes/No + qty controls still function.
+3. No changes to Myanmar/Burmese row — instructions come next week.
+
+### Out of scope
+- Meal-count logic, totals, invitation page, DB — untouched.
+- No visual restyle of existing rows.
+
+### Verification
+- Load `/my-rsvp` as an attending guest at 384px width
+- Confirm 3 Indonesian thumbnails appear under Indonesian only
+- Tap each → lightbox opens with the full photo
+- African row unchanged
+
+Timestamp: 2026-07-16 UTC
