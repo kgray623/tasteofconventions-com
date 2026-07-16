@@ -269,46 +269,11 @@ function RsvpPage() {
           <ArrowLeft className="w-3.5 h-3.5" /> Back to invitation
         </Link>
 
-        <Card className="p-4 space-y-4 border-2 border-terracotta bg-card shadow-glow sm:p-7">
-          <div className="space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-terracotta">
-              Required before RSVP
-            </p>
-            <h2 className="font-display text-3xl text-ink">Your name and mobile number</h2>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="guest-name" className="text-base font-semibold text-ink">
-              Full name <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="guest-name"
-              value={guestName}
-              onChange={(e) => setGuestName(e.target.value)}
-              placeholder="Your full name"
-              className="h-14 border-2 border-ink bg-cream text-lg text-ink placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-terracotta"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="guest-phone" className="text-base font-semibold text-ink">
-              Mobile number <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="guest-phone"
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              value={guestPhone}
-              onChange={(e) => setGuestPhone(e.target.value)}
-              placeholder="(555) 123-4567"
-              className="h-14 border-2 border-ink bg-cream text-lg text-ink placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-terracotta"
-            />
-          </div>
-        </Card>
         <div className="text-center">
           <p className="text-xs uppercase tracking-[0.3em] text-terracotta">You're invited</p>
           <h1 className="font-display text-5xl mt-3 text-ink">{ev.title}</h1>
-          <p className="mt-3 text-lg text-muted-foreground">Hello, {data.invitation.guest_name}</p>
         </div>
+
 
         <Card className="p-7 space-y-3">
           {ev.description && <p className="text-muted-foreground">{ev.description}</p>}
