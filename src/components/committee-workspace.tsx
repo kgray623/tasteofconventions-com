@@ -967,6 +967,30 @@ export function CommitteeWorkspace() {
                     </CollapsibleContent>
                   </div>
                 </Collapsible>
+                {myPending.length > 1 && (
+                  <div className="flex items-center justify-end gap-2 px-1 pt-2">
+                    <span className="text-xs text-muted-foreground">Sort pending</span>
+                    <Select
+                      value={activePendingSort}
+                      onValueChange={(v) =>
+                        navigate({
+                          to: ".",
+                          search: (prev: Record<string, unknown>) => ({ ...prev, pendingSort: v }),
+                          replace: true,
+                        })
+                      }
+                    >
+                      <SelectTrigger className="h-8 w-[190px] text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="alpha">A → Z (name)</SelectItem>
+                        <SelectItem value="newest">Newest uploaded first</SelectItem>
+                        <SelectItem value="oldest">Oldest uploaded first</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <MyGuestsGroup
                   label="Pending"
                   tone="muted"
@@ -985,6 +1009,7 @@ export function CommitteeWorkspace() {
                   markingSentId={markingSentId}
                   toggleSent={toggleSent}
                 />
+
                 <MyGuestsGroup
                   label="Decline"
                   tone="rose"
