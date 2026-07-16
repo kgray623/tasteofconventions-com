@@ -1,46 +1,41 @@
-Regenerate `lovable-migration-guide.pdf` as a new version (`lovable-migration-guide_v2.pdf`) with a fully rewritten "What this app is" / overview section per your corrections. All tech-stack / migration steps stay as-is.
+Regenerate the migration guide as `lovable-migration-guide_v3.pdf` with the corrections below. v1 and v2 are left untouched.
 
-## Corrections to apply to the overview
+## Corrections to apply
 
-**What the app is**
-- SMS-based invitation and RSVP web app for "A Taste of Special Conventions" (Sunday, August 30, 2026).
-- Admin invites selected RSVP guests to become committee members. Committee members then invite guests by SMS from their own phones (the platform never sends texts itself; each inviter uses their own device via prefilled `sms:` links).
-- No guest email is ever collected. Phone/SMS only.
+**Login (was wrong in v1 and v2 — fix definitively)**
+- There IS a password. The **password is the individual's mobile phone number**.
+- The **username is the last name** (as it appears on the invitation).
+- There is **no one-time password (OTP)**.
+- Works on mobile and desktop web.
+- Each login is tied to a phone number, and the phone number determines which of the three dashboards the user sees.
 
-**Login**
-- Mobile phone + name (as it appears on the invitation). No password field, no one-time password.
-- Works on mobile and web.
+**Three login / access types (each tied to a phone number)**
+- **Admin** — sees the admin dashboard.
+- **Committee** — sees the committee dashboard (their own guest list, RSVPs, meal choices).
+- **Guest** — sees the guest dashboard (their own RSVP, attendance mode, meal choice).
 
-**Three access types**
-- Admin
-- Committee
-- Guest
+**Invitation hierarchy (rewrite this section)**
+1. Admin invites guests.
+2. Guests RSVP.
+3. Admin can promote any RSVP guest into a committee member.
+4. Once someone is a committee member, they can invite more guests (by SMS from their own phone).
+5. Those new guests can also opt to become committee members — the admin makes the connection.
 
-**RSVP + inviter model**
-- Each guest chooses (or is tied to) an inviter (committee member).
-- RSVPs are first come, first served, connected to the inviter chosen by the guest.
-- No per-inviter quota.
+**Venue / tracking (keep the v2 callout, refine wording)**
+- 550-seat in-person cap; 400+ seats still open.
+- Track: uploaded/invited guests, RSVP confirmations, **party size per RSVP — one RSVP with 5 people counts as 5, not 1** (call this out explicitly).
+- Zoom attendance is unlimited.
+- Three cuisine / restaurant meal options, tracked per guest and per meal chosen.
+- Waitlist logic only triggers when in-person attendance reaches 550. Inviter quotas never trigger waitlist.
 
-**Primary purpose — fill the venue (must be prominent)**
-- Event center capacity: **550 seats total**.
-- Currently 400+ seats still open; the whole point of the platform is to fill the venue.
-- The platform tracks:
-  - Number of guests invited
-  - Number of RSVPs received
-  - Total RSVP head-count per inviter (party sizes)
-  - In-person building attendance (counts against the 550 cap)
-  - Zoom attendance (unlimited — no cap concern)
-  - Meal pre-orders across three restaurant/cuisine options (catered), per guest
-- Waitlist logic exists but is not relevant yet — only triggers if in-person attendance reaches 550. Inviter quotas never trigger waitlist.
-
-**Guest experience goals**
-- Seamless: guest picks attendance mode (in person or Zoom) and optionally pre-orders a catered meal from one of the three cuisines.
-- Inviter can see their own guest list, RSVP status, and meal choices.
+**Day-one AI prompt in Step 5** — update the domain rules block to match:
+- Login = phone number (password) + last name (username); no OTP.
+- Hierarchy: admin → guest → RSVP → (admin promotes) → committee → invites more guests → ...
+- Party size counts as people, not as 1 RSVP.
+- Three roles: admin, committee, guest — dashboard chosen by the phone number's role.
 
 ## Deliverable
-- New file: `/mnt/documents/lovable-migration-guide_v2.pdf`
-- Original `lovable-migration-guide.pdf` left untouched.
-- Rebuild using the `pdf` skill; run visual QA (render each page to image, inspect for overflow / clipped text / layout issues) before delivery.
-- Reply with a `<presentation-artifact>` tag for the v2 PDF and a short note listing what changed vs v1.
-
-Confirm and I'll build v2.
+- New file: `/mnt/documents/lovable-migration-guide_v3.pdf`.
+- Original `lovable-migration-guide.pdf` and `lovable-migration-guide_v2.pdf` left in place.
+- Rebuild with the PDF skill; render each page to an image and visually QA (no overflow, no clipped text, callouts still readable) before delivering.
+- Reply with a `<presentation-artifact>` tag for v3 and a short bullet list of what changed vs v2.
