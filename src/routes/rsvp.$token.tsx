@@ -34,6 +34,17 @@ import {
 import { InvitationPage } from "@/components/invitation-page";
 import { withTimeout } from "@/lib/async-safety";
 import { clearDraftScope, useDraftState } from "@/hooks/use-draft-state";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import africanMeal1 from "@/assets/african-meal-1.jpg.asset.json";
+import africanMeal2 from "@/assets/african-meal-2.jpg.asset.json";
+import africanMeal3 from "@/assets/african-meal-3.jpg.asset.json";
+import indonesianMeal1 from "@/assets/indonesian-meal-1.jpg.asset.json";
+import indonesianMeal2 from "@/assets/indonesian-meal-2.jpg.asset.json";
+import indonesianMeal3 from "@/assets/indonesian-meal-3.jpg.asset.json";
+
+const africanPhotos = [africanMeal1.url, africanMeal2.url, africanMeal3.url];
+const indonesianPhotos = [indonesianMeal1.url, indonesianMeal2.url, indonesianMeal3.url];
+
 
 export const Route = createFileRoute("/rsvp/$token")({
   head: () => ({ meta: [{ title: "Your invitation — RSVP" }] }),
@@ -103,6 +114,7 @@ function RsvpPage() {
   const [invitedBy, setInvitedBy] = useDraftState(rsvpDraftScope, "invitedBy", "");
   const [invitedByOther, setInvitedByOther] = useDraftState(rsvpDraftScope, "invitedByOther", "");
   const [inviters, setInviters] = useState<{ id: string; name: string }[]>([]);
+  const [lightbox, setLightbox] = useState<string | null>(null);
   const [cuisineCounts, setCuisineCounts] = useDraftState<Record<string, number>>(
     orderDraftScope,
     "cuisineCounts",
@@ -168,9 +180,6 @@ function RsvpPage() {
 
   const handleSubmit = async () => {
     try {
-      const phoneDigits = guestPhone.replace(/\D/g, "");
-      if (!guestName.trim()) return toast.error("Please enter your full name");
-      if (phoneDigits.length < 7) return toast.error("Please enter your mobile number");
       const finalInvitedBy = invitedBy === "__other__" ? invitedByOther.trim() : invitedBy;
       if (!finalInvitedBy) return toast.error("Please select who invited you");
       // Derive ordering_food from the meal pre-order: any meals = yes, none = no.
@@ -238,9 +247,9 @@ function RsvpPage() {
   if (!data?.invitation) return <InvitationPage />;
   const ev = data.invitation.events;
   const cuisines = [
-    { key: "Myanmar", label: "Myanmar/Burmese" },
-    { key: "African", label: "African" },
-    { key: "Indonesian", label: "Indonesian" },
+    { key: "Myanmar", label: "Myanmar/Burmese", note: "Photos coming next week" },
+    { key: "African", label: "African", photos: africanPhotos },
+    { key: "Indonesian", label: "Indonesian", photos: indonesianPhotos },
   ];
   const preorderTotal = Object.values(cuisineCounts).reduce(
     (sum, qty) => sum + (Number(qty) || 0),
@@ -260,46 +269,11 @@ function RsvpPage() {
           <ArrowLeft className="w-3.5 h-3.5" /> Back to invitation
         </Link>
 
-        <Card className="p-4 space-y-4 border-2 border-terracotta bg-card shadow-glow sm:p-7">
-          <div className="space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-terracotta">
-              Required before RSVP
-            </p>
-            <h2 className="font-display text-3xl text-ink">Your name and mobile number</h2>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="guest-name" className="text-base font-semibold text-ink">
-              Full name <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="guest-name"
-              value={guestName}
-              onChange={(e) => setGuestName(e.target.value)}
-              placeholder="Your full name"
-              className="h-14 border-2 border-ink bg-cream text-lg text-ink placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-terracotta"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="guest-phone" className="text-base font-semibold text-ink">
-              Mobile number <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="guest-phone"
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              value={guestPhone}
-              onChange={(e) => setGuestPhone(e.target.value)}
-              placeholder="(555) 123-4567"
-              className="h-14 border-2 border-ink bg-cream text-lg text-ink placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-terracotta"
-            />
-          </div>
-        </Card>
         <div className="text-center">
           <p className="text-xs uppercase tracking-[0.3em] text-terracotta">You're invited</p>
           <h1 className="font-display text-5xl mt-3 text-ink">{ev.title}</h1>
-          <p className="mt-3 text-lg text-muted-foreground">Hello, {data.invitation.guest_name}</p>
         </div>
+
 
         <Card className="p-7 space-y-3">
           {ev.description && <p className="text-muted-foreground">{ev.description}</p>}
@@ -609,6 +583,24 @@ function RsvpPage() {
                     key={cuisine.key}
                     className="rounded-md border border-border bg-card p-4 space-y-3"
                   >
+                    {cuisine.photos && (
+                      <div className="grid grid-cols-3 gap-2">
+                        {cuisine.photos.map((src, i) => (
+                          <button
+                            key={src}
+                            type="button"
+                            onClick={() => setLightbox(src)}
+                            className="relative aspect-square overflow-hidden rounded-md border border-border bg-muted"
+                            aria-label={`${cuisine.label} meal photo ${i + 1}`}
+                          >
+                            <img src={src} alt={`${cuisine.label} meal ${i + 1}`} className="h-full w-full object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {cuisine.note && (
+                      <p className="text-sm italic text-muted-foreground">{cuisine.note}</p>
+                    )}
                     <div className="flex items-center justify-between gap-3">
                       <Label className="text-base font-display text-ink">{cuisine.label}</Label>
                       <div className="grid grid-cols-2 gap-2 w-36">
@@ -697,6 +689,13 @@ function RsvpPage() {
           </p>
         </Card>
       </div>
+      <Dialog open={!!lightbox} onOpenChange={(o) => !o && setLightbox(null)}>
+        <DialogContent className="max-w-2xl bg-ink border-ink p-2">
+          <DialogTitle className="sr-only">Meal photo</DialogTitle>
+          {lightbox && <img src={lightbox} alt="Meal" className="w-full h-auto rounded" />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
