@@ -150,7 +150,7 @@ function PreviewPage() {
       }
       const orderingFoodBool =
         status === "yes" && attendanceMode === "in_person" ? selections.length > 0 : null;
-      await save({
+      const result = await save({
         data: {
           guest_name: name.trim() || "Guest",
           guest_phone: phone.trim() || null,
@@ -165,7 +165,18 @@ function PreviewPage() {
       });
       setSaved(true);
       setSubmittedAt(new Date().toISOString());
-      toast.success("RSVP saved — thank you!");
+      if (
+        result &&
+        typeof result === "object" &&
+        "waitlisted" in result &&
+        Boolean((result as { waitlisted?: boolean }).waitlisted)
+      ) {
+        toast.success(
+          "You're on the waiting list because in-person attendance has reached the building capacity. We'll be in touch if space opens up.",
+        );
+      } else {
+        toast.success("RSVP saved — thank you!");
+      }
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Could not save RSVP");
     } finally {

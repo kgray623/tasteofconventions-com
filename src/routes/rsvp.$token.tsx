@@ -203,7 +203,7 @@ function RsvpPage() {
         Boolean((res as { waitlisted?: boolean }).waitlisted)
       ) {
         toast.success(
-          "You're on the waiting list — seats with your inviter are full. We'll be in touch if one opens up.",
+          "You're on the waiting list because in-person attendance has reached the building capacity. We'll be in touch if space opens up.",
         );
       } else {
         toast.success("RSVP saved — thank you!");
