@@ -9,6 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Users, Check, X, UtensilsCrossed, Minus, Plus } from "lucide-react";
 import { withTimeout } from "@/lib/async-safety";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import africanMeal1 from "@/assets/african-meal-1.jpg.asset.json";
+import africanMeal2 from "@/assets/african-meal-2.jpg.asset.json";
+import africanMeal3 from "@/assets/african-meal-3.jpg.asset.json";
+
+const africanPhotos = [africanMeal1.url, africanMeal2.url, africanMeal3.url];
 
 type CuisineSelection = { cuisine: string; qty: number };
 type MyRsvpData = {
@@ -118,9 +124,9 @@ export function MyRsvpContent() {
     )
       ? order.items
       : [];
-    const cuisines = [
+    const cuisines: { key: string; label: string; photos?: string[] }[] = [
       { key: "Myanmar", label: "Myanmar/Burmese" },
-      { key: "African", label: "African" },
+      { key: "African", label: "African", photos: africanPhotos },
       { key: "Indonesian", label: "Indonesian" },
     ];
     const preorderTotal = Object.values(cuisineCounts).reduce(
