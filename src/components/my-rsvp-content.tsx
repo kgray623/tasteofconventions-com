@@ -60,6 +60,7 @@ export function MyRsvpContent() {
   const [data, setData] = useState<MyRsvpData | null>(null);
   const [cuisineCounts, setCuisineCounts] = useState<Record<string, number>>({});
   const [savingMeals, setSavingMeals] = useState(false);
+  const [lightbox, setLightbox] = useState<string | null>(null);
 
   useEffect(() => {
     if (loading) return;
