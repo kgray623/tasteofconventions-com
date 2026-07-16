@@ -14,6 +14,7 @@ import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlu
 import { NewBadge } from "@/components/new-badge";
 import { useChatUnread } from "@/hooks/use-chat-unread";
 import { Badge } from "@/components/ui/badge";
+import { GuestSearchBar } from "@/components/guest-search-bar";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — A Taste of Special Conventions" }] }),
@@ -148,6 +149,9 @@ function AdminLayout() {
         </div>
 
 
+      </div>
+      <div className="mb-4">
+        <GuestSearchBar />
       </div>
       {(["main", "committee"] as const).map((group) => {
         const groupTabs = visibleTabs.filter((t) => t.group === group);

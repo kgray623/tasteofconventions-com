@@ -42,7 +42,6 @@ import { getRsvpEvents, getRsvpTotals } from "@/lib/rsvp-totals.functions";
 import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
 import { Input } from "@/components/ui/input";
 import { Target } from "lucide-react";
-import { GuestSearchBar } from "@/components/guest-search-bar";
 
 
 
@@ -1417,7 +1416,6 @@ function UploadPage() {
 
   return (
     <div className="space-y-6">
-      <GuestSearchBar />
       <Card id="add-guests" className="p-5 space-y-4 border-terracotta/50 bg-terracotta/5 scroll-mt-24">
         <div className="flex items-center gap-2">
           <UserPlus className="w-5 h-5 text-terracotta" />
