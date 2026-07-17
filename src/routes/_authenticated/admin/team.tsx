@@ -278,7 +278,7 @@ function TeamPage() {
               type="tel"
               value={phone}
               onChange={(e) => { setPhone(e.target.value); setSelectedGuestId(null); }}
-              placeholder="Phone number"
+              placeholder="Phone (optional if guest is on list)"
             />
 
             <Select value={role} onValueChange={(v) => setRole(v as "team" | "admin")}>
