@@ -54,7 +54,7 @@ function PreorderPage() {
   const cuisineLabel = (country: string): string => {
     const c = country.toLowerCase();
     if (c.includes("myanmar")) return "Burmese — Myanmar";
-    if (c.includes("mozambique")) return "African — Mozambique";
+    if (c.includes("mozambique") || c.includes("zimbabwe")) return "African — Mozambique & Zimbabwe";
     if (c.includes("indonesia")) return "Indonesian — Indonesia";
     return country;
   };
