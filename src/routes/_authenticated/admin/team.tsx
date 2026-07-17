@@ -107,11 +107,29 @@ function TeamPage() {
     const parsed = inviteSchema.safeParse({ name, phone });
     if (!parsed.success) return toast.error(parsed.error.issues[0]?.message ?? "Check the form");
     if (!user) return;
+
+    let finalPhone = parsed.data.phone.trim();
+    // If no phone entered, try to auto-resolve from the guest list by name.
+    if (!finalPhone) {
+      const nameQ = parsed.data.name.trim().toLowerCase();
+      const exact = guests.filter((g) => g.name.trim().toLowerCase() === nameQ && g.phone);
+      const contains = exact.length === 0
+        ? guests.filter((g) => g.name.toLowerCase().includes(nameQ) && g.phone)
+        : exact;
+      if (contains.length === 0) {
+        return toast.error(`No guest named "${parsed.data.name}" has a phone on file. Pick from the list or enter a phone.`);
+      }
+      if (contains.length > 1) {
+        return toast.error(`Multiple guests match "${parsed.data.name}". Pick the exact person from the list above.`);
+      }
+      finalPhone = contains[0].phone;
+    }
+
     setSending(true);
     try {
-      await sendInviteFn({ data: { ...parsed.data, role } });
+      await sendInviteFn({ data: { name: parsed.data.name, phone: finalPhone, role } });
       setName(""); setPhone(""); setSelectedGuestId(null);
-      toast.success(`Added ${parsed.data.name}. They'll get their role automatically when they sign up with ${parsed.data.phone}.`);
+      toast.success(`Added ${parsed.data.name}. They'll get their role automatically when they sign up with ${finalPhone}.`);
       load();
     } catch (err: any) {
       toast.error(err?.message ?? "Failed to add team member");
