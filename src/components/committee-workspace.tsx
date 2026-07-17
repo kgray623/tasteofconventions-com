@@ -684,7 +684,7 @@ export function CommitteeWorkspace() {
           <Card className="overflow-hidden border-ink/10 bg-ink/5">
             <div className="relative aspect-[9/16] md:aspect-video mx-auto w-full max-w-sm md:max-w-none">
               <iframe
-                src="https://fast.wistia.net/embed/iframe/cf8d380y2y?videoFoam=true"
+                src="https://fast.wistia.net/embed/iframe/f9qhjpbaheea3in?videoFoam=true"
                 title="Steering Committee welcome video"
                 allow="autoplay; fullscreen; encrypted-media"
                 allowFullScreen
