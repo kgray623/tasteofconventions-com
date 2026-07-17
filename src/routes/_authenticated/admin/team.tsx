@@ -42,7 +42,7 @@ type GuestOption = {
 
 const inviteSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(120),
-  phone: z.string().trim().min(1, "Phone is required").max(40),
+  phone: z.string().trim().max(40).optional().default(""),
 });
 
 function TeamPage() {
