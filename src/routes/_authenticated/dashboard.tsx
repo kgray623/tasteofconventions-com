@@ -25,6 +25,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { NewBadge } from "@/components/new-badge";
 import { CategoryChat } from "@/components/CategoryChat";
 import { useChatUnread } from "@/hooks/use-chat-unread";
+import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — A Taste of Special Conventions" }] }),
@@ -238,15 +239,24 @@ function Dashboard() {
     </span>
   );
 
-  const yesInvites = invites.filter((i) => i.rsvps?.status === "yes");
-  const inPersonYes = yesInvites.filter((i) => i.rsvps?.attendance_mode !== "zoom");
-  const virtualYes = yesInvites.filter((i) => i.rsvps?.attendance_mode === "zoom");
+  const inviteGroupIds = buildDuplicateGroupIds(invites.map((i) => ({
+    id: i.id,
+    guest_name: i.guest_name,
+    guest_phone: i.guest_phone,
+  })));
+  const inviteRollup = computeRsvpRollup(invites.map((i) => ({
+    id: i.id,
+    groupId: inviteGroupIds.get(i.id) ?? i.id,
+    status: i.rsvps?.status ?? null,
+    party_size: i.rsvps?.party_size ?? 1,
+    attendance_mode: i.rsvps?.attendance_mode ?? null,
+  })));
   const stats: { label: string; value: number; newTarget?: string }[] = [
     { label: "Your invitations", value: myInvites.length },
-    { label: "Total guest list", value: invites.length },
-    { label: "Confirmed in person", value: inPersonYes.length },
-    { label: "Confirmed virtual (Zoom)", value: virtualYes.length },
-    { label: "Committee RSVP'd", value: invites.filter((i) => i.is_committee && i.rsvps?.status === "yes").length },
+    { label: "Total guest records", value: inviteRollup.responses.uploaded },
+    { label: "In-person confirmed people", value: inviteRollup.people.inPerson },
+    { label: "Zoom confirmed people", value: inviteRollup.people.zoom },
+    { label: "Confirmed RSVP responses", value: inviteRollup.responses.confirmed },
     { label: "Duplicate flags", value: flags.length },
   ];
 
