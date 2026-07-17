@@ -6,14 +6,21 @@ import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
 export type RsvpTotalsResult = {
   event: {
     requested: number;
+    uploaded: number;
     confirmed: number; // in-person people
+    confirmedResponses: number;
+    inPersonResponses: number;
     virtual: number;   // zoom people
+    virtualResponses: number;
   };
   mine: {
     requested: number;
     uploaded: number;
     confirmed: number;
+    confirmedResponses: number;
+    inPersonResponses: number;
     virtual: number;
+    virtualResponses: number;
     pendingRequest: number | null;
     inviterIds: string[];
   } | null;
@@ -294,14 +301,25 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
         requested: myQuota,
         uploaded,
         confirmed: myRollup.people.inPerson,
+        confirmedResponses: myRollup.responses.confirmed,
+        inPersonResponses: myRollup.responses.inPerson,
         virtual: myRollup.people.zoom,
+        virtualResponses: myRollup.responses.zoom,
         pendingRequest,
           inviterIds: activeMine.map((r) => r.id).filter((id): id is string => !!id),
       };
     }
 
     return {
-      event: { requested, confirmed: rollup.people.inPerson, virtual: rollup.people.zoom },
+      event: {
+        requested,
+        uploaded: rollup.responses.uploaded,
+        confirmed: rollup.people.inPerson,
+        confirmedResponses: rollup.responses.confirmed,
+        inPersonResponses: rollup.responses.inPerson,
+        virtual: rollup.people.zoom,
+        virtualResponses: rollup.responses.zoom,
+      },
       mine,
     };
   });

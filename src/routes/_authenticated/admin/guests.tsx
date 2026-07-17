@@ -130,7 +130,8 @@ function GuestsPage() {
     const c: Record<StatusFilter, number> = { all: 0, confirmed: 0, declined: 0, maybe: 0, waitlist: 0, pending: 0 };
     const rsvps: Record<StatusFilter, number> = { all: 0, confirmed: 0, declined: 0, maybe: 0, waitlist: 0, pending: 0 };
     const modePeople = { in_person: 0, zoom: 0 };
-    if (!rows) return { people: c, rsvps, modePeople };
+    const modeResponses = { in_person: 0, zoom: 0 };
+    if (!rows) return { people: c, rsvps, modePeople, modeResponses };
     const rollup = rollupRows(rows);
     c.all = rollup.people.allIfEveryoneShowed;
     c.confirmed = rollup.people.confirmed;
@@ -146,7 +147,9 @@ function GuestsPage() {
     rsvps.pending = rollup.responses.pending;
     modePeople.in_person = rollup.people.inPerson;
     modePeople.zoom = rollup.people.zoom;
-    return { people: c, rsvps, modePeople };
+    modeResponses.in_person = rollup.responses.inPerson;
+    modeResponses.zoom = rollup.responses.zoom;
+    return { people: c, rsvps, modePeople, modeResponses };
   }, [rows]);
 
   const filtered = useMemo(() => {
@@ -241,6 +244,7 @@ function GuestsPage() {
         pending: rollup.responses.pending,
       } as Record<StatusFilter, number>,
       modePeople: { in_person: rollup.people.inPerson, zoom: rollup.people.zoom },
+      modeResponses: { in_person: rollup.responses.inPerson, zoom: rollup.responses.zoom },
     };
   }, [filtered]);
 
@@ -282,7 +286,7 @@ function GuestsPage() {
             {rows === null
               ? "Loading…"
               : activeStatus === "confirmed"
-                ? <>Confirmed: <span className="tabular-nums font-medium text-ink">{filteredCounts.people.confirmed}</span> people across <span className="tabular-nums font-medium text-ink">{filteredCounts.rsvps.confirmed}</span> RSVPs (<span className="tabular-nums">{filteredCounts.modePeople.in_person}</span> in person · <span className="tabular-nums">{filteredCounts.modePeople.zoom}</span> Zoom).</>
+                ? <>Confirmed: <span className="tabular-nums font-medium text-ink">{filteredCounts.rsvps.confirmed}</span> RSVP records = <span className="tabular-nums font-medium text-ink">{filteredCounts.people.confirmed}</span> people by party size (<span className="tabular-nums">{filteredCounts.modePeople.in_person}</span> in-person people from <span className="tabular-nums">{filteredCounts.modeResponses.in_person}</span> RSVPs · <span className="tabular-nums">{filteredCounts.modePeople.zoom}</span> Zoom people from <span className="tabular-nums">{filteredCounts.modeResponses.zoom}</span> RSVPs).</>
                 : activeStatus === "declined"
                   ? <>Declined: <span className="tabular-nums font-medium text-ink">{filteredCounts.rsvps.declined}</span> guests/RSVPs (<span className="tabular-nums font-medium text-ink">{filteredCounts.people.declined}</span> people by party size) of <span className="tabular-nums font-medium text-ink">{counts.rsvps.all}</span> reconciled uploaded guests.</>
                 : activeStatus === "pending"
@@ -317,7 +321,12 @@ function GuestsPage() {
             );
           })}
         </div>
-        <p className="text-[11px] text-muted-foreground mt-2">Big number = <strong>guests/RSVPs</strong>. (small) = people by party size.</p>
+        <p className="text-[11px] text-muted-foreground mt-2">Tab number = <strong>guest/RSVP records</strong>. Parentheses = people by party size after duplicate reconciliation.</p>
+        <p className="text-[11px] text-muted-foreground mt-1">
+          Reconciled totals: <strong>{counts.rsvps.confirmed}</strong> confirmed RSVP records = <strong>{counts.people.confirmed}</strong> people
+          (<strong>{counts.modePeople.in_person}</strong> in-person people from <strong>{counts.modeResponses.in_person}</strong> RSVPs · <strong>{counts.modePeople.zoom}</strong> Zoom people from <strong>{counts.modeResponses.zoom}</strong> RSVPs);
+          declined <strong>{counts.rsvps.declined}</strong> records = <strong>{counts.people.declined}</strong> people; pending <strong>{counts.rsvps.pending}</strong> records.
+        </p>
       </Card>
 
       <div className="flex flex-wrap items-center gap-2">

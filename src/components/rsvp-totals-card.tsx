@@ -17,15 +17,22 @@ const TOTAL_SEATS = 550;
 
 type EventTotals = {
   requested: number;
+  uploaded: number;
   confirmed: number;
+  confirmedResponses: number;
+  inPersonResponses: number;
   virtual: number;
+  virtualResponses: number;
 };
 
 type MyTotals = {
   requested: number;
   uploaded: number;
   confirmed: number;
+  confirmedResponses: number;
+  inPersonResponses: number;
   virtual: number;
+  virtualResponses: number;
   pendingRequest: number | null;
 };
 
@@ -36,8 +43,8 @@ type Props = {
 
 export function RsvpTotalsCard({ personalHostIds }: Props) {
   const fetchTotals = useServerFn(getRsvpTotals);
-  const [event, setEvent] = useState<EventTotals>({ requested: 0, confirmed: 0, virtual: 0 });
-  const [mine, setMine] = useState<MyTotals>({ requested: 0, uploaded: 0, confirmed: 0, virtual: 0, pendingRequest: null });
+  const [event, setEvent] = useState<EventTotals>({ requested: 0, uploaded: 0, confirmed: 0, confirmedResponses: 0, inPersonResponses: 0, virtual: 0, virtualResponses: 0 });
+  const [mine, setMine] = useState<MyTotals>({ requested: 0, uploaded: 0, confirmed: 0, confirmedResponses: 0, inPersonResponses: 0, virtual: 0, virtualResponses: 0, pendingRequest: null });
   const [myInviterIds, setMyInviterIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -58,7 +65,10 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
             requested: result.mine.requested,
             uploaded: result.mine.uploaded,
             confirmed: result.mine.confirmed,
+            confirmedResponses: result.mine.confirmedResponses,
+            inPersonResponses: result.mine.inPersonResponses,
             virtual: result.mine.virtual,
+            virtualResponses: result.mine.virtualResponses,
             pendingRequest: result.mine.pendingRequest,
           });
           setMyInviterIds(result.mine.inviterIds);
@@ -116,14 +126,20 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
               sub={overUploaded ? `Requested: ${mine.requested}` : undefined}
               warn={overUploaded}
             />
-            <Stat label="My in-person guests RSVP’d" value={loading ? "—" : mine.confirmed} emphasis />
+            <Stat
+              label="My in-person confirmed people"
+              value={loading ? "—" : mine.confirmed}
+              sub={loading ? undefined : `${mine.inPersonResponses} RSVPs`}
+              emphasis
+            />
             <Stat label="My in-person spots left" value={loading ? "—" : myAvailable} />
           </div>
           <p className="text-xs text-muted-foreground">
-            My Zoom guests RSVP’d:{" "}
+            My Zoom confirmed people:{" "}
             <span className="font-semibold text-ink tabular-nums">
               {loading ? "—" : mine.virtual}
             </span>
+            {loading ? "" : ` across ${mine.virtualResponses} RSVPs`}
             {" — unlimited, doesn't use seats."}
           </p>
           {myInviterIds.length > 0 && (
@@ -140,9 +156,14 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
         <p className="text-xs uppercase tracking-wider text-muted-foreground">Everyone</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
           <Stat label="Total seats" value={TOTAL_SEATS} />
-          <Stat label="RSVP requests" value={loading ? "—" : event.requested} />
+          <Stat label="Approved RSVP quota" value={loading ? "—" : event.requested} />
           <Stat label="Seats available" value={loading ? "—" : available} />
-          <Stat label="In-person confirmed" value={loading ? "—" : event.confirmed} emphasis />
+          <Stat
+            label="In-person confirmed people"
+            value={loading ? "—" : event.confirmed}
+            sub={loading ? undefined : `${event.inPersonResponses} RSVPs`}
+            emphasis
+          />
         </div>
 
         <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
@@ -154,11 +175,19 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
         </div>
 
         <p className="text-xs text-muted-foreground">
-          RSVP Zooms:{" "}
+          Confirmed RSVPs: {" "}
+          <span className="font-semibold text-ink tabular-nums">
+            {loading ? "—" : event.confirmedResponses}
+          </span>
+          {loading ? "" : ` total responses (${event.inPersonResponses} in person · ${event.virtualResponses} Zoom).`}
+          {" "}Zoom confirmed people:{" "}
           <span className="font-semibold text-ink tabular-nums">
             {loading ? "—" : event.virtual}
           </span>
           {" — unlimited, doesn't use seats."}
+        </p>
+        <p className="text-[11px] text-muted-foreground">
+          Uploaded guest records after duplicate reconciliation: {loading ? "—" : event.uploaded}. Seat math uses in-person confirmed people only.
         </p>
       </div>
 

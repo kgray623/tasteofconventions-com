@@ -530,10 +530,8 @@ export function CommitteeWorkspace() {
     attendance_mode: g.attendance_mode,
   })));
 
-  const confirmedGuests = [...myGuests].filter((g) => g.rsvp_status === "yes").sort(byName);
   const confirmedInPersonPeople = myGuestRollup.people.inPerson;
   const confirmedVirtualPeople = myGuestRollup.people.zoom;
-  const confirmedResponseCount = myGuestRollup.responses.confirmed;
   const inPersonResponseCount = myGuestRollup.responses.inPerson;
   const zoomResponseCount = myGuestRollup.responses.zoom;
   const declinedPeople = myGuestRollup.people.declined;
@@ -922,7 +920,7 @@ export function CommitteeWorkspace() {
                       >
                         <span className="flex items-center gap-2 font-semibold text-sm">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                          Confirmed RSVPs ({confirmedInPersonPeople + confirmedVirtualPeople})
+                          Confirmed RSVPs ({formatPeopleResponses(confirmedInPersonPeople + confirmedVirtualPeople, inPersonResponseCount + zoomResponseCount)})
                         </span>
                         <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${openConfirmed ? "rotate-180" : ""}`} />
                       </button>
@@ -1011,7 +1009,7 @@ export function CommitteeWorkspace() {
                 />
 
                 <MyGuestsGroup
-                  label="Decline"
+                  label="Declined"
                   tone="rose"
                   guests={myDeclined}
                   peopleCount={declinedPeople}
@@ -1226,7 +1224,7 @@ function MyGuestsGroup({
             type="button"
             className="w-full p-3 flex items-center justify-between gap-2 text-left cursor-pointer hover:bg-black/[0.03] transition-colors"
           >
-            <span className="font-semibold text-sm">{label} ({peopleCount})</span>
+            <span className="font-semibold text-sm">{label} ({formatPeopleResponses(peopleCount, responseCount)})</span>
             <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
           </button>
         </CollapsibleTrigger>
