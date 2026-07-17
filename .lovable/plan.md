@@ -1,18 +1,29 @@
-## What's actually in the database
+## Add Sonja Ingram as a guest of Myisha Woods
 
-Phone `(402) 312-3088` **does exist** — it's on guest **"Mysha Woods"** (spelled without the "i"), correctly linked to committee member **Tina Santana**, event Aug 30 2026, phone normalized to `4023123088`.
+**Guest to add**
+- Name: Sonja Ingram
+- Phone: (402) 321-9014 (normalized: 4023219014)
+- Notes: Walnut Creek congregation
+- Event: Aug 30, 2026
 
-A direct DB test of the exact query the search runs finds the row. So the record isn't missing — the search UI is failing to surface it. Two likely reasons, in order of probability:
+**Committee-member linkage**
 
-1. **Name spelling mismatch.** You've been typing "**Myisha** Woods" (with an "i"). The database stores it as "**Mysha** Woods" (no "i"). A name search for "Myisha" will return nothing. Same guest, phone matches your list, just a spelling variant.
-2. **Wrong page.** You're currently on the home page (`/`), not `/admin`. The search bar only lives on the admin workspace. Typing on the home page won't hit it.
+Myisha Woods is currently only in the `invitations` table (marked committee). She is NOT in the `inviters` table, so she has no `host_id` that another guest can be attached to. To make Sonja truly appear as "added by Myisha Woods," Myisha needs an `inviters` row.
 
-## Plan
+### Steps
 
-1. **Correct the stored spelling** from `Mysha Woods` → `Myisha Woods` on invitation `53fa9971-…` so future searches for either spelling work. (Phone, host link, and RSVP stay unchanged.)
-2. **Verify in the preview** by opening `/admin`, typing `(402) 312-3088` into the search bar, and confirming "Myisha Woods · Added by Tina Santana" appears. Then repeat with the name "Myisha" to confirm the spelling fix took.
-3. **Report back** with the DB read-back and a screenshot of the search hit. No other data touched.
+1. Create an `inviters` row for **Myisha Woods** with a new `host_id` (active = true). This lets her host guests and show up in "Added by" attribution.
+2. Insert an `invitations` row for **Sonja Ingram**:
+   - event_id = current event
+   - host_id = Myisha's new host_id
+   - guest_name = "Sonja Ingram"
+   - guest_phone = "(402) 321-9014", guest_phone_normalized = "4023219014"
+   - notes = "Walnut Creek congregation"
+   - is_committee = false
+3. Verify: search `(402) 321-9014` in `/admin` search bar and confirm "Sonja Ingram · Added by Myisha Woods" appears.
 
-If you actually meant a different person or a different number, tell me the correct name and I'll re-check before touching anything.
+### Note
 
-**Timestamp:** 2026-07-16 UTC
+Myisha's own `inviters.host_id` won't be tied to her auth user (she doesn't have one on file here), so she'll be an attribution-only host until she signs in. That matches how a few other committee members are already set up.
+
+**Timestamp:** 2026-07-17 UTC
