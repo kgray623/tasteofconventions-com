@@ -1,38 +1,27 @@
-## Goal
-Give ChatGPT read-only access to the full codebase + database schema so it can audit for the recurring problems (bad math, duplicates, dropped submissions, auth confusion, RLS gaps).
+## Fix the GitHub-access instructions in the audit bundle
 
-## Step 1 — Connect the project to GitHub (you do this once)
-1. In Lovable, open the **Plus (+)** menu in the chat input (bottom-left) → **GitHub** → **Connect project**.
-2. Authorize the Lovable GitHub App.
-3. Pick the GitHub account/org and click **Create Repository**.
-4. In GitHub, open the new repo → **Settings → Collaborators** → invite ChatGPT's account (or make the repo public if you're okay with that) so ChatGPT can read every file.
+You're on the mobile Preview-mode `...` menu (Share / Publish / Settings / Code / Files / More / History). That menu doesn't have GitHub — GitHub lives in the **Chat mode** composer's **Plus (+)** button, not here.
 
-Result: ChatGPT gets the live source (routes, server functions, components, migrations under `supabase/migrations/`) and can cite exact `file:line` in its audit.
+### What I'll change in `/mnt/documents/database-audit-bundle.md`
 
-## Step 2 — I generate a database audit bundle (I do this)
-I'll export a single file `/mnt/documents/database-audit-bundle.md` containing, straight from the live DB:
-- **Schema** — every table in `public` with columns, types, nullability, defaults, foreign keys, unique constraints, indexes.
-- **RLS** — whether RLS is enabled per table + every policy (name, command, roles, USING, WITH CHECK).
-- **Grants** — table-level grants to `anon`, `authenticated`, `service_role`.
-- **Functions & triggers** — every `public.*` function (with `SECURITY DEFINER` flag + EXECUTE grants) and every trigger.
-- **Storage buckets** — public/private + policies.
-- **Known-issue notes** — I'll append a short section listing the recurring failure patterns from project memory (people-vs-records math, duplicate identity by phone, dropped RSVPs, admin gates, inviter linkage) so ChatGPT audits *against* the exact problems you keep hitting.
+Rewrite "Step 1 — Give ChatGPT the source code" so it works for both mobile and desktop, and stops referring to a menu that doesn't exist on your screen.
 
-You upload that one file to the ChatGPT conversation alongside the GitHub repo link.
+New Step 1 wording:
 
-## Step 3 — Prompt for ChatGPT (I'll provide)
-I'll give you a ready-to-paste audit prompt that tells ChatGPT:
-- Repo URL + which folders to focus on (`src/routes`, `src/lib/*.functions.ts`, `src/components`, `supabase/migrations`).
-- The audit checklist: correctness of counts, duplicate detection, RLS coverage, `SECURITY DEFINER` safety, server-vs-client boundary, no-email-collection rule, admin gating.
-- Output format: findings table with severity + file:line + suggested fix.
+**Mobile (what you're on now)**
+1. In the bottom bar, tap **Chat** to switch out of Preview mode into Chat mode.
+2. In the chat composer, tap the **+** (Plus) button on the left of the text box.
+3. Tap **GitHub** → **Connect project** → authorize the Lovable GitHub App → pick the account/org → **Create Repository**.
+4. Open the new repo on github.com and copy its URL.
+5. Paste the URL into ChatGPT.
 
-## What I will NOT do
-- I won't change any code, schema, RLS, or data.
-- I won't share service-role keys or database passwords (not accessible on Lovable Cloud anyway).
-- I won't rename or move any existing files.
+**Desktop**
+1. In the chat input (bottom left), click the **+** (Plus) button.
+2. Choose **GitHub** → **Connect project** → authorize → **Create Repository**.
+3. Copy the repo URL from github.com and paste it into ChatGPT.
 
-## Deliverable when you approve
-1. `/mnt/documents/database-audit-bundle.md` — the DB audit bundle.
-2. A short "How to run the audit in ChatGPT" message with the paste-ready prompt and the exact steps to link the GitHub repo.
+**If your workspace is on a free plan and the repo has to stay private:** download the code instead — desktop only: open the **Code Editor** (`</>` icon), then **Download codebase** at the bottom of the file tree. Upload that ZIP to ChatGPT.
 
-You handle the GitHub connect step (Plus menu) since only you can authorize it; everything else I do.
+I'll also add a one-line note at the top of Step 1 saying: "The GitHub option is in the **Chat mode Plus (+) menu**, not the Preview `...` menu."
+
+No other sections of the bundle change. I'll re-export the file and give you the download link.
