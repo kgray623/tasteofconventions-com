@@ -76,11 +76,11 @@ export function CommitteeWorkspace() {
   const [committeeNames, setCommitteeNames] = useState<Set<string>>(new Set());
   const [committeePhones, setCommitteePhones] = useState<Set<string>>(new Set());
   const [myGuestsFilter, setMyGuestsFilter] = useState<"all" | "committee">("all");
-  const [openMyGroup, setOpenMyGroup] = useState<{ inPerson: boolean; zoom: boolean; declined: boolean; pending: boolean }>({ inPerson: false, zoom: false, declined: false, pending: false });
+  const [openMyGroup, setOpenMyGroup] = useState<{ inPerson: boolean; zoom: boolean; declined: boolean; awaiting: boolean }>({ inPerson: false, zoom: false, declined: false, awaiting: false });
   const [openTotals, setOpenTotals] = useState(true);
   const [openMyGuestsCard, setOpenMyGuestsCard] = useState(true);
   const [openConfirmed, setOpenConfirmed] = useState(false);
-  const [myGuestsTab, setMyGuestsTab] = useState<"all" | "confirmed" | "pending" | "declined" | "latest">("all");
+  const [myGuestsTab, setMyGuestsTab] = useState<"all" | "inPerson" | "zoom" | "declined" | "latest">("all");
   const [myGuestsSort, setMyGuestsSort] = useState<"grouped" | "alpha" | "newest" | "oldest">("grouped");
   const [openFlatGroup, setOpenFlatGroup] = useState(true);
 
