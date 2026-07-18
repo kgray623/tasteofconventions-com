@@ -862,7 +862,7 @@ export function CommitteeWorkspace() {
             else if (myGuestsTab === "zoom") { flatRows = myZoom; flatLabel = "RSVP by Zoom"; flatTone = "muted"; }
             else if (myGuestsTab === "declined") { flatRows = declinedFlat; flatLabel = "Declined"; flatTone = "rose"; }
             else if (myGuestsTab === "latest") { flatRows = latestBatch; flatLabel = "Latest upload"; flatTone = "muted"; }
-            else { flatRows = myGuests; flatLabel = "All guests"; flatTone = "muted"; }
+            else { flatRows = myGuests; flatLabel = "All contacts"; flatTone = "muted"; }
             const effectiveSort = myGuestsTab === "latest" ? "newest" : (myGuestsSort === "grouped" ? "alpha" : myGuestsSort);
             flatRows = [...flatRows].sort(sorterFor(effectiveSort));
           }
@@ -878,7 +878,7 @@ export function CommitteeWorkspace() {
                   onClick={() => setMyGuestsTab(t.key)}
                   className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs border transition ${myGuestsTab === t.key ? "bg-ink text-cream border-ink" : "bg-background hover:bg-muted border-border"}`}
                 >
-                  {t.label} ({t.count} people)
+                  {t.label} ({t.count} {t.key === "all" || t.key === "latest" ? "contacts" : "people"})
                 </button>
               ))}
               {myGuestsTab !== "latest" && (
