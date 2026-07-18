@@ -1,44 +1,38 @@
-## Goal (2026-07-18 UTC)
+## Goal
+Give ChatGPT read-only access to the full codebase + database schema so it can audit for the recurring problems (bad math, duplicates, dropped submissions, auth confusion, RLS gaps).
 
-Close two security findings without breaking any existing feature:
+## Step 1 — Connect the project to GitHub (you do this once)
+1. In Lovable, open the **Plus (+)** menu in the chat input (bottom-left) → **GitHub** → **Connect project**.
+2. Authorize the Lovable GitHub App.
+3. Pick the GitHub account/org and click **Create Repository**.
+4. In GitHub, open the new repo → **Settings → Collaborators** → invite ChatGPT's account (or make the repo public if you're okay with that) so ChatGPT can read every file.
 
-1. **`inviters_public_pii` (error)** — stop exposing committee/inviter names to anonymous visitors.
-2. **`SUPA_rls_policy_always_true` (warn)** — record as a false positive.
+Result: ChatGPT gets the live source (routes, server functions, components, migrations under `supabase/migrations/`) and can cite exact `file:line` in its audit.
 
----
+## Step 2 — I generate a database audit bundle (I do this)
+I'll export a single file `/mnt/documents/database-audit-bundle.md` containing, straight from the live DB:
+- **Schema** — every table in `public` with columns, types, nullability, defaults, foreign keys, unique constraints, indexes.
+- **RLS** — whether RLS is enabled per table + every policy (name, command, roles, USING, WITH CHECK).
+- **Grants** — table-level grants to `anon`, `authenticated`, `service_role`.
+- **Functions & triggers** — every `public.*` function (with `SECURITY DEFINER` flag + EXECUTE grants) and every trigger.
+- **Storage buckets** — public/private + policies.
+- **Known-issue notes** — I'll append a short section listing the recurring failure patterns from project memory (people-vs-records math, duplicate identity by phone, dropped RSVPs, admin gates, inviter linkage) so ChatGPT audits *against* the exact problems you keep hitting.
 
-## What changes for guests
+You upload that one file to the ChatGPT conversation alongside the GitHub repo link.
 
-The public RSVP pages (`/rsvp` and `/rsvp/$token`) currently show a dropdown listing every committee/inviter name. Guests will instead type the inviter's name into a plain text box. Admins and committee members keep the full inviter list on their own screens — nothing there changes.
+## Step 3 — Prompt for ChatGPT (I'll provide)
+I'll give you a ready-to-paste audit prompt that tells ChatGPT:
+- Repo URL + which folders to focus on (`src/routes`, `src/lib/*.functions.ts`, `src/components`, `supabase/migrations`).
+- The audit checklist: correctness of counts, duplicate detection, RLS coverage, `SECURITY DEFINER` safety, server-vs-client boundary, no-email-collection rule, admin gating.
+- Output format: findings table with severity + file:line + suggested fix.
 
-## Steps
+## What I will NOT do
+- I won't change any code, schema, RLS, or data.
+- I won't share service-role keys or database passwords (not accessible on Lovable Cloud anyway).
+- I won't rename or move any existing files.
 
-1. **RSVP forms — replace dropdown with a text field**
-   - `src/routes/rsvp.index.tsx`: remove the `useEffect` that calls `get_public_inviters`, drop the `inviters` state and the `<Select>` control, and replace it with a labeled `<Input>` for "Who invited you?" (optional, trimmed, max 120 chars, stored in the existing `invitedBy`/draft field so the submit payload is unchanged).
-   - `src/routes/rsvp.$token.tsx`: same swap — remove the `get_public_inviters` fetch and dropdown, keep the text input pre-filled from the invitation's existing inviter name when present.
-   - Keep the existing submit path and server function untouched; the field is just a free-text string like before.
+## Deliverable when you approve
+1. `/mnt/documents/database-audit-bundle.md` — the DB audit bundle.
+2. A short "How to run the audit in ChatGPT" message with the paste-ready prompt and the exact steps to link the GitHub repo.
 
-2. **Lock down the public listing at the database level**
-   - `REVOKE EXECUTE ON FUNCTION public.get_public_inviters() FROM anon, PUBLIC;` so no anonymous client can call it anymore.
-   - Leave `EXECUTE` for `authenticated` so admin/committee tools that still use it (if any) keep working. Verify with a query first: if nothing authenticated relies on it, revoke from `authenticated` too.
-
-3. **Handle the always-true warning**
-   - Verified in the DB: the only `USING(true)` policies are SELECT policies on `restaurants`, `menu_items`, `events`, `invitation_content`, `categories` — all intentional public-read content. The linter's own docs exclude SELECT `USING(true)`. No INSERT/UPDATE/DELETE policy uses `true`.
-   - Mark `SUPA_rls_policy_always_true` as ignored with that justification and refresh the security memory so it stops resurfacing.
-
-4. **Verify end-to-end before calling done**
-   - Playwright on `/rsvp` and `/rsvp/$token`: confirm the dropdown is gone, the text field renders, a submitted RSVP still writes the typed inviter name into the DB, and the network tab shows no anonymous call to `get_public_inviters`.
-   - Confirm `/admin/inviters`, `/admin/subcommittee`, and the committee workspace still list inviters correctly (they use RLS-authenticated reads, not the public function).
-   - Call `manage_security_finding` with `mark_as_fixed` for `inviters_public_pii` and `ignore` for `SUPA_rls_policy_always_true`, then update the security memory.
-
-## Not in scope
-
-- No change to the `inviters` table schema, RLS policies, or admin/committee UI.
-- No change to how inviter quotas, guest linking, or committee messaging work.
-- No other security findings touched.
-
-## Technical details
-
-- Field name stays `invitedBy` (string) in the RSVP draft/submit payload so `submitPublicRsvp` and `getPublicRsvpByPhone` need no changes.
-- Draft persistence via `useDraftState` continues to work — the field is still a string, only the input control changes.
-- Migration used only for the `REVOKE` on `get_public_inviters`; data operations aren't needed.
+You handle the GitHub connect step (Plus menu) since only you can authorize it; everything else I do.
