@@ -1,22 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { getPublicRsvpByPhone, submitPublicRsvp } from "@/lib/invitations.functions";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Card } from "@/components/ui/card";
 import { SiteHeader } from "@/components/site-header";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
+
 import { useDraftState } from "@/hooks/use-draft-state";
 import { Check, X, Minus, Plus, ArrowLeft, Users, Video } from "lucide-react";
 
@@ -55,7 +50,6 @@ function PreviewPage() {
   const [name, setName] = useDraftState(draftScope, "name", "");
   const [phone, setPhone] = useDraftState(draftScope, "phone", "");
   const [invitedBy, setInvitedBy] = useDraftState(draftScope, "invitedBy", "");
-  const [invitedByOther, setInvitedByOther] = useDraftState(draftScope, "invitedByOther", "");
   const [cuisineCounts, setCuisineCounts] = useDraftState<Record<string, number>>(
     draftScope,
     "cuisineCounts",
@@ -71,7 +65,6 @@ function PreviewPage() {
     "submittedAt",
     null,
   );
-  const [inviters, setInviters] = useState<{ id: string; name: string }[]>([]);
   const cuisines = [
     { key: "Myanmar", label: "Myanmar/Burmese" },
     { key: "African", label: "African" },
@@ -80,14 +73,7 @@ function PreviewPage() {
   const phoneDigits = phone.replace(/\D/g, "");
   const canChooseMeals = name.trim().length > 0 && phoneDigits.length >= 7;
 
-  useEffect(() => {
-    supabase.rpc("get_public_inviters").then(({ data }) => {
-      const list = (data ?? []).slice().sort((a, b) =>
-        a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
-      );
-      setInviters(list);
-    });
-  }, []);
+
 
 
   const save = useServerFn(submitPublicRsvp);
@@ -134,8 +120,9 @@ function PreviewPage() {
   const handleSave = async () => {
     if (!name.trim()) return toast.error("Please enter your full name");
     if (phoneDigits.length < 7) return toast.error("Please enter your mobile number");
-    const finalInvitedBy = invitedBy === "__other__" ? invitedByOther.trim() : invitedBy;
-    if (!finalInvitedBy) return toast.error("Please select who invited you");
+    const finalInvitedBy = invitedBy.trim();
+    if (!finalInvitedBy) return toast.error("Please enter who invited you");
+
     setSaving(true);
 
     try {
@@ -360,27 +347,14 @@ function PreviewPage() {
               </div>
             </div>
             <Label htmlFor="invited-by">Invited by <span className="text-destructive">*</span></Label>
-            <Select value={invitedBy || undefined} onValueChange={setInvitedBy}>
-              <SelectTrigger id="invited-by">
-                <SelectValue placeholder="Open to select" />
-              </SelectTrigger>
-              <SelectContent>
-                {inviters.map((i) => (
-                  <SelectItem key={i.id} value={i.name}>
-                    {i.name}
-                  </SelectItem>
-                ))}
-                <SelectItem value="__other__">Other…</SelectItem>
-              </SelectContent>
-            </Select>
-            {invitedBy === "__other__" && (
-              <Input
-                className="mt-2"
-                value={invitedByOther}
-                onChange={(e) => setInvitedByOther(e.target.value)}
-                placeholder="Type the name of the person who invited you"
-              />
-            )}
+            <Input
+              id="invited-by"
+              value={invitedBy}
+              onChange={(e) => setInvitedBy(e.target.value)}
+              placeholder="Type the name of the person who invited you"
+              maxLength={120}
+            />
+
           </div>
         </Card>
 

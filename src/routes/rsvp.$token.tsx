@@ -11,13 +11,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
+
 import { toast } from "sonner";
 import {
   Calendar,
@@ -112,9 +107,8 @@ function RsvpPage() {
     "",
   );
   const [invitedBy, setInvitedBy] = useDraftState(rsvpDraftScope, "invitedBy", "");
-  const [invitedByOther, setInvitedByOther] = useDraftState(rsvpDraftScope, "invitedByOther", "");
-  const [inviters, setInviters] = useState<{ id: string; name: string }[]>([]);
   const [lightbox, setLightbox] = useState<string | null>(null);
+
   const [cuisineCounts, setCuisineCounts] = useDraftState<Record<string, number>>(
     orderDraftScope,
     "cuisineCounts",
@@ -161,13 +155,8 @@ function RsvpPage() {
       } finally {
         if (alive) setLoading(false);
       }
-      const { data: iv } = await withTimeout(supabase.rpc("get_public_inviters"), 10000);
-      if (!alive) return;
-      const sorted = (iv ?? []).slice().sort((a, b) =>
-        a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
-      );
-      setInviters(sorted);
     })()
+
       .catch(() => {
         if (alive) setLoading(false);
       })
@@ -180,8 +169,9 @@ function RsvpPage() {
 
   const handleSubmit = async () => {
     try {
-      const finalInvitedBy = invitedBy === "__other__" ? invitedByOther.trim() : invitedBy;
-      if (!finalInvitedBy) return toast.error("Please select who invited you");
+      const finalInvitedBy = invitedBy.trim();
+      if (!finalInvitedBy) return toast.error("Please enter who invited you");
+
       // Derive ordering_food from the meal pre-order: any meals = yes, none = no.
       const mealCount = Object.values(cuisineCounts).reduce(
         (sum, qty) => sum + (Number(qty) || 0),
@@ -538,27 +528,14 @@ function RsvpPage() {
               </div>
             </div>
             <Label htmlFor="invited-by">Invited by <span className="text-destructive">*</span></Label>
-            <Select value={invitedBy || undefined} onValueChange={setInvitedBy}>
-              <SelectTrigger id="invited-by">
-                <SelectValue placeholder="Open to select" />
-              </SelectTrigger>
-              <SelectContent>
-                {inviters.map((i) => (
-                  <SelectItem key={i.id} value={i.name}>
-                    {i.name}
-                  </SelectItem>
-                ))}
-                <SelectItem value="__other__">Other…</SelectItem>
-              </SelectContent>
-            </Select>
-            {invitedBy === "__other__" && (
-              <Input
-                className="mt-2"
-                value={invitedByOther}
-                onChange={(e) => setInvitedByOther(e.target.value)}
-                placeholder="Type the name of the person who invited you"
-              />
-            )}
+            <Input
+              id="invited-by"
+              value={invitedBy}
+              onChange={(e) => setInvitedBy(e.target.value)}
+              placeholder="Type the name of the person who invited you"
+              maxLength={120}
+            />
+
           </div>
         </Card>
 
