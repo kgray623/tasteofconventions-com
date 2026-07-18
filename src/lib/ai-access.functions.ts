@@ -132,11 +132,27 @@ async function issueSessionForUser(email: string) {
   };
 }
 
-const RoleInput = z.object({ role: z.enum(["admin", "committee", "guest"]) });
+function assertAccessKey(providedKey: string | undefined | null) {
+  const expected = process.env.AI_ACCESS_SECRET;
+  if (!expected) {
+    throw new Error("AI access portal is disabled (no AI_ACCESS_SECRET configured).");
+  }
+  if (!providedKey || providedKey !== expected) {
+    throw new Error("Unauthorized: invalid AI access key.");
+  }
+}
+
+const RoleInput = z.object({
+  role: z.enum(["admin", "committee", "guest"]),
+  key: z.string().min(1),
+});
+
+const KeyOnly = z.object({ key: z.string().min(1) });
 
 export const signInAsAiRole = createServerFn({ method: "POST" })
   .inputValidator((d) => RoleInput.parse(d))
   .handler(async ({ data }) => {
+    assertAccessKey(data.key);
     const { userId, cfg } = await ensureRoleAccount(data.role);
     const session = await issueSessionForUser(cfg.email);
     return {
@@ -149,11 +165,15 @@ export const signInAsAiRole = createServerFn({ method: "POST" })
     };
   });
 
-export const listAiAccessAccounts = createServerFn({ method: "GET" }).handler(async () => {
-  return (Object.keys(ROLE_CONFIG) as RoleKey[]).map((role) => ({
-    role,
-    displayName: ROLE_CONFIG[role].displayName,
-    phone: ROLE_CONFIG[role].phoneE164,
-    landing: ROLE_CONFIG[role].landing,
-  }));
-});
+export const listAiAccessAccounts = createServerFn({ method: "POST" })
+  .inputValidator((d) => KeyOnly.parse(d))
+  .handler(async ({ data }) => {
+    assertAccessKey(data.key);
+    return (Object.keys(ROLE_CONFIG) as RoleKey[]).map((role) => ({
+      role,
+      displayName: ROLE_CONFIG[role].displayName,
+      phone: ROLE_CONFIG[role].phoneE164,
+      landing: ROLE_CONFIG[role].landing,
+    }));
+  });
+
