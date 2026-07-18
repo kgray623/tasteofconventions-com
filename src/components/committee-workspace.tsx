@@ -27,7 +27,7 @@ import { NewBadge } from "@/components/new-badge";
 import { markSeen } from "@/lib/whats-new";
 import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 import { getCommitteeWorkspaceGuests, type CommitteeWorkspaceGuest } from "@/lib/rsvp-totals.functions";
-import { buildDuplicateGroupIds, computeRsvpRollup, formatPeopleResponses } from "@/lib/rsvp-math";
+import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -556,12 +556,8 @@ export function CommitteeWorkspace() {
 
   const confirmedInPersonPeople = myGuestRollup.people.inPerson;
   const confirmedVirtualPeople = myGuestRollup.people.zoom;
-  const inPersonResponseCount = myGuestRollup.responses.inPerson;
-  const zoomResponseCount = myGuestRollup.responses.zoom;
   const declinedPeople = myGuestRollup.people.declined;
-  const declinedResponseCount = myGuestRollup.responses.declined;
   const pendingPeople = myGuestRollup.people.pending;
-  const pendingResponseCount = myGuestRollup.responses.pending;
 
   // Group "My Guests" by RSVP status, alphabetized within each group.
   const myInPerson = myGuests
@@ -946,7 +942,7 @@ export function CommitteeWorkspace() {
                       >
                         <span className="flex items-center gap-2 font-semibold text-sm">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                          Confirmed people ({formatPeopleResponses(confirmedInPersonPeople + confirmedVirtualPeople, inPersonResponseCount + zoomResponseCount)})
+                          Confirmed people ({confirmedInPersonPeople + confirmedVirtualPeople} people)
                         </span>
                         <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${openConfirmed ? "rotate-180" : ""}`} />
                       </button>
@@ -957,7 +953,6 @@ export function CommitteeWorkspace() {
                         tone="emerald"
                         guests={myInPerson}
                         peopleCount={confirmedInPersonPeople}
-                        responseCount={inPersonResponseCount}
                         open={openMyGroup.inPerson}
                         onToggle={() => setOpenMyGroup((p) => ({ ...p, inPerson: !p.inPerson }))}
                         isCommitteeGuest={isCommitteeGuest}
@@ -975,7 +970,6 @@ export function CommitteeWorkspace() {
                         tone="muted"
                         guests={myZoom}
                         peopleCount={confirmedVirtualPeople}
-                        responseCount={zoomResponseCount}
                         open={openMyGroup.zoom}
                         onToggle={() => setOpenMyGroup((p) => ({ ...p, zoom: !p.zoom }))}
                         isCommitteeGuest={isCommitteeGuest}
@@ -1020,7 +1014,6 @@ export function CommitteeWorkspace() {
                   tone="muted"
                   guests={myPending}
                   peopleCount={pendingPeople}
-                  responseCount={pendingResponseCount}
                   open={openMyGroup.pending}
                   onToggle={() => setOpenMyGroup((p) => ({ ...p, pending: !p.pending }))}
                   isCommitteeGuest={isCommitteeGuest}
@@ -1039,7 +1032,6 @@ export function CommitteeWorkspace() {
                   tone="rose"
                   guests={myDeclined}
                   peopleCount={declinedPeople}
-                  responseCount={declinedResponseCount}
                   open={openMyGroup.declined}
                   onToggle={() => setOpenMyGroup((p) => ({ ...p, declined: !p.declined }))}
                   isCommitteeGuest={isCommitteeGuest}
@@ -1059,7 +1051,6 @@ export function CommitteeWorkspace() {
                 tone={flatTone}
                 guests={flatRows}
                 peopleCount={flatRollup.people.allIfEveryoneShowed}
-                responseCount={flatRollup.responses.uploaded}
                 open={openFlatGroup}
                 onToggle={() => setOpenFlatGroup((v) => !v)}
                 isCommitteeGuest={isCommitteeGuest}
@@ -1200,7 +1191,6 @@ function MyGuestsGroup({
   tone,
   guests,
   peopleCount,
-  responseCount,
   open,
   onToggle,
   action,
@@ -1218,7 +1208,6 @@ function MyGuestsGroup({
   tone: "emerald" | "muted" | "rose";
   guests: CommitteeGuest[];
   peopleCount: number;
-  responseCount: number;
   open: boolean;
   onToggle: () => void;
   action?: React.ReactNode;
@@ -1250,7 +1239,7 @@ function MyGuestsGroup({
             type="button"
             className="w-full p-3 flex items-center justify-between gap-2 text-left cursor-pointer hover:bg-black/[0.03] transition-colors"
           >
-            <span className="font-semibold text-sm">{label} ({formatPeopleResponses(peopleCount, responseCount)})</span>
+            <span className="font-semibold text-sm">{label} ({peopleCount} people)</span>
             <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
           </button>
         </CollapsibleTrigger>
