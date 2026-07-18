@@ -935,7 +935,7 @@ export function CommitteeWorkspace() {
                       >
                         <span className="flex items-center gap-2 font-semibold text-sm">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                          Confirmed people ({confirmedInPersonPeople + confirmedVirtualPeople} people)
+                          Confirmed in person ({confirmedInPersonPeople} people) · Zoom ({confirmedVirtualPeople})
                         </span>
                         <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${openConfirmed ? "rotate-180" : ""}`} />
                       </button>
@@ -978,9 +978,9 @@ export function CommitteeWorkspace() {
                     </CollapsibleContent>
                   </div>
                 </Collapsible>
-                {myPending.length > 1 && (
+                {myAwaiting.length > 1 && (
                   <div className="flex items-center justify-end gap-2 px-1 pt-2">
-                    <span className="text-xs text-muted-foreground">Sort pending</span>
+                    <span className="text-xs text-muted-foreground">Sort no RSVP yet</span>
                     <Select
                       value={activePendingSort}
                       onValueChange={(v) =>
@@ -1003,12 +1003,13 @@ export function CommitteeWorkspace() {
                   </div>
                 )}
                 <MyGuestsGroup
-                  label="Pending"
+                  label="No RSVP yet"
                   tone="muted"
-                  guests={myPending}
-                  peopleCount={pendingPeople}
-                  open={openMyGroup.pending}
-                  onToggle={() => setOpenMyGroup((p) => ({ ...p, pending: !p.pending }))}
+                  guests={myAwaiting}
+                  peopleCount={myAwaiting.length}
+                  countLabel="contacts"
+                  open={openMyGroup.awaiting}
+                  onToggle={() => setOpenMyGroup((p) => ({ ...p, awaiting: !p.awaiting }))}
                   isCommitteeGuest={isCommitteeGuest}
                   duplicateIds={duplicateIds}
                   settingRsvpId={settingRsvpId}
