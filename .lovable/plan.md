@@ -1,27 +1,35 @@
-## Fix the GitHub-access instructions in the audit bundle
+## Root cause (confirmed against the database)
 
-You're on the mobile Preview-mode `...` menu (Share / Publish / Settings / Code / Files / More / History). That menu doesn't have GitHub — GitHub lives in the **Chat mode** composer's **Plus (+)** button, not here.
+Myisha is right — Joanna Hahn's invitation exists but is not linked to Myisha's inviter record, so Joanna doesn't roll up under "Myisha's guests."
 
-### What I'll change in `/mnt/documents/database-audit-bundle.md`
+Confirmed by direct DB reads:
+- Invitation `Joanna hahn` (402-359-0467) has `host_id = c3160a24…` and `inviter_id = NULL`.
+- Two inviter rows exist for Myisha: `Myisha Woods` (host_id `c3160a24…`) and `Mysha Woods` (host_id `37d4247b…`) — both with empty phone. Joanna's host_id matches the `Myisha Woods` row exactly.
+- The scope of the bug is much larger than one guest: **213 invitations across 8 inviters** have `inviter_id = NULL` while the host_id already matches an existing inviter row. That's why per-host counts don't match "My Guests" totals — these guests exist but aren't attributed to anyone.
 
-Rewrite "Step 1 — Give ChatGPT the source code" so it works for both mobile and desktop, and stops referring to a menu that doesn't exist on your screen.
+Affected hosts and unlinked counts:
+Shelley & Pat Monaghan 51, Kari Gray 60, Dixie Frahm 33, Betsaida Ruiz 32, Myisha Woods 20, Melissa Novotne 11, Mysha Woods 4, Jamy Elker 2.
 
-New Step 1 wording:
+## Fix (three parts, all required per the "backfill + forward-fix" rule)
 
-**Mobile (what you're on now)**
-1. In the bottom bar, tap **Chat** to switch out of Preview mode into Chat mode.
-2. In the chat composer, tap the **+** (Plus) button on the left of the text box.
-3. Tap **GitHub** → **Connect project** → authorize the Lovable GitHub App → pick the account/org → **Create Repository**.
-4. Open the new repo on github.com and copy its URL.
-5. Paste the URL into ChatGPT.
+1. **Merge the duplicate Myisha inviter records.**
+   Keep `Myisha Woods` (host_id `c3160a24…`). Repoint any invitations already linked to `Mysha Woods` at the kept row, then delete the `Mysha Woods` row. (Also normalize any RSVP `guest_name` spelling for Myisha, if present, per prior guidance.)
 
-**Desktop**
-1. In the chat input (bottom left), click the **+** (Plus) button.
-2. Choose **GitHub** → **Connect project** → authorize → **Create Repository**.
-3. Copy the repo URL from github.com and paste it into ChatGPT.
+2. **Backfill existing invitations.**
+   For every invitation where `inviter_id IS NULL` and there is exactly one inviter row with the same `host_id`, set `inviter_id` to that inviter. Ambiguous host_ids (more than one inviter) get skipped and reported — none exist today, but the query will be safe.
 
-**If your workspace is on a free plan and the repo has to stay private:** download the code instead — desktop only: open the **Code Editor** (`</>` icon), then **Download codebase** at the bottom of the file tree. Upload that ZIP to ChatGPT.
+3. **Forward-fix so this can't happen to new invitations.**
+   Add a `BEFORE INSERT OR UPDATE` trigger on `invitations`: if `inviter_id IS NULL` and exactly one `inviters` row shares the new row's `host_id`, auto-populate `inviter_id`. This closes the gap for every future guest an inviter (or admin) adds under their account.
 
-I'll also add a one-line note at the top of Step 1 saying: "The GitHub option is in the **Chat mode Plus (+) menu**, not the Preview `...` menu."
+## Verification (before saying "done")
 
-No other sections of the bundle change. I'll re-export the file and give you the download link.
+- Re-run the "unlinked" query — expect 0.
+- Confirm Joanna Hahn now appears under Myisha's guest list on `/admin/guests` filtered by Myisha, and in Myisha's own committee view.
+- Spot-check the 7 other affected hosts: their "My Guests" totals should jump by the numbers above, and the "everyone" total should stay unchanged.
+- Insert a synthetic test invitation (then delete it) under Myisha's host_id with no `inviter_id` and confirm the trigger fills it in.
+
+Timestamp on completion: UTC time in the summary, as always.
+
+## No UI changes
+
+This is a data + trigger fix only. No component or presentation code changes.
