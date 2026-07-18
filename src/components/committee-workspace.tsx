@@ -529,6 +529,30 @@ export function CommitteeWorkspace() {
     party_size: g.party_size,
     attendance_mode: g.attendance_mode,
   })));
+  const allMyGuestGroupIds = buildDuplicateGroupIds(myGuestsSorted.map((g) => ({
+    id: g.id,
+    guest_name: g.guest_name,
+    guest_phone: g.guest_phone,
+  })));
+  const allMyGuestPeople = computeRsvpRollup(myGuestsSorted.map((g) => ({
+    id: g.id,
+    groupId: allMyGuestGroupIds.get(g.id) ?? g.id,
+    status: g.rsvp_status,
+    party_size: g.party_size,
+    attendance_mode: g.attendance_mode,
+  }))).people.allIfEveryoneShowed;
+  const committeeGuestGroupIds = buildDuplicateGroupIds(myGuestsSorted.filter((g) => committeeIds.has(g.id)).map((g) => ({
+    id: g.id,
+    guest_name: g.guest_name,
+    guest_phone: g.guest_phone,
+  })));
+  const committeeGuestPeople = computeRsvpRollup(myGuestsSorted.filter((g) => committeeIds.has(g.id)).map((g) => ({
+    id: g.id,
+    groupId: committeeGuestGroupIds.get(g.id) ?? g.id,
+    status: g.rsvp_status,
+    party_size: g.party_size,
+    attendance_mode: g.attendance_mode,
+  }))).people.allIfEveryoneShowed;
 
   const confirmedInPersonPeople = myGuestRollup.people.inPerson;
   const confirmedVirtualPeople = myGuestRollup.people.zoom;
@@ -732,7 +756,7 @@ export function CommitteeWorkspace() {
             <button type="button" className="flex min-w-0 flex-1 items-center gap-2 flex-wrap text-left hover:bg-muted/40 rounded-md">
               <CheckCircle2 className="w-5 h-5 text-ink shrink-0" />
               <h2 className="font-semibold truncate">
-                My Guests ({loadingGuests ? "…" : `${myGuestRollup.people.allIfEveryoneShowed} people${myGuestsFilter === "committee" ? ` of ${computeRsvpRollup(myGuestsSorted.map((g) => ({ id: g.id, groupId: myGuestGroupIds.get(g.id) ?? g.id, status: g.rsvp_status, party_size: g.party_size, attendance_mode: g.attendance_mode }))).people.allIfEveryoneShowed}` : ""}`})
+                My Guests ({loadingGuests ? "…" : `${myGuestRollup.people.allIfEveryoneShowed} people${myGuestsFilter === "committee" ? ` of ${allMyGuestPeople}` : ""}`})
               </h2>
               <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${openMyGuestsCard ? "rotate-180" : ""}`} />
             </button>
@@ -789,7 +813,7 @@ export function CommitteeWorkspace() {
             variant={myGuestsFilter === "all" ? "default" : "outline"}
             onClick={() => setMyGuestsFilter("all")}
           >
-            All ({loadingGuests ? "…" : myGuestsSorted.length})
+            All ({loadingGuests ? "…" : `${allMyGuestPeople} people`})
           </Button>
           <NewBadge target="committee:filter-toggle" />
           <Button
@@ -798,7 +822,7 @@ export function CommitteeWorkspace() {
             variant={myGuestsFilter === "committee" ? "default" : "outline"}
             onClick={() => setMyGuestsFilter("committee")}
           >
-            Committee ({loadingGuests ? "…" : committeeIds.size})
+            Committee ({loadingGuests ? "…" : `${committeeGuestPeople} people`})
           </Button>
         </div>
         <p className="px-4 pt-3 text-xs text-muted-foreground">
