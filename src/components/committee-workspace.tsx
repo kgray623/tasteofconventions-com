@@ -1185,6 +1185,7 @@ function MyGuestsGroup({
   tone,
   guests,
   peopleCount,
+  countLabel = "people",
   open,
   onToggle,
   action,
@@ -1202,6 +1203,7 @@ function MyGuestsGroup({
   tone: "emerald" | "muted" | "rose";
   guests: CommitteeGuest[];
   peopleCount: number;
+  countLabel?: "people" | "contacts";
   open: boolean;
   onToggle: () => void;
   action?: React.ReactNode;
@@ -1233,7 +1235,7 @@ function MyGuestsGroup({
             type="button"
             className="w-full p-3 flex items-center justify-between gap-2 text-left cursor-pointer hover:bg-black/[0.03] transition-colors"
           >
-            <span className="font-semibold text-sm">{label} ({peopleCount} people)</span>
+            <span className="font-semibold text-sm">{label} ({peopleCount} {countLabel})</span>
             <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
           </button>
         </CollapsibleTrigger>
