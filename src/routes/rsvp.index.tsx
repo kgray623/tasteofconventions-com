@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { getPublicRsvpByPhone, submitPublicRsvp } from "@/lib/invitations.functions";
@@ -50,6 +50,19 @@ function PreviewPage() {
   const [name, setName] = useDraftState(draftScope, "name", "");
   const [phone, setPhone] = useDraftState(draftScope, "phone", "");
   const [invitedBy, setInvitedBy] = useDraftState(draftScope, "invitedBy", "");
+  useEffect(() => {
+    if (invitedBy === "__other__") {
+      try {
+        const raw = window.localStorage.getItem(`platform-draft:${draftScope}`);
+        const parsed = raw ? JSON.parse(raw) : null;
+        const other = parsed && typeof parsed.invitedByOther === "string" ? parsed.invitedByOther : "";
+        setInvitedBy(other);
+      } catch {
+        setInvitedBy("");
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invitedBy]);
   const [cuisineCounts, setCuisineCounts] = useDraftState<Record<string, number>>(
     draftScope,
     "cuisineCounts",
