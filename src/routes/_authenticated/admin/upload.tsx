@@ -1576,7 +1576,7 @@ function UploadPage() {
           <div className="flex items-center gap-2 flex-wrap">
             <CheckCircle2 className="w-5 h-5 text-terracotta" />
             <p className="font-medium">
-              Confirmed people — {confirmedPeople} total ({inPersonPeople} in person · {zoomPeople} on Zoom) from {savedGuestRollup.responses.confirmed} RSVP responses
+              Confirmed people — {confirmedPeople} total ({inPersonPeople} in person · {zoomPeople} on Zoom)
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">

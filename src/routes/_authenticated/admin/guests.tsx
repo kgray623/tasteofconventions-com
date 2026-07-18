@@ -314,19 +314,14 @@ function GuestsPage() {
                 <span className={`tabular-nums text-xs ${active ? "text-cream/80" : "text-muted-foreground"}`}>
                   {counts.people[t]} people
                 </span>
-                {counts.rsvps[t] !== counts.people[t] && (
-                  <span className={`tabular-nums text-[10px] ${active ? "text-cream/60" : "text-muted-foreground/70"}`}>
-                    {counts.rsvps[t]} RSVPs
-                  </span>
-                )}
               </Link>
             );
           })}
         </div>
-        <p className="text-[11px] text-muted-foreground mt-2">Tab number = <strong>people by party size</strong> after duplicate reconciliation. RSVP record counts appear only as small secondary text.</p>
+        <p className="text-[11px] text-muted-foreground mt-2">Tab numbers show <strong>people by party size</strong> after duplicate reconciliation.</p>
         <p className="text-[11px] text-muted-foreground mt-1">
           Reconciled totals: <strong>{counts.people.confirmed}</strong> confirmed people
-          (<strong>{counts.modePeople.in_person}</strong> in-person from <strong>{counts.modeResponses.in_person}</strong> RSVPs · <strong>{counts.modePeople.zoom}</strong> Zoom from <strong>{counts.modeResponses.zoom}</strong> RSVPs);
+          (<strong>{counts.modePeople.in_person}</strong> in-person · <strong>{counts.modePeople.zoom}</strong> Zoom);
           declined <strong>{counts.people.declined}</strong> people; pending <strong>{counts.people.pending}</strong> people.
         </p>
       </Card>
