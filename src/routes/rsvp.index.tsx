@@ -50,7 +50,6 @@ function PreviewPage() {
   const [name, setName] = useDraftState(draftScope, "name", "");
   const [phone, setPhone] = useDraftState(draftScope, "phone", "");
   const [invitedBy, setInvitedBy] = useDraftState(draftScope, "invitedBy", "");
-  const [invitedByOther, setInvitedByOther] = useDraftState(draftScope, "invitedByOther", "");
   const [cuisineCounts, setCuisineCounts] = useDraftState<Record<string, number>>(
     draftScope,
     "cuisineCounts",
@@ -66,7 +65,6 @@ function PreviewPage() {
     "submittedAt",
     null,
   );
-  const [inviters, setInviters] = useState<{ id: string; name: string }[]>([]);
   const cuisines = [
     { key: "Myanmar", label: "Myanmar/Burmese" },
     { key: "African", label: "African" },
@@ -75,14 +73,7 @@ function PreviewPage() {
   const phoneDigits = phone.replace(/\D/g, "");
   const canChooseMeals = name.trim().length > 0 && phoneDigits.length >= 7;
 
-  useEffect(() => {
-    supabase.rpc("get_public_inviters").then(({ data }) => {
-      const list = (data ?? []).slice().sort((a, b) =>
-        a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
-      );
-      setInviters(list);
-    });
-  }, []);
+
 
 
   const save = useServerFn(submitPublicRsvp);
