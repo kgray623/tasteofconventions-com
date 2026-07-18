@@ -360,27 +360,14 @@ function PreviewPage() {
               </div>
             </div>
             <Label htmlFor="invited-by">Invited by <span className="text-destructive">*</span></Label>
-            <Select value={invitedBy || undefined} onValueChange={setInvitedBy}>
-              <SelectTrigger id="invited-by">
-                <SelectValue placeholder="Open to select" />
-              </SelectTrigger>
-              <SelectContent>
-                {inviters.map((i) => (
-                  <SelectItem key={i.id} value={i.name}>
-                    {i.name}
-                  </SelectItem>
-                ))}
-                <SelectItem value="__other__">Other…</SelectItem>
-              </SelectContent>
-            </Select>
-            {invitedBy === "__other__" && (
-              <Input
-                className="mt-2"
-                value={invitedByOther}
-                onChange={(e) => setInvitedByOther(e.target.value)}
-                placeholder="Type the name of the person who invited you"
-              />
-            )}
+            <Input
+              id="invited-by"
+              value={invitedBy}
+              onChange={(e) => setInvitedBy(e.target.value)}
+              placeholder="Type the name of the person who invited you"
+              maxLength={120}
+            />
+
           </div>
         </Card>
 
