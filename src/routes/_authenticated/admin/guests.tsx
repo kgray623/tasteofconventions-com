@@ -312,7 +312,7 @@ function GuestsPage() {
               >
                 {STATUS_LABEL[t]}
                 <span className={`tabular-nums text-xs ${active ? "text-cream/80" : "text-muted-foreground"}`}>
-                  ({counts.people[t]})
+                  {counts.people[t]} people
                 </span>
                 {counts.rsvps[t] !== counts.people[t] && (
                   <span className={`tabular-nums text-[10px] ${active ? "text-cream/60" : "text-muted-foreground/70"}`}>

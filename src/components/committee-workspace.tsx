@@ -871,7 +871,7 @@ export function CommitteeWorkspace() {
             })));
           };
 
-          // Tab counts show PEOPLE (seats in the building), not response rows.
+          // Tab counts show PEOPLE, not response rows.
           const peopleSeatsFor = (rows: CommitteeGuest[]) => {
             const p = rollupFor(rows).people;
             return p.confirmed + p.pending + p.declined + p.maybe + p.waitlist;
@@ -914,7 +914,7 @@ export function CommitteeWorkspace() {
                   onClick={() => setMyGuestsTab(t.key)}
                   className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs border transition ${myGuestsTab === t.key ? "bg-ink text-cream border-ink" : "bg-background hover:bg-muted border-border"}`}
                 >
-                  {t.label} ({t.count})
+                  {t.label} ({t.count} people)
                 </button>
               ))}
               {myGuestsTab !== "latest" && (
