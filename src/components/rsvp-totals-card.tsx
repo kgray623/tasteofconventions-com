@@ -123,7 +123,7 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
               sub={mine.pendingRequest != null ? `Pending: ${mine.pendingRequest}` : undefined}
             />
             <Stat
-              label="My guest records uploaded"
+              label="My uploaded guests"
               value={loading ? "—" : mine.uploaded}
               sub={overUploaded ? `Requested: ${mine.requested}` : undefined}
               warn={overUploaded}
@@ -141,13 +141,12 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
             <span className="font-semibold text-ink tabular-nums">
               {loading ? "—" : mine.confirmed}
             </span>
-            {loading ? "" : ` from ${mine.inPersonResponses} RSVPs`}
             {" — this is the number that uses seats."}
           </p>
           <p className="text-xs text-muted-foreground">
             My Zoom confirmed people:{" "}
             <span className="font-semibold text-ink tabular-nums">{loading ? "—" : mine.virtual}</span>
-            {loading ? "" : ` from ${mine.virtualResponses} RSVPs — unlimited, doesn't use seats.`}
+            {" — unlimited, doesn't use seats."}
           </p>
           {myInviterIds.length > 0 && (
             <RequestMoreButton
@@ -186,7 +185,7 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
           <span className="font-semibold text-ink tabular-nums">
             {loading ? "—" : event.confirmed}
           </span>
-          {loading ? "" : ` from ${event.inPersonResponses} RSVPs.`}
+          {"."}
           {" "}Zoom confirmed people:{" "}
           <span className="font-semibold text-ink tabular-nums">
             {loading ? "—" : event.virtual}
