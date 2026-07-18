@@ -302,7 +302,7 @@ function AdminOverview() {
         <Card className="p-5 space-y-1">
           <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Reconciliation</p>
           <StatRow row={{ label: "Invitations on file", value: recon?.invitations_total ?? 0, emphasis: true }} />
-          <StatRow row={{ label: "RSVP records", value: all.rsvp_records, to: "/admin/my-rsvp" }} />
+          <StatRow row={{ label: "Stored RSVP rows", value: all.rsvp_records, to: "/admin/my-rsvp" }} />
           <StatRow row={{ label: "Duplicate guest pairs", value: recon?.duplicate_guest_pairs ?? 0, to: "/dashboard" }} />
           {(recon?.duplicate_rsvp_invitations ?? 0) > 0 && (
             <StatRow row={{ label: "Duplicate RSVP rows", value: recon?.duplicate_rsvp_invitations ?? 0 }} />

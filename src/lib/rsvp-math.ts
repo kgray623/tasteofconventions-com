@@ -169,7 +169,7 @@ export function computeRsvpRollup(rows: RsvpMathRow[]): RsvpRollup {
       pending: 0,
     },
     people: {
-      allIfEveryoneShowed: grouped.size,
+      allIfEveryoneShowed: 0,
       confirmed: 0,
       inPerson: 0,
       zoom: 0,
@@ -183,6 +183,7 @@ export function computeRsvpRollup(rows: RsvpMathRow[]): RsvpRollup {
   for (const row of grouped.values()) {
     const party = rsvpPartySize(row.partySize);
     const status = normalizeRsvpStatus(row.status);
+    rollup.people.allIfEveryoneShowed += party;
     if (!status) {
       rollup.responses.pending += 1;
       rollup.people.pending += 1;

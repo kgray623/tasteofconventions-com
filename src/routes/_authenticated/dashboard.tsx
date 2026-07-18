@@ -253,10 +253,10 @@ function Dashboard() {
   })));
   const stats: { label: string; value: number; newTarget?: string }[] = [
     { label: "Your invitations", value: myInvites.length },
-    { label: "Total guest records", value: inviteRollup.responses.uploaded },
+    { label: "Total possible people", value: inviteRollup.people.allIfEveryoneShowed },
     { label: "In-person confirmed people", value: inviteRollup.people.inPerson },
     { label: "Zoom confirmed people", value: inviteRollup.people.zoom },
-    { label: "Confirmed RSVP responses", value: inviteRollup.responses.confirmed },
+    { label: "Total confirmed people", value: inviteRollup.people.confirmed },
     { label: "Duplicate flags", value: flags.length },
   ];
 
