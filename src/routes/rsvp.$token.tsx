@@ -180,8 +180,9 @@ function RsvpPage() {
 
   const handleSubmit = async () => {
     try {
-      const finalInvitedBy = invitedBy === "__other__" ? invitedByOther.trim() : invitedBy;
-      if (!finalInvitedBy) return toast.error("Please select who invited you");
+      const finalInvitedBy = invitedBy.trim();
+      if (!finalInvitedBy) return toast.error("Please enter who invited you");
+
       // Derive ordering_food from the meal pre-order: any meals = yes, none = no.
       const mealCount = Object.values(cuisineCounts).reduce(
         (sum, qty) => sum + (Number(qty) || 0),
