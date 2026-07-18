@@ -76,11 +76,11 @@ export function CommitteeWorkspace() {
   const [committeeNames, setCommitteeNames] = useState<Set<string>>(new Set());
   const [committeePhones, setCommitteePhones] = useState<Set<string>>(new Set());
   const [myGuestsFilter, setMyGuestsFilter] = useState<"all" | "committee">("all");
-  const [openMyGroup, setOpenMyGroup] = useState<{ inPerson: boolean; zoom: boolean; declined: boolean; pending: boolean }>({ inPerson: false, zoom: false, declined: false, pending: false });
+  const [openMyGroup, setOpenMyGroup] = useState<{ inPerson: boolean; zoom: boolean; declined: boolean; awaiting: boolean }>({ inPerson: false, zoom: false, declined: false, awaiting: false });
   const [openTotals, setOpenTotals] = useState(true);
   const [openMyGuestsCard, setOpenMyGuestsCard] = useState(true);
   const [openConfirmed, setOpenConfirmed] = useState(false);
-  const [myGuestsTab, setMyGuestsTab] = useState<"all" | "confirmed" | "pending" | "declined" | "latest">("all");
+  const [myGuestsTab, setMyGuestsTab] = useState<"all" | "inPerson" | "zoom" | "declined" | "latest">("all");
   const [myGuestsSort, setMyGuestsSort] = useState<"grouped" | "alpha" | "newest" | "oldest">("grouped");
   const [openFlatGroup, setOpenFlatGroup] = useState(true);
 
@@ -529,44 +529,17 @@ export function CommitteeWorkspace() {
     party_size: g.party_size,
     attendance_mode: g.attendance_mode,
   })));
-  const allMyGuestGroupIds = buildDuplicateGroupIds(myGuestsSorted.map((g) => ({
-    id: g.id,
-    guest_name: g.guest_name,
-    guest_phone: g.guest_phone,
-  })));
-  const allMyGuestPeople = computeRsvpRollup(myGuestsSorted.map((g) => ({
-    id: g.id,
-    groupId: allMyGuestGroupIds.get(g.id) ?? g.id,
-    status: g.rsvp_status,
-    party_size: g.party_size,
-    attendance_mode: g.attendance_mode,
-  }))).people.allIfEveryoneShowed;
-  const committeeGuestGroupIds = buildDuplicateGroupIds(myGuestsSorted.filter((g) => committeeIds.has(g.id)).map((g) => ({
-    id: g.id,
-    guest_name: g.guest_name,
-    guest_phone: g.guest_phone,
-  })));
-  const committeeGuestPeople = computeRsvpRollup(myGuestsSorted.filter((g) => committeeIds.has(g.id)).map((g) => ({
-    id: g.id,
-    groupId: committeeGuestGroupIds.get(g.id) ?? g.id,
-    status: g.rsvp_status,
-    party_size: g.party_size,
-    attendance_mode: g.attendance_mode,
-  }))).people.allIfEveryoneShowed;
-
   const confirmedInPersonPeople = myGuestRollup.people.inPerson;
   const confirmedVirtualPeople = myGuestRollup.people.zoom;
   const declinedPeople = myGuestRollup.people.declined;
-  const pendingPeople = myGuestRollup.people.pending;
-
-  // Group "My Guests" by RSVP status, alphabetized within each group.
+  // Group uploaded contacts by RSVP status, alphabetized within each group.
   const myInPerson = myGuests
     .filter((g) => g.rsvp_status === "yes" && g.attendance_mode !== "zoom")
     .sort(byName);
   const myZoom = myGuests
     .filter((g) => g.rsvp_status === "yes" && g.attendance_mode === "zoom")
     .sort(byName);
-  const myPending = myGuests
+  const myAwaiting = myGuests
     .filter((g) => !g.rsvp_status || g.rsvp_status === "waitlist" || g.rsvp_status === "maybe")
     .sort(byPendingSort);
   const myDeclined = myGuests.filter((g) => g.rsvp_status === "no").sort(byName);
@@ -752,7 +725,7 @@ export function CommitteeWorkspace() {
             <button type="button" className="flex min-w-0 flex-1 items-center gap-2 flex-wrap text-left hover:bg-muted/40 rounded-md">
               <CheckCircle2 className="w-5 h-5 text-ink shrink-0" />
               <h2 className="font-semibold truncate">
-                My Guests ({loadingGuests ? "…" : `${myGuestRollup.people.allIfEveryoneShowed} people${myGuestsFilter === "committee" ? ` of ${allMyGuestPeople}` : ""}`})
+                My uploaded contacts ({loadingGuests ? "…" : `${myGuests.length} contacts${myGuestsFilter === "committee" ? ` of ${myGuestsUnsorted.length}` : ""}`})
               </h2>
               <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${openMyGuestsCard ? "rotate-180" : ""}`} />
             </button>
@@ -809,7 +782,7 @@ export function CommitteeWorkspace() {
             variant={myGuestsFilter === "all" ? "default" : "outline"}
             onClick={() => setMyGuestsFilter("all")}
           >
-            All ({loadingGuests ? "…" : `${allMyGuestPeople} people`})
+            All ({loadingGuests ? "…" : `${myGuestsUnsorted.length} contacts`})
           </Button>
           <NewBadge target="committee:filter-toggle" />
           <Button
@@ -818,11 +791,11 @@ export function CommitteeWorkspace() {
             variant={myGuestsFilter === "committee" ? "default" : "outline"}
             onClick={() => setMyGuestsFilter("committee")}
           >
-            Committee ({loadingGuests ? "…" : `${committeeGuestPeople} people`})
+            Committee ({loadingGuests ? "…" : `${committeeIds.size} contacts`})
           </Button>
         </div>
         <p className="px-4 pt-3 text-xs text-muted-foreground">
-            Guests you've invited. Counts show people first; each pending guest counts as 1 person until a party size is recorded.
+            Contacts you've uploaded. In-person and Zoom RSVP totals are tracked separately above.
         </p>
         <p className="px-4 pt-2 text-xs text-muted-foreground flex items-center gap-1.5">
           <NewBadge target="committee:row-actions" />
@@ -853,7 +826,7 @@ export function CommitteeWorkspace() {
             : [];
 
           const confirmedFlat = myGuests.filter((g) => g.rsvp_status === "yes");
-          const pendingFlat = myGuests.filter((g) => !g.rsvp_status || g.rsvp_status === "waitlist" || g.rsvp_status === "maybe");
+          const awaitingFlat = myGuests.filter((g) => !g.rsvp_status || g.rsvp_status === "waitlist" || g.rsvp_status === "maybe");
           const declinedFlat = myGuests.filter((g) => g.rsvp_status === "no");
 
           const rollupFor = (rows: CommitteeGuest[]) => {
@@ -867,20 +840,15 @@ export function CommitteeWorkspace() {
             })));
           };
 
-          // Tab counts show PEOPLE, not response rows.
-          const peopleSeatsFor = (rows: CommitteeGuest[]) => {
-            const p = rollupFor(rows).people;
-            return p.confirmed + p.pending + p.declined + p.maybe + p.waitlist;
-          };
-          const confirmedSeats = (rows: CommitteeGuest[]) => rollupFor(rows).people.confirmed;
-          const pendingSeats = (rows: CommitteeGuest[]) => rollupFor(rows).people.pending;
+          const inPersonSeats = (rows: CommitteeGuest[]) => rollupFor(rows).people.inPerson;
+          const zoomSeats = (rows: CommitteeGuest[]) => rollupFor(rows).people.zoom;
           const declinedSeats = (rows: CommitteeGuest[]) => rollupFor(rows).people.declined;
           const tabs: { key: typeof myGuestsTab; label: string; count: number }[] = [
-            { key: "all", label: "All", count: peopleSeatsFor(myGuests) },
-            { key: "confirmed", label: "Confirmed", count: confirmedSeats(confirmedFlat) },
-            { key: "pending", label: "Pending", count: pendingSeats(pendingFlat) },
+            { key: "all", label: "All contacts", count: myGuests.length },
+            { key: "inPerson", label: "In person", count: inPersonSeats(confirmedFlat) },
+            { key: "zoom", label: "Zoom", count: zoomSeats(confirmedFlat) },
             { key: "declined", label: "Declined", count: declinedSeats(declinedFlat) },
-            { key: "latest", label: "Latest upload", count: peopleSeatsFor(latestBatch) },
+            { key: "latest", label: "Latest upload", count: latestBatch.length },
           ];
 
 
@@ -890,11 +858,11 @@ export function CommitteeWorkspace() {
           let flatLabel = "";
           let flatTone: "emerald" | "muted" | "rose" = "muted";
           if (!useGrouped) {
-            if (myGuestsTab === "confirmed") { flatRows = confirmedFlat; flatLabel = "Confirmed"; flatTone = "emerald"; }
-            else if (myGuestsTab === "pending") { flatRows = pendingFlat; flatLabel = "Pending"; flatTone = "muted"; }
+            if (myGuestsTab === "inPerson") { flatRows = myInPerson; flatLabel = "RSVP in person"; flatTone = "emerald"; }
+            else if (myGuestsTab === "zoom") { flatRows = myZoom; flatLabel = "RSVP by Zoom"; flatTone = "muted"; }
             else if (myGuestsTab === "declined") { flatRows = declinedFlat; flatLabel = "Declined"; flatTone = "rose"; }
             else if (myGuestsTab === "latest") { flatRows = latestBatch; flatLabel = "Latest upload"; flatTone = "muted"; }
-            else { flatRows = myGuests; flatLabel = "All guests"; flatTone = "muted"; }
+            else { flatRows = myGuests; flatLabel = "All contacts"; flatTone = "muted"; }
             const effectiveSort = myGuestsTab === "latest" ? "newest" : (myGuestsSort === "grouped" ? "alpha" : myGuestsSort);
             flatRows = [...flatRows].sort(sorterFor(effectiveSort));
           }
@@ -910,7 +878,7 @@ export function CommitteeWorkspace() {
                   onClick={() => setMyGuestsTab(t.key)}
                   className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs border transition ${myGuestsTab === t.key ? "bg-ink text-cream border-ink" : "bg-background hover:bg-muted border-border"}`}
                 >
-                  {t.label} ({t.count} people)
+                  {t.label} ({t.count} {t.key === "all" || t.key === "latest" ? "contacts" : "people"})
                 </button>
               ))}
               {myGuestsTab !== "latest" && (
@@ -942,7 +910,7 @@ export function CommitteeWorkspace() {
                       >
                         <span className="flex items-center gap-2 font-semibold text-sm">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                          Confirmed people ({confirmedInPersonPeople + confirmedVirtualPeople} people)
+                          Confirmed in person ({confirmedInPersonPeople} people) · Zoom ({confirmedVirtualPeople})
                         </span>
                         <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${openConfirmed ? "rotate-180" : ""}`} />
                       </button>
@@ -985,9 +953,9 @@ export function CommitteeWorkspace() {
                     </CollapsibleContent>
                   </div>
                 </Collapsible>
-                {myPending.length > 1 && (
+                {myAwaiting.length > 1 && (
                   <div className="flex items-center justify-end gap-2 px-1 pt-2">
-                    <span className="text-xs text-muted-foreground">Sort pending</span>
+                    <span className="text-xs text-muted-foreground">Sort no RSVP yet</span>
                     <Select
                       value={activePendingSort}
                       onValueChange={(v) =>
@@ -1010,12 +978,13 @@ export function CommitteeWorkspace() {
                   </div>
                 )}
                 <MyGuestsGroup
-                  label="Pending"
+                  label="No RSVP yet"
                   tone="muted"
-                  guests={myPending}
-                  peopleCount={pendingPeople}
-                  open={openMyGroup.pending}
-                  onToggle={() => setOpenMyGroup((p) => ({ ...p, pending: !p.pending }))}
+                  guests={myAwaiting}
+                  peopleCount={myAwaiting.length}
+                  countLabel="contacts"
+                  open={openMyGroup.awaiting}
+                  onToggle={() => setOpenMyGroup((p) => ({ ...p, awaiting: !p.awaiting }))}
                   isCommitteeGuest={isCommitteeGuest}
                   duplicateIds={duplicateIds}
                   settingRsvpId={settingRsvpId}
@@ -1050,7 +1019,8 @@ export function CommitteeWorkspace() {
                 label={flatLabel}
                 tone={flatTone}
                 guests={flatRows}
-                peopleCount={flatRollup.people.allIfEveryoneShowed}
+                peopleCount={myGuestsTab === "all" || myGuestsTab === "latest" ? flatRows.length : flatRollup.people.allIfEveryoneShowed}
+                countLabel={myGuestsTab === "all" || myGuestsTab === "latest" ? "contacts" : "people"}
                 open={openFlatGroup}
                 onToggle={() => setOpenFlatGroup((v) => !v)}
                 isCommitteeGuest={isCommitteeGuest}
@@ -1191,6 +1161,7 @@ function MyGuestsGroup({
   tone,
   guests,
   peopleCount,
+  countLabel = "people",
   open,
   onToggle,
   action,
@@ -1208,6 +1179,7 @@ function MyGuestsGroup({
   tone: "emerald" | "muted" | "rose";
   guests: CommitteeGuest[];
   peopleCount: number;
+  countLabel?: "people" | "contacts";
   open: boolean;
   onToggle: () => void;
   action?: React.ReactNode;
@@ -1239,7 +1211,7 @@ function MyGuestsGroup({
             type="button"
             className="w-full p-3 flex items-center justify-between gap-2 text-left cursor-pointer hover:bg-black/[0.03] transition-colors"
           >
-            <span className="font-semibold text-sm">{label} ({peopleCount} people)</span>
+            <span className="font-semibold text-sm">{label} ({peopleCount} {countLabel})</span>
             <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
           </button>
         </CollapsibleTrigger>

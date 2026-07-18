@@ -93,8 +93,6 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
   const pct = TOTAL_SEATS > 0 ? Math.min(100, Math.round((event.confirmed / TOTAL_SEATS) * 100)) : 0;
   const myAvailable = Math.max(0, mine.requested - mine.confirmed);
   const overUploaded = mine.uploaded > mine.requested;
-  const myConfirmedPeople = mine.confirmed + mine.virtual;
-  const eventConfirmedPeople = event.confirmed + event.virtual;
 
   return (
     <Card className="p-5 space-y-4">
@@ -114,34 +112,38 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
         <div className="space-y-3">
           <div className="flex items-center gap-1.5">
             <NewBadge target="committee:my-rsvp-label" />
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">My RSVPs</p>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">My RSVP total</p>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
             <Stat
-              label="My RSVP request"
+              label="RSVP requests"
               value={loading ? "—" : mine.requested}
               sub={mine.pendingRequest != null ? `Pending: ${mine.pendingRequest}` : undefined}
             />
             <Stat
-              label="My uploaded guests"
+              label="Uploaded contacts"
               value={loading ? "—" : mine.uploaded}
               sub={overUploaded ? `Requested: ${mine.requested}` : undefined}
               warn={overUploaded}
             />
             <Stat
-              label="My confirmed people"
-              value={loading ? "—" : myConfirmedPeople}
-              sub={loading ? undefined : `${mine.confirmed} in person · ${mine.virtual} Zoom`}
+              label="In-person confirmed"
+              value={loading ? "—" : mine.confirmed}
               emphasis
             />
-            <Stat label="My in-person seats left" value={loading ? "—" : myAvailable} />
+            <Stat label="Zoom confirmed" value={loading ? "—" : mine.virtual} />
+            <Stat label="Seats remaining" value={loading ? "—" : myAvailable} />
           </div>
           <p className="text-xs text-muted-foreground">
-            My in-person confirmed people:{" "}
+            My in-person confirmed people using seats:{" "}
             <span className="font-semibold text-ink tabular-nums">
               {loading ? "—" : mine.confirmed}
             </span>
-            {" — this is the number that uses seats."}
+            {" of "}
+            <span className="font-semibold text-ink tabular-nums">{loading ? "—" : mine.requested}</span>
+            {". "}
+            <span className="font-semibold text-ink tabular-nums">{loading ? "—" : myAvailable}</span>
+            {" seats remain."}
           </p>
           <p className="text-xs text-muted-foreground">
             My Zoom confirmed people:{" "}
@@ -159,17 +161,16 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
       )}
 
       <div className={`space-y-4 ${showPersonal ? "pt-3 border-t" : ""}`}>
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">Everyone</p>
+        <p className="text-xs uppercase tracking-wider text-muted-foreground">RSVP totals for everyone</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
           <Stat label="Total seats" value={TOTAL_SEATS} />
-          <Stat label="Approved RSVP quota" value={loading ? "—" : event.requested} />
-          <Stat label="Seats available" value={loading ? "—" : available} />
+          <Stat label="RSVP requests" value={loading ? "—" : event.requested} />
           <Stat
-            label="Total confirmed people"
-            value={loading ? "—" : eventConfirmedPeople}
-            sub={loading ? undefined : `${event.confirmed} in person · ${event.virtual} Zoom`}
+            label="In-person attendance"
+            value={loading ? "—" : event.confirmed}
             emphasis
           />
+          <Stat label="Zoom attendance" value={loading ? "—" : event.virtual} />
         </div>
 
         <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
@@ -181,19 +182,19 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
         </div>
 
         <p className="text-xs text-muted-foreground">
-          In-person confirmed people using seats: {" "}
+          In-person attendees in the building: {" "}
           <span className="font-semibold text-ink tabular-nums">
             {loading ? "—" : event.confirmed}
           </span>
-          {"."}
-          {" "}Zoom confirmed people:{" "}
+          {" of "}
+          <span className="font-semibold text-ink tabular-nums">{TOTAL_SEATS}</span>
+          {" seats. Seats remaining: "}
+          <span className="font-semibold text-ink tabular-nums">{loading ? "—" : available}</span>
+          {". Zoom attendees: "}
           <span className="font-semibold text-ink tabular-nums">
             {loading ? "—" : event.virtual}
           </span>
           {" — unlimited, doesn't use seats."}
-        </p>
-        <p className="text-[11px] text-muted-foreground">
-          Uploaded guest records after duplicate reconciliation: {loading ? "—" : event.uploaded}. Seat math uses in-person confirmed people only.
         </p>
       </div>
 
