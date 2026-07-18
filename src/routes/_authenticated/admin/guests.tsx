@@ -286,12 +286,12 @@ function GuestsPage() {
             {rows === null
               ? "Loading…"
               : activeStatus === "confirmed"
-                ? <>Confirmed: <span className="tabular-nums font-medium text-ink">{filteredCounts.rsvps.confirmed}</span> RSVP records = <span className="tabular-nums font-medium text-ink">{filteredCounts.people.confirmed}</span> people by party size (<span className="tabular-nums">{filteredCounts.modePeople.in_person}</span> in-person people from <span className="tabular-nums">{filteredCounts.modeResponses.in_person}</span> RSVPs · <span className="tabular-nums">{filteredCounts.modePeople.zoom}</span> Zoom people from <span className="tabular-nums">{filteredCounts.modeResponses.zoom}</span> RSVPs).</>
+                ? <>Confirmed: <span className="tabular-nums font-medium text-ink">{filteredCounts.people.confirmed}</span> people by party size (<span className="tabular-nums">{filteredCounts.modePeople.in_person}</span> in-person · <span className="tabular-nums">{filteredCounts.modePeople.zoom}</span> Zoom) from <span className="tabular-nums font-medium text-ink">{filteredCounts.rsvps.confirmed}</span> RSVP records.</>
                 : activeStatus === "declined"
-                  ? <>Declined: <span className="tabular-nums font-medium text-ink">{filteredCounts.rsvps.declined}</span> guests/RSVPs (<span className="tabular-nums font-medium text-ink">{filteredCounts.people.declined}</span> people by party size) of <span className="tabular-nums font-medium text-ink">{counts.rsvps.all}</span> reconciled uploaded guests.</>
+                  ? <>Declined: <span className="tabular-nums font-medium text-ink">{filteredCounts.people.declined}</span> people by party size from <span className="tabular-nums font-medium text-ink">{filteredCounts.rsvps.declined}</span> RSVP records.</>
                 : activeStatus === "pending"
                   ? <>Pending: <span className="tabular-nums font-medium text-ink">{filteredCounts.rsvps.pending}</span> guests with no RSVP yet (of <span className="tabular-nums font-medium text-ink">{counts.rsvps.all}</span> total uploaded).</>
-                  : <>Showing <span className="tabular-nums font-medium text-ink">{filteredCounts.rsvps[activeStatus]}</span> guests/RSVPs (<span className="tabular-nums font-medium text-ink">{filteredCounts.people[activeStatus]}</span> people by party size) of <span className="tabular-nums font-medium text-ink">{counts.rsvps.all}</span> reconciled uploaded guests.</>
+                  : <>Showing <span className="tabular-nums font-medium text-ink">{filteredCounts.people[activeStatus]}</span> people by party size from <span className="tabular-nums font-medium text-ink">{filteredCounts.rsvps[activeStatus]}</span> guest/RSVP records.</>
             }
           </p>
         </div>
@@ -312,20 +312,22 @@ function GuestsPage() {
               >
                 {STATUS_LABEL[t]}
                 <span className={`tabular-nums text-xs ${active ? "text-cream/80" : "text-muted-foreground"}`}>
-                  {counts.rsvps[t]}
-                </span>
-                <span className={`tabular-nums text-[10px] ${active ? "text-cream/60" : "text-muted-foreground/70"}`}>
                   ({counts.people[t]})
                 </span>
+                {counts.rsvps[t] !== counts.people[t] && (
+                  <span className={`tabular-nums text-[10px] ${active ? "text-cream/60" : "text-muted-foreground/70"}`}>
+                    {counts.rsvps[t]} RSVPs
+                  </span>
+                )}
               </Link>
             );
           })}
         </div>
-        <p className="text-[11px] text-muted-foreground mt-2">Tab number = <strong>guest/RSVP records</strong>. Parentheses = people by party size after duplicate reconciliation.</p>
+        <p className="text-[11px] text-muted-foreground mt-2">Tab number = <strong>people by party size</strong> after duplicate reconciliation. RSVP record counts appear only as small secondary text.</p>
         <p className="text-[11px] text-muted-foreground mt-1">
-          Reconciled totals: <strong>{counts.rsvps.confirmed}</strong> confirmed RSVP records = <strong>{counts.people.confirmed}</strong> people
-          (<strong>{counts.modePeople.in_person}</strong> in-person people from <strong>{counts.modeResponses.in_person}</strong> RSVPs · <strong>{counts.modePeople.zoom}</strong> Zoom people from <strong>{counts.modeResponses.zoom}</strong> RSVPs);
-          declined <strong>{counts.rsvps.declined}</strong> records = <strong>{counts.people.declined}</strong> people; pending <strong>{counts.rsvps.pending}</strong> records.
+          Reconciled totals: <strong>{counts.people.confirmed}</strong> confirmed people
+          (<strong>{counts.modePeople.in_person}</strong> in-person from <strong>{counts.modeResponses.in_person}</strong> RSVPs · <strong>{counts.modePeople.zoom}</strong> Zoom from <strong>{counts.modeResponses.zoom}</strong> RSVPs);
+          declined <strong>{counts.people.declined}</strong> people; pending <strong>{counts.people.pending}</strong> people.
         </p>
       </Card>
 

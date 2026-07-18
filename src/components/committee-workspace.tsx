@@ -731,7 +731,9 @@ export function CommitteeWorkspace() {
           <CollapsibleTrigger asChild>
             <button type="button" className="flex min-w-0 flex-1 items-center gap-2 flex-wrap text-left hover:bg-muted/40 rounded-md">
               <CheckCircle2 className="w-5 h-5 text-ink shrink-0" />
-              <h2 className="font-semibold truncate">My Guests ({loadingGuests ? "…" : `${myGuests.length}${myGuestsFilter === "committee" ? ` of ${myGuestsSorted.length}` : ""}`})</h2>
+              <h2 className="font-semibold truncate">
+                My Guests ({loadingGuests ? "…" : `${myGuestRollup.people.allIfEveryoneShowed} people${myGuestsFilter === "committee" ? ` of ${computeRsvpRollup(myGuestsSorted.map((g) => ({ id: g.id, groupId: myGuestGroupIds.get(g.id) ?? g.id, status: g.rsvp_status, party_size: g.party_size, attendance_mode: g.attendance_mode }))).people.allIfEveryoneShowed}` : ""}`})
+              </h2>
               <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${openMyGuestsCard ? "rotate-180" : ""}`} />
             </button>
           </CollapsibleTrigger>
@@ -800,7 +802,7 @@ export function CommitteeWorkspace() {
           </Button>
         </div>
         <p className="px-4 pt-3 text-xs text-muted-foreground">
-          Guests you've invited. If someone texts you back to decline (or accept), record their RSVP here.
+            Guests you've invited. Counts show people first; each pending guest counts as 1 person until a party size is recorded.
         </p>
         <p className="px-4 pt-2 text-xs text-muted-foreground flex items-center gap-1.5">
           <NewBadge target="committee:row-actions" />
@@ -920,7 +922,7 @@ export function CommitteeWorkspace() {
                       >
                         <span className="flex items-center gap-2 font-semibold text-sm">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                          Confirmed RSVPs ({formatPeopleResponses(confirmedInPersonPeople + confirmedVirtualPeople, inPersonResponseCount + zoomResponseCount)})
+                          Confirmed people ({formatPeopleResponses(confirmedInPersonPeople + confirmedVirtualPeople, inPersonResponseCount + zoomResponseCount)})
                         </span>
                         <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${openConfirmed ? "rotate-180" : ""}`} />
                       </button>
