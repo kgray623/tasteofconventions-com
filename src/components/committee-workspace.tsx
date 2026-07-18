@@ -557,8 +557,6 @@ export function CommitteeWorkspace() {
   const confirmedInPersonPeople = myGuestRollup.people.inPerson;
   const confirmedVirtualPeople = myGuestRollup.people.zoom;
   const declinedPeople = myGuestRollup.people.declined;
-  const pendingPeople = myGuestRollup.people.pending;
-
   // Group "My Guests" by RSVP status, alphabetized within each group.
   const myInPerson = myGuests
     .filter((g) => g.rsvp_status === "yes" && g.attendance_mode !== "zoom")
@@ -566,7 +564,7 @@ export function CommitteeWorkspace() {
   const myZoom = myGuests
     .filter((g) => g.rsvp_status === "yes" && g.attendance_mode === "zoom")
     .sort(byName);
-  const myPending = myGuests
+  const myAwaiting = myGuests
     .filter((g) => !g.rsvp_status || g.rsvp_status === "waitlist" || g.rsvp_status === "maybe")
     .sort(byPendingSort);
   const myDeclined = myGuests.filter((g) => g.rsvp_status === "no").sort(byName);
