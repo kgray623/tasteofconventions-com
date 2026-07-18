@@ -112,9 +112,8 @@ function RsvpPage() {
     "",
   );
   const [invitedBy, setInvitedBy] = useDraftState(rsvpDraftScope, "invitedBy", "");
-  const [invitedByOther, setInvitedByOther] = useDraftState(rsvpDraftScope, "invitedByOther", "");
-  const [inviters, setInviters] = useState<{ id: string; name: string }[]>([]);
   const [lightbox, setLightbox] = useState<string | null>(null);
+
   const [cuisineCounts, setCuisineCounts] = useDraftState<Record<string, number>>(
     orderDraftScope,
     "cuisineCounts",
