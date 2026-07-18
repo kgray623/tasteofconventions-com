@@ -161,13 +161,8 @@ function RsvpPage() {
       } finally {
         if (alive) setLoading(false);
       }
-      const { data: iv } = await withTimeout(supabase.rpc("get_public_inviters"), 10000);
-      if (!alive) return;
-      const sorted = (iv ?? []).slice().sort((a, b) =>
-        a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
-      );
-      setInviters(sorted);
     })()
+
       .catch(() => {
         if (alive) setLoading(false);
       })
