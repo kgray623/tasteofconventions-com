@@ -529,35 +529,10 @@ export function CommitteeWorkspace() {
     party_size: g.party_size,
     attendance_mode: g.attendance_mode,
   })));
-  const allMyGuestGroupIds = buildDuplicateGroupIds(myGuestsSorted.map((g) => ({
-    id: g.id,
-    guest_name: g.guest_name,
-    guest_phone: g.guest_phone,
-  })));
-  const allMyGuestPeople = computeRsvpRollup(myGuestsSorted.map((g) => ({
-    id: g.id,
-    groupId: allMyGuestGroupIds.get(g.id) ?? g.id,
-    status: g.rsvp_status,
-    party_size: g.party_size,
-    attendance_mode: g.attendance_mode,
-  }))).people.allIfEveryoneShowed;
-  const committeeGuestGroupIds = buildDuplicateGroupIds(myGuestsSorted.filter((g) => committeeIds.has(g.id)).map((g) => ({
-    id: g.id,
-    guest_name: g.guest_name,
-    guest_phone: g.guest_phone,
-  })));
-  const committeeGuestPeople = computeRsvpRollup(myGuestsSorted.filter((g) => committeeIds.has(g.id)).map((g) => ({
-    id: g.id,
-    groupId: committeeGuestGroupIds.get(g.id) ?? g.id,
-    status: g.rsvp_status,
-    party_size: g.party_size,
-    attendance_mode: g.attendance_mode,
-  }))).people.allIfEveryoneShowed;
-
   const confirmedInPersonPeople = myGuestRollup.people.inPerson;
   const confirmedVirtualPeople = myGuestRollup.people.zoom;
   const declinedPeople = myGuestRollup.people.declined;
-  // Group "My Guests" by RSVP status, alphabetized within each group.
+  // Group uploaded contacts by RSVP status, alphabetized within each group.
   const myInPerson = myGuests
     .filter((g) => g.rsvp_status === "yes" && g.attendance_mode !== "zoom")
     .sort(byName);
@@ -1044,7 +1019,8 @@ export function CommitteeWorkspace() {
                 label={flatLabel}
                 tone={flatTone}
                 guests={flatRows}
-                peopleCount={flatRollup.people.allIfEveryoneShowed}
+                peopleCount={myGuestsTab === "all" || myGuestsTab === "latest" ? flatRows.length : flatRollup.people.allIfEveryoneShowed}
+                countLabel={myGuestsTab === "all" || myGuestsTab === "latest" ? "contacts" : "people"}
                 open={openFlatGroup}
                 onToggle={() => setOpenFlatGroup((v) => !v)}
                 isCommitteeGuest={isCommitteeGuest}
