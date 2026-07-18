@@ -750,7 +750,7 @@ export function CommitteeWorkspace() {
             <button type="button" className="flex min-w-0 flex-1 items-center gap-2 flex-wrap text-left hover:bg-muted/40 rounded-md">
               <CheckCircle2 className="w-5 h-5 text-ink shrink-0" />
               <h2 className="font-semibold truncate">
-                My Guests ({loadingGuests ? "…" : `${myGuestRollup.people.allIfEveryoneShowed} people${myGuestsFilter === "committee" ? ` of ${allMyGuestPeople}` : ""}`})
+                My uploaded contacts ({loadingGuests ? "…" : `${myGuests.length} contacts${myGuestsFilter === "committee" ? ` of ${myGuestsUnsorted.length}` : ""}`})
               </h2>
               <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${openMyGuestsCard ? "rotate-180" : ""}`} />
             </button>
@@ -807,7 +807,7 @@ export function CommitteeWorkspace() {
             variant={myGuestsFilter === "all" ? "default" : "outline"}
             onClick={() => setMyGuestsFilter("all")}
           >
-            All ({loadingGuests ? "…" : `${allMyGuestPeople} people`})
+            All ({loadingGuests ? "…" : `${myGuestsUnsorted.length} contacts`})
           </Button>
           <NewBadge target="committee:filter-toggle" />
           <Button
@@ -816,11 +816,11 @@ export function CommitteeWorkspace() {
             variant={myGuestsFilter === "committee" ? "default" : "outline"}
             onClick={() => setMyGuestsFilter("committee")}
           >
-            Committee ({loadingGuests ? "…" : `${committeeGuestPeople} people`})
+            Committee ({loadingGuests ? "…" : `${committeeIds.size} contacts`})
           </Button>
         </div>
         <p className="px-4 pt-3 text-xs text-muted-foreground">
-            Guests you've invited. Counts show people first; each pending guest counts as 1 person until a party size is recorded.
+            Contacts you've uploaded. In-person and Zoom RSVP totals are tracked separately above.
         </p>
         <p className="px-4 pt-2 text-xs text-muted-foreground flex items-center gap-1.5">
           <NewBadge target="committee:row-actions" />
@@ -851,7 +851,7 @@ export function CommitteeWorkspace() {
             : [];
 
           const confirmedFlat = myGuests.filter((g) => g.rsvp_status === "yes");
-          const pendingFlat = myGuests.filter((g) => !g.rsvp_status || g.rsvp_status === "waitlist" || g.rsvp_status === "maybe");
+          const awaitingFlat = myGuests.filter((g) => !g.rsvp_status || g.rsvp_status === "waitlist" || g.rsvp_status === "maybe");
           const declinedFlat = myGuests.filter((g) => g.rsvp_status === "no");
 
           const rollupFor = (rows: CommitteeGuest[]) => {
@@ -865,20 +865,15 @@ export function CommitteeWorkspace() {
             })));
           };
 
-          // Tab counts show PEOPLE, not response rows.
-          const peopleSeatsFor = (rows: CommitteeGuest[]) => {
-            const p = rollupFor(rows).people;
-            return p.confirmed + p.pending + p.declined + p.maybe + p.waitlist;
-          };
-          const confirmedSeats = (rows: CommitteeGuest[]) => rollupFor(rows).people.confirmed;
-          const pendingSeats = (rows: CommitteeGuest[]) => rollupFor(rows).people.pending;
+          const inPersonSeats = (rows: CommitteeGuest[]) => rollupFor(rows).people.inPerson;
+          const zoomSeats = (rows: CommitteeGuest[]) => rollupFor(rows).people.zoom;
           const declinedSeats = (rows: CommitteeGuest[]) => rollupFor(rows).people.declined;
           const tabs: { key: typeof myGuestsTab; label: string; count: number }[] = [
-            { key: "all", label: "All", count: peopleSeatsFor(myGuests) },
-            { key: "confirmed", label: "Confirmed", count: confirmedSeats(confirmedFlat) },
-            { key: "pending", label: "Pending", count: pendingSeats(pendingFlat) },
+            { key: "all", label: "All contacts", count: myGuests.length },
+            { key: "inPerson", label: "In person", count: inPersonSeats(confirmedFlat) },
+            { key: "zoom", label: "Zoom", count: zoomSeats(confirmedFlat) },
             { key: "declined", label: "Declined", count: declinedSeats(declinedFlat) },
-            { key: "latest", label: "Latest upload", count: peopleSeatsFor(latestBatch) },
+            { key: "latest", label: "Latest upload", count: latestBatch.length },
           ];
 
 
@@ -888,8 +883,8 @@ export function CommitteeWorkspace() {
           let flatLabel = "";
           let flatTone: "emerald" | "muted" | "rose" = "muted";
           if (!useGrouped) {
-            if (myGuestsTab === "confirmed") { flatRows = confirmedFlat; flatLabel = "Confirmed"; flatTone = "emerald"; }
-            else if (myGuestsTab === "pending") { flatRows = pendingFlat; flatLabel = "Pending"; flatTone = "muted"; }
+            if (myGuestsTab === "inPerson") { flatRows = myInPerson; flatLabel = "RSVP in person"; flatTone = "emerald"; }
+            else if (myGuestsTab === "zoom") { flatRows = myZoom; flatLabel = "RSVP by Zoom"; flatTone = "muted"; }
             else if (myGuestsTab === "declined") { flatRows = declinedFlat; flatLabel = "Declined"; flatTone = "rose"; }
             else if (myGuestsTab === "latest") { flatRows = latestBatch; flatLabel = "Latest upload"; flatTone = "muted"; }
             else { flatRows = myGuests; flatLabel = "All guests"; flatTone = "muted"; }
