@@ -286,12 +286,12 @@ function GuestsPage() {
             {rows === null
               ? "Loading…"
               : activeStatus === "confirmed"
-                ? <>Confirmed: <span className="tabular-nums font-medium text-ink">{filteredCounts.people.confirmed}</span> people by party size (<span className="tabular-nums">{filteredCounts.modePeople.in_person}</span> in-person · <span className="tabular-nums">{filteredCounts.modePeople.zoom}</span> Zoom) from <span className="tabular-nums font-medium text-ink">{filteredCounts.rsvps.confirmed}</span> RSVP records.</>
+                ? <>Confirmed: <span className="tabular-nums font-medium text-ink">{filteredCounts.people.confirmed}</span> people by party size (<span className="tabular-nums">{filteredCounts.modePeople.in_person}</span> in-person · <span className="tabular-nums">{filteredCounts.modePeople.zoom}</span> Zoom).</>
                 : activeStatus === "declined"
-                  ? <>Declined: <span className="tabular-nums font-medium text-ink">{filteredCounts.people.declined}</span> people by party size from <span className="tabular-nums font-medium text-ink">{filteredCounts.rsvps.declined}</span> RSVP records.</>
+                  ? <>Declined: <span className="tabular-nums font-medium text-ink">{filteredCounts.people.declined}</span> people by party size.</>
                 : activeStatus === "pending"
-                  ? <>Pending: <span className="tabular-nums font-medium text-ink">{filteredCounts.rsvps.pending}</span> guests with no RSVP yet (of <span className="tabular-nums font-medium text-ink">{counts.rsvps.all}</span> total uploaded).</>
-                  : <>Showing <span className="tabular-nums font-medium text-ink">{filteredCounts.people[activeStatus]}</span> people by party size from <span className="tabular-nums font-medium text-ink">{filteredCounts.rsvps[activeStatus]}</span> guest/RSVP records.</>
+                  ? <>Pending: <span className="tabular-nums font-medium text-ink">{filteredCounts.people.pending}</span> people with no RSVP yet.</>
+                  : <>Showing <span className="tabular-nums font-medium text-ink">{filteredCounts.people[activeStatus]}</span> people by party size.</>
             }
           </p>
         </div>
