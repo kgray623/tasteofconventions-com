@@ -533,14 +533,13 @@ function RsvpPage() {
                 />
               </div>
             </div>
-            <Label htmlFor="invited-by">Invited by <span className="text-destructive">*</span></Label>
-            <Input
-              id="invited-by"
-              value={invitedBy}
-              onChange={(e) => setInvitedBy(e.target.value)}
-              placeholder="Type the name of the person who invited you"
-              maxLength={120}
-            />
+            <Label htmlFor="invited-by">
+              Invited by (committee member) <span className="text-destructive">*</span>
+            </Label>
+            <CommitteePicker id="invited-by" value={invitedBy} onChange={setInvitedBy} />
+            <p className="text-xs text-muted-foreground">
+              You must be invited by a committee member to RSVP.
+            </p>
 
           </div>
         </Card>
