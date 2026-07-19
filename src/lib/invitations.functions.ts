@@ -433,6 +433,62 @@ export const submitOrder = createServerFn({ method: "POST" })
     return { ok: true, total };
   });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Committee roster (names only) — public, used by RSVP "Invited by" picker
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const getCommitteeRoster = createServerFn({ method: "GET" }).handler(async () => {
+  const [invitersRes, committeeRes, teamRes] = await Promise.all([
+    supabaseAdmin.from("inviters").select("id,name").eq("active", true),
+    supabaseAdmin.from("invitations").select("id,guest_name").eq("is_committee", true),
+    supabaseAdmin.from("team_invites").select("id,name").eq("role", "team"),
+  ]);
+
+  type Row = { id: string; name: string };
+  const rows: Row[] = [];
+  for (const r of invitersRes.data ?? []) {
+    const name = (r.name ?? "").trim();
+    if (name) rows.push({ id: r.id, name });
+  }
+  for (const r of committeeRes.data ?? []) {
+    const name = (r.guest_name ?? "").trim();
+    if (name) rows.push({ id: r.id, name });
+  }
+  for (const r of teamRes.data ?? []) {
+    const name = (r.name ?? "").trim();
+    if (name) rows.push({ id: r.id, name });
+  }
+  const seen = new Set<string>();
+  const deduped: Row[] = [];
+  for (const r of rows.sort((a, b) => a.name.localeCompare(b.name))) {
+    const key = r.name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(r);
+  }
+  return { members: deduped };
+});
+
+async function assertInvitedByIsCommittee(rawName: string | null | undefined): Promise<string> {
+  const name = (rawName ?? "").trim();
+  if (!name || name === "__other__") {
+    throw new Error("Please select the committee member who invited you.");
+  }
+  const [invitersRes, committeeRes, teamRes] = await Promise.all([
+    supabaseAdmin.from("inviters").select("name").eq("active", true),
+    supabaseAdmin.from("invitations").select("guest_name").eq("is_committee", true),
+    supabaseAdmin.from("team_invites").select("name").eq("role", "team"),
+  ]);
+  const roster = new Set<string>();
+  for (const r of invitersRes.data ?? []) if (r.name) roster.add(r.name.trim().toLowerCase());
+  for (const r of committeeRes.data ?? []) if (r.guest_name) roster.add(r.guest_name.trim().toLowerCase());
+  for (const r of teamRes.data ?? []) if (r.name) roster.add(r.name.trim().toLowerCase());
+  if (!roster.has(name.toLowerCase())) {
+    throw new Error("Please select a committee member from the list — free-text names are no longer accepted.");
+  }
+  return name;
+}
+
 const PublicRsvpInput = z.object({
   guest_name: z.string().min(1).max(120),
   guest_phone: z.string().max(40).optional().nullable(),
