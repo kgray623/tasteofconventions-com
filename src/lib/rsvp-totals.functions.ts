@@ -111,7 +111,7 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
       .select("id")
       .order("starts_at")
       .limit(1);
-    if (eventsError) throw new Error(eventsError.message);
+    if (eventsError) throw friendlyDbError("the event", eventsError);
 
     const eventId = events?.[0]?.id;
     if (!eventId) return { guests: [], myHostIds: [userId] };
@@ -126,15 +126,14 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
       supabase.from("rsvps").select("invitation_id,status,party_size,attendance_mode,responded_at"),
     ]);
 
-    if (invitersRes.error) throw new Error(invitersRes.error.message);
-    if (invitationsRes.error) throw new Error(invitationsRes.error.message);
-    if (rsvpsRes.error) throw new Error(rsvpsRes.error.message);
+    if (invitersRes.error) throw friendlyDbError("the committee list", invitersRes.error);
+    if (invitationsRes.error) throw friendlyDbError("the guest list", invitationsRes.error);
+    if (rsvpsRes.error) throw friendlyDbError("the RSVPs", rsvpsRes.error);
 
     const inviterRows = (invitersRes.data ?? []) as InviterIdentity[];
-    const digitsOnly = (s: string | null | undefined) => (s ?? "").replace(/\D/g, "");
     const normName = (s: string | null | undefined) => (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
     const { data: authUser } = await supabase.auth.getUser();
-    const myPhoneTail = digitsOnly(authUser?.user?.phone).slice(-10);
+    const myPhoneTail = phoneTail(authUser?.user?.phone);
     const { data: prof } = await supabase
       .from("profiles")
       .select("display_name")
@@ -145,10 +144,11 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
     inviterRows.forEach((r) => {
       if (!r.host_id) return;
       if (r.host_id === userId) mineHostIds.add(r.host_id);
-      const rowTail = digitsOnly(r.phone).slice(-10);
+      const rowTail = phoneTail(r.phone);
       if (myPhoneTail && rowTail && rowTail === myPhoneTail) mineHostIds.add(r.host_id);
       if (myName && normName(r.name) === myName) mineHostIds.add(r.host_id);
     });
+
 
     const invitationRows = (invitationsRes.data ?? []) as Array<{
       id: string;
