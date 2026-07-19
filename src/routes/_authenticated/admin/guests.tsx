@@ -138,7 +138,7 @@ function GuestsPage() {
     c.declined = rollup.people.declined;
     c.maybe = rollup.people.maybe;
     c.waitlist = rollup.people.waitlist;
-    c.pending = rollup.responses.pending;
+    c.pending = rollup.people.pending;
     rsvps.all = rollup.responses.uploaded;
     rsvps.confirmed = rollup.responses.confirmed;
     rsvps.declined = rollup.responses.declined;
@@ -233,7 +233,7 @@ function GuestsPage() {
         declined: rollup.people.declined,
         maybe: rollup.people.maybe,
         waitlist: rollup.people.waitlist,
-        pending: rollup.responses.pending,
+        pending: rollup.people.pending,
       } as Record<StatusFilter, number>,
       rsvps: {
         all: rollup.responses.uploaded,

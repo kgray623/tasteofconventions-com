@@ -3,15 +3,24 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
 
+export type RsvpDataQualityIssues = {
+  partySizeCoerced: number;
+  statusUnknown: number;
+  attendanceModeUnknown: number;
+};
+
 export type RsvpTotalsResult = {
   event: {
     requested: number;
     uploaded: number;
-    confirmed: number; // in-person people
+    confirmed: number; // in-person people (explicit mode)
     confirmedResponses: number;
     inPersonResponses: number;
+    inPersonAssumed: number; // yes with unknown attendance mode
+    inPersonAssumedResponses: number;
     virtual: number;   // zoom people
     virtualResponses: number;
+    dataQuality: RsvpDataQualityIssues;
   };
   mine: {
     requested: number;
@@ -19,10 +28,13 @@ export type RsvpTotalsResult = {
     confirmed: number;
     confirmedResponses: number;
     inPersonResponses: number;
+    inPersonAssumed: number;
+    inPersonAssumedResponses: number;
     virtual: number;
     virtualResponses: number;
     pendingRequest: number | null;
     inviterIds: string[];
+    dataQuality: RsvpDataQualityIssues;
   } | null;
 };
 
@@ -303,10 +315,13 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
         confirmed: myRollup.people.inPerson,
         confirmedResponses: myRollup.responses.confirmed,
         inPersonResponses: myRollup.responses.inPerson,
+        inPersonAssumed: myRollup.people.inPersonAssumed,
+        inPersonAssumedResponses: myRollup.responses.inPersonAssumed,
         virtual: myRollup.people.zoom,
         virtualResponses: myRollup.responses.zoom,
         pendingRequest,
-          inviterIds: activeMine.map((r) => r.id).filter((id): id is string => !!id),
+        inviterIds: activeMine.map((r) => r.id).filter((id): id is string => !!id),
+        dataQuality: myRollup.dataQuality,
       };
     }
 
@@ -317,8 +332,11 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
         confirmed: rollup.people.inPerson,
         confirmedResponses: rollup.responses.confirmed,
         inPersonResponses: rollup.responses.inPerson,
+        inPersonAssumed: rollup.people.inPersonAssumed,
+        inPersonAssumedResponses: rollup.responses.inPersonAssumed,
         virtual: rollup.people.zoom,
         virtualResponses: rollup.responses.zoom,
+        dataQuality: rollup.dataQuality,
       },
       mine,
     };

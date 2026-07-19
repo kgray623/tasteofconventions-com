@@ -15,14 +15,22 @@ import { withTimeout } from "@/lib/async-safety";
 
 const TOTAL_SEATS = 550;
 
+type DataQuality = {
+  partySizeCoerced: number;
+  statusUnknown: number;
+  attendanceModeUnknown: number;
+};
+
 type EventTotals = {
   requested: number;
   uploaded: number;
   confirmed: number;
   confirmedResponses: number;
   inPersonResponses: number;
+  inPersonAssumed: number;
   virtual: number;
   virtualResponses: number;
+  dataQuality: DataQuality;
 };
 
 type MyTotals = {
@@ -31,9 +39,11 @@ type MyTotals = {
   confirmed: number;
   confirmedResponses: number;
   inPersonResponses: number;
+  inPersonAssumed: number;
   virtual: number;
   virtualResponses: number;
   pendingRequest: number | null;
+  dataQuality: DataQuality;
 };
 
 type Props = {
@@ -43,8 +53,9 @@ type Props = {
 
 export function RsvpTotalsCard({ personalHostIds }: Props) {
   const fetchTotals = useServerFn(getRsvpTotals);
-  const [event, setEvent] = useState<EventTotals>({ requested: 0, uploaded: 0, confirmed: 0, confirmedResponses: 0, inPersonResponses: 0, virtual: 0, virtualResponses: 0 });
-  const [mine, setMine] = useState<MyTotals>({ requested: 0, uploaded: 0, confirmed: 0, confirmedResponses: 0, inPersonResponses: 0, virtual: 0, virtualResponses: 0, pendingRequest: null });
+  const emptyDQ: DataQuality = { partySizeCoerced: 0, statusUnknown: 0, attendanceModeUnknown: 0 };
+  const [event, setEvent] = useState<EventTotals>({ requested: 0, uploaded: 0, confirmed: 0, confirmedResponses: 0, inPersonResponses: 0, inPersonAssumed: 0, virtual: 0, virtualResponses: 0, dataQuality: emptyDQ });
+  const [mine, setMine] = useState<MyTotals>({ requested: 0, uploaded: 0, confirmed: 0, confirmedResponses: 0, inPersonResponses: 0, inPersonAssumed: 0, virtual: 0, virtualResponses: 0, pendingRequest: null, dataQuality: emptyDQ });
   const [myInviterIds, setMyInviterIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -67,9 +78,11 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
             confirmed: result.mine.confirmed,
             confirmedResponses: result.mine.confirmedResponses,
             inPersonResponses: result.mine.inPersonResponses,
+            inPersonAssumed: result.mine.inPersonAssumed,
             virtual: result.mine.virtual,
             virtualResponses: result.mine.virtualResponses,
             pendingRequest: result.mine.pendingRequest,
+            dataQuality: result.mine.dataQuality,
           });
           setMyInviterIds(result.mine.inviterIds);
         }
@@ -199,11 +212,43 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
       </div>
 
 
+      <DataQualityWarnings dq={event.dataQuality} inPersonAssumedPeople={event.inPersonAssumed} />
+
       <p className="text-xs text-muted-foreground italic leading-relaxed">
         Only in-person guests use spots. Not everyone you invite will say yes, so plan to invite
         more guests than your approved in-person spots.
       </p>
     </Card>
+  );
+}
+
+function DataQualityWarnings({
+  dq,
+  inPersonAssumedPeople,
+}: {
+  dq: DataQuality;
+  inPersonAssumedPeople: number;
+}) {
+  const issues: string[] = [];
+  if (inPersonAssumedPeople > 0) {
+    issues.push(`${inPersonAssumedPeople} confirmed ${inPersonAssumedPeople === 1 ? "person is" : "people are"} missing an attendance mode`);
+  }
+  if (dq.partySizeCoerced > 0) {
+    issues.push(`${dq.partySizeCoerced} row${dq.partySizeCoerced === 1 ? "" : "s"} had an invalid party size (defaulted to 1)`);
+  }
+  if (dq.statusUnknown > 0) {
+    issues.push(`${dq.statusUnknown} row${dq.statusUnknown === 1 ? "" : "s"} had an unrecognized RSVP status`);
+  }
+  if (issues.length === 0) return null;
+  return (
+    <div className="rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">
+      <p className="font-semibold">Data quality</p>
+      <ul className="list-disc pl-4 mt-1 space-y-0.5">
+        {issues.map((issue) => (
+          <li key={issue}>{issue}</li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
