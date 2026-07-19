@@ -3,15 +3,24 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
 
+export type RsvpDataQualityIssues = {
+  partySizeCoerced: number;
+  statusUnknown: number;
+  attendanceModeUnknown: number;
+};
+
 export type RsvpTotalsResult = {
   event: {
     requested: number;
     uploaded: number;
-    confirmed: number; // in-person people
+    confirmed: number; // in-person people (explicit mode)
     confirmedResponses: number;
     inPersonResponses: number;
+    inPersonAssumed: number; // yes with unknown attendance mode
+    inPersonAssumedResponses: number;
     virtual: number;   // zoom people
     virtualResponses: number;
+    dataQuality: RsvpDataQualityIssues;
   };
   mine: {
     requested: number;
@@ -19,10 +28,13 @@ export type RsvpTotalsResult = {
     confirmed: number;
     confirmedResponses: number;
     inPersonResponses: number;
+    inPersonAssumed: number;
+    inPersonAssumedResponses: number;
     virtual: number;
     virtualResponses: number;
     pendingRequest: number | null;
     inviterIds: string[];
+    dataQuality: RsvpDataQualityIssues;
   } | null;
 };
 
