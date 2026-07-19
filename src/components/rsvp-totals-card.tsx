@@ -212,11 +212,43 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
       </div>
 
 
+      <DataQualityWarnings dq={event.dataQuality} inPersonAssumedPeople={event.inPersonAssumed} />
+
       <p className="text-xs text-muted-foreground italic leading-relaxed">
         Only in-person guests use spots. Not everyone you invite will say yes, so plan to invite
         more guests than your approved in-person spots.
       </p>
     </Card>
+  );
+}
+
+function DataQualityWarnings({
+  dq,
+  inPersonAssumedPeople,
+}: {
+  dq: DataQuality;
+  inPersonAssumedPeople: number;
+}) {
+  const issues: string[] = [];
+  if (inPersonAssumedPeople > 0) {
+    issues.push(`${inPersonAssumedPeople} confirmed ${inPersonAssumedPeople === 1 ? "person is" : "people are"} missing an attendance mode`);
+  }
+  if (dq.partySizeCoerced > 0) {
+    issues.push(`${dq.partySizeCoerced} row${dq.partySizeCoerced === 1 ? "" : "s"} had an invalid party size (defaulted to 1)`);
+  }
+  if (dq.statusUnknown > 0) {
+    issues.push(`${dq.statusUnknown} row${dq.statusUnknown === 1 ? "" : "s"} had an unrecognized RSVP status`);
+  }
+  if (issues.length === 0) return null;
+  return (
+    <div className="rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">
+      <p className="font-semibold">Data quality</p>
+      <ul className="list-disc pl-4 mt-1 space-y-0.5">
+        {issues.map((issue) => (
+          <li key={issue}>{issue}</li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
