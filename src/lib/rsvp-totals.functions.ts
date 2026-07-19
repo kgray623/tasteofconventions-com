@@ -315,10 +315,13 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
         confirmed: myRollup.people.inPerson,
         confirmedResponses: myRollup.responses.confirmed,
         inPersonResponses: myRollup.responses.inPerson,
+        inPersonAssumed: myRollup.people.inPersonAssumed,
+        inPersonAssumedResponses: myRollup.responses.inPersonAssumed,
         virtual: myRollup.people.zoom,
         virtualResponses: myRollup.responses.zoom,
         pendingRequest,
-          inviterIds: activeMine.map((r) => r.id).filter((id): id is string => !!id),
+        inviterIds: activeMine.map((r) => r.id).filter((id): id is string => !!id),
+        dataQuality: myRollup.dataQuality,
       };
     }
 
@@ -329,8 +332,11 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
         confirmed: rollup.people.inPerson,
         confirmedResponses: rollup.responses.confirmed,
         inPersonResponses: rollup.responses.inPerson,
+        inPersonAssumed: rollup.people.inPersonAssumed,
+        inPersonAssumedResponses: rollup.responses.inPersonAssumed,
         virtual: rollup.people.zoom,
         virtualResponses: rollup.responses.zoom,
+        dataQuality: rollup.dataQuality,
       },
       mine,
     };
