@@ -1,35 +1,41 @@
-## Root cause (confirmed against the database)
+## Goal
+Require every RSVP to name a committee member as their inviter. Remove the "Other…" free-text escape hatch on both RSVP forms, and validate against the committee roster on the server.
 
-Myisha is right — Joanna Hahn's invitation exists but is not linked to Myisha's inviter record, so Joanna doesn't roll up under "Myisha's guests."
+## Changes
 
-Confirmed by direct DB reads:
-- Invitation `Joanna hahn` (402-359-0467) has `host_id = c3160a24…` and `inviter_id = NULL`.
-- Two inviter rows exist for Myisha: `Myisha Woods` (host_id `c3160a24…`) and `Mysha Woods` (host_id `37d4247b…`) — both with empty phone. Joanna's host_id matches the `Myisha Woods` row exactly.
-- The scope of the bug is much larger than one guest: **213 invitations across 8 inviters** have `inviter_id = NULL` while the host_id already matches an existing inviter row. That's why per-host counts don't match "My Guests" totals — these guests exist but aren't attributed to anyone.
+### 1. Guest RSVP forms — replace free-text with committee-only picker
+Files: `src/routes/rsvp.index.tsx`, `src/routes/rsvp.$token.tsx`
 
-Affected hosts and unlinked counts:
-Shelley & Pat Monaghan 51, Kari Gray 60, Dixie Frahm 33, Betsaida Ruiz 32, Myisha Woods 20, Melissa Novotne 11, Mysha Woods 4, Jamy Elker 2.
+- Replace the "Invited by" `<Input>` with a searchable committee-member picker (Command/Combobox) sourced from a new **authenticated** server fn `getCommitteeRosterPublic` (see #2). No "Other" option, no free typing that isn't a match.
+- Store the selected committee member's id + display name in draft state. Clear any legacy `__other__` / free-text draft values on hydrate.
+- Submit sends `invited_by` = selected committee name (and `invited_by_id` if useful).
+- Field label copy: "Invited by (committee member) *" with helper text: "You must be invited by a committee member to RSVP."
 
-## Fix (three parts, all required per the "backfill + forward-fix" rule)
+### 2. Server: expose committee roster for the picker
+File: `src/lib/invitations.functions.ts` (new export)
 
-1. **Merge the duplicate Myisha inviter records.**
-   Keep `Myisha Woods` (host_id `c3160a24…`). Repoint any invitations already linked to `Mysha Woods` at the kept row, then delete the `Mysha Woods` row. (Also normalize any RSVP `guest_name` spelling for Myisha, if present, per prior guidance.)
+- Add `getCommitteeRoster` server fn (no auth required — RSVP is public) that returns `{ id, name }[]` of committee members only. Source: union of
+  - `inviters` where active
+  - `invitations` where `is_committee = true`
+  - `team_invites` with role `team`
+  Dedupe by lowercased name. Reuses logic already in `get_public_inviters()` DB function — call it via a SECURITY DEFINER RPC that returns names only (no PII). The existing `get_public_inviters()` was locked down for `inviters_public_pii`; we'll add a narrow replacement RPC `get_committee_names_for_rsvp()` returning only `{id, name}` and grant EXECUTE to `anon, authenticated`.
 
-2. **Backfill existing invitations.**
-   For every invitation where `inviter_id IS NULL` and there is exactly one inviter row with the same `host_id`, set `inviter_id` to that inviter. Ambiguous host_ids (more than one inviter) get skipped and reported — none exist today, but the query will be safe.
+### 3. Server-side validation on RSVP submit
+File: `src/lib/invitations.functions.ts` (`submitPublicRsvp`, and the token variant)
 
-3. **Forward-fix so this can't happen to new invitations.**
-   Add a `BEFORE INSERT OR UPDATE` trigger on `invitations`: if `inviter_id IS NULL` and exactly one `inviters` row shares the new row's `host_id`, auto-populate `inviter_id`. This closes the gap for every future guest an inviter (or admin) adds under their account.
+- After trimming `invited_by`, look up a case-insensitive match against the committee roster. If no match, throw a user-facing error: "Please select a committee member from the list."
+- Reject `__other__` and empty strings explicitly.
 
-## Verification (before saying "done")
+### 4. Cleanup
+- Remove the `__other__` sanitize effect from both RSVP routes (no longer needed once the input is a picker).
+- Leave existing submitted rows untouched; only new submissions are gated.
 
-- Re-run the "unlinked" query — expect 0.
-- Confirm Joanna Hahn now appears under Myisha's guest list on `/admin/guests` filtered by Myisha, and in Myisha's own committee view.
-- Spot-check the 7 other affected hosts: their "My Guests" totals should jump by the numbers above, and the "everyone" total should stay unchanged.
-- Insert a synthetic test invitation (then delete it) under Myisha's host_id with no `inviter_id` and confirm the trigger fills it in.
+## Out of scope
+- Admin-entered invitations (admin can still assign any inviter).
+- Backfilling old free-text `invited_by` values.
 
-Timestamp on completion: UTC time in the summary, as always.
-
-## No UI changes
-
-This is a data + trigger fix only. No component or presentation code changes.
+## Verification
+- Load `/rsvp` and `/rsvp/$token` on mobile viewport: picker renders, search works, no free-text entry accepted, no "Other" option.
+- Submit without selection → blocked client + server side.
+- Submit with a committee member selected → saves, appears under that inviter in admin.
+- DB check: new `rsvps.invited_by` values all match a committee name.

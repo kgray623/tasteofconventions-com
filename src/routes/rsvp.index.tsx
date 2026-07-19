@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 
 import { useDraftState } from "@/hooks/use-draft-state";
 import { Check, X, Minus, Plus, ArrowLeft, Users, Video } from "lucide-react";
+import { CommitteePicker } from "@/components/committee-picker";
 
 export const Route = createFileRoute("/rsvp/")({
   head: () => ({ meta: [{ title: "RSVP" }] }),
@@ -51,16 +52,8 @@ function PreviewPage() {
   const [phone, setPhone] = useDraftState(draftScope, "phone", "");
   const [invitedBy, setInvitedBy] = useDraftState(draftScope, "invitedBy", "");
   useEffect(() => {
-    if (invitedBy === "__other__") {
-      try {
-        const raw = window.localStorage.getItem(`platform-draft:${draftScope}`);
-        const parsed = raw ? JSON.parse(raw) : null;
-        const other = parsed && typeof parsed.invitedByOther === "string" ? parsed.invitedByOther : "";
-        setInvitedBy(other);
-      } catch {
-        setInvitedBy("");
-      }
-    }
+    // Clear legacy "Other…" sentinel from older drafts.
+    if (invitedBy === "__other__") setInvitedBy("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invitedBy]);
   const [cuisineCounts, setCuisineCounts] = useDraftState<Record<string, number>>(
@@ -359,14 +352,13 @@ function PreviewPage() {
                 />
               </div>
             </div>
-            <Label htmlFor="invited-by">Invited by <span className="text-destructive">*</span></Label>
-            <Input
-              id="invited-by"
-              value={invitedBy}
-              onChange={(e) => setInvitedBy(e.target.value)}
-              placeholder="Type the name of the person who invited you"
-              maxLength={120}
-            />
+            <Label htmlFor="invited-by">
+              Invited by (committee member) <span className="text-destructive">*</span>
+            </Label>
+            <CommitteePicker id="invited-by" value={invitedBy} onChange={setInvitedBy} />
+            <p className="text-xs text-muted-foreground">
+              You must be invited by a committee member to RSVP.
+            </p>
 
           </div>
         </Card>
