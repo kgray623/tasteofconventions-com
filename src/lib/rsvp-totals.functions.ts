@@ -2,6 +2,20 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
+import { phoneTail } from "@/lib/phone";
+
+/** MEDIUM-003: turn opaque Postgres errors into short, user-facing sentences. */
+const friendlyDbError = (context: string, err: { message?: string | null } | null): Error => {
+  const raw = err?.message ?? "";
+  if (/permission denied|not authorized|rls/i.test(raw)) {
+    return new Error(`You don't have access to ${context}. Sign in again or ask an admin.`);
+  }
+  if (/timeout|network|fetch failed/i.test(raw)) {
+    return new Error(`Couldn't reach the database while loading ${context}. Please retry.`);
+  }
+  return new Error(`Couldn't load ${context}. ${raw || "Please try again."}`.trim());
+};
+
 
 export type RsvpDataQualityIssues = {
   partySizeCoerced: number;
@@ -82,7 +96,7 @@ export const getRsvpEvents = createServerFn({ method: "POST" })
       .from("events")
       .select("id,title")
       .order("starts_at");
-    if (error) throw new Error(error.message);
+    if (error) throw friendlyDbError("the event list", error);
     return (data ?? []).map((event) => ({ id: event.id, title: event.title }));
   });
 
@@ -97,7 +111,7 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
       .select("id")
       .order("starts_at")
       .limit(1);
-    if (eventsError) throw new Error(eventsError.message);
+    if (eventsError) throw friendlyDbError("the event", eventsError);
 
     const eventId = events?.[0]?.id;
     if (!eventId) return { guests: [], myHostIds: [userId] };
@@ -112,15 +126,14 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
       supabase.from("rsvps").select("invitation_id,status,party_size,attendance_mode,responded_at"),
     ]);
 
-    if (invitersRes.error) throw new Error(invitersRes.error.message);
-    if (invitationsRes.error) throw new Error(invitationsRes.error.message);
-    if (rsvpsRes.error) throw new Error(rsvpsRes.error.message);
+    if (invitersRes.error) throw friendlyDbError("the committee list", invitersRes.error);
+    if (invitationsRes.error) throw friendlyDbError("the guest list", invitationsRes.error);
+    if (rsvpsRes.error) throw friendlyDbError("the RSVPs", rsvpsRes.error);
 
     const inviterRows = (invitersRes.data ?? []) as InviterIdentity[];
-    const digitsOnly = (s: string | null | undefined) => (s ?? "").replace(/\D/g, "");
     const normName = (s: string | null | undefined) => (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
     const { data: authUser } = await supabase.auth.getUser();
-    const myPhoneTail = digitsOnly(authUser?.user?.phone).slice(-10);
+    const myPhoneTail = phoneTail(authUser?.user?.phone);
     const { data: prof } = await supabase
       .from("profiles")
       .select("display_name")
@@ -131,10 +144,11 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
     inviterRows.forEach((r) => {
       if (!r.host_id) return;
       if (r.host_id === userId) mineHostIds.add(r.host_id);
-      const rowTail = digitsOnly(r.phone).slice(-10);
+      const rowTail = phoneTail(r.phone);
       if (myPhoneTail && rowTail && rowTail === myPhoneTail) mineHostIds.add(r.host_id);
       if (myName && normName(r.name) === myName) mineHostIds.add(r.host_id);
     });
+
 
     const invitationRows = (invitationsRes.data ?? []) as Array<{
       id: string;
@@ -164,7 +178,7 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
         .from("profiles")
         .select("id,display_name")
         .in("id", hostIds);
-      if (profilesError) throw new Error(profilesError.message);
+      if (profilesError) throw friendlyDbError("the inviter names", profilesError);
       for (const profile of profiles ?? []) {
         const name = (profile.display_name ?? "").trim();
         if (name) hostNames.set(profile.id, name);
@@ -259,10 +273,9 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
 
     let mine: RsvpTotalsResult["mine"] = null;
     if (data.includePersonal) {
-      const digitsOnly = (s: string | null | undefined) => (s ?? "").replace(/\D/g, "");
       const normName = (s: string | null | undefined) => (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
       const { data: authUser } = await supabase.auth.getUser();
-      const myPhoneTail = digitsOnly(authUser?.user?.phone).slice(-10);
+      const myPhoneTail = phoneTail(authUser?.user?.phone);
       const { data: prof } = await supabase
         .from("profiles")
         .select("display_name")
@@ -273,7 +286,7 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
       const myInviters = inviterRows.filter((r) => {
         if (!r.host_id) return false;
         if (r.host_id === userId) return true;
-        const rowTail = digitsOnly(r.phone).slice(-10);
+        const rowTail = phoneTail(r.phone);
         if (myPhoneTail && rowTail && rowTail === myPhoneTail) return true;
         if (myName && normName(r.name) === myName) return true;
         return false;
@@ -363,6 +376,6 @@ export const requestMoreQuota = createServerFn({ method: "POST" })
         quota_requested_at: new Date().toISOString(),
       })
       .in("id", data.inviterIds);
-    if (error) throw new Error(error.message);
+    if (error) throw friendlyDbError("your quota request", error);
     return { ok: true };
   });

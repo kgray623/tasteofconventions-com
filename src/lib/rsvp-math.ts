@@ -1,3 +1,24 @@
+/**
+ * RSVP calculation engine — canonical source of truth for every dashboard.
+ *
+ * Business rules (audit LOW-001, LOW-002):
+ *  - "People" always means party-size total; "responses" means row count.
+ *    People is what the user cares about — see `docs/rsvp-business-rules.md`.
+ *  - Pending = invitations with no valid status yet; counted at party-size
+ *    (CRITICAL-002). Blank/unrecognized status counts as pending, not "yes".
+ *  - Confirmed (yes) rows with a blank/unknown attendance_mode go into
+ *    `inPersonAssumed`, NOT `inPerson` (CRITICAL-003). This surfaces bad
+ *    imports instead of silently inflating the in-person count.
+ *  - Party size is coerced to 1 for null/NaN/<=0 but `dataQuality.partySizeCoerced`
+ *    increments so admins can spot and clean up the source row (HIGH-001).
+ *  - Duplicate invitations are collapsed by group id (best status wins;
+ *    ties broken by larger party size) so a guest with two rows isn't
+ *    double-counted.
+ *  - All status normalization goes through `normalizeRsvpStatus` (HIGH-002).
+ *
+ * Do NOT re-implement these rules elsewhere. Every dashboard must call
+ * `computeRsvpRollup` (via `rsvp-totals.functions.ts`) — MEDIUM-004.
+ */
 export type RsvpMathRow = {
   id?: string | null;
   groupId?: string | null;
@@ -5,6 +26,7 @@ export type RsvpMathRow = {
   party_size?: number | string | null;
   attendance_mode?: string | null;
 };
+
 
 export type RsvpIdentityRow = {
   id: string;
@@ -258,8 +280,26 @@ export function computeRsvpRollup(rows: RsvpMathRow[]): RsvpRollup {
     }
   }
 
+  // MEDIUM-002: emit a single structured warning per rollup when the input
+  // data has anomalies. Dev/preview only — the UI (rsvp-totals-card) shows a
+  // user-visible callout so admins can act on the same signal.
+  if (
+    typeof console !== "undefined" &&
+    (rollup.dataQuality.partySizeCoerced > 0 ||
+      rollup.dataQuality.statusUnknown > 0 ||
+      rollup.dataQuality.attendanceModeUnknown > 0)
+  ) {
+    console.warn("[rsvp-math] data quality issues detected", {
+      partySizeCoerced: rollup.dataQuality.partySizeCoerced,
+      statusUnknown: rollup.dataQuality.statusUnknown,
+      attendanceModeUnknown: rollup.dataQuality.attendanceModeUnknown,
+      rowsIn: rows.length,
+    });
+  }
+
   return rollup;
 }
 
+/** Human-friendly "N people / M responses" — hides the split when they match. */
 export const formatPeopleResponses = (people: number, responses: number) =>
   people === responses ? `${people}` : `${people} people / ${responses} responses`;
