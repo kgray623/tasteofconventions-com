@@ -376,6 +376,6 @@ export const requestMoreQuota = createServerFn({ method: "POST" })
         quota_requested_at: new Date().toISOString(),
       })
       .in("id", data.inviterIds);
-    if (error) throw new Error(error.message);
+    if (error) throw friendlyDbError("your quota request", error);
     return { ok: true };
   });
