@@ -260,7 +260,7 @@ export const submitRsvp = createServerFn({ method: "POST" })
         ordering_food: orderingFood,
         dietary_notes: data.dietary_notes ?? null,
         message: null,
-        invited_by: data.invited_by?.trim() || null,
+        invited_by: validatedInvitedBy,
         responded_at: new Date().toISOString(),
       },
       { onConflict: "invitation_id" },
