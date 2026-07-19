@@ -78,9 +78,11 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
             confirmed: result.mine.confirmed,
             confirmedResponses: result.mine.confirmedResponses,
             inPersonResponses: result.mine.inPersonResponses,
+            inPersonAssumed: result.mine.inPersonAssumed,
             virtual: result.mine.virtual,
             virtualResponses: result.mine.virtualResponses,
             pendingRequest: result.mine.pendingRequest,
+            dataQuality: result.mine.dataQuality,
           });
           setMyInviterIds(result.mine.inviterIds);
         }
