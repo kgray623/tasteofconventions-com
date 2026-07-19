@@ -15,14 +15,22 @@ import { withTimeout } from "@/lib/async-safety";
 
 const TOTAL_SEATS = 550;
 
+type DataQuality = {
+  partySizeCoerced: number;
+  statusUnknown: number;
+  attendanceModeUnknown: number;
+};
+
 type EventTotals = {
   requested: number;
   uploaded: number;
   confirmed: number;
   confirmedResponses: number;
   inPersonResponses: number;
+  inPersonAssumed: number;
   virtual: number;
   virtualResponses: number;
+  dataQuality: DataQuality;
 };
 
 type MyTotals = {
@@ -31,9 +39,11 @@ type MyTotals = {
   confirmed: number;
   confirmedResponses: number;
   inPersonResponses: number;
+  inPersonAssumed: number;
   virtual: number;
   virtualResponses: number;
   pendingRequest: number | null;
+  dataQuality: DataQuality;
 };
 
 type Props = {
