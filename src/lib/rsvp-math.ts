@@ -90,7 +90,18 @@ export const rsvpPartySize = (value: number | string | null | undefined) => {
   return Number.isFinite(n) && n > 0 ? Math.round(n) : 1;
 };
 
+/** Returns coerced party size along with a flag indicating whether the input was invalid. */
+export const rsvpPartySizeStrict = (value: number | string | null | undefined) => {
+  const n = Number(value);
+  const valid = Number.isFinite(n) && n > 0;
+  return { value: valid ? Math.round(n) : 1, wasCoerced: !valid };
+};
+
 export const rsvpIsZoom = (attendanceMode: string | null | undefined) => attendanceMode === "zoom";
+
+/** Normalized attendance mode: "in_person" | "zoom" | "unknown" (null/blank/unrecognized). */
+export const rsvpAttendanceMode = (mode: string | null | undefined): "in_person" | "zoom" | "unknown" =>
+  mode === "in_person" ? "in_person" : mode === "zoom" ? "zoom" : "unknown";
 
 export const normalizeRsvpStatus = (status: string | null | undefined) =>
   status === "yes" || status === "no" || status === "maybe" || status === "waitlist" ? status : null;
