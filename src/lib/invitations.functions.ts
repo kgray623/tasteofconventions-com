@@ -219,6 +219,7 @@ const RsvpInput = z.object({
 export const submitRsvp = createServerFn({ method: "POST" })
   .inputValidator((d) => RsvpInput.parse(d))
   .handler(async ({ data }) => {
+    const validatedInvitedBy = await assertInvitedByIsCommittee(data.invited_by);
     const { data: inv } = await supabaseAdmin
       .from("invitations")
       .select("id")
