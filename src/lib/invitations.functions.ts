@@ -698,7 +698,7 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
         attendance_mode: mode,
         ordering_food: orderingFood,
         message: null,
-        invited_by: data.invited_by?.trim() || null,
+        invited_by: validatedInvitedBy,
         responded_at: new Date().toISOString(),
       },
       { onConflict: "invitation_id" },
