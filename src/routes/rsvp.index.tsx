@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 
 import { useDraftState } from "@/hooks/use-draft-state";
 import { Check, X, Minus, Plus, ArrowLeft, Users, Video } from "lucide-react";
+import { CommitteePicker } from "@/components/committee-picker";
 
 export const Route = createFileRoute("/rsvp/")({
   head: () => ({ meta: [{ title: "RSVP" }] }),
