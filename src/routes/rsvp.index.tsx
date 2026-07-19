@@ -353,11 +353,11 @@ function PreviewPage() {
               </div>
             </div>
             <Label htmlFor="invited-by">
-              Invited by (committee member) <span className="text-destructive">*</span>
+              Invited by <span className="text-destructive">*</span>
             </Label>
             <CommitteePicker id="invited-by" value={invitedBy} onChange={setInvitedBy} />
             <p className="text-xs text-muted-foreground">
-              You must be invited by a committee member to RSVP.
+              Type the name of the committee member or guest who invited you. We'll suggest close matches if the spelling is off.
             </p>
 
           </div>
