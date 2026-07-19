@@ -96,7 +96,7 @@ export const getRsvpEvents = createServerFn({ method: "POST" })
       .from("events")
       .select("id,title")
       .order("starts_at");
-    if (error) throw new Error(error.message);
+    if (error) throw friendlyDbError("the event list", error);
     return (data ?? []).map((event) => ({ id: event.id, title: event.title }));
   });
 
