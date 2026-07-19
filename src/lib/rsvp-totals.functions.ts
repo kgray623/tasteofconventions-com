@@ -178,7 +178,7 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
         .from("profiles")
         .select("id,display_name")
         .in("id", hostIds);
-      if (profilesError) throw new Error(profilesError.message);
+      if (profilesError) throw friendlyDbError("the inviter names", profilesError);
       for (const profile of profiles ?? []) {
         const name = (profile.display_name ?? "").trim();
         if (name) hostNames.set(profile.id, name);
