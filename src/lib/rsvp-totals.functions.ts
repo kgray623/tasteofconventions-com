@@ -286,7 +286,7 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
       const myInviters = inviterRows.filter((r) => {
         if (!r.host_id) return false;
         if (r.host_id === userId) return true;
-        const rowTail = digitsOnly(r.phone).slice(-10);
+        const rowTail = phoneTail(r.phone);
         if (myPhoneTail && rowTail && rowTail === myPhoneTail) return true;
         if (myName && normName(r.name) === myName) return true;
         return false;
