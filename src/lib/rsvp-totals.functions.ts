@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
-import { phoneTail, normalizePhone } from "@/lib/phone";
+import { phoneTail } from "@/lib/phone";
 
 /** MEDIUM-003: turn opaque Postgres errors into short, user-facing sentences. */
 const friendlyDbError = (context: string, err: { message?: string | null } | null): Error => {
