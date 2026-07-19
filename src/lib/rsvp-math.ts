@@ -157,14 +157,23 @@ export function buildDuplicateGroupIds(rows: RsvpIdentityRow[]) {
 }
 
 export function computeRsvpRollup(rows: RsvpMathRow[]): RsvpRollup {
-  const grouped = new Map<string, { status: string | null; partySize: number; attendanceMode: string | null }>();
+  const grouped = new Map<
+    string,
+    { status: string | null; partySize: number; attendanceMode: string | null; partySizeCoerced: boolean; statusUnknown: boolean }
+  >();
 
   rows.forEach((row, index) => {
     const groupId = row.groupId || row.id || `row-${index}`;
+    const partySize = rsvpPartySizeStrict(row.party_size);
+    const status = normalizeRsvpStatus(row.status);
+    const rawStatus = typeof row.status === "string" ? row.status.trim() : "";
+    const statusUnknown = !status && rawStatus.length > 0;
     const candidate = {
-      status: normalizeRsvpStatus(row.status),
-      partySize: rsvpPartySize(row.party_size),
+      status,
+      partySize: partySize.value,
       attendanceMode: row.attendance_mode ?? null,
+      partySizeCoerced: partySize.wasCoerced,
+      statusUnknown,
     };
     const current = grouped.get(groupId);
     if (
@@ -182,6 +191,7 @@ export function computeRsvpRollup(rows: RsvpMathRow[]): RsvpRollup {
       responded: 0,
       confirmed: 0,
       inPerson: 0,
+      inPersonAssumed: 0,
       zoom: 0,
       declined: 0,
       maybe: 0,
@@ -192,21 +202,30 @@ export function computeRsvpRollup(rows: RsvpMathRow[]): RsvpRollup {
       allIfEveryoneShowed: 0,
       confirmed: 0,
       inPerson: 0,
+      inPersonAssumed: 0,
       zoom: 0,
       declined: 0,
       maybe: 0,
       waitlist: 0,
       pending: 0,
     },
+    dataQuality: {
+      partySizeCoerced: 0,
+      statusUnknown: 0,
+      attendanceModeUnknown: 0,
+    },
   };
 
   for (const row of grouped.values()) {
-    const party = rsvpPartySize(row.partySize);
-    const status = normalizeRsvpStatus(row.status);
+    const party = row.partySize;
+    const status = row.status;
+    if (row.partySizeCoerced) rollup.dataQuality.partySizeCoerced += 1;
+    if (row.statusUnknown) rollup.dataQuality.statusUnknown += 1;
     rollup.people.allIfEveryoneShowed += party;
     if (!status) {
       rollup.responses.pending += 1;
-      rollup.people.pending += 1;
+      // CRITICAL-002: pending people counts party size, not a flat 1 per response.
+      rollup.people.pending += party;
       continue;
     }
 
@@ -214,12 +233,18 @@ export function computeRsvpRollup(rows: RsvpMathRow[]): RsvpRollup {
     if (status === "yes") {
       rollup.responses.confirmed += 1;
       rollup.people.confirmed += party;
-      if (rsvpIsZoom(row.attendanceMode)) {
+      const mode = rsvpAttendanceMode(row.attendanceMode);
+      if (mode === "zoom") {
         rollup.responses.zoom += 1;
         rollup.people.zoom += party;
-      } else {
+      } else if (mode === "in_person") {
         rollup.responses.inPerson += 1;
         rollup.people.inPerson += party;
+      } else {
+        // CRITICAL-003: yes with unknown attendance mode is flagged, not silently in-person.
+        rollup.responses.inPersonAssumed += 1;
+        rollup.people.inPersonAssumed += party;
+        rollup.dataQuality.attendanceModeUnknown += 1;
       }
     } else if (status === "no") {
       rollup.responses.declined += 1;
