@@ -280,8 +280,26 @@ export function computeRsvpRollup(rows: RsvpMathRow[]): RsvpRollup {
     }
   }
 
+  // MEDIUM-002: emit a single structured warning per rollup when the input
+  // data has anomalies. Dev/preview only — the UI (rsvp-totals-card) shows a
+  // user-visible callout so admins can act on the same signal.
+  if (
+    typeof console !== "undefined" &&
+    (rollup.dataQuality.partySizeCoerced > 0 ||
+      rollup.dataQuality.statusUnknown > 0 ||
+      rollup.dataQuality.attendanceModeUnknown > 0)
+  ) {
+    console.warn("[rsvp-math] data quality issues detected", {
+      partySizeCoerced: rollup.dataQuality.partySizeCoerced,
+      statusUnknown: rollup.dataQuality.statusUnknown,
+      attendanceModeUnknown: rollup.dataQuality.attendanceModeUnknown,
+      rowsIn: rows.length,
+    });
+  }
+
   return rollup;
 }
 
+/** Human-friendly "N people / M responses" — hides the split when they match. */
 export const formatPeopleResponses = (people: number, responses: number) =>
   people === responses ? `${people}` : `${people} people / ${responses} responses`;
