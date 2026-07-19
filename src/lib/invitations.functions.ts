@@ -567,6 +567,7 @@ export const getPublicRsvpByPhone = createServerFn({ method: "GET" })
 export const submitPublicRsvp = createServerFn({ method: "POST" })
   .inputValidator((d) => PublicRsvpInput.parse(d))
   .handler(async ({ data }) => {
+    const validatedInvitedBy = await assertInvitedByIsCommittee(data.invited_by);
     // Find an event to attach to
     const { data: ev } = await supabaseAdmin
       .from("events")
