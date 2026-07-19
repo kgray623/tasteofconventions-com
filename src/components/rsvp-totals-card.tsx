@@ -53,8 +53,9 @@ type Props = {
 
 export function RsvpTotalsCard({ personalHostIds }: Props) {
   const fetchTotals = useServerFn(getRsvpTotals);
-  const [event, setEvent] = useState<EventTotals>({ requested: 0, uploaded: 0, confirmed: 0, confirmedResponses: 0, inPersonResponses: 0, virtual: 0, virtualResponses: 0 });
-  const [mine, setMine] = useState<MyTotals>({ requested: 0, uploaded: 0, confirmed: 0, confirmedResponses: 0, inPersonResponses: 0, virtual: 0, virtualResponses: 0, pendingRequest: null });
+  const emptyDQ: DataQuality = { partySizeCoerced: 0, statusUnknown: 0, attendanceModeUnknown: 0 };
+  const [event, setEvent] = useState<EventTotals>({ requested: 0, uploaded: 0, confirmed: 0, confirmedResponses: 0, inPersonResponses: 0, inPersonAssumed: 0, virtual: 0, virtualResponses: 0, dataQuality: emptyDQ });
+  const [mine, setMine] = useState<MyTotals>({ requested: 0, uploaded: 0, confirmed: 0, confirmedResponses: 0, inPersonResponses: 0, inPersonAssumed: 0, virtual: 0, virtualResponses: 0, pendingRequest: null, dataQuality: emptyDQ });
   const [myInviterIds, setMyInviterIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
