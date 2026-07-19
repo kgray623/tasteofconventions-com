@@ -29,6 +29,7 @@ import {
 import { InvitationPage } from "@/components/invitation-page";
 import { withTimeout } from "@/lib/async-safety";
 import { clearDraftScope, useDraftState } from "@/hooks/use-draft-state";
+import { CommitteePicker } from "@/components/committee-picker";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import africanMeal1 from "@/assets/african-meal-1.jpg.asset.json";
 import africanMeal2 from "@/assets/african-meal-2.jpg.asset.json";
