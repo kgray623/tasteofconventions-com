@@ -19,6 +19,8 @@ export type RsvpRollup = {
     responded: number;
     confirmed: number;
     inPerson: number;
+    /** Confirmed (yes) with no attendance mode — surfaced separately, not silently counted as in-person. */
+    inPersonAssumed: number;
     zoom: number;
     declined: number;
     maybe: number;
@@ -29,11 +31,18 @@ export type RsvpRollup = {
     allIfEveryoneShowed: number;
     confirmed: number;
     inPerson: number;
+    inPersonAssumed: number;
     zoom: number;
     declined: number;
     maybe: number;
     waitlist: number;
     pending: number;
+  };
+  /** Non-zero values indicate data-quality issues that were previously silently coerced. */
+  dataQuality: {
+    partySizeCoerced: number;
+    statusUnknown: number;
+    attendanceModeUnknown: number;
   };
 };
 
