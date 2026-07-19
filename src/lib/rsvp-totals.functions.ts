@@ -273,10 +273,9 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
 
     let mine: RsvpTotalsResult["mine"] = null;
     if (data.includePersonal) {
-      const digitsOnly = (s: string | null | undefined) => (s ?? "").replace(/\D/g, "");
       const normName = (s: string | null | undefined) => (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
       const { data: authUser } = await supabase.auth.getUser();
-      const myPhoneTail = digitsOnly(authUser?.user?.phone).slice(-10);
+      const myPhoneTail = phoneTail(authUser?.user?.phone);
       const { data: prof } = await supabase
         .from("profiles")
         .select("display_name")
