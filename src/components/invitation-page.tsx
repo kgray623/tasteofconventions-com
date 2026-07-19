@@ -304,6 +304,9 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-3">
               <p><strong className="text-ink">{content.location_name}</strong> · {content.location_subtitle}</p>
+              <p className="rounded-xl border border-sunset/30 bg-sunset/5 px-4 py-3 text-sm text-ink">
+                <strong>Indoor event</strong> — held inside the Hanke Building. Climate-controlled with plenty of seating; no weather worries.
+              </p>
               <div className="relative aspect-[16/9] rounded-xl overflow-hidden border border-border">
                 <iframe
                   title={`${content.location_name} on Google Maps`}
