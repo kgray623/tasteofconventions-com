@@ -233,7 +233,7 @@ function GuestsPage() {
         declined: rollup.people.declined,
         maybe: rollup.people.maybe,
         waitlist: rollup.people.waitlist,
-        pending: rollup.responses.pending,
+        pending: rollup.people.pending,
       } as Record<StatusFilter, number>,
       rsvps: {
         all: rollup.responses.uploaded,
