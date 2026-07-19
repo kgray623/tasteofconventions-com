@@ -52,16 +52,8 @@ function PreviewPage() {
   const [phone, setPhone] = useDraftState(draftScope, "phone", "");
   const [invitedBy, setInvitedBy] = useDraftState(draftScope, "invitedBy", "");
   useEffect(() => {
-    if (invitedBy === "__other__") {
-      try {
-        const raw = window.localStorage.getItem(`platform-draft:${draftScope}`);
-        const parsed = raw ? JSON.parse(raw) : null;
-        const other = parsed && typeof parsed.invitedByOther === "string" ? parsed.invitedByOther : "";
-        setInvitedBy(other);
-      } catch {
-        setInvitedBy("");
-      }
-    }
+    // Clear legacy "Other…" sentinel from older drafts.
+    if (invitedBy === "__other__") setInvitedBy("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invitedBy]);
   const [cuisineCounts, setCuisineCounts] = useDraftState<Record<string, number>>(
