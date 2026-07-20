@@ -493,9 +493,7 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-3">
               <p>
-                Those who have been invited, are in good standing in the congregation, and have
-                RSVP'd may attend. Attendees must have been personally invited by someone on our
-                committee.
+                Those who have been invited by a committee member — or by a guest who has RSVP'd — and who are in good standing in the congregation may attend this event. Guests must have been personally invited by someone who is attending and have RSVP'd in order to be admitted to the building.
               </p>
             </AccordionContent>
           </AccordionItem>
