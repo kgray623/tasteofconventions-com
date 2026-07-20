@@ -11,10 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-
 import { useDraftState } from "@/hooks/use-draft-state";
 import { Check, X, Minus, Plus, ArrowLeft, Users, Video } from "lucide-react";
-import { CommitteePicker } from "@/components/committee-picker";
+
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import africanMeal1 from "@/assets/african-meal-1.jpg.asset.json";
 import africanMeal2 from "@/assets/african-meal-2.jpg.asset.json";
@@ -89,9 +88,6 @@ function PreviewPage() {
   const [lightbox, setLightbox] = useState<string | null>(null);
   const phoneDigits = phone.replace(/\D/g, "");
   const canChooseMeals = name.trim().length > 0 && phoneDigits.length >= 7;
-
-
-
 
   const save = useServerFn(submitPublicRsvp);
   const lookupRsvp = useServerFn(getPublicRsvpByPhone);
@@ -366,9 +362,16 @@ function PreviewPage() {
             <Label htmlFor="invited-by">
               Invited by <span className="text-destructive">*</span>
             </Label>
-            <CommitteePicker id="invited-by" value={invitedBy} onChange={setInvitedBy} />
+            <Input
+              id="invited-by"
+              value={invitedBy}
+              onChange={(e) => setInvitedBy(e.target.value)}
+              placeholder="Type the full name of the person who invited you"
+              maxLength={120}
+              className="h-14 border-2 border-ink bg-card text-lg text-ink"
+            />
             <p className="text-xs text-muted-foreground">
-              Type the name of the committee member or guest who invited you. We'll suggest close matches if the spelling is off.
+              Enter the full name of the person who invited you.
             </p>
 
           </div>
@@ -394,18 +397,14 @@ function PreviewPage() {
                 const qty = cuisineCounts[cuisine.key] ?? 0;
                 const selected = qty > 0;
                 const setQty = (n: number) =>
-                  canChooseMeals
-                    ? setCuisineCounts({
-                        ...cuisineCounts,
-                        [cuisine.key]: Math.max(0, Math.min(20, n)),
-                      })
-                    : toast.error(
-                        "Please enter your full name and mobile number before choosing meals",
-                      );
+                  setCuisineCounts({
+                    ...cuisineCounts,
+                    [cuisine.key]: Math.max(0, Math.min(20, n)),
+                  });
                 return (
                   <div
                     key={cuisine.key}
-                    className={`rounded-md border border-border bg-card p-4 space-y-3 ${canChooseMeals ? "" : "opacity-60"}`}
+                    className="rounded-md border border-border bg-card p-4 space-y-3"
                   >
                     {cuisine.photos && (
                       <div className="grid grid-cols-3 gap-2">
@@ -430,7 +429,7 @@ function PreviewPage() {
                       <div className="grid grid-cols-2 gap-2 w-36">
                         <button
                           type="button"
-                          disabled={!canChooseMeals}
+
                           onClick={() => setQty(qty > 0 ? qty : 1)}
                           className={`rounded-md border-2 px-3 py-2 text-sm font-medium transition ${
                             selected
@@ -442,7 +441,7 @@ function PreviewPage() {
                         </button>
                         <button
                           type="button"
-                          disabled={!canChooseMeals}
+
                           onClick={() => setQty(0)}
                           className={`rounded-md border-2 px-3 py-2 text-sm font-medium transition ${
                             !selected
@@ -462,7 +461,7 @@ function PreviewPage() {
                         <Button
                           size="icon"
                           variant="outline"
-                          disabled={!canChooseMeals}
+
                           onClick={() => setQty(qty - 1)}
                           aria-label={`Fewer ${cuisine.label} meals`}
                         >
@@ -474,7 +473,7 @@ function PreviewPage() {
                         <Button
                           size="icon"
                           variant="outline"
-                          disabled={!canChooseMeals}
+
                           onClick={() => setQty(qty + 1)}
                           aria-label={`More ${cuisine.label} meals`}
                         >

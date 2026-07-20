@@ -29,7 +29,7 @@ import {
 import { InvitationPage } from "@/components/invitation-page";
 import { withTimeout } from "@/lib/async-safety";
 import { clearDraftScope, useDraftState } from "@/hooks/use-draft-state";
-import { CommitteePicker } from "@/components/committee-picker";
+
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import africanMeal1 from "@/assets/african-meal-1.jpg.asset.json";
 import africanMeal2 from "@/assets/african-meal-2.jpg.asset.json";
@@ -536,9 +536,16 @@ function RsvpPage() {
             <Label htmlFor="invited-by">
               Invited by <span className="text-destructive">*</span>
             </Label>
-            <CommitteePicker id="invited-by" value={invitedBy} onChange={setInvitedBy} />
+            <Input
+              id="invited-by"
+              value={invitedBy}
+              onChange={(e) => setInvitedBy(e.target.value)}
+              placeholder="Type the full name of the person who invited you"
+              maxLength={120}
+              className="h-14 border-2 border-ink bg-card text-lg text-ink"
+            />
             <p className="text-xs text-muted-foreground">
-              Type the name of the committee member or guest who invited you. We'll suggest close matches if the spelling is off.
+              Enter the full name of the person who invited you.
             </p>
 
           </div>
