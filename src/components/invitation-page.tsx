@@ -231,10 +231,10 @@ export function InvitationPage() {
 
         <div className="mt-8 rounded-3xl border border-border bg-card shadow-elegant p-6 sm:p-8 text-center">
           <p className="text-xs uppercase tracking-[0.35em] text-magenta mb-3 flex items-center justify-center gap-2">
-            <UtensilsCrossed className="w-4 h-4" /> Cultural meal pre-order
+            <UtensilsCrossed className="w-4 h-4" /> Optional cultural meal
           </p>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Ordering a cultural meal is not required to attend this special event. Please RSVP if you are attending in person or on Zoom. You may choose to pre-order a catered meal at your discretion — they are in the $20–$30 range per meal (beef or chicken, gluten-free options available). Please pre-order so the restaurants know what to prepare. You'll be updated with your menu choices and pay the restaurant directly in the coming weeks.
+            Pre-ordering a cultural meal is not required to attend this special event. Your in-person RSVP includes the option of a catered meal, which is in the $20 to $30 per meal range and includes the choice of beef or chicken. All meals are gluten-free. You'll be updated with the way to contact the restaurant directly in the coming weeks.
           </p>
           <Link to="/rsvp" className="inline-block mt-5">
             <Button size="lg" className="bg-gradient-sunset text-white hover:opacity-90 px-8 shadow-glow border-0">
@@ -277,10 +277,10 @@ export function InvitationPage() {
       {/* Accordion details */}
       <section id="details" className="mx-auto max-w-3xl px-6 py-16 mt-8">
         <div className="text-center mb-10">
-          <p className="text-xs uppercase tracking-[0.35em] text-magenta mb-3">For more details, see the following</p>
+          <p className="text-xs uppercase tracking-[0.35em] text-magenta mb-3">For questions, see the following</p>
           <h2 className="font-display text-5xl sm:text-6xl text-ink">Tap to open</h2>
           <p className="mt-4 text-muted-foreground">
-            See the drop down information for FAQ of date, time, location, dress code, gift exchanges, entertainment, donations, adult beverages, volunteering, etc.
+            See the drop-down information or frequently asked questions.
           </p>
         </div>
 
@@ -375,7 +375,7 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-4">
               <p>
-                Entertainment will be provided, so if you have a talent you want to share, please submit a video and we'll reach out to discuss the opportunity to perform.
+                Entertainment will be provided by our brothers and sisters. If you have a talent you'd like to share — <strong className="text-ink">music, dance, spoken word</strong>, or something similar — please submit a video and we'll reach out to discuss the opportunity to perform.
               </p>
               <EntertainmentSubmissionForm />
             </AccordionContent>
@@ -405,9 +405,8 @@ export function InvitationPage() {
               </span>
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-3">
-              <p className="whitespace-pre-line">
-                Please bring food to share if you are not ordering a restaurant
-                catered meal.{" "}
+              <p>
+                For those who choose not to order a catered meal, please bring a dish to share — like a covered-dish gathering — so everyone has plenty of food to enjoy through the evening.
               </p>
               {isAdmin && (
                 <Link to="/admin/invitation">
@@ -556,6 +555,24 @@ export function InvitationPage() {
                   Log in to change your RSVP
                 </Button>
               </Link>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Indoor or outdoor? */}
+          <AccordionItem value="indoor-outdoor" id="indoor-outdoor" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
+            <AccordionTrigger className="hover:no-underline">
+              <span className="flex items-center gap-3 text-2xl">
+                <MapPin className="w-5 h-5 text-sunset" /> Will this be indoor or outdoor?
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="pb-6 text-muted-foreground space-y-3">
+              <p>
+                This is an <strong className="text-ink">indoor event</strong>, held inside the Hanke Building. You can see the building in the Location section above.
+              </p>
+              <p>
+                Any other questions? Please text them to{" "}
+                <a href="sms:+18082787562" className="text-terracotta font-medium underline-offset-2 hover:underline">808-278-7562</a>.
+              </p>
             </AccordionContent>
           </AccordionItem>
         </Accordion>
