@@ -15,6 +15,16 @@ import { Label } from "@/components/ui/label";
 import { useDraftState } from "@/hooks/use-draft-state";
 import { Check, X, Minus, Plus, ArrowLeft, Users, Video } from "lucide-react";
 import { CommitteePicker } from "@/components/committee-picker";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import africanMeal1 from "@/assets/african-meal-1.jpg.asset.json";
+import africanMeal2 from "@/assets/african-meal-2.jpg.asset.json";
+import africanMeal3 from "@/assets/african-meal-3.jpg.asset.json";
+import indonesianMeal1 from "@/assets/indonesian-meal-1.jpg.asset.json";
+import indonesianMeal2 from "@/assets/indonesian-meal-2.jpg.asset.json";
+import indonesianMeal3 from "@/assets/indonesian-meal-3.jpg.asset.json";
+
+const africanPhotos = [africanMeal1.url, africanMeal2.url, africanMeal3.url];
+const indonesianPhotos = [indonesianMeal1.url, indonesianMeal2.url, indonesianMeal3.url];
 
 export const Route = createFileRoute("/rsvp/")({
   head: () => ({ meta: [{ title: "RSVP" }] }),
@@ -71,11 +81,12 @@ function PreviewPage() {
     "submittedAt",
     null,
   );
-  const cuisines = [
-    { key: "Myanmar", label: "Myanmar/Burmese" },
-    { key: "African", label: "African" },
-    { key: "Indonesian", label: "Indonesian" },
+  const cuisines: Array<{ key: string; label: string; photos?: string[]; note?: string }> = [
+    { key: "Myanmar", label: "Myanmar/Burmese", note: "Photos coming next week" },
+    { key: "African", label: "African", photos: africanPhotos },
+    { key: "Indonesian", label: "Indonesian", photos: indonesianPhotos },
   ];
+  const [lightbox, setLightbox] = useState<string | null>(null);
   const phoneDigits = phone.replace(/\D/g, "");
   const canChooseMeals = name.trim().length > 0 && phoneDigits.length >= 7;
 
@@ -370,7 +381,7 @@ function PreviewPage() {
                 Pre-order your cultural meal
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Cultural meals are in the twenty to twenty-five dollar range per meal. Click below to pre-order. We will negotiate with the restaurant once we have a meal count total. You'll be updated with the menu to confirm in the coming weeks and to pay the restaurant direct.
+                Cultural meals are in the twenty to thirty dollar range per meal. Each cuisine offers a beef and a chicken option, and gluten-free options are available. Click below to pre-order — we'll negotiate with the restaurant once we have a meal count total. You'll get the menu to confirm in the coming weeks and pay the restaurant directly.
               </p>
             </div>
             {!canChooseMeals && (
@@ -396,6 +407,24 @@ function PreviewPage() {
                     key={cuisine.key}
                     className={`rounded-md border border-border bg-card p-4 space-y-3 ${canChooseMeals ? "" : "opacity-60"}`}
                   >
+                    {cuisine.photos && (
+                      <div className="grid grid-cols-3 gap-2">
+                        {cuisine.photos.map((src, i) => (
+                          <button
+                            key={src}
+                            type="button"
+                            onClick={() => setLightbox(src)}
+                            className="relative aspect-square overflow-hidden rounded-md border border-border bg-muted"
+                            aria-label={`${cuisine.label} meal photo ${i + 1}`}
+                          >
+                            <img src={src} alt={`${cuisine.label} meal ${i + 1}`} className="h-full w-full object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {cuisine.note && (
+                      <p className="text-sm italic text-muted-foreground">{cuisine.note}</p>
+                    )}
                     <div className="flex items-center justify-between gap-3">
                       <Label className="text-base font-display text-ink">{cuisine.label}</Label>
                       <div className="grid grid-cols-2 gap-2 w-36">
@@ -483,6 +512,12 @@ function PreviewPage() {
           )}
         </Card>
       </div>
+      <Dialog open={!!lightbox} onOpenChange={(o) => !o && setLightbox(null)}>
+        <DialogContent className="max-w-2xl bg-ink border-ink p-2">
+          <DialogTitle className="sr-only">Meal photo</DialogTitle>
+          {lightbox && <img src={lightbox} alt="Meal" className="w-full h-auto rounded" />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

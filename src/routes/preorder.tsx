@@ -117,8 +117,7 @@ function PreorderPage() {
           </p>
           <h1 className="font-display text-4xl sm:text-5xl text-ink">Cuisine pre-order</h1>
           <p className="mt-4 text-muted-foreground">
-            Catered meals will be in the $25.00 range per meal. Enter the same mobile number
-            used on your attending RSVP so your meal choices stay connected to your RSVP.
+            Catered meals will be in the $20–$30 range per meal (beef or chicken, gluten-free options available). You'll pay the restaurant directly when you confirm. Enter the same mobile number used on your attending RSVP so your meal choices stay connected to your RSVP.
           </p>
         </div>
 

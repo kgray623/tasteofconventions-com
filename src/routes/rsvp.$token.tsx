@@ -551,7 +551,7 @@ function RsvpPage() {
                 Pre-order your cultural meal
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Cultural meals are in the twenty to twenty-five dollar range per meal. Click below to pre-order. We will negotiate with the restaurant once we have a meal count total. You'll be updated with the menu to confirm in the coming weeks and to pay the restaurant direct.
+                Cultural meals are in the twenty to thirty dollar range per meal. Each cuisine offers a beef and a chicken option, and gluten-free options are available. Click below to pre-order — we'll negotiate with the restaurant once we have a meal count total. You'll get the menu to confirm in the coming weeks and pay the restaurant directly.
               </p>
             </div>
             <div className="space-y-3">
