@@ -277,7 +277,7 @@ function AdminOverview() {
 
       <RsvpTotalsCard />
 
-      {isAdmin && <SiteTrafficCard />}
+      {isAdmin && !previewCommittee && <SiteTrafficCard />}
 
 
       <Card className="p-5 space-y-1">
