@@ -130,8 +130,8 @@ export function MyRsvpContent() {
     )
       ? order.items
       : [];
-    const cuisines: { key: string; label: string; photos?: string[] }[] = [
-      { key: "Myanmar", label: "Myanmar/Burmese" },
+    const cuisines: { key: string; label: string; photos?: string[]; note?: string }[] = [
+      { key: "Myanmar", label: "Myanmar/Burmese", note: "Photos coming soon" },
       { key: "African", label: "African", photos: africanPhotos },
       { key: "Indonesian", label: "Indonesian", photos: indonesianPhotos },
     ];
