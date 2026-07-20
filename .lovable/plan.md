@@ -1,11 +1,9 @@
-Record an RSVP for **Abigail and DeShawn Bradley** (invitation `2adab274-…`):
+Update the existing RSVP for **Abigail and DeShawn Bradley** to reflect their 6 pre-ordered meals:
 
-- status: **yes**
-- attendance_mode: **zoom**
-- party_size: **2**
+- status: **yes** (unchanged)
+- attendance_mode: **in_person** (was zoom)
+- party_size: **6** (was 2)
+- invited_by: **Kari Gray** (unchanged)
 - responded_at: now
-- invited_by: **Kari Gray** (matches their existing inviter)
 
-Data change only, no code changes.
-
-Approve to apply.
+Data change only, no code changes. Approve to apply.
