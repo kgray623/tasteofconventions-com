@@ -985,6 +985,30 @@ export type Database = {
         }
         Relationships: []
       }
+      traffic_daily_rollup: {
+        Row: {
+          date: string
+          pageviews: number
+          source: string
+          unique_visitors: number
+          updated_at: string
+        }
+        Insert: {
+          date: string
+          pageviews?: number
+          source?: string
+          unique_visitors?: number
+          updated_at?: string
+        }
+        Update: {
+          date?: string
+          pageviews?: number
+          source?: string
+          unique_visitors?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
