@@ -505,7 +505,61 @@ export function InvitationPage() {
               </p>
             </AccordionContent>
           </AccordionItem>
+
+          {/* Can I invite my friends? */}
+          <AccordionItem value="invite-friends" id="invite-friends" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
+            <AccordionTrigger className="hover:no-underline">
+              <span className="flex items-center gap-3 text-2xl">
+                <UserPlus className="w-5 h-5 text-sunset" /> Can I invite my friends?
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="pb-6 text-muted-foreground space-y-3">
+              <p>
+                Yes — we'd love that! Here's how it works:
+              </p>
+              <ol className="list-decimal pl-5 space-y-2">
+                <li>
+                  First, make sure the friends you'd like to invite are spiritually qualified and in good standing.
+                </li>
+                <li>
+                  Ask them to text <strong className="text-ink">VOLUNTEER</strong> along with their name to{" "}
+                  <a href="sms:+18082787562" className="text-terracotta font-medium underline-offset-2 hover:underline">
+                    808-278-7562
+                  </a>.
+                </li>
+                <li>
+                  We'll add them to the committee and update their status.
+                </li>
+                <li>
+                  Once they log in, a welcome video will walk them through how the platform works.
+                </li>
+                <li>
+                  <strong className="text-ink">Important:</strong> have them upload their contacts first so we can check that the people they want to invite haven't already been invited by someone else.
+                </li>
+              </ol>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* What if I need to change my RSVP? */}
+          <AccordionItem value="change-rsvp" id="change-rsvp" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
+            <AccordionTrigger className="hover:no-underline">
+              <span className="flex items-center gap-3 text-2xl">
+                <Pencil className="w-5 h-5 text-sunset" /> What if I need to change my RSVP?
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="pb-6 text-muted-foreground space-y-3">
+              <p>
+                It's simple — just log in and update your RSVP. You can add or remove meals, change your guest count, switch between in-person and Zoom, or make any other modifications.
+              </p>
+              <Link to="/login">
+                <Button variant="outline" size="sm" className="gap-2">
+                  Log in to change your RSVP
+                </Button>
+              </Link>
+            </AccordionContent>
+          </AccordionItem>
         </Accordion>
+
         </section>
       </main>
 
