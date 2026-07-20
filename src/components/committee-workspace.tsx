@@ -83,6 +83,7 @@ export function CommitteeWorkspace() {
   const [myGuestsTab, setMyGuestsTab] = useState<"all" | "inPerson" | "zoom" | "declined" | "latest">("all");
   const [myGuestsSort, setMyGuestsSort] = useState<"grouped" | "alpha" | "newest" | "oldest">("grouped");
   const [openFlatGroup, setOpenFlatGroup] = useState(true);
+  const [totalsRefreshKey, setTotalsRefreshKey] = useState(0);
 
 
   const [lastSeenYesAt, setLastSeenYesAt] = useState<number | null>(null);
@@ -136,6 +137,7 @@ export function CommitteeWorkspace() {
       if (!alive()) return;
       setMyHostIds(result.myHostIds);
       setGuests(result.guests);
+      setTotalsRefreshKey((key) => key + 1);
     } catch (error) {
       console.error("[committee] guest list load failed", error);
       try {
@@ -143,6 +145,7 @@ export function CommitteeWorkspace() {
         if (!alive()) return;
         setMyHostIds(fallback.myHostIds);
         setGuests(fallback.guests);
+        setTotalsRefreshKey((key) => key + 1);
       } catch (fallbackError) {
         console.error("[committee] browser guest list fallback failed", fallbackError);
         if (alive()) toast.error(getErrorMessage(fallbackError, getErrorMessage(error, "Guest list refresh timed out. Try again.")));
@@ -712,7 +715,10 @@ export function CommitteeWorkspace() {
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="p-4 pt-0">
-              <RsvpTotalsCard personalHostIds={myHostIds.length ? myHostIds : user ? [user.id] : []} />
+              <RsvpTotalsCard
+                personalHostIds={myHostIds.length ? myHostIds : user ? [user.id] : []}
+                refreshKey={totalsRefreshKey}
+              />
             </div>
           </CollapsibleContent>
         </Collapsible>
