@@ -225,28 +225,6 @@ function PreviewPage() {
               </button>
             ))}
           </div>
-          <div className="space-y-3 pt-2 border-t border-border">
-
-            <div className="space-y-1.5">
-              <Label htmlFor="name">Full name <span className="text-destructive">*</span></Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Your full name"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="phone">Mobile number <span className="text-destructive">*</span></Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="(555) 123-4567"
-              />
-            </div>
-          </div>
           {status === "no" && (
             <div className="rounded-md border-2 border-terracotta bg-terracotta/5 p-4 space-y-3">
               <p className="text-sm text-ink">
