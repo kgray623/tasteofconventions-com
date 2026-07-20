@@ -521,26 +521,27 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-3">
               <p>
-                Yes — we'd love that! Here's how it works:
+                Absolutely — we'd love you to invite your friends! Here's how:
               </p>
               <ol className="list-decimal pl-5 space-y-2">
                 <li>
-                  First, make sure the friends you'd like to invite are spiritually qualified and in good standing.
+                  First, make sure you've RSVP'd, and that your friend is spiritually qualified and in good standing.
                 </li>
                 <li>
-                  Ask them to text <strong className="text-ink">VOLUNTEER</strong> along with their name to{" "}
+                  Send a text to{" "}
                   <a href="sms:+18082787562" className="text-terracotta font-medium underline-offset-2 hover:underline">
                     808-278-7562
-                  </a>.
+                  </a>{" "}
+                  with the word <strong className="text-ink">VOLUNTEER</strong> and your name — you'll be added to our committee, where training will be provided so you know how to invite your friends and family.
                 </li>
                 <li>
-                  We'll add them to the committee and update their status.
+                  Please RSVP first — it's important.
                 </li>
                 <li>
-                  Once they log in, a welcome video will walk them through how the platform works.
+                  Once added, a welcome video will walk you through how the platform works.
                 </li>
                 <li>
-                  <strong className="text-ink">Important:</strong> have them upload their contacts first so we can check that the people they want to invite haven't already been invited by someone else.
+                  <strong className="text-ink">Important:</strong> upload a list of your friends after you've RSVP'd so we can check that they haven't already been invited by someone else. Details are available once you've been appointed as a committee member.
                 </li>
               </ol>
             </AccordionContent>
