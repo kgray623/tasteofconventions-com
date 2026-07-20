@@ -277,10 +277,10 @@ export function InvitationPage() {
       {/* Accordion details */}
       <section id="details" className="mx-auto max-w-3xl px-6 py-16 mt-8">
         <div className="text-center mb-10">
-          <p className="text-xs uppercase tracking-[0.35em] text-magenta mb-3">For more details, see the following</p>
+          <p className="text-xs uppercase tracking-[0.35em] text-magenta mb-3">For questions, see the following</p>
           <h2 className="font-display text-5xl sm:text-6xl text-ink">Tap to open</h2>
           <p className="mt-4 text-muted-foreground">
-            See the drop down information for FAQ of date, time, location, dress code, gift exchanges, entertainment, donations, adult beverages, volunteering, etc.
+            See the drop-down information or frequently asked questions.
           </p>
         </div>
 
