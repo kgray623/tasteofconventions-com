@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/accordion";
 
 import { supabase } from "@/integrations/supabase/client";
+import venueInteriorAsset from "@/assets/venue-interior.jpg.asset.json";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useRoles } from "@/hooks/use-roles";
@@ -310,6 +311,17 @@ export function InvitationPage() {
               <p className="rounded-xl border border-sunset/30 bg-sunset/5 px-4 py-3 text-sm text-ink">
                 <strong>Indoor event</strong> — held inside the Hanke Building. Climate-controlled with plenty of seating; no weather worries.
               </p>
+              <figure className="rounded-xl overflow-hidden border border-border">
+                <img
+                  src={venueInteriorAsset.url}
+                  alt="Inside the Hanke Building — indoor venue for A Taste of Special Conventions"
+                  className="w-full h-auto block"
+                  loading="lazy"
+                />
+                <figcaption className="px-3 py-2 text-xs text-muted-foreground bg-card">
+                  Inside the Hanke Building
+                </figcaption>
+              </figure>
               <div className="relative aspect-[16/9] rounded-xl overflow-hidden border border-border">
                 <iframe
                   title={`${content.location_name} on Google Maps`}
@@ -569,6 +581,17 @@ export function InvitationPage() {
               <p>
                 This is an <strong className="text-ink">indoor event</strong>, held inside the Hanke Building. You can see the building in the Location section above.
               </p>
+              <figure className="rounded-xl overflow-hidden border border-border">
+                <img
+                  src={venueInteriorAsset.url}
+                  alt="Inside the Hanke Building — indoor venue for A Taste of Special Conventions"
+                  className="w-full h-auto block"
+                  loading="lazy"
+                />
+                <figcaption className="px-3 py-2 text-xs text-muted-foreground bg-card">
+                  Inside the Hanke Building
+                </figcaption>
+              </figure>
               <p>
                 Any other questions? Please text them to{" "}
                 <a href="sms:+18082787562" className="text-terracotta font-medium underline-offset-2 hover:underline">808-278-7562</a>.
