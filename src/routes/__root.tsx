@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { AuthProvider } from "@/hooks/use-auth";
 import { Toaster } from "@/components/ui/sonner";
 import { registerPwa } from "@/pwa-register";
+import { SiteTrafficTracker } from "@/components/site-traffic-tracker";
 
 const clientStartupRecoveryScript = `
 (() => {
