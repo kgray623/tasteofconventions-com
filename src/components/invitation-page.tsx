@@ -231,10 +231,10 @@ export function InvitationPage() {
 
         <div className="mt-8 rounded-3xl border border-border bg-card shadow-elegant p-6 sm:p-8 text-center">
           <p className="text-xs uppercase tracking-[0.35em] text-magenta mb-3 flex items-center justify-center gap-2">
-            <UtensilsCrossed className="w-4 h-4" /> Optional cultural meal
+            <UtensilsCrossed className="w-4 h-4" /> Cultural meal pre-order
           </p>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Cultural meals are not required to attend. After you RSVP as attending, you may choose to pre-order a cultural meal at your discretion. They will be in the twenty dollar range per meal so we can negotiate with the restaurant once we have a meal count total. You will be updated with the menu to confirm in the coming weeks and to pay the restaurant direct.
+            Ordering a cultural meal is not required to attend this special event. Please RSVP if you are attending in person or on Zoom. You may choose to pre-order a catered meal at your discretion — they are in the $20–$30 range per meal (beef or chicken, gluten-free options available). Please pre-order so the restaurants know what to prepare. You'll be updated with your menu choices and pay the restaurant directly in the coming weeks.
           </p>
           <Link to="/rsvp" className="inline-block mt-5">
             <Button size="lg" className="bg-gradient-sunset text-white hover:opacity-90 px-8 shadow-glow border-0">
