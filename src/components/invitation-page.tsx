@@ -71,9 +71,9 @@ const defaultContent: Content = {
   hero_title: "A Taste of",
   hero_title_emphasis: "Special",
   hero_title_suffix: "Conventions",
-  hero_tagline: "An event and an evening to remember.",
+  hero_tagline: "An evening and an event to remember.",
   hero_intro:
-    "You are cordially invited to join us for a very special evening of association, cultural enrichment, gift exchanges, meeting new friends, and making wonderful memories — this side of paradise. See the video for details.",
+    "You are cordially invited to attend a very special evening of association, cultural enrichment, gift exchanges, meeting new friends, seeing old friends, and making wonderful memories — all on this side of paradise. For details, see the video below.",
   video_url: null,
   itinerary: [],
   datetime_heading: "Sunday, August 30, 2026 · 4:00 PM – 9:30 PM",
@@ -232,10 +232,10 @@ export function InvitationPage() {
 
         <div className="mt-8 rounded-3xl border border-border bg-card shadow-elegant p-6 sm:p-8 text-center">
           <p className="text-xs uppercase tracking-[0.35em] text-magenta mb-3 flex items-center justify-center gap-2">
-            <UtensilsCrossed className="w-4 h-4" /> Optional cultural meal
+            <UtensilsCrossed className="w-4 h-4" /> A cultural catered meal · Pre-order
           </p>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Pre-ordering a cultural meal is not required to attend this special event. Your in-person RSVP includes the option of a catered meal, which is in the $20 to $30 per meal range and includes the choice of beef or chicken. All meals are gluten-free. You'll be updated with the way to contact the restaurant directly in the coming weeks.
+            Pre-ordering a cultural catered meal is not required to attend this special event, but it is available to those who RSVP in person. You may choose to pre-order a catered meal, which are in the $20 to $30 per meal range. They include beef or chicken options, and all meals are gluten-free. Pre-ordering a meal lets the restaurants know how much food to prepare. You will be updated with the menu and the ability to pay the restaurant directly in the coming weeks before the event.
           </p>
           <Link to="/rsvp" className="inline-block mt-5">
             <Button size="lg" className="bg-gradient-sunset text-white hover:opacity-90 px-8 shadow-glow border-0">
@@ -255,10 +255,10 @@ export function InvitationPage() {
             <p className="text-xs uppercase tracking-[0.4em] text-magenta mb-3">Step Two</p>
             <h2 className="font-display text-4xl sm:text-5xl text-ink mb-4">RSVP</h2>
             <p className="text-muted-foreground max-w-md mx-auto mb-3">
-              Please RSVP if you want to join us in person or virtually, including your party size. Virtual attendance is unlimited.
+              Please RSVP if you want to join us in person or virtually, and include your party size. Virtual attendance is unlimited.
             </p>
             <p className="text-xs uppercase tracking-[0.25em] text-magenta mb-7">
-              In-person space is limited
+              In-person attendance has limited space
             </p>
 
             <Link to="/rsvp">
@@ -387,7 +387,7 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-4">
               <p>
-                Entertainment will be provided by our brothers and sisters. If you have a talent you'd like to share — <strong className="text-ink">music, dance, spoken word</strong>, or something similar — please submit a video and we'll reach out to discuss the opportunity to perform.
+                Entertainment will be provided by our brothers and sisters. If you have a talent you'd like to share — <strong className="text-ink">singing, dancing, or a musical instrument</strong>, or something similar — please submit a video and we'll reach out to discuss the opportunity to perform.
               </p>
               <EntertainmentSubmissionForm />
             </AccordionContent>
@@ -418,7 +418,7 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-3">
               <p>
-                For those who choose not to order a catered meal, please bring a dish to share — like a covered-dish gathering — so everyone has plenty of food to enjoy through the evening.
+                Food choices include either bringing a covered dish to share with brothers and sisters, or ordering a catered meal from the restaurants available through this cultural experience.
               </p>
               {isAdmin && (
                 <Link to="/admin/invitation">
@@ -439,9 +439,7 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-3">
               <p>
-                Would you like to volunteer for the event? Please send a text to
-                Kari Gray at 808.278.7562 with YOUR NAME and the word VOLUNTEER
-                to sign up for the needs below.
+                Would you like to volunteer to help make our event a success? After you RSVP, please send a text to Kari Gray at 808.278.7562 with YOUR NAME and the word VOLUNTEER to sign up for the needs below.
               </p>
               {assignments.length > 0 ? (
                 <ul className="list-disc pl-5 space-y-1">
@@ -482,7 +480,7 @@ export function InvitationPage() {
               </span>
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-2">
-              <p>Adult beverages will be available for purchase from the venue. Bringing alcohol is not allowed and is strctly prohibited.</p>
+              <p>Adult beverages will be available for purchase from the venue. Bringing alcohol is not allowed and is strictly prohibited.</p>
             </AccordionContent>
           </AccordionItem>
 
@@ -495,9 +493,7 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-3">
               <p>
-                Those who have been invited, are in good standing in the congregation, and have
-                RSVP'd may attend. Attendees must have been personally invited by someone on our
-                committee.
+                Those who have been invited by a committee member — or by a guest who has RSVP'd — and who are in good standing in the congregation may attend this event. Guests must have been personally invited by someone who is attending and have RSVP'd in order to be admitted to the building.
               </p>
             </AccordionContent>
           </AccordionItem>
@@ -511,8 +507,7 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-3">
               <p>
-                We encourage children and young people to attend who are with a parent or guardian,
-                are well-behaved, and have RSVP'd.
+                Absolutely. We encourage parents and guardians to bring children and young people to enjoy this most encouraging occasion. All children must be included in the RSVP.
               </p>
             </AccordionContent>
           </AccordionItem>
@@ -526,26 +521,27 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-3">
               <p>
-                Yes — we'd love that! Here's how it works:
+                Absolutely — we'd love you to invite your friends! Here's how:
               </p>
               <ol className="list-decimal pl-5 space-y-2">
                 <li>
-                  First, make sure the friends you'd like to invite are spiritually qualified and in good standing.
+                  First, make sure you've RSVP'd, and that your friend is spiritually qualified and in good standing.
                 </li>
                 <li>
-                  Ask them to text <strong className="text-ink">VOLUNTEER</strong> along with their name to{" "}
+                  Send a text to{" "}
                   <a href="sms:+18082787562" className="text-terracotta font-medium underline-offset-2 hover:underline">
                     808-278-7562
-                  </a>.
+                  </a>{" "}
+                  with the word <strong className="text-ink">VOLUNTEER</strong> and your name — you'll be added to our committee, where training will be provided so you know how to invite your friends and family.
                 </li>
                 <li>
-                  We'll add them to the committee and update their status.
+                  Please RSVP first — it's important.
                 </li>
                 <li>
-                  Once they log in, a welcome video will walk them through how the platform works.
+                  Once added, a welcome video will walk you through how the platform works.
                 </li>
                 <li>
-                  <strong className="text-ink">Important:</strong> have them upload their contacts first so we can check that the people they want to invite haven't already been invited by someone else.
+                  <strong className="text-ink">Important:</strong> upload a list of your friends after you've RSVP'd so we can check that they haven't already been invited by someone else. Details are available once you've been appointed as a committee member.
                 </li>
               </ol>
             </AccordionContent>
@@ -560,7 +556,7 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-3">
               <p>
-                It's simple — just log in and update your RSVP. You can add or remove meals, change your guest count, switch between in-person and Zoom, or make any other modifications.
+                Changing your RSVP is simple — just log in and update your RSVP below. You can add or remove meals, change your guest count, switch between in-person and Zoom, or make any other modifications.
               </p>
               <Link to="/login">
                 <Button variant="outline" size="sm" className="gap-2">
