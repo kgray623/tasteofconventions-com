@@ -81,11 +81,12 @@ function PreviewPage() {
     "submittedAt",
     null,
   );
-  const cuisines = [
-    { key: "Myanmar", label: "Myanmar/Burmese" },
-    { key: "African", label: "African" },
-    { key: "Indonesian", label: "Indonesian" },
+  const cuisines: Array<{ key: string; label: string; photos?: string[]; note?: string }> = [
+    { key: "Myanmar", label: "Myanmar/Burmese", note: "Photos coming next week" },
+    { key: "African", label: "African", photos: africanPhotos },
+    { key: "Indonesian", label: "Indonesian", photos: indonesianPhotos },
   ];
+  const [lightbox, setLightbox] = useState<string | null>(null);
   const phoneDigits = phone.replace(/\D/g, "");
   const canChooseMeals = name.trim().length > 0 && phoneDigits.length >= 7;
 
