@@ -82,7 +82,7 @@ function PreviewPage() {
     null,
   );
   const cuisines: Array<{ key: string; label: string; photos?: string[]; note?: string }> = [
-    { key: "Myanmar", label: "Myanmar/Burmese", note: "Photos coming next week" },
+    { key: "Myanmar", label: "Myanmar/Burmese", note: "Photos coming soon" },
     { key: "African", label: "African", photos: africanPhotos },
     { key: "Indonesian", label: "Indonesian", photos: indonesianPhotos },
   ];
