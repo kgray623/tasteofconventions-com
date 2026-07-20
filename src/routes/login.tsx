@@ -12,6 +12,7 @@ import { signInWithPhoneOnly } from "@/lib/auth-phone.functions";
 import { rememberLoginName, rememberLoginPhone, getRememberedLoginName, getRememberedLoginPhone } from "@/lib/session-recovery";
 import { NewBadge } from "@/components/new-badge";
 import { markSeen } from "@/lib/whats-new";
+import { ensureMyTeamRole } from "@/lib/account.functions";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -48,10 +49,10 @@ function normalizeMobilePhone(value: string) {
   return "";
 }
 
-async function routeForUser(userId: string): Promise<RouteDestination> {
+async function routeForUser(userId: string, ensureRoles: () => Promise<unknown>): Promise<RouteDestination> {
   // Promote committee members to the "team" role so they see the full dashboard.
   try {
-    await withTimeout(supabase.rpc("ensure_committee_team_role"), 5000);
+    await withTimeout(ensureRoles(), 5000);
   } catch {
     // non-fatal
   }
@@ -78,6 +79,7 @@ function HelperLogin() {
   const search = useSearch({ strict: false }) as { redirect?: string };
   const navigate = useNavigate();
   const phoneLogin = useServerFn(signInWithPhoneOnly);
+  const ensureRoles = useServerFn(ensureMyTeamRole);
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -87,7 +89,7 @@ function HelperLogin() {
     if (navigatingRef.current) return;
     navigatingRef.current = true;
     try {
-      const destination = await routeForUser(userId);
+      const destination = await routeForUser(userId, ensureRoles);
       const redirect = safeRedirect(search.redirect);
       // The managed OAuth consent route is a full URL path with query params
       // — navigate to it directly instead of the role-based destination.

@@ -48,11 +48,13 @@ export const Route = createFileRoute("/exports/$filename")({
         const uid = claimsData?.claims?.sub;
         if (authErr || !uid) return new Response("Unauthorized", { status: 401 });
 
-        const { data: isAdmin, error: roleErr } = await supabase.rpc("has_role", {
-          _user_id: uid,
-          _role: "admin",
-        });
-        if (roleErr || !isAdmin) return new Response("Forbidden", { status: 403 });
+        const { data: adminRole, error: roleErr } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", uid)
+          .eq("role", "admin")
+          .maybeSingle();
+        if (roleErr || !adminRole) return new Response("Forbidden", { status: 403 });
 
         // Stream the private export through this authorized route so app downloads
         // work from mobile/desktop without exposing public storage links.

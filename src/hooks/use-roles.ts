@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { withTimeout } from "@/lib/async-safety";
+import { ensureMyTeamRole } from "@/lib/account.functions";
 
 export function useRoles() {
   const { user, loading: authLoading } = useAuth();
+  const ensureRoles = useServerFn(ensureMyTeamRole);
   const [roles, setRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -15,7 +18,7 @@ export function useRoles() {
     }
     setLoading(true);
     try {
-      await withTimeout(supabase.rpc("ensure_committee_team_role"), 5000).catch(() => null);
+      await withTimeout(ensureRoles(), 5000).catch(() => null);
       const { data } = await withTimeout(
         supabase.from("user_roles").select("role").eq("user_id", user.id),
         3000,
