@@ -387,7 +387,7 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-4">
               <p>
-                Entertainment will be provided by our brothers and sisters. If you have a talent you'd like to share — <strong className="text-ink">music, dance, spoken word</strong>, or something similar — please submit a video and we'll reach out to discuss the opportunity to perform.
+                Entertainment will be provided by our brothers and sisters. If you have a talent you'd like to share — <strong className="text-ink">singing, dancing, or a musical instrument</strong>, or something similar — please submit a video and we'll reach out to discuss the opportunity to perform.
               </p>
               <EntertainmentSubmissionForm />
             </AccordionContent>
