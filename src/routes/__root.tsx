@@ -162,10 +162,12 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <SiteTrafficTracker />
         <Outlet />
         <Toaster />
       </AuthProvider>
     </QueryClientProvider>
   );
 }
+
 
