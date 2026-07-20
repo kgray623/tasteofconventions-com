@@ -408,8 +408,12 @@ function RsvpPage() {
                 onClick={() => setStatus(o.v as "yes" | "no")}
                 className={`p-4 rounded-md border-2 transition flex flex-col items-center gap-2 ${
                   status === o.v
-                    ? "border-ink bg-ink text-cream"
-                    : "border-border bg-card hover:border-ink/40"
+                    ? o.v === "yes"
+                      ? "border-pink-500 bg-pink-500 text-white"
+                      : "border-ink bg-ink text-cream"
+                    : o.v === "yes"
+                      ? "border-border bg-card hover:border-pink-500/40"
+                      : "border-border bg-card hover:border-ink/40"
                 }`}
               >
                 <o.icon className="w-5 h-5" />
