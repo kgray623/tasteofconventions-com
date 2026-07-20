@@ -267,14 +267,18 @@ function PreviewPage() {
                       onClick={() => setAttendanceMode(o.v as "in_person" | "zoom")}
                       className={`p-4 rounded-md border-2 transition flex flex-col items-center gap-1.5 ${
                         attendanceMode === o.v
-                          ? "border-ink bg-ink text-cream"
-                          : "border-border bg-card hover:border-ink/40"
+                          ? o.v === "in_person"
+                            ? "border-terracotta bg-terracotta text-cream"
+                            : "border-teal-500 bg-teal-500 text-white"
+                          : o.v === "in_person"
+                            ? "border-border bg-card hover:border-terracotta/40"
+                            : "border-border bg-card hover:border-teal-500/40"
                       }`}
                     >
                       <o.icon className="w-5 h-5" />
                       <span className="text-sm font-medium">{o.label}</span>
                       <span
-                        className={`text-[10px] uppercase tracking-widest ${attendanceMode === o.v ? "text-cream/70" : "text-muted-foreground"}`}
+                        className={`text-[10px] uppercase tracking-widest ${attendanceMode === o.v ? "text-cream/80" : "text-muted-foreground"}`}
                       >
                         {o.sub}
                       </span>
