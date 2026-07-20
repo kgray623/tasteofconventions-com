@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-
 import { useDraftState } from "@/hooks/use-draft-state";
 import { Check, X, Minus, Plus, ArrowLeft, Users, Video } from "lucide-react";
 
@@ -89,9 +88,6 @@ function PreviewPage() {
   const [lightbox, setLightbox] = useState<string | null>(null);
   const phoneDigits = phone.replace(/\D/g, "");
   const canChooseMeals = name.trim().length > 0 && phoneDigits.length >= 7;
-
-
-
 
   const save = useServerFn(submitPublicRsvp);
   const lookupRsvp = useServerFn(getPublicRsvpByPhone);
@@ -433,7 +429,7 @@ function PreviewPage() {
                       <div className="grid grid-cols-2 gap-2 w-36">
                         <button
                           type="button"
-                          disabled={!canChooseMeals}
+
                           onClick={() => setQty(qty > 0 ? qty : 1)}
                           className={`rounded-md border-2 px-3 py-2 text-sm font-medium transition ${
                             selected
@@ -445,7 +441,7 @@ function PreviewPage() {
                         </button>
                         <button
                           type="button"
-                          disabled={!canChooseMeals}
+
                           onClick={() => setQty(0)}
                           className={`rounded-md border-2 px-3 py-2 text-sm font-medium transition ${
                             !selected
@@ -465,7 +461,7 @@ function PreviewPage() {
                         <Button
                           size="icon"
                           variant="outline"
-                          disabled={!canChooseMeals}
+
                           onClick={() => setQty(qty - 1)}
                           aria-label={`Fewer ${cuisine.label} meals`}
                         >
@@ -477,7 +473,7 @@ function PreviewPage() {
                         <Button
                           size="icon"
                           variant="outline"
-                          disabled={!canChooseMeals}
+
                           onClick={() => setQty(qty + 1)}
                           aria-label={`More ${cuisine.label} meals`}
                         >
