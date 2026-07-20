@@ -556,7 +556,7 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-3">
               <p>
-                It's simple — just log in and update your RSVP. You can add or remove meals, change your guest count, switch between in-person and Zoom, or make any other modifications.
+                Changing your RSVP is simple — just log in and update your RSVP below. You can add or remove meals, change your guest count, switch between in-person and Zoom, or make any other modifications.
               </p>
               <Link to="/login">
                 <Button variant="outline" size="sm" className="gap-2">
