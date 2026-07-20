@@ -507,8 +507,7 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-3">
               <p>
-                We encourage children and young people to attend who are with a parent or guardian,
-                are well-behaved, and have RSVP'd.
+                Absolutely. We encourage parents and guardians to bring children and young people to enjoy this most encouraging occasion. All children must be included in the RSVP.
               </p>
             </AccordionContent>
           </AccordionItem>
