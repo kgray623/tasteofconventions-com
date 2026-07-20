@@ -1,20 +1,23 @@
-## Cuisine headings above meal photos
+## RSVP form: colorful buttons + remove duplicate name/phone box
 
-Add a bold cuisine-type heading above each meal's photo strip on the RSVP/preorder meal cards, so the order reads: heading → photos → description.
+### 1. Remove the duplicate "Required before RSVP" box
+On both `/rsvp` (`src/routes/rsvp.index.tsx`) and `/rsvp/$token` (`src/routes/rsvp.$token.tsx`), delete the second Full name / Mobile number block (the terracotta-outlined "Required before RSVP" card that sits just above the "Invited by" picker). Keep the original name/phone inputs at the top of the card — they're already marked required.
 
-### Changes
+### 2. Recolor the choice buttons (no more black)
+Replace the black-on-select (`border-ink bg-ink text-cream`) styling on these button groups with a warmer, prettier palette:
 
-1. **`src/components/my-rsvp-content.tsx`** (and `src/routes/rsvp.$token.tsx` / `src/routes/rsvp.index.tsx` meal cards — whichever renders the photo strips):
-   - Above each cuisine's photo strip, render a bold heading:
-     - **Myanmar (Burmese)** — caption below: "Photos coming soon"
-     - **African** — photo strip + lightbox below, then description
-     - **Indonesian** — photo strip + lightbox below, then description
-   - Keep existing photos, lightboxes, and selection behavior unchanged.
+- **Attending / Decline**
+  - Attending (selected): bright pink — `bg-pink-500 border-pink-500 text-white`
+  - Decline (selected): keep dark — `bg-ink border-ink text-cream`
+- **In-person / Virtual (Zoom)**
+  - In-person (selected): terracotta — `bg-terracotta border-terracotta text-cream`
+  - Zoom (selected): teal — `bg-teal-500 border-teal-500 text-white`
+- Unselected state stays the current `border-border bg-card` with a soft hover tint matching each button's selected color.
 
-2. **Description placeholders**: leave the current African and Indonesian descriptions as-is for now. When you send the new African description, I'll drop it in.
+Applies to both `/rsvp` and `/rsvp/$token`.
 
 ### Out of scope
-No changes to selection logic, pricing, or the "Invited by" picker.
+No changes to meal cards, "Invited by" picker, submission logic, or copy.
 
 ### Verification
-Playwright on mobile (384×681) on `/rsvp/<token>`: screenshot each meal card and confirm heading appears above the photos in bold.
+Playwright mobile screenshot of `/rsvp` confirming: (a) only one name/phone block, (b) Attending = pink, Decline = dark, In-person = terracotta, Zoom = teal.
