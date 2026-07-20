@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 
 import { useDraftState } from "@/hooks/use-draft-state";
 import { Check, X, Minus, Plus, ArrowLeft, Users, Video } from "lucide-react";
-import { CommitteePicker } from "@/components/committee-picker";
+
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import africanMeal1 from "@/assets/african-meal-1.jpg.asset.json";
 import africanMeal2 from "@/assets/african-meal-2.jpg.asset.json";
