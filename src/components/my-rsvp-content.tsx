@@ -130,8 +130,8 @@ export function MyRsvpContent() {
     )
       ? order.items
       : [];
-    const cuisines: { key: string; label: string; photos?: string[] }[] = [
-      { key: "Myanmar", label: "Myanmar/Burmese" },
+    const cuisines: { key: string; label: string; photos?: string[]; note?: string }[] = [
+      { key: "Myanmar", label: "Myanmar/Burmese", note: "Photos coming soon" },
       { key: "African", label: "African", photos: africanPhotos },
       { key: "Indonesian", label: "Indonesian", photos: indonesianPhotos },
     ];
@@ -283,8 +283,32 @@ export function MyRsvpContent() {
                     key={cuisine.key}
                     className="rounded-md border border-border bg-card p-4 space-y-3"
                   >
+                    <h3 className="font-display text-2xl text-ink font-bold">{cuisine.label}</h3>
+                    {cuisine.photos && cuisine.photos.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2">
+                        {cuisine.photos.map((src, i) => (
+                          <button
+                            key={src}
+                            type="button"
+                            onClick={() => setLightbox(src)}
+                            className="relative aspect-square overflow-hidden rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-terracotta"
+                            aria-label={`View ${cuisine.label} meal photo ${i + 1}`}
+                          >
+                            <img
+                              src={src}
+                              alt={`${cuisine.label} cultural meal — example dish ${i + 1}`}
+                              loading="lazy"
+                              className="absolute inset-0 h-full w-full object-cover"
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {cuisine.note && (
+                      <p className="text-sm italic text-muted-foreground">{cuisine.note}</p>
+                    )}
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-base font-display text-ink">{cuisine.label}</span>
+                      <span className="text-sm text-muted-foreground">Include this cuisine?</span>
                       <div className="grid grid-cols-2 gap-2 w-36">
                         <button
                           type="button"
@@ -310,26 +334,6 @@ export function MyRsvpContent() {
                         </button>
                       </div>
                     </div>
-                    {cuisine.photos && cuisine.photos.length > 0 && (
-                      <div className="grid grid-cols-3 gap-2">
-                        {cuisine.photos.map((src, i) => (
-                          <button
-                            key={src}
-                            type="button"
-                            onClick={() => setLightbox(src)}
-                            className="relative aspect-square overflow-hidden rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-terracotta"
-                            aria-label={`View ${cuisine.label} meal photo ${i + 1}`}
-                          >
-                            <img
-                              src={src}
-                              alt={`${cuisine.label} cultural meal — example dish ${i + 1}`}
-                              loading="lazy"
-                              className="absolute inset-0 h-full w-full object-cover"
-                            />
-                          </button>
-                        ))}
-                      </div>
-                    )}
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-sm text-muted-foreground">
                         How many meals do you want?

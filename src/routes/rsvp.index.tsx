@@ -82,7 +82,7 @@ function PreviewPage() {
     null,
   );
   const cuisines: Array<{ key: string; label: string; photos?: string[]; note?: string }> = [
-    { key: "Myanmar", label: "Myanmar/Burmese", note: "Photos coming next week" },
+    { key: "Myanmar", label: "Myanmar/Burmese", note: "Photos coming soon" },
     { key: "African", label: "African", photos: africanPhotos },
     { key: "Indonesian", label: "Indonesian", photos: indonesianPhotos },
   ];
@@ -404,6 +404,7 @@ function PreviewPage() {
                     key={cuisine.key}
                     className="rounded-md border border-border bg-card p-4 space-y-3"
                   >
+                    <h3 className="font-display text-2xl text-ink font-bold">{cuisine.label}</h3>
                     {cuisine.photos && (
                       <div className="grid grid-cols-3 gap-2">
                         {cuisine.photos.map((src, i) => (
