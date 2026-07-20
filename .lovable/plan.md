@@ -1,23 +1,12 @@
-## RSVP form: colorful buttons + remove duplicate name/phone box
+Update the "Pre-order your cultural meal" section copy in the three places it appears:
 
-### 1. Remove the duplicate "Required before RSVP" box
-On both `/rsvp` (`src/routes/rsvp.index.tsx`) and `/rsvp/$token` (`src/routes/rsvp.$token.tsx`), delete the second Full name / Mobile number block (the terracotta-outlined "Required before RSVP" card that sits just above the "Invited by" picker). Keep the original name/phone inputs at the top of the card — they're already marked required.
+1. **src/routes/rsvp.index.tsx** — `/rsvp` public RSVP page
+2. **src/routes/rsvp.$token.tsx** — `/rsvp/:token` invited-guest RSVP page
+3. **src/components/my-rsvp-content.tsx** — `/my-rsvp` dashboard for logged-in guests
 
-### 2. Recolor the choice buttons (no more black)
-Replace the black-on-select (`border-ink bg-ink text-cream`) styling on these button groups with a warmer, prettier palette:
+Changes to apply in all three locations:
+- Change heading from `Pre-order your cultural meal` to `Pre-order your catered cultural meal`.
+- Replace the paragraph below it with:
+  > Cultural meals are in the twenty to thirty dollar range per meal. Each cuisine offers a beef or a chicken meal, and all meals are gluten-free. When you click below to make a pre-order, we will soon provide the menu option and the restaurant that you will contact direct to pay for your meal in advance.
 
-- **Attending / Decline**
-  - Attending (selected): bright pink — `bg-pink-500 border-pink-500 text-white`
-  - Decline (selected): keep dark — `bg-ink border-ink text-cream`
-- **In-person / Virtual (Zoom)**
-  - In-person (selected): terracotta — `bg-terracotta border-terracotta text-cream`
-  - Zoom (selected): teal — `bg-teal-500 border-teal-500 text-white`
-- Unselected state stays the current `border-border bg-card` with a soft hover tint matching each button's selected color.
-
-Applies to both `/rsvp` and `/rsvp/$token`.
-
-### Out of scope
-No changes to meal cards, "Invited by" picker, submission logic, or copy.
-
-### Verification
-Playwright mobile screenshot of `/rsvp` confirming: (a) only one name/phone block, (b) Attending = pink, Decline = dark, In-person = terracotta, Zoom = teal.
+No other UI, logic, or database changes are required.

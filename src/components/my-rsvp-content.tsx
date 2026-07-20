@@ -268,10 +268,10 @@ export function MyRsvpContent() {
           <Card className="p-7 space-y-5">
             <div>
               <h2 className="font-display text-2xl">
-                Pre-order your cultural meal
+                Pre-order your catered cultural meal
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Cultural meals are in the twenty to thirty dollar range per meal. Each cuisine offers a beef and a chicken option, and gluten-free options are available. Click below to pre-order — we'll negotiate with the restaurant once we have a meal count total. You'll get the menu to confirm in the coming weeks and pay the restaurant directly.
+                Cultural meals are in the twenty to thirty dollar range per meal. Each cuisine offers a beef or a chicken meal, and all meals are gluten-free. When you click below to make a pre-order, we will soon provide the menu option and the restaurant that you will contact direct to pay for your meal in advance.
               </p>
             </div>
             <div className="space-y-3">
