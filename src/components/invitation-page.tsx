@@ -557,6 +557,24 @@ export function InvitationPage() {
               </Link>
             </AccordionContent>
           </AccordionItem>
+
+          {/* Indoor or outdoor? */}
+          <AccordionItem value="indoor-outdoor" id="indoor-outdoor" className="border border-border rounded-2xl bg-card px-5 data-[state=open]:shadow-elegant">
+            <AccordionTrigger className="hover:no-underline">
+              <span className="flex items-center gap-3 text-2xl">
+                <MapPin className="w-5 h-5 text-sunset" /> Will this be indoor or outdoor?
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="pb-6 text-muted-foreground space-y-3">
+              <p>
+                This is an <strong className="text-ink">indoor event</strong>, held inside the Hanke Building. You can see the building in the Location section above.
+              </p>
+              <p>
+                Any other questions? Please text them to{" "}
+                <a href="sms:+18082787562" className="text-terracotta font-medium underline-offset-2 hover:underline">808-278-7562</a>.
+              </p>
+            </AccordionContent>
+          </AccordionItem>
         </Accordion>
 
         </section>
