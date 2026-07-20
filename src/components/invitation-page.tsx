@@ -480,7 +480,7 @@ export function InvitationPage() {
               </span>
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-2">
-              <p>Adult beverages will be available for purchase from the venue. Bringing alcohol is not allowed and is strctly prohibited.</p>
+              <p>Adult beverages will be available for purchase from the venue. Bringing alcohol is not allowed and is strictly prohibited.</p>
             </AccordionContent>
           </AccordionItem>
 
