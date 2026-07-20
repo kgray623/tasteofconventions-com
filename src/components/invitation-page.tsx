@@ -420,13 +420,6 @@ export function InvitationPage() {
               <p>
                 Food choices include either bringing a covered dish to share with brothers and sisters, or ordering a catered meal from the restaurants available through this cultural experience.
               </p>
-              {isAdmin && (
-                <Link to="/admin/invitation">
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Plus className="w-4 h-4" /> Add content
-                  </Button>
-                </Link>
-              )}
             </AccordionContent>
           </AccordionItem>
 
