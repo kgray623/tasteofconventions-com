@@ -65,13 +65,14 @@ function TopList({ title, rows, formatKey }: { title: string; rows: { key: strin
 }
 
 export function SiteTrafficCard() {
-  const [range, setRange] = useState<TrafficRange>("7d");
+  const [range, setRange] = useState<TrafficRange>("all");
   const fetchFn = useServerFn(getSiteTraffic);
   const query = useQuery<SiteTrafficResponse>({
     queryKey: ["site-traffic", range],
     queryFn: () => fetchFn({ data: { range } }),
     staleTime: 60_000,
   });
+
 
   const data = query.data;
   const sparkVisitors = useMemo(() => data?.daily.map((d) => d.visitors) ?? [], [data]);
@@ -85,13 +86,13 @@ export function SiteTrafficCard() {
         </div>
         <div className="flex items-center gap-2">
           <div className="inline-flex rounded-md border border-border overflow-hidden text-xs">
-            {(["7d", "30d"] as const).map((r) => (
+            {(["7d", "30d", "90d", "all"] as const).map((r) => (
               <button
                 key={r}
                 onClick={() => setRange(r)}
                 className={`px-3 py-1 ${range === r ? "bg-ink text-cream" : "bg-background text-muted-foreground hover:text-ink"}`}
               >
-                Last {r === "7d" ? "7" : "30"} days
+                {r === "all" ? "All time" : `Last ${r === "7d" ? "7" : r === "30d" ? "30" : "90"} days`}
               </button>
             ))}
           </div>
@@ -120,10 +121,12 @@ export function SiteTrafficCard() {
           </div>
 
           <div>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Visitors per day</p>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+              Visitors per day {data.launchDate ? `(since ${data.launchDate})` : ""}
+            </p>
             <Sparkline values={sparkVisitors} />
             <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1 text-[11px] text-muted-foreground">
-              {data.daily.slice(-7).map((d) => (
+              {data.daily.slice(-14).map((d) => (
                 <div key={d.date} className="flex items-baseline justify-between border-t border-border pt-1">
                   <span>{d.date.slice(5)}</span>
                   <span className="tabular-nums text-ink">{d.visitors}</span>
@@ -133,20 +136,25 @@ export function SiteTrafficCard() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-border">
-            <TopList title="Top pages" rows={data.topPages} />
+            <TopList title={`Top pages${data.trackerStart ? ` (since ${data.trackerStart})` : ""}`} rows={data.topPages} />
             <TopList
-              title="Top countries"
+              title={`Top countries${data.trackerStart ? ` (since ${data.trackerStart})` : ""}`}
               rows={data.topCountries}
               formatKey={(k) => (k === "Unknown" ? "Unknown" : k)}
             />
-            <TopList title="Top referrers" rows={data.topReferrers} />
+            <TopList title={`Top referrers${data.trackerStart ? ` (since ${data.trackerStart})` : ""}`} rows={data.topReferrers} />
           </div>
 
           <p className="text-[11px] text-muted-foreground pt-1">
-            Tracked in-app since page tracking was enabled. Excludes /admin and /ai-access. Refreshed {new Date(data.generatedAt).toLocaleTimeString()}.
+            Daily totals: Lovable Insights history{data.launchDate ? ` since ${data.launchDate}` : ""}
+            {data.trackerStart ? `, in-app tracker from ${data.trackerStart} forward` : ""}.
+            Top pages / countries / referrers come from the in-app tracker only
+            {data.trackerStart ? ` (available from ${data.trackerStart})` : ""}.
+            Refreshed {new Date(data.generatedAt).toLocaleTimeString()}.
           </p>
         </>
       ) : null}
+
     </Card>
   );
 }
