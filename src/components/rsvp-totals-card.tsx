@@ -49,9 +49,11 @@ type MyTotals = {
 type Props = {
   /** When provided, also render this committee member's personal slot. */
   personalHostIds?: string[];
+  /** Bump this value after guest/RSVP mutations so counts re-read the database. */
+  refreshKey?: number;
 };
 
-export function RsvpTotalsCard({ personalHostIds }: Props) {
+export function RsvpTotalsCard({ personalHostIds, refreshKey = 0 }: Props) {
   const fetchTotals = useServerFn(getRsvpTotals);
   const emptyDQ: DataQuality = { partySizeCoerced: 0, statusUnknown: 0, attendanceModeUnknown: 0 };
   const [event, setEvent] = useState<EventTotals>({ requested: 0, uploaded: 0, confirmed: 0, confirmedResponses: 0, inPersonResponses: 0, inPersonAssumed: 0, virtual: 0, virtualResponses: 0, dataQuality: emptyDQ });
@@ -99,7 +101,7 @@ export function RsvpTotalsCard({ personalHostIds }: Props) {
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showPersonal]);
+  }, [showPersonal, refreshKey]);
 
 
   const available = Math.max(0, TOTAL_SEATS - event.confirmed);
