@@ -11,7 +11,6 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { getCommitteeRoster } from "@/lib/invitations.functions";
 
@@ -143,11 +142,11 @@ export function CommitteePicker({
   const { exact, suggestions, showingAll } = useMemo(() => {
     const q = query.trim();
     if (!q) {
-      // Empty query: show first page of full roster
+      // Empty query: show no roster. Guests must type before suggestions appear.
       return {
-        exact: members.slice(0, 100),
+        exact: [] as Array<Member & { score?: number }>,
         suggestions: [] as Array<Member & { score: number }>,
-        showingAll: true,
+        showingAll: false,
       };
     }
     const qNorm = stripHonorifics(q);
@@ -203,11 +202,14 @@ export function CommitteePicker({
               onValueChange={setQuery}
             />
             <CommandList>
-              {exact.length === 0 && suggestions.length === 0 && (
-                <CommandEmpty>No one on the roster matches that name.</CommandEmpty>
+              {query.trim().length === 0 && (
+                <CommandEmpty>Start typing the person&apos;s name.</CommandEmpty>
+              )}
+              {query.trim().length > 0 && exact.length === 0 && suggestions.length === 0 && (
+                <CommandEmpty>No matching name found.</CommandEmpty>
               )}
               {exact.length > 0 && (
-                <CommandGroup heading={showingAll ? "Everyone on the roster" : "Matches"}>
+                <CommandGroup heading={showingAll ? "Matches" : "Matches"}>
                   {exact.map((m) => (
                     <CommandItem
                       key={`${m.kind}-${m.id}`}
@@ -225,12 +227,6 @@ export function CommitteePicker({
                         )}
                       />
                       <span className="flex-1 truncate">{m.name}</span>
-                      <Badge
-                        variant={m.kind === "committee" ? "default" : "secondary"}
-                        className="ml-2 text-[10px] uppercase tracking-wide"
-                      >
-                        {m.kind === "committee" ? "Committee" : "Guest"}
-                      </Badge>
                     </CommandItem>
                   ))}
                 </CommandGroup>
@@ -249,12 +245,6 @@ export function CommitteePicker({
                     >
                       <Check className="mr-2 h-4 w-4 opacity-0" />
                       <span className="flex-1 truncate">{m.name}</span>
-                      <Badge
-                        variant={m.kind === "committee" ? "default" : "secondary"}
-                        className="ml-2 text-[10px] uppercase tracking-wide"
-                      >
-                        {m.kind === "committee" ? "Committee" : "Guest"}
-                      </Badge>
                     </CommandItem>
                   ))}
                 </CommandGroup>

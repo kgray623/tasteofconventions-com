@@ -10,6 +10,7 @@ import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CommitteePicker } from "@/components/committee-picker";
 
 import { useDraftState } from "@/hooks/use-draft-state";
 import { Check, X, Minus, Plus, ArrowLeft, Users, Video } from "lucide-react";
@@ -362,16 +363,13 @@ function PreviewPage() {
             <Label htmlFor="invited-by">
               Invited by <span className="text-destructive">*</span>
             </Label>
-            <Input
+            <CommitteePicker
               id="invited-by"
               value={invitedBy}
-              onChange={(e) => setInvitedBy(e.target.value)}
-              placeholder="Type the full name of the person who invited you"
-              maxLength={120}
-              className="h-14 border-2 border-ink bg-card text-lg text-ink"
+              onChange={setInvitedBy}
             />
             <p className="text-xs text-muted-foreground">
-              Enter the full name of the person who invited you.
+              Type the person&apos;s name, then choose the matching suggestion.
             </p>
 
           </div>

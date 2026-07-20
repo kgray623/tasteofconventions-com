@@ -439,13 +439,12 @@ export const submitOrder = createServerFn({ method: "POST" })
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Roster of everyone who can appear in the RSVP "Invited by" picker:
-// committee members AND any invited guest on the roster (regardless of RSVP
-// status). Names only — no phone/email exposed. Public (unauthenticated)
-// because the RSVP form is public.
+// committee members AND confirmed/waitlisted guests. Names only — no phone/email
+// exposed. Public (unauthenticated) because the RSVP form is public.
 export const getCommitteeRoster = createServerFn({ method: "GET" }).handler(async () => {
   const [invitersRes, invitationsRes, teamRes] = await Promise.all([
     supabaseAdmin.from("inviters").select("id,name").eq("active", true),
-    supabaseAdmin.from("invitations").select("id,guest_name,is_committee"),
+    supabaseAdmin.from("invitations").select("id,guest_name,is_committee,rsvps(status)"),
     supabaseAdmin.from("team_invites").select("id,name").eq("role", "team"),
   ]);
 
@@ -457,7 +456,11 @@ export const getCommitteeRoster = createServerFn({ method: "GET" }).handler(asyn
   }
   for (const r of invitationsRes.data ?? []) {
     const name = (r.guest_name ?? "").trim();
-    if (name) rows.push({ id: r.id, name, kind: r.is_committee ? "committee" : "guest" });
+    const statuses = Array.isArray(r.rsvps) ? r.rsvps.map((row) => row.status) : [];
+    const isEligibleGuest = statuses.some((status) => status === "yes" || status === "waitlist");
+    if (name && (r.is_committee || isEligibleGuest)) {
+      rows.push({ id: r.id, name, kind: r.is_committee ? "committee" : "guest" });
+    }
   }
   for (const r of teamRes.data ?? []) {
     const name = (r.name ?? "").trim();
@@ -483,12 +486,18 @@ async function assertInvitedByIsCommittee(rawName: string | null | undefined): P
   }
   const [invitersRes, invitationsRes, teamRes] = await Promise.all([
     supabaseAdmin.from("inviters").select("name").eq("active", true),
-    supabaseAdmin.from("invitations").select("guest_name"),
+    supabaseAdmin.from("invitations").select("guest_name,is_committee,rsvps(status)"),
     supabaseAdmin.from("team_invites").select("name").eq("role", "team"),
   ]);
   const roster = new Set<string>();
   for (const r of invitersRes.data ?? []) if (r.name) roster.add(r.name.trim().toLowerCase());
-  for (const r of invitationsRes.data ?? []) if (r.guest_name) roster.add(r.guest_name.trim().toLowerCase());
+  for (const r of invitationsRes.data ?? []) {
+    const statuses = Array.isArray(r.rsvps) ? r.rsvps.map((row) => row.status) : [];
+    const isEligibleGuest = statuses.some((status) => status === "yes" || status === "waitlist");
+    if (r.guest_name && (r.is_committee || isEligibleGuest)) {
+      roster.add(r.guest_name.trim().toLowerCase());
+    }
+  }
   for (const r of teamRes.data ?? []) if (r.name) roster.add(r.name.trim().toLowerCase());
   if (!roster.has(name.toLowerCase())) {
     throw new Error("Please pick the person who invited you from the suggestions — the name you typed isn't on our list.");
