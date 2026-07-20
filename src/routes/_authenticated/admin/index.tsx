@@ -10,6 +10,7 @@ import { NewBadge } from "@/components/new-badge";
 import { markSeen } from "@/lib/whats-new";
 import { getAdminAudit, getReconciliationRows, type AudienceTotals } from "@/lib/admin-audit.functions";
 import { RsvpTotalsCard } from "@/components/rsvp-totals-card";
+import { SiteTrafficCard } from "@/components/site-traffic-card";
 import { ExternalLink, User, Users, Download, AlertTriangle, Archive, ArrowRight, ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
@@ -275,6 +276,9 @@ function AdminOverview() {
 
 
       <RsvpTotalsCard />
+
+      {isAdmin && !previewCommittee && <SiteTrafficCard />}
+
 
       <Card className="p-5 space-y-1">
         <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Guests</p>

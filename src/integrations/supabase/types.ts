@@ -764,6 +764,39 @@ export type Database = {
           },
         ]
       }
+      page_visits: {
+        Row: {
+          country: string | null
+          created_at: string
+          id: string
+          is_unique_session: boolean
+          path: string
+          referrer: string | null
+          session_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          id?: string
+          is_unique_session?: boolean
+          path: string
+          referrer?: string | null
+          session_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          id?: string
+          is_unique_session?: boolean
+          path?: string
+          referrer?: string | null
+          session_id?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
