@@ -401,18 +401,14 @@ function PreviewPage() {
                 const qty = cuisineCounts[cuisine.key] ?? 0;
                 const selected = qty > 0;
                 const setQty = (n: number) =>
-                  canChooseMeals
-                    ? setCuisineCounts({
-                        ...cuisineCounts,
-                        [cuisine.key]: Math.max(0, Math.min(20, n)),
-                      })
-                    : toast.error(
-                        "Please enter your full name and mobile number before choosing meals",
-                      );
+                  setCuisineCounts({
+                    ...cuisineCounts,
+                    [cuisine.key]: Math.max(0, Math.min(20, n)),
+                  });
                 return (
                   <div
                     key={cuisine.key}
-                    className={`rounded-md border border-border bg-card p-4 space-y-3 ${canChooseMeals ? "" : "opacity-60"}`}
+                    className="rounded-md border border-border bg-card p-4 space-y-3"
                   >
                     {cuisine.photos && (
                       <div className="grid grid-cols-3 gap-2">
