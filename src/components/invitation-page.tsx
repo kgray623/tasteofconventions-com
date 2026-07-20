@@ -439,9 +439,7 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-3">
               <p>
-                Would you like to volunteer for the event? Please send a text to
-                Kari Gray at 808.278.7562 with YOUR NAME and the word VOLUNTEER
-                to sign up for the needs below.
+                Would you like to volunteer to help make our event a success? After you RSVP, please send a text to Kari Gray at 808.278.7562 with YOUR NAME and the word VOLUNTEER to sign up for the needs below.
               </p>
               {assignments.length > 0 ? (
                 <ul className="list-disc pl-5 space-y-1">
