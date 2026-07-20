@@ -75,11 +75,13 @@ export const getSiteTraffic = createServerFn({ method: "GET" })
       : "30d") as TrafficRange,
   }))
   .handler(async ({ data, context }): Promise<SiteTrafficResponse> => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (!isAdmin) throw new Error("Forbidden");
+    const { data: adminRole } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (!adminRole) throw new Error("Forbidden");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -169,10 +171,17 @@ export const getSiteTraffic = createServerFn({ method: "GET" })
     while (cursor <= end) {
       const key = cursor.toISOString().slice(0, 10);
       const roll = rollupMap.get(key);
-      if (roll) {
+      const tr = trackerDayMap.get(key);
+      if (key === todayKey && tr) {
+        daily.push({
+          date: key,
+          visitors: Math.max(roll?.visitors ?? 0, tr.sessions.size),
+          pageviews: Math.max(roll?.pageviews ?? 0, tr.pageviews),
+          source: "tracker",
+        });
+      } else if (roll) {
         daily.push({ date: key, visitors: roll.visitors, pageviews: roll.pageviews, source: "rollup" });
       } else {
-        const tr = trackerDayMap.get(key);
         daily.push({
           date: key,
           visitors: tr ? tr.sessions.size : 0,

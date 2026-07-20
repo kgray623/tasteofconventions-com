@@ -148,6 +148,7 @@ export function SiteTrafficCard() {
           <p className="text-[11px] text-muted-foreground pt-1">
             Daily totals: Lovable Insights history{data.launchDate ? ` since ${data.launchDate}` : ""}
             {data.trackerStart ? `, in-app tracker from ${data.trackerStart} forward` : ""}.
+            Today uses the higher current tracker count so refreshes do not fall back to a stale daily rollup.
             Top pages / countries / referrers come from the in-app tracker only
             {data.trackerStart ? ` (available from ${data.trackerStart})` : ""}.
             Refreshed {new Date(data.generatedAt).toLocaleTimeString()}.

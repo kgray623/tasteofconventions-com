@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { getMyChatUnread } from "@/lib/account.functions";
 
 export const TEAM_CHAT_SENTINEL = "00000000-0000-0000-0000-000000000001";
 
@@ -23,6 +25,7 @@ const EMPTY: ChatUnread = { team: 0, categories: [], total: 0 };
  */
 export function useChatUnread(): ChatUnread {
   const { user } = useAuth();
+  const fetchUnread = useServerFn(getMyChatUnread);
   const userId = user?.id;
   const [data, setData] = useState<ChatUnread>(EMPTY);
   const refetchRef = useRef<() => void>(() => {});
@@ -36,13 +39,13 @@ export function useChatUnread(): ChatUnread {
     }
     fetchingRef.current = true;
     try {
-      const { data: res, error } = await supabase.rpc("get_my_chat_unread");
-      if (error || !res) return;
+      const res = await fetchUnread();
+      if (!res) return;
       setData(res as unknown as ChatUnread);
     } finally {
       fetchingRef.current = false;
     }
-  }, [userId]);
+  }, [fetchUnread, userId]);
 
   refetchRef.current = fetchCounts;
 
