@@ -1,7 +1,13 @@
-## Changes
+Add **Thomas Sturm — (402) 830-4907** to the guest list with a confirmed **Yes / Virtual (Zoom)** RSVP for A Taste of Special Conventions.
 
-1. **Remove "Photobooth" volunteer category** from the database (`public.categories`, id `94934e70-8874-4eb7-8392-92fa1841ffae`) via migration. Any category assignments for it will cascade/clear per existing FK rules.
+No matching invitation exists today, so this creates one and its RSVP in a single step.
 
-2. **Remove the "Add content" buttons from the public invitation page** (`src/components/invitation-page.tsx`). Currently two `{isAdmin && ...}` blocks render an "Add content" button inside the Food and Volunteer FAQ accordions (lines ~423-429 and ~449). Delete both blocks so nothing renders there for any viewer, including admins. Admins can still edit copy via `/admin/invitation`.
+## Database changes
+- Insert into `invitations`: guest_name `Thomas Sturm`, guest_phone `(402) 830-4907`, event = A Taste of Special Conventions, host = default admin host.
+- Insert into `rsvps` for that invitation: status `yes`, attendance_mode `zoom`, party_size `1`, responded_at now.
 
-Timestamp on completion: UTC.
+## Not included
+- No inviter linked (you didn't specify who invited him). If he should be tied to a specific committee member/inviter, tell me the name and I'll set `inviter_id` and `invited_by` in the same migration.
+- No SMS sent (project rule: never auto-send).
+
+Approve to apply.
