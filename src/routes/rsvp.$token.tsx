@@ -244,7 +244,7 @@ function RsvpPage() {
   if (!data?.invitation) return <InvitationPage />;
   const ev = data.invitation.events;
   const cuisines = [
-    { key: "Myanmar", label: "Myanmar/Burmese", note: "Photos coming next week" },
+    { key: "Myanmar", label: "Myanmar/Burmese", note: "Photos coming soon" },
     { key: "African", label: "African", photos: africanPhotos },
     { key: "Indonesian", label: "Indonesian", photos: indonesianPhotos },
   ];
