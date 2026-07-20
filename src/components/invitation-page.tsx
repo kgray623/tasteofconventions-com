@@ -418,7 +418,7 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-3">
               <p>
-                For those who choose not to order a catered meal, please bring a dish to share — like a covered-dish gathering — so everyone has plenty of food to enjoy through the evening.
+                Food choices include either bringing a covered dish to share with brothers and sisters, or ordering a catered meal from the restaurants available through this cultural experience.
               </p>
               {isAdmin && (
                 <Link to="/admin/invitation">
