@@ -14,7 +14,22 @@ type StatusFilter = "all" | "confirmed" | "declined" | "maybe" | "waitlist" | "p
 type SortMode = "alpha" | "newest" | "oldest";
 
 export const Route = createFileRoute("/_authenticated/admin/guests")({
-  head: () => ({ meta: [{ title: "Guests — Admin" }] }),
+  head: () => ({
+    meta: [
+      { title: "Guest Roster — Taste of Conventions Admin" },
+      {
+        name: "description",
+        content: "Admin guest roster for A Taste of Special Conventions with RSVP status and attendance filters.",
+      },
+      { property: "og:title", content: "Guest Roster — Taste of Conventions Admin" },
+      {
+        property: "og:description",
+        content: "Admin guest roster for A Taste of Special Conventions with RSVP status and attendance filters.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   validateSearch: (s) =>
     z.object({
       status: z.enum(["all", "confirmed", "declined", "maybe", "waitlist", "pending"]).optional(),
