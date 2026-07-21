@@ -20,7 +20,7 @@ import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 import { buildCommitteeRoster } from "@/lib/committee-roster";
 
 export const Route = createFileRoute("/_authenticated/admin/inviters")({
-  head: () => ({ meta: [{ title: "Committee — Admin" }] }),
+  head: () => ({ meta: [{ title: "Committee Guests — Admin" }] }),
   component: InvitersPage,
 });
 
@@ -299,8 +299,7 @@ function InvitersPage() {
   // Keep computed totals available (used elsewhere previously); silence unused.
   void TOTAL_CAP;
 
-  return (
-    <div className="space-y-8">
+  const committeeMembersCard = (
       <Card className="p-5 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-display text-xl flex items-center gap-2">
@@ -337,6 +336,10 @@ function InvitersPage() {
           </div>
         )}
       </Card>
+  );
+
+  return (
+    <div className="space-y-8">
 
       {(() => {
         const pending = inviters.filter(
@@ -398,9 +401,9 @@ function InvitersPage() {
 
       <Card className="p-0 overflow-hidden">
         <div className="px-6 py-4 border-b border-border">
-            <h2 className="font-display text-xl">Steering committee invitations &amp; usage</h2>
+            <h2 className="font-display text-xl">Committee Guests</h2>
           <p className="text-sm text-muted-foreground">
-            Remaining is approved in-person guest spots minus confirmed in-person people attending. Uploaded guests are tracked separately.
+            See each committee member, how many guests they brought, and open their guest list. Remaining is approved in-person guest spots minus confirmed in-person people attending.
           </p>
         </div>
         {loading ? (
@@ -721,6 +724,7 @@ function InvitersPage() {
           </>
         )}
       </Card>
+      {committeeMembersCard}
     </div>
   );
 }
