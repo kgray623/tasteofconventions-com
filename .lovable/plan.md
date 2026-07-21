@@ -1,31 +1,20 @@
-## What's actually there today
+2026-07-21 17:45 UTC — Plan to stop the broken refresh/link behavior:
 
-The page exists at **Admin → Committee** (`/admin/inviters`). It renders a wide table with columns:
+1. **Confirm the route and link source**
+   - Inspect the admin navigation and guest-filter links that point to `/admin/guests`.
+   - Check whether any links are copying the full preview URL or preserving Lovable preview-only query params like `__lovable_sha`.
 
-`Name | Requests | Uploaded | In-person | Virtual | Remaining | Status`
+2. **Make admin links route-safe**
+   - Update internal navigation to use TanStack Router links/navigation only, with a clean search object such as `status=confirmed`.
+   - Ensure links do not include the preview host, custom domain host, published host, or preview-only query strings.
 
-The "Uploaded" column is the brought/invited count, and each row has a ▸ chevron that expands to list the actual guest names + RSVP status.
+3. **Provide stable external links**
+   - Add or document clean links for the admin dashboard, committee dashboard, and guest/dashboard flows using the published/custom domain instead of the temporary preview domain.
+   - Keep authenticated/admin pages behind login, but make the URLs themselves stable and refreshable.
 
-## Why you can't see it on your phone
+4. **Mobile verification**
+   - Test the exact mobile route `/admin/guests?status=confirmed` after login.
+   - Refresh it multiple times and verify it stays on the admin guests page instead of opening the Android “webpage not available” error.
 
-Two problems on a 384px-wide screen:
-
-1. The table is ~700px wide and scrolls horizontally. On mobile you only see the Name column — every other column (including the brought count and the expand chevron) is off-screen to the right, so it looks like there's nothing there.
-2. The count column is labeled "Uploaded", which doesn't read as "guests brought".
-
-## Fix
-
-Edit only `src/routes/_authenticated/admin/inviters.tsx` — presentation only, no data or math changes.
-
-1. **Mobile layout (below `md`)**: replace the wide table with a stacked card per committee member showing:
-   - Name (with any pending quota-increase badge kept as-is)
-   - Big "Brought: N of Quota" line (the existing `invited` / `i.quota` values)
-   - Small line: `In-person N · Virtual N · Remaining N`
-   - A "Show guests (N)" toggle that expands the same guest list already rendered in the desktop expanded row (name, contact, RSVP, actions)
-   - Status pill + delete button in the card footer
-2. **Desktop table (md and up)**: keep as-is, but rename the "Uploaded" column header to "Brought" so it matches the label everywhere else.
-3. No changes to counts, queries, roster building, or any other route.
-
-## Verify
-
-Playwright at 384×800, signed in as admin, open `/admin/inviters`: confirm each committee member's card shows a Brought count without horizontal scroll and the "Show guests" toggle reveals their guest names.
+5. **Report back with the exact working links**
+   - Give you the clean admin, committee, and guest links after verification, and explicitly say if anything cannot be fully verified in this environment.

@@ -14,7 +14,22 @@ type StatusFilter = "all" | "confirmed" | "declined" | "maybe" | "waitlist" | "p
 type SortMode = "alpha" | "newest" | "oldest";
 
 export const Route = createFileRoute("/_authenticated/admin/guests")({
-  head: () => ({ meta: [{ title: "Guests — Admin" }] }),
+  head: () => ({
+    meta: [
+      { title: "Guest Roster — Taste of Conventions Admin" },
+      {
+        name: "description",
+        content: "Admin guest roster for A Taste of Special Conventions with RSVP status and attendance filters.",
+      },
+      { property: "og:title", content: "Guest Roster — Taste of Conventions Admin" },
+      {
+        property: "og:description",
+        content: "Admin guest roster for A Taste of Special Conventions with RSVP status and attendance filters.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   validateSearch: (s) =>
     z.object({
       status: z.enum(["all", "confirmed", "declined", "maybe", "waitlist", "pending"]).optional(),
@@ -99,6 +114,22 @@ function rollupRows(sourceRows: Row[]) {
     attendance_mode: r.attendance_mode,
   })));
 }
+
+type GuestSearchState = {
+  status?: StatusFilter;
+  mode?: "in_person" | "zoom";
+  audience?: "all" | "guest" | "committee";
+  sort?: SortMode;
+  inviter?: string;
+};
+
+const cleanGuestSearch = (search: GuestSearchState): GuestSearchState => ({
+  status: search.status && search.status !== "all" ? search.status : undefined,
+  mode: search.mode,
+  audience: search.audience && search.audience !== "all" ? search.audience : undefined,
+  sort: search.sort && search.sort !== "alpha" ? search.sort : undefined,
+  inviter: search.inviter && search.inviter !== "all" ? search.inviter : undefined,
+});
 
 function GuestsPage() {
   const { status, mode, audience, sort, inviter } = Route.useSearch();
@@ -272,6 +303,27 @@ function GuestsPage() {
 
 
   const tabs: StatusFilter[] = ["all", "confirmed", "declined", "maybe", "waitlist", "pending"];
+  const currentCleanSearch = cleanGuestSearch({
+    status: activeStatus,
+    mode,
+    audience: activeAudience,
+    sort: activeSort,
+    inviter: activeInviter,
+  });
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const hasPreviewParam = Array.from(params.keys()).some((key) => key.startsWith("__lovable"));
+    if (!hasPreviewParam) return;
+    navigate({ search: currentCleanSearch, replace: true });
+  }, [
+    navigate,
+    currentCleanSearch.status,
+    currentCleanSearch.mode,
+    currentCleanSearch.audience,
+    currentCleanSearch.sort,
+    currentCleanSearch.inviter,
+  ]);
 
   return (
     <div className="space-y-5">
@@ -305,7 +357,7 @@ function GuestsPage() {
               <Link
                 key={t}
                 to="/admin/guests"
-                search={(prev: Record<string, unknown>) => ({ ...prev, status: t === "all" ? undefined : t })}
+                search={cleanGuestSearch({ ...currentCleanSearch, status: t })}
                 className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm border transition ${
                   active ? "bg-ink text-cream border-ink" : "bg-background hover:bg-muted border-border"
                 }`}
@@ -340,7 +392,7 @@ function GuestsPage() {
           value={activeSort}
           onValueChange={(v) =>
             navigate({
-              search: (prev: Record<string, unknown>) => ({ ...prev, sort: v === "alpha" ? undefined : (v as SortMode) }),
+              search: cleanGuestSearch({ ...currentCleanSearch, sort: v as SortMode }),
             })
           }
         >
@@ -358,7 +410,7 @@ function GuestsPage() {
             value={activeInviter}
             onValueChange={(v) =>
               navigate({
-                search: (prev: Record<string, unknown>) => ({ ...prev, inviter: v === "all" ? undefined : v }),
+                search: cleanGuestSearch({ ...currentCleanSearch, inviter: v }),
               })
             }
           >
