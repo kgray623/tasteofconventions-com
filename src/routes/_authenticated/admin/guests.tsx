@@ -311,6 +311,20 @@ function GuestsPage() {
     inviter: activeInviter,
   });
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const hasPreviewParam = Array.from(params.keys()).some((key) => key.startsWith("__lovable"));
+    if (!hasPreviewParam) return;
+    navigate({ search: currentCleanSearch, replace: true });
+  }, [
+    navigate,
+    currentCleanSearch.status,
+    currentCleanSearch.mode,
+    currentCleanSearch.audience,
+    currentCleanSearch.sort,
+    currentCleanSearch.inviter,
+  ]);
+
   return (
     <div className="space-y-5">
       <div className="flex items-start gap-3">
