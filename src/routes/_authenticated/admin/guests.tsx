@@ -115,6 +115,22 @@ function rollupRows(sourceRows: Row[]) {
   })));
 }
 
+type GuestSearchState = {
+  status?: StatusFilter;
+  mode?: "in_person" | "zoom";
+  audience?: "all" | "guest" | "committee";
+  sort?: SortMode;
+  inviter?: string;
+};
+
+const cleanGuestSearch = (search: GuestSearchState): GuestSearchState => ({
+  status: search.status && search.status !== "all" ? search.status : undefined,
+  mode: search.mode,
+  audience: search.audience && search.audience !== "all" ? search.audience : undefined,
+  sort: search.sort && search.sort !== "alpha" ? search.sort : undefined,
+  inviter: search.inviter && search.inviter !== "all" ? search.inviter : undefined,
+});
+
 function GuestsPage() {
   const { status, mode, audience, sort, inviter } = Route.useSearch();
   const navigate = useNavigate({ from: "/admin/guests" });
