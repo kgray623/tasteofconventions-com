@@ -408,14 +408,137 @@ function InvitersPage() {
         ) : inviters.length === 0 ? (
           <div className="p-6 text-muted-foreground italic">No inviters yet.</div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          {/* Mobile stacked cards */}
+          <div className="md:hidden divide-y divide-border">
+            {inviters.slice().sort((a, b) => a.name.localeCompare(b.name)).map((i) => {
+              const guests = guestsForInviter(i);
+              const used = confirmedInPersonPeopleCount(guests);
+              const virtual = virtualPeopleCount(guests);
+              const broughtDirect = broughtCounts[i.id] ?? 0;
+              const hostBased = guests.length || (i.host_id ? (invitedCounts[i.host_id] ?? 0) : 0);
+              const invited = Math.max(broughtDirect, hostBased);
+              const remaining = Math.max(0, i.quota - used);
+              const isOpen = expandedHost === i.id;
+              return (
+                <div key={i.id} className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-medium truncate">{i.name}</div>
+                      {i.requested_quota != null && i.requested_quota > i.quota && (
+                        <div className="mt-1 text-[10px] inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-terracotta text-terracotta">
+                          Requested {i.requested_quota} (currently {i.quota})
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => toggleActive(i.id, !i.active)}
+                      className={`shrink-0 text-xs px-2 py-1 rounded ${i.active ? "bg-green-100 text-green-800" : "bg-muted text-muted-foreground"}`}
+                    >
+                      {i.active ? "Active" : "Off"}
+                    </button>
+                  </div>
+                  <div className="text-lg font-semibold">
+                    Brought: {invited} <span className="text-sm font-normal text-muted-foreground">of {i.quota}</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    In-person {used} · Virtual {virtual} · Remaining {remaining}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-muted-foreground">Quota</label>
+                    <Input
+                      type="number"
+                      min={0}
+                      defaultValue={i.quota}
+                      onBlur={(e) => {
+                        const v = parseInt(e.target.value) || 0;
+                        if (v !== i.quota) updateQuota(i.id, v);
+                      }}
+                      className="h-8 w-20"
+                    />
+                    <div className="ml-auto">
+                      <Button variant="ghost" size="icon" onClick={() => remove(i.id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  {guests.length > 0 && (
+                    <div>
+                      <button
+                        onClick={() => setExpandedHost(isOpen ? null : i.id)}
+                        className="text-sm text-primary underline"
+                      >
+                        {isOpen ? "Hide guests" : `Show guests (${guests.length})`}
+                      </button>
+                      {isOpen && (
+                        <ul className="mt-2 space-y-2">
+                          {guests.map((g) => {
+                            const status = g.rsvp_status ?? "no response";
+                            const busy = rowBusy === g.id;
+                            return (
+                              <li key={g.id} className="rounded border border-border/60 bg-muted/20 p-2">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="min-w-0">
+                                    <div className="font-medium truncate">{g.guest_name}</div>
+                                    <div className="text-xs text-muted-foreground truncate">{g.guest_phone || "—"}</div>
+                                  </div>
+                                  <span
+                                    className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] uppercase ${
+                                      status === "yes"
+                                        ? "bg-green-100 text-green-800"
+                                        : status === "no"
+                                          ? "bg-red-100 text-red-800"
+                                          : status === "waitlist"
+                                            ? "bg-amber-100 text-amber-800"
+                                            : "bg-muted text-muted-foreground"
+                                    }`}
+                                  >
+                                    {status === "waitlist" ? "waiting list" : status}
+                                    {g.rsvp_party_size ? ` · ${g.rsvp_party_size}` : ""}
+                                  </span>
+                                </div>
+                                <div className="mt-2 flex items-center gap-2 justify-end">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    disabled={busy}
+                                    onClick={() => deleteGuest(g)}
+                                    className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    aria-label={`Delete ${g.guest_name}`}
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={busy || status === "no"}
+                                    onClick={() => declineGuest(g)}
+                                    className="h-7 gap-1"
+                                  >
+                                    <XCircle className="w-3 h-3" /> Decline
+                                  </Button>
+                                </div>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm min-w-[640px]">
               <thead className="bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3 w-8"></th>
                   <th className="px-2 py-3">Name</th>
                   <th className="px-4 py-3 w-24">Requests</th>
-                  <th className="px-4 py-3 w-24">Uploaded</th>
+                  <th className="px-4 py-3 w-24">Brought</th>
                   <th className="px-4 py-3 w-32">In-person</th>
                   <th className="px-4 py-3 w-24">Virtual</th>
                   <th className="px-4 py-3 w-24">Remaining</th>
@@ -595,6 +718,7 @@ function InvitersPage() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </Card>
     </div>
