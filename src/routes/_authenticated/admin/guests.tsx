@@ -303,6 +303,13 @@ function GuestsPage() {
 
 
   const tabs: StatusFilter[] = ["all", "confirmed", "declined", "maybe", "waitlist", "pending"];
+  const currentCleanSearch = cleanGuestSearch({
+    status: activeStatus,
+    mode,
+    audience: activeAudience,
+    sort: activeSort,
+    inviter: activeInviter,
+  });
 
   return (
     <div className="space-y-5">
@@ -336,7 +343,7 @@ function GuestsPage() {
               <Link
                 key={t}
                 to="/admin/guests"
-                search={(prev: Record<string, unknown>) => ({ ...prev, status: t === "all" ? undefined : t })}
+                search={cleanGuestSearch({ ...currentCleanSearch, status: t })}
                 className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm border transition ${
                   active ? "bg-ink text-cream border-ink" : "bg-background hover:bg-muted border-border"
                 }`}
@@ -371,7 +378,7 @@ function GuestsPage() {
           value={activeSort}
           onValueChange={(v) =>
             navigate({
-              search: (prev: Record<string, unknown>) => ({ ...prev, sort: v === "alpha" ? undefined : (v as SortMode) }),
+              search: cleanGuestSearch({ ...currentCleanSearch, sort: v as SortMode }),
             })
           }
         >
@@ -389,7 +396,7 @@ function GuestsPage() {
             value={activeInviter}
             onValueChange={(v) =>
               navigate({
-                search: (prev: Record<string, unknown>) => ({ ...prev, inviter: v === "all" ? undefined : v }),
+                search: cleanGuestSearch({ ...currentCleanSearch, inviter: v }),
               })
             }
           >
