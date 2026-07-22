@@ -13,6 +13,22 @@ import { useAuth } from "@/hooks/use-auth";
 import { CategoryChat } from "@/components/CategoryChat";
 
 export const Route = createFileRoute("/_authenticated/admin/categories")({
+  head: () => ({
+    meta: [
+      { title: "Volunteer Categories — Taste of Conventions Admin" },
+      {
+        name: "description",
+        content: "Admin volunteer category assignments for A Taste of Special Conventions.",
+      },
+      { property: "og:title", content: "Volunteer Categories — Taste of Conventions Admin" },
+      {
+        property: "og:description",
+        content: "Admin volunteer category assignments for A Taste of Special Conventions.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: CategoriesPage,
 });
 
@@ -24,13 +40,15 @@ function CategoriesPage() {
   const { isAdmin: isActualAdmin, loading: rolesLoading } = useRoles();
   const search = useSearch({ from: "/_authenticated/admin" });
   const previewCommittee = isActualAdmin && search.view === "committee";
-  const isAdmin = isActualAdmin && !previewCommittee;
+  const isAdmin = isActualAdmin;
   const { user } = useAuth();
   const [cats, setCats] = useState<Cat[]>([]);
   const [assigns, setAssigns] = useState<Assign[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [newCat, setNewCat] = useState("");
   const [newDesc, setNewDesc] = useState("");
+  const [quickCatId, setQuickCatId] = useState("");
+  const [quickVolunteerName, setQuickVolunteerName] = useState("");
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [editingDesc, setEditingDesc] = useState<Record<string, string>>({});
   const [chatOpen, setChatOpen] = useState<string | null>(null);
@@ -44,6 +62,7 @@ function CategoriesPage() {
     setCats(c.data ?? []);
     setAssigns(a.data ?? []);
     setProfiles(p.data ?? []);
+    setQuickCatId((current) => current || c.data?.[0]?.id || "");
   };
   useEffect(() => { load(); }, []);
 
@@ -82,7 +101,7 @@ function CategoriesPage() {
     load();
   };
 
-  const addAssign = async (catId: string, selfVolunteer = false) => {
+  const addAssign = async (catId: string, selfVolunteer = false, valueOverride?: string) => {
     if (selfVolunteer) {
       if (!user) return toast.error("Please sign in to volunteer.");
       const exists = assigns.some((a) => a.category_id === catId && a.user_id === user.id);
@@ -97,16 +116,19 @@ function CategoriesPage() {
       load();
       return;
     }
-    const value = (drafts[catId] || "").trim();
+    const value = (valueOverride ?? drafts[catId] ?? "").trim();
     if (!value) return;
-    const profile = profiles.find((p) => p.display_name === value);
+    const valueLower = value.toLowerCase();
+    const profile = profiles.find((p) => p.display_name?.trim().toLowerCase() === valueLower);
     const { error } = await supabase.from("category_assignments").insert({
       category_id: catId,
       user_id: profile?.id ?? null,
       volunteer_name: profile ? null : value,
     });
     if (error) return toast.error(error.message);
+    toast.success("Volunteer added.");
     setDrafts({ ...drafts, [catId]: "" });
+    if (valueOverride !== undefined) setQuickVolunteerName("");
     load();
   };
 
@@ -141,9 +163,51 @@ function CategoriesPage() {
   return (
     <div className="space-y-6">
       {isAdmin && (
-        <Card className="p-4 space-y-3">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">New category</p>
-          <div className="flex flex-wrap gap-3">
+        <Card className="p-4 space-y-4">
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">Admin: add a volunteer to a category</p>
+              <p className="text-sm text-muted-foreground">Choose the volunteer role, type the person&apos;s name, then tap Add volunteer.</p>
+            </div>
+            <div className="grid gap-2 md:grid-cols-[minmax(180px,1fr)_minmax(220px,1.2fr)_auto]">
+              <select
+                value={quickCatId}
+                onChange={(e) => setQuickCatId(e.target.value)}
+                className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                aria-label="Volunteer category"
+              >
+                {cats.map((cat) => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+              <Input
+                list="admin-volunteer-names"
+                value={quickVolunteerName}
+                onChange={(e) => setQuickVolunteerName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") addAssign(quickCatId, false, quickVolunteerName);
+                }}
+                placeholder="Type volunteer name…"
+                aria-label="Volunteer name"
+              />
+              <datalist id="admin-volunteer-names">
+                {profiles.map((p) => (
+                  <option key={p.id} value={p.display_name ?? ""}>{p.display_name}</option>
+                ))}
+              </datalist>
+              <Button
+                onClick={() => addAssign(quickCatId, false, quickVolunteerName)}
+                disabled={!quickCatId || !quickVolunteerName.trim()}
+                className="bg-ink text-cream hover:bg-ink/90"
+              >
+                <Plus className="w-4 h-4 mr-2" /> Add volunteer
+              </Button>
+            </div>
+          </div>
+
+          <div className="border-t border-border pt-4 space-y-3">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">New category</p>
+            <div className="flex flex-wrap gap-3">
             <div className="flex-1 min-w-[240px] space-y-2">
               <Input value={newCat} onChange={(e) => setNewCat(e.target.value)} placeholder="Category Name (e.g., Valet)" />
               <Textarea value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder="Description (optional)" className="h-20" />
@@ -151,6 +215,7 @@ function CategoriesPage() {
             <Button onClick={addCategory} className="bg-ink text-cream hover:bg-ink/90 self-end">
               <Plus className="w-4 h-4 mr-2" /> Add category
             </Button>
+            </div>
           </div>
         </Card>
       )}
