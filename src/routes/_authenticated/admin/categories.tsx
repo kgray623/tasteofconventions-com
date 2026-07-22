@@ -272,23 +272,31 @@ function CategoriesPage() {
                         I want to withdraw my volunteer
                       </Button>
                       {isAdmin && (
-                        <div className="flex gap-2 pt-1">
-                          <Input
-                            list={`profiles-${c.id}`}
-                            value={drafts[c.id] || ""}
-                            onChange={(e) => setDrafts({ ...drafts, [c.id]: e.target.value })}
-                            onKeyDown={(e) => e.key === "Enter" && addAssign(c.id)}
-                            placeholder="Admin: add someone else…"
-                            className="text-sm"
-                          />
-                          <datalist id={`profiles-${c.id}`}>
-                            {profiles.map((p) => (
-                              <option key={p.id} value={p.display_name ?? ""}>{p.display_name}</option>
-                            ))}
-                          </datalist>
-                          <Button size="sm" variant="outline" onClick={() => addAssign(c.id)}>
-                            <Plus className="w-4 h-4" />
-                          </Button>
+                        <div className="pt-2 border-t border-border space-y-1.5">
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                            Admin: add a volunteer
+                          </p>
+                          <div className="flex gap-2">
+                            <Input
+                              list={`profiles-${c.id}`}
+                              value={drafts[c.id] || ""}
+                              onChange={(e) => setDrafts({ ...drafts, [c.id]: e.target.value })}
+                              onKeyDown={(e) => e.key === "Enter" && addAssign(c.id)}
+                              placeholder="Type any name…"
+                              className="text-sm"
+                            />
+                            <datalist id={`profiles-${c.id}`}>
+                              {profiles.map((p) => (
+                                <option key={p.id} value={p.display_name ?? ""}>{p.display_name}</option>
+                              ))}
+                            </datalist>
+                            <Button size="sm" onClick={() => addAssign(c.id)} className="bg-ink text-cream hover:bg-ink/90">
+                              <Plus className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground italic">
+                            Suggests committee members; free text also works.
+                          </p>
                         </div>
                       )}
                     </>
