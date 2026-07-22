@@ -722,8 +722,13 @@ function UploadPage() {
     setSettingRsvpId(g.id);
     try {
       if (value === "clear") {
-        const { error } = await supabase.from("rsvps").delete().eq("invitation_id", g.id);
-        if (error) throw error;
+        const ok = await performProtectedDelete({
+          table: "rsvps",
+          column: "invitation_id",
+          value: g.id,
+          targetLabel: `RSVP for ${g.guest_name}`,
+        });
+        if (!ok) return;
         setSavedGuests((prev) =>
           prev.map((row) =>
             row.id === g.id ? { ...row, rsvp_status: null, party_size: 1 } : row,
