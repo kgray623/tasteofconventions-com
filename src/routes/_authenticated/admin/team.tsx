@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { Phone, Trash2, Pencil, Check, X, ChevronsUpDown, Users } from "lucide-react";
 import { inviteTeamMember, getSignedUpPhoneDigits } from "@/lib/team.functions";
 import { normalizeRosterPhone } from "@/lib/committee-roster";
+import { performProtectedDelete } from "@/lib/perform-protected-delete";
 
 
 export const Route = createFileRoute("/_authenticated/admin/team")({
