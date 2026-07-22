@@ -122,8 +122,13 @@ function Dashboard() {
     setSettingRsvpId(invite.id);
     try {
       if (value === "clear") {
-        const { error } = await supabase.from("rsvps").delete().eq("invitation_id", invite.id);
-        if (error) throw error;
+        const ok = await performProtectedDelete({
+          table: "rsvps",
+          column: "invitation_id",
+          value: invite.id,
+          targetLabel: `RSVP for ${invite.guest_name}`,
+        });
+        if (!ok) return;
         toast.success(`Cleared RSVP for ${invite.guest_name}.`);
       } else {
         const status = value === "no" ? "no" : "yes";
