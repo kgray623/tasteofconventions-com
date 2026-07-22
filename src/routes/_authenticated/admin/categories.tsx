@@ -65,11 +65,13 @@ const scoreProfileName = (query: string, name: string) => {
 function VolunteerNameInput({
   value,
   onChange,
+  onSubmit,
   profiles,
   placeholder,
 }: {
   value: string;
   onChange: (value: string) => void;
+  onSubmit?: () => void;
   profiles: Profile[];
   placeholder: string;
 }) {
@@ -90,6 +92,12 @@ function VolunteerNameInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => setFocused(true)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            onSubmit?.();
+          }
+        }}
         onBlur={() => window.setTimeout(() => setFocused(false), 120)}
         placeholder={placeholder}
         aria-label="Volunteer name"
@@ -264,6 +272,7 @@ function CategoriesPage() {
               <VolunteerNameInput
                 value={quickVolunteerName}
                 onChange={setQuickVolunteerName}
+                onSubmit={() => addAssign(quickCatId, false, quickVolunteerName)}
                 profiles={profiles}
                 placeholder="Type volunteer name…"
               />
@@ -417,6 +426,7 @@ function CategoriesPage() {
                             <VolunteerNameInput
                               value={drafts[c.id] || ""}
                               onChange={(value) => setDrafts({ ...drafts, [c.id]: value })}
+                              onSubmit={() => addAssign(c.id)}
                               profiles={profiles}
                               placeholder="Start typing a name…"
                             />
