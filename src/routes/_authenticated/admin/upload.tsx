@@ -596,11 +596,14 @@ function UploadPage() {
 
 
   const removeSavedGuest = async (id: string, name: string) => {
-    if (typeof window !== "undefined" && !window.confirm(`Remove ${name} from this event's guest list?`)) return;
     setRemovingId(id);
     try {
-      const { error } = await supabase.from("invitations").delete().eq("id", id);
-      if (error) throw error;
+      const ok = await performProtectedDelete({
+        table: "invitations",
+        value: id,
+        targetLabel: `${name} (guest list)`,
+      });
+      if (!ok) return;
       setSavedGuests((prev) => prev.filter((g) => g.id !== id));
       void loadEventSeatTotals(eventId);
       toast.success(`Removed ${name}`);
