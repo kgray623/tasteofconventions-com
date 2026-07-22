@@ -139,9 +139,13 @@ function TeamPage() {
     }
   };
 
-  const revoke = async (id: string) => {
-    const { error } = await supabase.from("team_invites").delete().eq("id", id);
-    if (error) return toast.error(error.message);
+  const revoke = async (id: string, label: string) => {
+    const ok = await performProtectedDelete({
+      table: "team_invites",
+      value: id,
+      targetLabel: `Team invite for ${label}`,
+    });
+    if (!ok) return;
     load();
   };
 
