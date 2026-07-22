@@ -1125,6 +1125,10 @@ export type Database = {
           similarity: number
         }[]
       }
+      system_delete_rows: {
+        Args: { _column: string; _table: string; _value: string }
+        Returns: number
+      }
     }
     Enums: {
       app_role: "admin" | "host" | "guest" | "team"
