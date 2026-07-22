@@ -28,6 +28,7 @@ import { markSeen } from "@/lib/whats-new";
 import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 import { getCommitteeWorkspaceGuests, type CommitteeWorkspaceGuest } from "@/lib/rsvp-totals.functions";
 import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
+import { performProtectedDelete } from "@/lib/perform-protected-delete";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -385,8 +386,13 @@ export function CommitteeWorkspace() {
     setSettingRsvpId(guest.id);
     try {
       if (value === "clear") {
-        const { error } = await supabase.from("rsvps").delete().eq("invitation_id", guest.id);
-        if (error) throw error;
+        const ok = await performProtectedDelete({
+          table: "rsvps",
+          column: "invitation_id",
+          value: guest.id,
+          targetLabel: `RSVP for ${guest.guest_name}`,
+        });
+        if (!ok) return;
         toast.success(`Cleared RSVP for ${guest.guest_name}.`);
       } else {
         const status = value === "no" ? "no" : "yes";
@@ -419,11 +425,12 @@ export function CommitteeWorkspace() {
   };
 
   const deleteGuest = async (guest: CommitteeGuest) => {
-    const { error } = await supabase.from("invitations").delete().eq("id", guest.id);
-    if (error) {
-      toast.error(`Couldn't delete: ${error.message}`);
-      return;
-    }
+    const ok = await performProtectedDelete({
+      table: "invitations",
+      value: guest.id,
+      targetLabel: `${guest.guest_name}${guest.guest_phone ? ` (${guest.guest_phone})` : ""}`,
+    });
+    if (!ok) return;
     toast.success(`Deleted ${guest.guest_name}.`);
     await loadGuests();
   };

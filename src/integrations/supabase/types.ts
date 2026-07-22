@@ -1049,6 +1049,15 @@ export type Database = {
       }
     }
     Functions: {
+      admin_delete_rows: {
+        Args: {
+          _column: string
+          _reason: string
+          _table: string
+          _value: string
+        }
+        Returns: number
+      }
       claim_admin: { Args: never; Returns: boolean }
       delete_email: {
         Args: { message_id: number; queue_name: string }
@@ -1115,6 +1124,10 @@ export type Database = {
           match_kind: string
           similarity: number
         }[]
+      }
+      system_delete_rows: {
+        Args: { _column: string; _table: string; _value: string }
+        Returns: number
       }
     }
     Enums: {

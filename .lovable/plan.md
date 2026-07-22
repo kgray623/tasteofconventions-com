@@ -1,33 +1,46 @@
-**2026-07-22 21:29 UTC — Aisha Moore audit, only Aisha Moore**
+**2026-07-22 UTC — Safeguard against silent deletes**
 
-**What I verified in the database**
-- There are **0 deleted/archive rows** for Aisha Moore.
-- There are **0 current guest/invitation rows named Aisha Moore**.
-- There is **1 RSVP text reference** where `invited_by` says **Aisha Moore**.
-- There is now **1 committee/guest-list owner row** for Aisha Moore, created on **2026-07-22 20:58 UTC**.
-- There is now **1 pending committee invite row** for Aisha Moore, also created on **2026-07-22**, but it has **no phone number**, so it is not a complete login/role record.
+Goal: no guest, committee, inviter, RSVP, or team-invite row can leave the live tables without (a) an explicit admin action, (b) a typed reason, and (c) an audit_log entry — even if a future bug, a stray RPC, or a direct SQL call tries to delete it. Restore path (Recently Deleted) stays intact.
 
-**What happened**
-1. **2026-07-16 04:16 UTC** — Anita Lindell’s RSVP was created and the RSVP text said she was **invited by Aisha Moore**.
-2. At that time, **Aisha Moore was not created as her own guest/contact row** in the `invitations` table, and she was not created as a committee/inviter row either. The system only stored her name as free text on Anita’s RSVP.
-3. **2026-07-18 19:26 UTC** — a later association/backfill changed Anita’s record from having no inviter link to being linked to the wrong committee record. That happened because Aisha did not exist as a real committee/inviter row for the system to link to.
-4. **2026-07-22 20:58 UTC** — I created the missing Aisha Moore committee/inviter row and a pending committee invite row.
-5. **2026-07-22 20:59 UTC** — Anita’s invitation was relinked from the wrong committee record to Aisha Moore.
+## What changes
 
-**Why she “disappeared”**
-- Based on the live audit log, **Aisha Moore was not deleted**.
-- The failure was that **Aisha Moore was never successfully stored as her own uploaded guest/contact record** in the first place.
-- Her name existed only as **free text** on another person’s RSVP, so the Committee Guests page had nothing solid to display until a real Aisha Moore row was created.
-- When you later asked for her to be committee, the normal committee-add flow needs a phone number or an existing guest row with a phone. Since there was **no Aisha guest row**, the name-only resolution had nothing to resolve from.
+### 1. Database — deletes must be "claimed" first
+Tables in scope: `invitations`, `rsvps`, `inviters`, `team_invites`, `cuisine_preorders`, `user_roles`, `category_assignments`.
 
-**Plan if you approve repair work**
-1. **Make Aisha’s committee record complete**
-   - Add/confirm Aisha Moore’s phone number before changing login-capable committee access.
-   - Link her committee invite, inviter row, and any guests she invited under the same person record.
+- Add a `BEFORE DELETE` trigger `guard_protected_delete` on each table.
+- Trigger raises `PROTECTED_DELETE: use admin delete flow` unless the session has claimed the delete via a new SECURITY DEFINER function `public.admin_claim_delete(target_table text, target_id uuid, reason text)` that:
+  1. Verifies `auth.uid()` has `admin` role (via existing `private.has_role`).
+  2. Requires `reason` length ≥ 5.
+  3. Sets a per-transaction GUC `app.delete_claim = '<table>:<id>'`.
+  4. Writes a row to `audit_log` with action `CLAIM DELETE <table>`, target_id, and reason in metadata.
+- Trigger reads the GUC, matches `<table>:<id>`, then clears it so a single claim can only delete one row. Existing `archive_deleted_row` + `audit_row_change` triggers still fire, so restore continues to work.
 
-2. **Prevent this exact failure going forward**
-   - When an RSVP says “invited by Aisha Moore,” require the system to resolve that name to an actual inviter/committee/contact row instead of leaving it as loose text.
-   - If there is no exact match, show an admin review item instead of silently leaving it unlinked.
+### 2. Server functions — one blessed delete path
+- New `deleteProtectedRow` in `src/lib/invitations.functions.ts` (auth-required, admin-verified) that:
+  1. Calls `admin_claim_delete(table, id, reason)`.
+  2. Runs the actual `DELETE` in the same transaction via a new RPC `admin_execute_delete(table, id)` (SECURITY DEFINER, admin-only, whitelisted table names).
+  3. Returns `{ ok, archive_id }`.
+- Update existing delete call sites (guests page, inviters page, team page, preorders page, RSVP admin, categories page) to call `deleteProtectedRow` with a reason prompt. No component may issue a raw `.delete()` on a protected table.
 
-3. **Add an Aisha-only audit note/export**
-   - Produce a shareable one-page CSV/PDF showing the timeline above and the exact rows involved, without bringing in unrelated deleted people.
+### 3. UI — confirm + reason
+- Add a small `ConfirmDeleteDialog` (name of row + required "Why are you deleting this?" textarea, min 5 chars).
+- Replace inline `confirm(...)` calls on protected tables with this dialog.
+- Recently Deleted page unchanged; it already restores from archive.
+
+### 4. Verification (must pass before I call this done)
+- Playwright as admin on mobile viewport: try delete without reason → blocked; delete with reason → row disappears from live list and appears in Recently Deleted with the reason and my name.
+- DB check: attempt raw `DELETE FROM public.invitations WHERE id = ...` via psql → fails with `PROTECTED_DELETE`.
+- DB check: audit_log shows the CLAIM DELETE row and the DELETE row with matching target_id.
+- Confirm restore from Recently Deleted still works end-to-end.
+- Confirm normal writes (insert/update) on all in-scope tables are unaffected.
+
+## Out of scope
+- Automated undelete / trash bin UI beyond the existing Recently Deleted page.
+- Any change to guest-facing routes or RSVP flow.
+- Backfilling reasons for past deletions.
+
+## Technical notes
+- `admin_claim_delete` and `admin_execute_delete` are SECURITY DEFINER, `search_path = public`, EXECUTE granted only to `authenticated` and gated by `private.has_role(auth.uid(), 'admin')`.
+- Table whitelist enforced inside `admin_execute_delete` using `format('DELETE FROM public.%I WHERE id = $1', target_table)` after checking against an allow-list.
+- GUC is transaction-scoped (`SET LOCAL`), so it cannot leak between requests.
+- No changes to `deleted_rows_archive` schema — the existing `archive_deleted_row` trigger continues to capture the row for restore.

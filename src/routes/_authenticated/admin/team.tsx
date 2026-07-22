@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { Phone, Trash2, Pencil, Check, X, ChevronsUpDown, Users } from "lucide-react";
 import { inviteTeamMember, getSignedUpPhoneDigits } from "@/lib/team.functions";
 import { normalizeRosterPhone } from "@/lib/committee-roster";
+import { performProtectedDelete } from "@/lib/perform-protected-delete";
 
 
 export const Route = createFileRoute("/_authenticated/admin/team")({
@@ -138,9 +139,13 @@ function TeamPage() {
     }
   };
 
-  const revoke = async (id: string) => {
-    const { error } = await supabase.from("team_invites").delete().eq("id", id);
-    if (error) return toast.error(error.message);
+  const revoke = async (id: string, label: string) => {
+    const ok = await performProtectedDelete({
+      table: "team_invites",
+      value: id,
+      targetLabel: `Team invite for ${label}`,
+    });
+    if (!ok) return;
     load();
   };
 
@@ -334,7 +339,7 @@ function TeamPage() {
                       <button onClick={() => startEdit(i)} className="text-muted-foreground hover:text-terracotta" aria-label="Edit">
                         <Pencil className="w-4 h-4" />
                       </button>
-                      <button onClick={() => revoke(i.id)} className="text-muted-foreground hover:text-terracotta" aria-label="Remove">
+                      <button onClick={() => revoke(i.id, i.name ?? i.phone ?? "member")} className="text-muted-foreground hover:text-terracotta" aria-label="Remove">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </>

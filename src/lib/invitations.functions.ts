@@ -732,7 +732,11 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
         { onConflict: "invitation_id" },
       );
     } else if (invitationId) {
-      await supabaseAdmin.from("cuisine_preorders").delete().eq("invitation_id", invitationId);
+      await supabaseAdmin.rpc("system_delete_rows" as any, {
+        _table: "cuisine_preorders",
+        _column: "invitation_id",
+        _value: invitationId,
+      });
     }
 
     return { ok: true, invitation_id: invitationId, waitlisted };

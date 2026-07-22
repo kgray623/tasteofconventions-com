@@ -136,8 +136,14 @@ export const removeTeamInvitesForPhone = createServerFn({ method: "POST" })
       .filter((r) => !r.accepted_at && (r.phone_normalized ?? "").slice(-10) === tail)
       .map((r) => r.id);
     if (ids.length === 0) return { ok: true, removed: 0 };
-    const { error } = await supabaseAdmin.from("team_invites").delete().in("id", ids);
-    if (error) throw new Error(error.message);
+    for (const id of ids) {
+      const { error } = await supabaseAdmin.rpc("system_delete_rows" as any, {
+        _table: "team_invites",
+        _column: "id",
+        _value: id,
+      });
+      if (error) throw new Error(error.message);
+    }
     return { ok: true, removed: ids.length };
   });
 

@@ -26,6 +26,7 @@ import { NewBadge } from "@/components/new-badge";
 import { CategoryChat } from "@/components/CategoryChat";
 import { useChatUnread } from "@/hooks/use-chat-unread";
 import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
+import { performProtectedDelete } from "@/lib/perform-protected-delete";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — A Taste of Special Conventions" }] }),
@@ -104,11 +105,12 @@ function Dashboard() {
   flags.forEach((f) => { flaggedIds.add(f.invitation_a); flaggedIds.add(f.invitation_b); });
 
   const deleteInvitation = async (invite: Invite) => {
-    const { error } = await supabase.from("invitations").delete().eq("id", invite.id);
-    if (error) {
-      toast.error(`Couldn't delete: ${error.message}`);
-      return;
-    }
+    const ok = await performProtectedDelete({
+      table: "invitations",
+      value: invite.id,
+      targetLabel: `${invite.guest_name}${invite.guest_phone ? ` (${invite.guest_phone})` : ""}`,
+    });
+    if (!ok) return;
     toast.success(`Deleted ${invite.guest_name}`);
     await load();
   };
@@ -120,8 +122,13 @@ function Dashboard() {
     setSettingRsvpId(invite.id);
     try {
       if (value === "clear") {
-        const { error } = await supabase.from("rsvps").delete().eq("invitation_id", invite.id);
-        if (error) throw error;
+        const ok = await performProtectedDelete({
+          table: "rsvps",
+          column: "invitation_id",
+          value: invite.id,
+          targetLabel: `RSVP for ${invite.guest_name}`,
+        });
+        if (!ok) return;
         toast.success(`Cleared RSVP for ${invite.guest_name}.`);
       } else {
         const status = value === "no" ? "no" : "yes";
