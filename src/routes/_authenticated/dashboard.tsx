@@ -105,11 +105,12 @@ function Dashboard() {
   flags.forEach((f) => { flaggedIds.add(f.invitation_a); flaggedIds.add(f.invitation_b); });
 
   const deleteInvitation = async (invite: Invite) => {
-    const { error } = await supabase.from("invitations").delete().eq("id", invite.id);
-    if (error) {
-      toast.error(`Couldn't delete: ${error.message}`);
-      return;
-    }
+    const ok = await performProtectedDelete({
+      table: "invitations",
+      value: invite.id,
+      targetLabel: `${invite.guest_name}${invite.guest_phone ? ` (${invite.guest_phone})` : ""}`,
+    });
+    if (!ok) return;
     toast.success(`Deleted ${invite.guest_name}`);
     await load();
   };
