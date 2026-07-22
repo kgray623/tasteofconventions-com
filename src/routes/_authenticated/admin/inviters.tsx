@@ -18,6 +18,7 @@ import {
 import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 
 import { buildCommitteeRoster } from "@/lib/committee-roster";
+import { performProtectedDelete } from "@/lib/perform-protected-delete";
 
 export const Route = createFileRoute("/_authenticated/admin/inviters")({
   head: () => ({ meta: [{ title: "Committee Guests — Admin" }] }),
