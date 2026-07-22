@@ -385,8 +385,13 @@ export function CommitteeWorkspace() {
     setSettingRsvpId(guest.id);
     try {
       if (value === "clear") {
-        const { error } = await supabase.from("rsvps").delete().eq("invitation_id", guest.id);
-        if (error) throw error;
+        const ok = await performProtectedDelete({
+          table: "rsvps",
+          column: "invitation_id",
+          value: guest.id,
+          targetLabel: `RSVP for ${guest.guest_name}`,
+        });
+        if (!ok) return;
         toast.success(`Cleared RSVP for ${guest.guest_name}.`);
       } else {
         const status = value === "no" ? "no" : "yes";
