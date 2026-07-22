@@ -28,6 +28,7 @@ import { markSeen } from "@/lib/whats-new";
 import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 import { getCommitteeWorkspaceGuests, type CommitteeWorkspaceGuest } from "@/lib/rsvp-totals.functions";
 import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
+import { performProtectedDelete } from "@/lib/perform-protected-delete";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
