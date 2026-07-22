@@ -1,24 +1,23 @@
-Timestamp: 2026-07-21 UTC
+## Add Burmese/Myanmar meal photos to the RSVP cuisine picker
 
-Plan to fix the mobile navigation and page label:
+The four uploaded photos (samosas with dipping sauce, fried rice + tea-leaf salad, chicken with rice + noodles, and beef curry + fried rice) will be added as the Myanmar/Burmese photo strip on the RSVP meal pre-order card — matching how African and Indonesian already display.
 
-1. Rename the admin navigation tab
-   - Change the mobile/admin tab currently labeled **Committee** to **Committee Guests**.
-   - Keep the same destination route so existing links still work: `/admin/inviters`.
+### Steps
 
-2. Make it easier to find on mobile
-   - Move/show **Committee Guests** next to the main **Guests** tab instead of making it look like a generic committee-management item.
-   - Keep **Add committee** separate, so it is clear that **Committee Guests** is for seeing who each committee member invited.
+1. Upload each of the 4 images via `lovable-assets create` from `/mnt/user-uploads/` and save pointers:
+   - `src/assets/myanmar-meal-1.jpg.asset.json` (samosas)
+   - `src/assets/myanmar-meal-2.jpg.asset.json` (fried rice + tea leaf salad)
+   - `src/assets/myanmar-meal-3.jpg.asset.json` (chicken + noodles)
+   - `src/assets/myanmar-meal-4.jpg.asset.json` (beef curry + fried rice)
 
-3. Rename the page heading
-   - Change the page title from committee/invitation wording to **Committee Guests**.
-   - Add clear page text like: “See each committee member, how many guests they brought, and open their guest list.”
+2. Edit `src/components/my-rsvp-content.tsx`:
+   - Import the 4 new asset pointers, build `myanmarPhotos` array.
+   - In the `cuisines` array, replace the Myanmar entry's `note: "Photos coming soon"` with `photos: myanmarPhotos` so the same thumbnail grid + lightbox used for African/Indonesian renders.
 
-4. Preserve the existing guest-list functionality
-   - Keep the mobile cards that show each committee member’s **Brought**, **In-person**, **Virtual**, and **Remaining** counts.
-   - Keep the **Show guests (N)** button that expands each committee member’s invited guest list.
+3. Edit `src/routes/rsvp.$token.tsx` the same way if it renders its own Myanmar photo strip (the earlier turn added photos to meal cards there too).
 
-5. Verify on mobile
-   - Open `/admin/inviters` in a mobile viewport.
-   - Confirm the nav visibly shows **Committee Guests**.
-   - Confirm tapping it opens the page with committee-member counts and expandable guest lists.
+4. Verify on mobile viewport at `/rsvp/$token` and `/admin/my-rsvp`: Myanmar card shows 4 thumbnails, tapping opens the lightbox.
+
+### Notes
+
+No copy/text change — only images. "Beef or chicken, gluten-free, $20–$30" wording stays. If you'd like the "coming next week" wording removed elsewhere (e.g. any leftover note), I'll strip that too during the edit.

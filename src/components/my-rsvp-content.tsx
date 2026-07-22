@@ -16,9 +16,14 @@ import africanMeal3 from "@/assets/african-meal-3.jpg.asset.json";
 import indonesianMeal1 from "@/assets/indonesian-meal-1.jpg.asset.json";
 import indonesianMeal2 from "@/assets/indonesian-meal-2.jpg.asset.json";
 import indonesianMeal3 from "@/assets/indonesian-meal-3.jpg.asset.json";
+import myanmarMeal1 from "@/assets/myanmar-meal-1.jpg.asset.json";
+import myanmarMeal2 from "@/assets/myanmar-meal-2.jpg.asset.json";
+import myanmarMeal3 from "@/assets/myanmar-meal-3.jpg.asset.json";
+import myanmarMeal4 from "@/assets/myanmar-meal-4.jpg.asset.json";
 
 const africanPhotos = [africanMeal1.url, africanMeal2.url, africanMeal3.url];
 const indonesianPhotos = [indonesianMeal1.url, indonesianMeal2.url, indonesianMeal3.url];
+const myanmarPhotos = [myanmarMeal1.url, myanmarMeal2.url, myanmarMeal3.url, myanmarMeal4.url];
 
 
 type CuisineSelection = { cuisine: string; qty: number };
@@ -131,7 +136,7 @@ export function MyRsvpContent() {
       ? order.items
       : [];
     const cuisines: { key: string; label: string; photos?: string[]; note?: string }[] = [
-      { key: "Myanmar", label: "Myanmar/Burmese", note: "Photos coming soon" },
+      { key: "Myanmar", label: "Myanmar/Burmese", photos: myanmarPhotos },
       { key: "African", label: "African", photos: africanPhotos },
       { key: "Indonesian", label: "Indonesian", photos: indonesianPhotos },
     ];
