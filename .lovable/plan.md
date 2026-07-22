@@ -1,23 +1,20 @@
-## Add Burmese/Myanmar meal photos to the RSVP cuisine picker
+2026-07-22 20:46 UTC
 
-The four uploaded photos (samosas with dipping sauce, fried rice + tea-leaf salad, chicken with rice + noodles, and beef curry + fried rice) will be added as the Myanmar/Burmese photo strip on the RSVP meal pre-order card — matching how African and Indonesian already display.
+Plan to fix Aisha Moore visibility:
 
-### Steps
+1. Verify the exact missing record
+   - Search the database for Aisha Moore, Mysha/Myisha, Moore, deleted rows, and audit history.
+   - Confirm whether she exists as an invitation, committee/inviter record, login profile, RSVP, or only in an uploaded/imported source.
 
-1. Upload each of the 4 images via `lovable-assets create` from `/mnt/user-uploads/` and save pointers:
-   - `src/assets/myanmar-meal-1.jpg.asset.json` (samosas)
-   - `src/assets/myanmar-meal-2.jpg.asset.json` (fried rice + tea leaf salad)
-   - `src/assets/myanmar-meal-3.jpg.asset.json` (chicken + noodles)
-   - `src/assets/myanmar-meal-4.jpg.asset.json` (beef curry + fried rice)
+2. Repair the data link without overwriting anything
+   - If Aisha Moore is missing from `invitations`, add or restore her as a guest/committee invitation using the uploaded details already present in the system.
+   - If she exists but is not marked correctly, set the invitation committee flag and make sure her committee/inviter record is linked.
+   - If she has an RSVP under a mismatched spelling or disconnected row, link it to the correct Aisha Moore invitation instead of deleting or replacing submitted information.
 
-2. Edit `src/components/my-rsvp-content.tsx`:
-   - Import the 4 new asset pointers, build `myanmarPhotos` array.
-   - In the `cuisines` array, replace the Myanmar entry's `note: "Photos coming soon"` with `photos: myanmarPhotos` so the same thumbnail grid + lightbox used for African/Indonesian renders.
+3. Backfill the forward-facing committee relationship
+   - Ensure Aisha Moore appears anywhere committee members are listed.
+   - Ensure her guests/RSVP status roll up correctly under the committee/committee guests views.
 
-3. Edit `src/routes/rsvp.$token.tsx` the same way if it renders its own Myanmar photo strip (the earlier turn added photos to meal cards there too).
-
-4. Verify on mobile viewport at `/rsvp/$token` and `/admin/my-rsvp`: Myanmar card shows 4 thumbnails, tapping opens the lightbox.
-
-### Notes
-
-No copy/text change — only images. "Beef or chicken, gluten-free, $20–$30" wording stays. If you'd like the "coming next week" wording removed elsewhere (e.g. any leftover note), I'll strip that too during the edit.
+4. Verify end-to-end before calling it fixed
+   - Read the database back to confirm Aisha Moore exists, is committee-visible, and has the expected RSVP link/status.
+   - Check the actual admin mobile route where you expect to see her, using the admin role, and confirm her name appears in the UI.

@@ -45,6 +45,7 @@ type Inviter = {
 type GuestRow = {
   id: string;
   host_id: string | null;
+  inviter_id: string | null;
   guest_name: string;
   guest_phone: string | null;
   invite_sent_at: string | null;
@@ -67,6 +68,7 @@ function InvitersPage() {
   const [invitedCounts, setInvitedCounts] = useState<Record<string, number>>({});
   const [broughtCounts, setBroughtCounts] = useState<Record<string, number>>({});
   const [guestsByHost, setGuestsByHost] = useState<Record<string, GuestRow[]>>({});
+  const [guestsByInviter, setGuestsByInviter] = useState<Record<string, GuestRow[]>>({});
   const [expandedHost, setExpandedHost] = useState<string | null>(null);
   const [rowBusy, setRowBusy] = useState<string | null>(null);
   const [committee, setCommittee] = useState<CommitteeRow[]>([]);
@@ -87,7 +89,7 @@ function InvitersPage() {
           supabase.from("invitations").select("host_id,inviter_id"),
           supabase
             .from("invitations")
-            .select("id,host_id,guest_name,guest_phone,invite_sent_at")
+            .select("id,host_id,inviter_id,guest_name,guest_phone,invite_sent_at")
             .order("guest_name"),
           supabase.from("rsvps").select("id,invitation_id,status,party_size,attendance_mode"),
         ]),
@@ -110,18 +112,22 @@ function InvitersPage() {
         rsvpByInvite.set(r.invitation_id, r);
       }
       const byHost: Record<string, GuestRow[]> = {};
+      const byInviter: Record<string, GuestRow[]> = {};
       for (const row of (invitationsFull as Omit<GuestRow, "rsvp_status" | "rsvp_party_size" | "rsvp_attendance_mode" | "rsvp_id">[]) ?? []) {
         const key = row.host_id ?? "_none";
         const r = rsvpByInvite.get(row.id);
-        (byHost[key] ||= []).push({
+        const guest = {
           ...row,
           rsvp_id: r?.id ?? null,
           rsvp_status: r?.status ?? null,
           rsvp_party_size: r?.party_size ?? null,
           rsvp_attendance_mode: r?.attendance_mode ?? null,
-        });
+        };
+        (byHost[key] ||= []).push(guest);
+        if (row.inviter_id) (byInviter[row.inviter_id] ||= []).push(guest);
       }
       setGuestsByHost(byHost);
+      setGuestsByInviter(byInviter);
 
       const [{ data: commData }, { data: teamInviteData }] = await Promise.all([
         supabase
@@ -184,6 +190,12 @@ function InvitersPage() {
         seen.add(key);
         guests.push(guest);
       }
+    }
+    for (const guest of guestsByInviter[inviter.id] ?? []) {
+      const key = normalizePhone(guest.guest_phone ?? "") || normalizeName(guest.guest_name) || guest.id;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      guests.push(guest);
     }
     return guests;
   };
