@@ -7,6 +7,7 @@ import type { Database, Json } from "@/integrations/supabase/types";
 import { useRoles } from "@/hooks/use-roles";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { performProtectedDelete } from "@/lib/perform-protected-delete";
 
 export const Route = createFileRoute("/_authenticated/admin/preorders")({
   head: () => ({ meta: [{ title: "Preorder Report — Admin" }] }),
