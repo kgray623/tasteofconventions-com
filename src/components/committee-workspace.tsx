@@ -424,11 +424,12 @@ export function CommitteeWorkspace() {
   };
 
   const deleteGuest = async (guest: CommitteeGuest) => {
-    const { error } = await supabase.from("invitations").delete().eq("id", guest.id);
-    if (error) {
-      toast.error(`Couldn't delete: ${error.message}`);
-      return;
-    }
+    const ok = await performProtectedDelete({
+      table: "invitations",
+      value: guest.id,
+      targetLabel: `${guest.guest_name}${guest.guest_phone ? ` (${guest.guest_phone})` : ""}`,
+    });
+    if (!ok) return;
     toast.success(`Deleted ${guest.guest_name}.`);
     await loadGuests();
   };
