@@ -26,6 +26,7 @@ import { NewBadge } from "@/components/new-badge";
 import { CategoryChat } from "@/components/CategoryChat";
 import { useChatUnread } from "@/hooks/use-chat-unread";
 import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
+import { performProtectedDelete } from "@/lib/perform-protected-delete";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — A Taste of Special Conventions" }] }),
