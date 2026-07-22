@@ -64,12 +64,12 @@ function PreorderReportPage() {
   };
 
   const deleteRow = async (id: string, name: string) => {
-    if (!window.confirm(`Delete preorder entry for ${name}? This removes all their cuisine selections.`)) return;
-    const { error } = await supabase.from("cuisine_preorders").delete().eq("id", id);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+    const ok = await performProtectedDelete({
+      table: "cuisine_preorders",
+      value: id,
+      targetLabel: `Preorder for ${name || "guest"}`,
+    });
+    if (!ok) return;
     setRows((prev) => prev.filter((r) => r.id !== id));
     toast.success("Preorder entry deleted");
   };
