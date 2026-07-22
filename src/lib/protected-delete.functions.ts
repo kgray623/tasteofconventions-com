@@ -10,7 +10,7 @@ const ALLOWED_TABLES = [
 ] as const;
 type AllowedTable = (typeof ALLOWED_TABLES)[number];
 
-const ALLOWED_COLUMNS = ["id", "invitation_id", "user_id"] as const;
+const ALLOWED_COLUMNS = ["id", "invitation_id"] as const;
 type AllowedColumn = (typeof ALLOWED_COLUMNS)[number];
 
 export type ProtectedDeleteInput = {
