@@ -261,21 +261,12 @@ function CategoriesPage() {
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
                 ))}
               </select>
-              <Input
-                list="admin-volunteer-names"
+              <VolunteerNameInput
                 value={quickVolunteerName}
-                onChange={(e) => setQuickVolunteerName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") addAssign(quickCatId, false, quickVolunteerName);
-                }}
+                onChange={setQuickVolunteerName}
+                profiles={profiles}
                 placeholder="Type volunteer name…"
-                aria-label="Volunteer name"
               />
-              <datalist id="admin-volunteer-names">
-                {profiles.map((p) => (
-                  <option key={p.id} value={p.display_name ?? ""}>{p.display_name}</option>
-                ))}
-              </datalist>
               <Button
                 onClick={() => addAssign(quickCatId, false, quickVolunteerName)}
                 disabled={!quickCatId || !quickVolunteerName.trim()}
@@ -422,20 +413,13 @@ function CategoriesPage() {
                           <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
                             Admin: add a volunteer
                           </p>
-                          <div className="flex gap-2">
-                            <Input
-                              list={`profiles-${c.id}`}
+                            <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+                            <VolunteerNameInput
                               value={drafts[c.id] || ""}
-                              onChange={(e) => setDrafts({ ...drafts, [c.id]: e.target.value })}
-                              onKeyDown={(e) => e.key === "Enter" && addAssign(c.id)}
-                              placeholder="Type any name…"
-                              className="text-sm"
+                              onChange={(value) => setDrafts({ ...drafts, [c.id]: value })}
+                              profiles={profiles}
+                              placeholder="Start typing a name…"
                             />
-                            <datalist id={`profiles-${c.id}`}>
-                              {profiles.map((p) => (
-                                <option key={p.id} value={p.display_name ?? ""}>{p.display_name}</option>
-                              ))}
-                            </datalist>
                             <Button size="sm" onClick={() => addAssign(c.id)} className="bg-ink text-cream hover:bg-ink/90">
                               <Plus className="w-4 h-4" />
                             </Button>
