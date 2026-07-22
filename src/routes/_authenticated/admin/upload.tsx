@@ -40,6 +40,7 @@ import { extractContactsFromImages } from "@/lib/extract-contacts.functions";
 import { removeTeamInvitesForPhone } from "@/lib/team.functions";
 import { getRsvpEvents, getRsvpTotals } from "@/lib/rsvp-totals.functions";
 import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
+import { performProtectedDelete } from "@/lib/perform-protected-delete";
 import { Input } from "@/components/ui/input";
 import { Target } from "lucide-react";
 
