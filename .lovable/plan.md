@@ -1,34 +1,33 @@
-2026-07-22 21:20 UTC
+**2026-07-22 21:29 UTC — Aisha Moore audit, only Aisha Moore**
 
-## Why Aisha Moore "disappeared"
+**What I verified in the database**
+- There are **0 deleted/archive rows** for Aisha Moore.
+- There are **0 current guest/invitation rows named Aisha Moore**.
+- There is **1 RSVP text reference** where `invited_by` says **Aisha Moore**.
+- There is now **1 committee/guest-list owner row** for Aisha Moore, created on **2026-07-22 20:58 UTC**.
+- There is now **1 pending committee invite row** for Aisha Moore, also created on **2026-07-22**, but it has **no phone number**, so it is not a complete login/role record.
 
-She did not disappear from a delete. The deletion archive has zero rows for "Aisha", "Moore", or any spelling variant. The only related archive entry is **Mysha Woods** removed from the `inviters` table on 2026-07-18 (no deleter recorded — likely a cascade or migration, not a user click).
+**What happened**
+1. **2026-07-16 04:16 UTC** — Anita Lindell’s RSVP was created and the RSVP text said she was **invited by Aisha Moore**.
+2. At that time, **Aisha Moore was not created as her own guest/contact row** in the `invitations` table, and she was not created as a committee/inviter row either. The system only stored her name as free text on Anita’s RSVP.
+3. **2026-07-18 19:26 UTC** — a later association/backfill changed Anita’s record from having no inviter link to being linked to the wrong committee record. That happened because Aisha did not exist as a real committee/inviter row for the system to link to.
+4. **2026-07-22 20:58 UTC** — I created the missing Aisha Moore committee/inviter row and a pending committee invite row.
+5. **2026-07-22 20:59 UTC** — Anita’s invitation was relinked from the wrong committee record to Aisha Moore.
 
-Aisha Moore was never in `invitations`, `inviters`, `team_invites`, or `profiles` as her own record. She only existed as free-text in Anita Lindell's `invited_by` field on an old RSVP. Last turn I created a fresh `inviters` row for her and linked Anita to it — that is why she now shows up under Committee Guests. Nothing was ever deleted for Aisha; there was simply no record to begin with until I made one.
+**Why she “disappeared”**
+- Based on the live audit log, **Aisha Moore was not deleted**.
+- The failure was that **Aisha Moore was never successfully stored as her own uploaded guest/contact record** in the first place.
+- Her name existed only as **free text** on another person’s RSVP, so the Committee Guests page had nothing solid to display until a real Aisha Moore row was created.
+- When you later asked for her to be committee, the normal committee-add flow needs a phone number or an existing guest row with a phone. Since there was **no Aisha guest row**, the name-only resolution had nothing to resolve from.
 
-## Full audit of everything deleted (last ~60 days, from `deleted_rows_archive`)
+**Plan if you approve repair work**
+1. **Make Aisha’s committee record complete**
+   - Add/confirm Aisha Moore’s phone number before changing login-capable committee access.
+   - Link her committee invite, inviter row, and any guests she invited under the same person record.
 
-Counts by table (last 30 days): invitations 23, rsvps 12, inviters 9, cuisine_preorders 5, team_invites 3.
+2. **Prevent this exact failure going forward**
+   - When an RSVP says “invited by Aisha Moore,” require the system to resolve that name to an actual inviter/committee/contact row instead of leaving it as loose text.
+   - If there is no exact match, show an admin review item instead of silently leaving it unlinked.
 
-### What I will deliver
-
-1. **One consolidated audit report** listing every archived deletion with: date/time (UTC), table, name, phone, who deleted it (name + phone), and whether the deletion looks legitimate (test/junk row, duplicate cleanup, admin action) or suspicious (real guest, no deleter recorded, cascade side-effect).
-
-2. **A separate "review these" shortlist** of deletions that look like they may have been real people or real submissions and might need restoring — starting candidates from what I already see:
-   - Mysha Woods (inviters, 2026-07-18, no deleter)
-   - Rhonda Wilcher (invitations, 2026-07-11, no deleter)
-   - Jeannette Adjetey preorder (2026-07-19, no deleter)
-   - Jana Weinberger / Yetunde Adejunmobi preorders (no deleter)
-   - Jamie Elker (inviters, 2026-06-29, no deleter)
-   - The 8 rsvps deleted by Kari Gray on 2026-07-22 with no guest name attached (need to expand row_data to see whose RSVPs those were)
-
-3. **No restoring anything yet.** For each row on the shortlist I will show you the archived contents and wait for your explicit yes/no before restoring. Existing data stays untouched.
-
-4. **Delivery format:** both an on-screen table in chat and a downloadable CSV at `/mnt/documents/deletion-audit_2026-07-22.csv` so you can share it.
-
-### Technical notes
-
-- Source of truth: `public.deleted_rows_archive` (populated by the `archive_deleted_row` trigger on invitations, rsvps, inviters, team_invites, cuisine_preorders).
-- Rows with `deleted_by_name = NULL` mean either a cascade delete, a SQL migration, or a system trigger — I will flag those separately from user-initiated deletes.
-- The existing `/admin/recently-deleted` page already shows the last 30 days with a Restore button; I will point you to it after you review the shortlist so you can restore any yourself with one tap.
-- I will NOT modify `deleted_rows_archive`, restore anything automatically, or delete anything else during this audit.
+3. **Add an Aisha-only audit note/export**
+   - Produce a shareable one-page CSV/PDF showing the timeline above and the exact rows involved, without bringing in unrelated deleted people.
