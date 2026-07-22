@@ -289,12 +289,14 @@ function InvitersPage() {
   };
 
   const deleteGuest = async (g: GuestRow) => {
-    if (!confirm(`Delete ${g.guest_name}'s invitation entirely?`)) return;
     setRowBusy(g.id);
     try {
-      if (g.rsvp_id) await supabase.from("rsvps").delete().eq("id", g.rsvp_id);
-      const { error } = await supabase.from("invitations").delete().eq("id", g.id);
-      if (error) return toast.error(error.message);
+      const ok = await performProtectedDelete({
+        table: "invitations",
+        value: g.id,
+        targetLabel: `${g.guest_name}${g.guest_phone ? ` (${g.guest_phone})` : ""}`,
+      });
+      if (!ok) return;
       toast.success("Invitation removed.");
       load();
     } finally {
@@ -302,10 +304,13 @@ function InvitersPage() {
     }
   };
 
-  const remove = async (id: string) => {
-    if (!confirm("Remove this inviter? Past RSVPs keep the name.")) return;
-    const { error } = await supabase.from("inviters").delete().eq("id", id);
-    if (error) return toast.error(error.message);
+  const remove = async (id: string, name: string) => {
+    const ok = await performProtectedDelete({
+      table: "inviters",
+      value: id,
+      targetLabel: `Committee member ${name}`,
+    });
+    if (!ok) return;
     load();
   };
 
