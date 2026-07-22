@@ -1,5 +1,5 @@
 import { createFileRoute, useSearch } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,87 @@ export const Route = createFileRoute("/_authenticated/admin/categories")({
 type Cat = { id: string; name: string; sort_order: number; description: string | null };
 type Assign = { id: string; category_id: string; user_id: string | null; volunteer_name: string | null; notes: string | null };
 type Profile = { id: string; display_name: string | null };
+
+const normalizeSearchName = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const scoreProfileName = (query: string, name: string) => {
+  const q = normalizeSearchName(query);
+  const n = normalizeSearchName(name);
+  if (!q || !n) return 0;
+  if (n === q) return 100;
+  if (n.startsWith(q)) return 90;
+  if (n.includes(` ${q}`)) return 85;
+  if (n.includes(q)) return 75;
+
+  const qTokens = q.split(" ").filter(Boolean);
+  const nTokens = n.split(" ").filter(Boolean);
+  const matchedTokens = qTokens.filter((qt) =>
+    nTokens.some((nt) => nt.startsWith(qt) || nt.includes(qt) || qt.includes(nt)),
+  ).length;
+  return matchedTokens > 0 ? Math.round((matchedTokens / qTokens.length) * 70) : 0;
+};
+
+function VolunteerNameInput({
+  value,
+  onChange,
+  profiles,
+  placeholder,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  profiles: Profile[];
+  placeholder: string;
+}) {
+  const [focused, setFocused] = useState(false);
+  const suggestions = useMemo(() => {
+    const query = value.trim();
+    if (!query) return [];
+    return profiles
+      .map((profile) => ({ profile, name: profile.display_name?.trim() ?? "", score: scoreProfileName(query, profile.display_name ?? "") }))
+      .filter((item) => item.name && item.score > 0)
+      .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+      .slice(0, 6);
+  }, [profiles, value]);
+
+  return (
+    <div className="relative">
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => window.setTimeout(() => setFocused(false), 120)}
+        placeholder={placeholder}
+        aria-label="Volunteer name"
+        autoComplete="off"
+      />
+      {focused && value.trim() && suggestions.length > 0 && (
+        <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-56 overflow-auto rounded-md border border-border bg-popover shadow-lg">
+          {suggestions.map(({ profile, name }) => (
+            <button
+              key={profile.id}
+              type="button"
+              className="block w-full px-3 py-2 text-left text-sm hover:bg-secondary focus:bg-secondary focus:outline-none"
+              onMouseDown={(event) => {
+                event.preventDefault();
+                onChange(name);
+                setFocused(false);
+              }}
+            >
+              {name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function CategoriesPage() {
   const { isAdmin: isActualAdmin, loading: rolesLoading } = useRoles();
