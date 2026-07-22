@@ -339,7 +339,7 @@ function TeamPage() {
                       <button onClick={() => startEdit(i)} className="text-muted-foreground hover:text-terracotta" aria-label="Edit">
                         <Pencil className="w-4 h-4" />
                       </button>
-                      <button onClick={() => revoke(i.id)} className="text-muted-foreground hover:text-terracotta" aria-label="Remove">
+                      <button onClick={() => revoke(i.id, i.name ?? i.phone ?? "member")} className="text-muted-foreground hover:text-terracotta" aria-label="Remove">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </>
