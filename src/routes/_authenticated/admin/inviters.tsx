@@ -478,7 +478,7 @@ function InvitersPage() {
                       className="h-8 w-20"
                     />
                     <div className="ml-auto">
-                      <Button variant="ghost" size="icon" onClick={() => remove(i.id)}>
+                      <Button variant="ghost" size="icon" onClick={() => remove(i.id, i.name)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
@@ -643,7 +643,7 @@ function InvitersPage() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1 justify-end">
-                            <Button variant="ghost" size="icon" onClick={() => remove(i.id)}>
+                            <Button variant="ghost" size="icon" onClick={() => remove(i.id, i.name)}>
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
