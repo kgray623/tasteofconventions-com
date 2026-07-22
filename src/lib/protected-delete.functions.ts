@@ -7,8 +7,6 @@ const ALLOWED_TABLES = [
   "inviters",
   "team_invites",
   "cuisine_preorders",
-  "user_roles",
-  "category_assignments",
 ] as const;
 type AllowedTable = (typeof ALLOWED_TABLES)[number];
 
