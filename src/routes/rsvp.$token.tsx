@@ -278,7 +278,6 @@ function RsvpPage() {
 
 
         <Card className="p-7 space-y-3">
-          {ev.description && <p className="text-muted-foreground">{ev.description}</p>}
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
             <span className="inline-flex items-center gap-2">
               <Calendar className="w-4 h-4 text-gold" />
@@ -291,17 +290,8 @@ function RsvpPage() {
               </span>
             )}
           </div>
-          <div className="rounded-md border border-border bg-cream/40 p-4 text-sm space-y-1">
-            <p>
-              <strong>Name:</strong> {data.invitation.guest_name}
-            </p>
-            {data.invitation.guest_phone && (
-              <p>
-                <strong>Phone:</strong> {data.invitation.guest_phone}
-              </p>
-            )}
-          </div>
         </Card>
+
 
         {(() => {
           const rsvp = data.rsvp;
@@ -569,8 +559,9 @@ function RsvpPage() {
                 Pre-order your catered cultural meal
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Cultural meals are in the twenty to thirty dollar range per meal. Each cuisine offers a beef or a chicken meal, and all meals are gluten-free. When you click below to make a pre-order, we will soon provide the menu option and the restaurant that you will contact direct to pay for your meal in advance.
+                Cultural meals are $20.00–$30.00 per plate, paid directly to the restaurant. When you place your pre-order, you'll be provided the restaurant's contact information to pay for your order separately. Each cuisine offers a beef or chicken option, and all meals are gluten-free.
               </p>
+
             </div>
             <div className="space-y-3">
               {cuisines.map((cuisine) => {
