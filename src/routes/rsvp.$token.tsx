@@ -559,8 +559,9 @@ function RsvpPage() {
                 Pre-order your catered cultural meal
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Cultural meals are in the twenty to thirty dollar range per meal. Each cuisine offers a beef or a chicken meal, and all meals are gluten-free. When you click below to make a pre-order, we will soon provide the menu option and the restaurant that you will contact direct to pay for your meal in advance.
+                Cultural meals are $20.00–$30.00 per plate, paid directly to the restaurant. When you place your pre-order, you'll be provided the restaurant's contact information to pay for your order separately. Each cuisine offers a beef or chicken option, and all meals are gluten-free.
               </p>
+
             </div>
             <div className="space-y-3">
               {cuisines.map((cuisine) => {
