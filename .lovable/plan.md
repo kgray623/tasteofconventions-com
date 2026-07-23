@@ -1,46 +1,25 @@
-**2026-07-22 UTC — Safeguard against silent deletes**
+## What's wrong
 
-Goal: no guest, committee, inviter, RSVP, or team-invite row can leave the live tables without (a) an explicit admin action, (b) a typed reason, and (c) an audit_log entry — even if a future bug, a stray RPC, or a direct SQL call tries to delete it. Restore path (Recently Deleted) stays intact.
+The 404 comes from the admin **Dashboard → Guest** preview tab. It opens `/rsvp/${rsvp_token}` with the **raw** token, but RSVP tokens contain `/` characters (verified in DB — sample: `JXx9APgT0COTW4HJGSUDU/dM`). The URL becomes `/rsvp/JXx9APgT0COTW4HJGSUDU/dM`, which the router parses as two path segments and no route matches — so `__root`'s NotFoundComponent renders ("404 — Not on the guest list").
 
-## What changes
+Other surfaces already handle this by encoding tokens as base64url before putting them in the URL (`+`→`-`, `/`→`_`, then `encodeURIComponent`). The server's `rsvpTokenCandidates` already reverses that mapping, so decoding is a no-op change. Two admin surfaces skipped the encoding — those are the bug.
 
-### 1. Database — deletes must be "claimed" first
-Tables in scope: `invitations`, `rsvps`, `inviters`, `team_invites`, `cuisine_preorders`, `user_roles`, `category_assignments`.
+## Fix (two small edits, presentation only)
 
-- Add a `BEFORE DELETE` trigger `guard_protected_delete` on each table.
-- Trigger raises `PROTECTED_DELETE: use admin delete flow` unless the session has claimed the delete via a new SECURITY DEFINER function `public.admin_claim_delete(target_table text, target_id uuid, reason text)` that:
-  1. Verifies `auth.uid()` has `admin` role (via existing `private.has_role`).
-  2. Requires `reason` length ≥ 5.
-  3. Sets a per-transaction GUC `app.delete_claim = '<table>:<id>'`.
-  4. Writes a row to `audit_log` with action `CLAIM DELETE <table>`, target_id, and reason in metadata.
-- Trigger reads the GUC, matches `<table>:<id>`, then clears it so a single claim can only delete one row. Existing `archive_deleted_row` + `audit_row_change` triggers still fire, so restore continues to work.
+1. **`src/routes/_authenticated/admin/index.tsx`** — `openAsGuest()` (the Guest preview tab): encode `sampleGuestToken` with the same base64url + URI-encode step used in `dashboard.tsx` / `committee-workspace.tsx` before injecting it into the URL.
 
-### 2. Server functions — one blessed delete path
-- New `deleteProtectedRow` in `src/lib/invitations.functions.ts` (auth-required, admin-verified) that:
-  1. Calls `admin_claim_delete(table, id, reason)`.
-  2. Runs the actual `DELETE` in the same transaction via a new RPC `admin_execute_delete(table, id)` (SECURITY DEFINER, admin-only, whitelisted table names).
-  3. Returns `{ ok, archive_id }`.
-- Update existing delete call sites (guests page, inviters page, team page, preorders page, RSVP admin, categories page) to call `deleteProtectedRow` with a reason prompt. No component may issue a raw `.delete()` on a protected table.
+2. **`src/routes/_authenticated/admin/guests.tsx`** — the "Open RSVP" `<a href={\`/rsvp/${r.rsvp_token}\`}>` on each guest card: apply the same encoding.
 
-### 3. UI — confirm + reason
-- Add a small `ConfirmDeleteDialog` (name of row + required "Why are you deleting this?" textarea, min 5 chars).
-- Replace inline `confirm(...)` calls on protected tables with this dialog.
-- Recently Deleted page unchanged; it already restores from archive.
+Both use this one-liner, matching what `dashboard.tsx:201` already does:
 
-### 4. Verification (must pass before I call this done)
-- Playwright as admin on mobile viewport: try delete without reason → blocked; delete with reason → row disappears from live list and appears in Recently Deleted with the reason and my name.
-- DB check: attempt raw `DELETE FROM public.invitations WHERE id = ...` via psql → fails with `PROTECTED_DELETE`.
-- DB check: audit_log shows the CLAIM DELETE row and the DELETE row with matching target_id.
-- Confirm restore from Recently Deleted still works end-to-end.
-- Confirm normal writes (insert/update) on all in-scope tables are unaffected.
+```ts
+const safeToken = encodeURIComponent(t.trim().replace(/\+/g, "-").replace(/\//g, "_"));
+```
 
-## Out of scope
-- Automated undelete / trash bin UI beyond the existing Recently Deleted page.
-- Any change to guest-facing routes or RSVP flow.
-- Backfilling reasons for past deletions.
+No server-function, DB, or schema changes — the server already accepts both encoded and raw forms.
 
-## Technical notes
-- `admin_claim_delete` and `admin_execute_delete` are SECURITY DEFINER, `search_path = public`, EXECUTE granted only to `authenticated` and gated by `private.has_role(auth.uid(), 'admin')`.
-- Table whitelist enforced inside `admin_execute_delete` using `format('DELETE FROM public.%I WHERE id = $1', target_table)` after checking against an allow-list.
-- GUC is transaction-scoped (`SET LOCAL`), so it cannot leak between requests.
-- No changes to `deleted_rows_archive` schema — the existing `archive_deleted_row` trigger continues to capture the row for restore.
+## Verify
+
+- Playwright: from `/admin`, click **Guest** tab → confirm the opened tab lands on the RSVP form (not 404).
+- Playwright: on `/admin/guests`, tap **Open RSVP** on a guest whose token contains `/` → confirm the RSVP page renders.
+- Sanity: pick a token containing `/` from `invitations` and confirm both encoded URL and the original still resolve via `getInvitationByToken` (already covered by `rsvpTokenCandidates`).

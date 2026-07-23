@@ -103,7 +103,8 @@ function AdminOverview() {
 
   const openAsGuest = () => {
     if (!sampleGuestToken) return;
-    window.open(`/rsvp/${sampleGuestToken}`, "_blank", "noopener");
+    const safe = encodeURIComponent(sampleGuestToken.trim().replace(/\+/g, "-").replace(/\//g, "_"));
+    window.open(`/rsvp/${safe}`, "_blank", "noopener");
   };
 
   const ViewTabs = () => {

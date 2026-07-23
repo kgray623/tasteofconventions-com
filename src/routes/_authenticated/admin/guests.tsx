@@ -490,7 +490,7 @@ function GuestsPage() {
                 </div>
                 {r.rsvp_token && (
                   <a
-                    href={`/rsvp/${r.rsvp_token}`}
+                    href={`/rsvp/${encodeURIComponent(r.rsvp_token.trim().replace(/\+/g, "-").replace(/\//g, "_"))}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 text-sm text-terracotta hover:underline shrink-0"
