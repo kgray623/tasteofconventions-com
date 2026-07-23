@@ -278,7 +278,6 @@ function RsvpPage() {
 
 
         <Card className="p-7 space-y-3">
-          {ev.description && <p className="text-muted-foreground">{ev.description}</p>}
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
             <span className="inline-flex items-center gap-2">
               <Calendar className="w-4 h-4 text-gold" />
@@ -291,17 +290,8 @@ function RsvpPage() {
               </span>
             )}
           </div>
-          <div className="rounded-md border border-border bg-cream/40 p-4 text-sm space-y-1">
-            <p>
-              <strong>Name:</strong> {data.invitation.guest_name}
-            </p>
-            {data.invitation.guest_phone && (
-              <p>
-                <strong>Phone:</strong> {data.invitation.guest_phone}
-              </p>
-            )}
-          </div>
         </Card>
+
 
         {(() => {
           const rsvp = data.rsvp;
