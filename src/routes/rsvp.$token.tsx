@@ -138,9 +138,28 @@ function RsvpPage() {
 
   useEffect(() => {
     let alive = true;
+    setLoadError(null);
+    setSlow(false);
+    // Purge malformed drafts so a bad older payload can't wedge the page.
+    try {
+      const keys = [`platform-draft:${rsvpDraftScope}`, `platform-draft:${orderDraftScope}`];
+      for (const k of keys) {
+        const raw = window.localStorage.getItem(k);
+        if (raw) JSON.parse(raw);
+      }
+    } catch {
+      window.localStorage.removeItem(`platform-draft:${rsvpDraftScope}`);
+      window.localStorage.removeItem(`platform-draft:${orderDraftScope}`);
+    }
+    const slowTimer = window.setTimeout(() => {
+      if (alive) setSlow(true);
+    }, 6000);
     const fallback = window.setTimeout(() => {
-      if (alive) setLoading(false);
-    }, 10000);
+      if (alive) {
+        setLoading(false);
+        setLoadError((prev) => prev ?? "Timed out loading your invitation.");
+      }
+    }, 12000);
     (async () => {
       try {
         const r = (await withTimeout(fetchInv({ data: { token } }), 10000)) as RsvpTokenData;
@@ -167,20 +186,21 @@ function RsvpPage() {
             }, {});
           setCuisineCounts(restoredCounts);
         }
+      } catch (e: unknown) {
+        if (alive) setLoadError(e instanceof Error ? e.message : "Could not load your invitation.");
       } finally {
         if (alive) setLoading(false);
+        window.clearTimeout(fallback);
+        window.clearTimeout(slowTimer);
       }
-    })()
-
-      .catch(() => {
-        if (alive) setLoading(false);
-      })
-      .finally(() => window.clearTimeout(fallback));
+    })();
     return () => {
       alive = false;
       window.clearTimeout(fallback);
+      window.clearTimeout(slowTimer);
     };
   }, [token, fetchInv]);
+
 
   const handleSubmit = async () => {
     try {
