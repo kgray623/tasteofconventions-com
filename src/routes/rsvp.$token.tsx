@@ -265,11 +265,41 @@ function RsvpPage() {
 
   if (loading)
     return (
-      <div className="min-h-screen flex items-center justify-center text-muted-foreground">
-        Loading…
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4 text-center text-muted-foreground">
+        <p>Loading your invitation…</p>
+        {slow && (
+          <div className="max-w-sm space-y-3 rounded-lg border border-border bg-card p-5 text-sm text-ink">
+            <p>Taking longer than expected. The connection may be slow.</p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+              <Button onClick={() => window.location.reload()}>Reload page</Button>
+              <Button variant="outline" asChild>
+                <Link to="/">Back to invitation</Link>
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     );
-  if (!data?.invitation) return <InvitationPage />;
+  if (loadError || !data?.invitation) {
+    if (loadError) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4 text-center">
+          <div className="max-w-sm space-y-3 rounded-lg border border-border bg-card p-5 text-sm text-ink">
+            <p className="font-semibold">We couldn't load your invitation.</p>
+            <p className="text-muted-foreground">{loadError}</p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+              <Button onClick={() => window.location.reload()}>Reload page</Button>
+              <Button variant="outline" asChild>
+                <Link to="/">Back to invitation</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return <InvitationPage />;
+  }
+
   const ev = data.invitation.events;
   const cuisines: { key: string; label: string; photos?: string[]; note?: string }[] = [
     { key: "Myanmar", label: "Myanmar/Burmese", photos: myanmarPhotos },
