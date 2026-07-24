@@ -99,6 +99,9 @@ function RsvpPage() {
 
   const [data, setData] = useState<RsvpTokenData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [slow, setSlow] = useState(false);
+
   const [status, setStatus] = useDraftState<"yes" | "no">(rsvpDraftScope, "status", "yes");
   const [attendanceMode, setAttendanceMode] = useDraftState<"in_person" | "zoom">(
     rsvpDraftScope,
