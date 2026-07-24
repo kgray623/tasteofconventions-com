@@ -99,6 +99,9 @@ function RsvpPage() {
 
   const [data, setData] = useState<RsvpTokenData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [slow, setSlow] = useState(false);
+
   const [status, setStatus] = useDraftState<"yes" | "no">(rsvpDraftScope, "status", "yes");
   const [attendanceMode, setAttendanceMode] = useDraftState<"in_person" | "zoom">(
     rsvpDraftScope,
@@ -135,9 +138,28 @@ function RsvpPage() {
 
   useEffect(() => {
     let alive = true;
+    setLoadError(null);
+    setSlow(false);
+    // Purge malformed drafts so a bad older payload can't wedge the page.
+    try {
+      const keys = [`platform-draft:${rsvpDraftScope}`, `platform-draft:${orderDraftScope}`];
+      for (const k of keys) {
+        const raw = window.localStorage.getItem(k);
+        if (raw) JSON.parse(raw);
+      }
+    } catch {
+      window.localStorage.removeItem(`platform-draft:${rsvpDraftScope}`);
+      window.localStorage.removeItem(`platform-draft:${orderDraftScope}`);
+    }
+    const slowTimer = window.setTimeout(() => {
+      if (alive) setSlow(true);
+    }, 6000);
     const fallback = window.setTimeout(() => {
-      if (alive) setLoading(false);
-    }, 10000);
+      if (alive) {
+        setLoading(false);
+        setLoadError((prev) => prev ?? "Timed out loading your invitation.");
+      }
+    }, 12000);
     (async () => {
       try {
         const r = (await withTimeout(fetchInv({ data: { token } }), 10000)) as RsvpTokenData;
@@ -164,20 +186,21 @@ function RsvpPage() {
             }, {});
           setCuisineCounts(restoredCounts);
         }
+      } catch (e: unknown) {
+        if (alive) setLoadError(e instanceof Error ? e.message : "Could not load your invitation.");
       } finally {
         if (alive) setLoading(false);
+        window.clearTimeout(fallback);
+        window.clearTimeout(slowTimer);
       }
-    })()
-
-      .catch(() => {
-        if (alive) setLoading(false);
-      })
-      .finally(() => window.clearTimeout(fallback));
+    })();
     return () => {
       alive = false;
       window.clearTimeout(fallback);
+      window.clearTimeout(slowTimer);
     };
   }, [token, fetchInv]);
+
 
   const handleSubmit = async () => {
     try {
@@ -242,11 +265,41 @@ function RsvpPage() {
 
   if (loading)
     return (
-      <div className="min-h-screen flex items-center justify-center text-muted-foreground">
-        Loading…
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4 text-center text-muted-foreground">
+        <p>Loading your invitation…</p>
+        {slow && (
+          <div className="max-w-sm space-y-3 rounded-lg border border-border bg-card p-5 text-sm text-ink">
+            <p>Taking longer than expected. The connection may be slow.</p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+              <Button onClick={() => window.location.reload()}>Reload page</Button>
+              <Button variant="outline" asChild>
+                <Link to="/">Back to invitation</Link>
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     );
-  if (!data?.invitation) return <InvitationPage />;
+  if (loadError || !data?.invitation) {
+    if (loadError) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4 text-center">
+          <div className="max-w-sm space-y-3 rounded-lg border border-border bg-card p-5 text-sm text-ink">
+            <p className="font-semibold">We couldn't load your invitation.</p>
+            <p className="text-muted-foreground">{loadError}</p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+              <Button onClick={() => window.location.reload()}>Reload page</Button>
+              <Button variant="outline" asChild>
+                <Link to="/">Back to invitation</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return <InvitationPage />;
+  }
+
   const ev = data.invitation.events;
   const cuisines: { key: string; label: string; photos?: string[]; note?: string }[] = [
     { key: "Myanmar", label: "Myanmar/Burmese", photos: myanmarPhotos },
