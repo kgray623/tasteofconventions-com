@@ -67,6 +67,7 @@ export function CommitteeWorkspace() {
   const chatsCardRef = useRef<HTMLDivElement>(null);
   const [guests, setGuests] = useState<CommitteeGuest[]>([]);
   const [myHostIds, setMyHostIds] = useState<string[]>([]);
+  const [myInviterIds, setMyInviterIds] = useState<string[]>([]);
   const [loadingGuests, setLoadingGuests] = useState(true);
   const [settingRsvpId, setSettingRsvpId] = useState<string | null>(null);
   const [hideWelcome, setHideWelcome] = useState(false);
