@@ -66,7 +66,7 @@ export function NotificationBell() {
             <div className="border-b bg-secondary/40 px-4 py-2 flex items-center justify-between">
               <p className="text-xs font-semibold uppercase tracking-wider text-ink flex items-center gap-1.5">
                 New RSVPs ({rsvps.count})
-                <NewBadge featureKey="bell:new-rsvps" />
+                <NewBadge target="bell:new-rsvps" direction="left" />
               </p>
               <button
                 type="button"
