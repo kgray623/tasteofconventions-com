@@ -407,6 +407,7 @@ function GuestsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="alpha">Alphabetical</SelectItem>
+            <SelectItem value="replied">Latest reply</SelectItem>
             <SelectItem value="newest">Newest first</SelectItem>
             <SelectItem value="oldest">Oldest first</SelectItem>
           </SelectContent>
