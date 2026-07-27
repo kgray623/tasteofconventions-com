@@ -141,7 +141,7 @@ function GuestsPage() {
   const [query, setQuery] = useState("");
   const activeStatus: StatusFilter = status ?? "all";
   const activeAudience = audience ?? "all";
-  const activeSort: SortMode = sort ?? "alpha";
+  const activeSort: SortMode = sort ?? "replied";
   const activeInviter = inviter ?? "all";
 
 
