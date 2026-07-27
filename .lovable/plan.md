@@ -1,32 +1,37 @@
-## What I verified in the database (2026-07-27 UTC)
+## What the database actually shows for Tina Santana (verified 2026-07-27 UTC)
 
-- **Tina Santana** has an account (`Tina Santana`, phone +1 402-657-7364) and an active inviter record with quota 25, correctly linked to her account.
-- **She is NOT marked as committee**: her invitation row has `is_committee = false`, she has no `team` role in `user_roles` (only `host`), and there is no `team_invites` row for her. That is why the committee view does not treat her as a committee member.
-- **Her guests exist**: 35 invitations carry her inviter record. 32 of them are hosted by her account; **3 are hosted by Kari Gray** (Jacqueline Graves, Sharon Allison, Juliet Sossou-Etse), so even once she gets in, those 3 would be missing.
-- **Root cause of the missing guests in code**: the committee "My uploaded contacts" list filters invitations by `host_id` only (`src/components/committee-workspace.tsx`, `myGuestsUnsorted`). It ignores `inviter_id`, which is the field that actually records who invited the guest.
-- **Her RSVP food flag is wrong**: she has a real pre-order (Myanmar, qty 1) but her RSVP row has `ordering_food = false`. One other person has the same mismatch: **Tiana Stoddard**.
+Her 35 uploaded contacts break down exactly like this:
 
-## Fix plan
+| Group | Families | People |
+|---|---|---|
+| Confirmed in person | 7 | 12 |
+| Confirmed Zoom | 1 | 1 |
+| Declined | 2 | 2 |
+| **No RSVP submitted at all** | **25** | **25 (counted as 1 each until they reply)** |
+| Total | 35 | — |
 
-### 1. Make Tina a committee member (data)
-Migration:
-- Set `is_committee = true` on her invitation.
-- Insert `user_roles` row `team` for her account (keep `host`).
-- Insert a `team_invites` row (name + phone, role `team`) so she shows on the committee roster like everyone else.
+So nothing is missing or hidden. The numbers she is seeing (7 families / 12 people confirmed, 2 declined, 1 Zoom) are correct, and **the "rest" are 25 people who have simply never submitted an RSVP**.
 
-### 2. Show a committee member every guest they invited (code, category fix)
-In `src/components/committee-workspace.tsx`:
-- Also select `inviter_id` on the invitations query and load the current user's own `inviters` row id(s) (matched by `host_id`, phone tail, or profile name — the same matching already used for host ids).
-- Change `myGuestsUnsorted` to include an invitation when **either** `host_id` is one of mine **or** `inviter_id` is one of my inviter ids.
-- This fixes the 3 Kari-hosted guests for Tina and the same class of problem for every other committee member whose guests were uploaded by an admin.
+One more fact from the data: of those 35, **29 are marked as invitation sent and 6 have never been marked as sent** — meaning 6 of her contacts may not have been texted their invite link yet.
 
-### 3. Fix the RSVP "not ordering food" flag (data + forward fix)
-Migration:
-- Set `ordering_food = true` on the RSVP rows for **Tina Santana** and **Tiana Stoddard**, since both have real pre-orders.
-- Add a trigger on `cuisine_preorders` (insert/update) that sets `ordering_food = true` on the matching RSVP whenever a pre-order is saved and linked to an invitation, so new pre-orders can never disagree with the RSVP again.
+## The real gap
 
-### 4. Verification before I report done
-- Re-query the DB: Tina's `is_committee`, `team` role, guest count by inviter (expect 35), and `ordering_food = true`.
-- Load the committee workspace in a browser session and confirm her contact list renders 35 contacts, and confirm her RSVP shows the meal pre-order rather than "not ordering food".
+Her workspace does have an "Awaiting reply" group, but it's collapsed by default and doesn't call out how many people are still outstanding or which ones were never texted. That's why it reads as "where did they go?" rather than "25 haven't answered yet."
 
-Nothing existing is removed — no guest, RSVP, or pre-order data is deleted or overwritten beyond the two incorrect `ordering_food` flags.
+## Proposed changes (committee workspace, Tina's view and every other committee member's)
+
+1. **Always-visible awaiting summary line** at the top of "My guests": `35 contacts • 8 replied • 25 awaiting reply • 2 declined`, so the math reconciles at a glance with no expanding needed.
+2. **Open the "Awaiting reply" group by default** when there are outstanding guests, instead of collapsed.
+3. **"Not texted yet" flag** — inside the awaiting list, badge the contacts with no sent date (6 for Tina) and sort them first, with the existing one-tap SMS invite link and "Mark as sent" button right there.
+4. **"Send reminder" SMS link** on every awaiting guest who was already texted, pre-filled with a short reminder plus their RSVP link (still sent from her own phone; the system never texts anyone).
+5. No counting logic changes — the people-first totals stay exactly as they are.
+
+## Technical notes
+
+- Source of truth is `getCommitteeWorkspaceGuests` in `src/lib/rsvp-totals.functions.ts` (already matches on both `host_id` and `inviter_id`, which is why Tina's 35 are complete).
+- UI work is in `src/components/committee-workspace.tsx`: the `openMyGroup` default state, the "My guests" header summary, and the awaiting-group row rendering (`invite_sent_at` is already returned per guest).
+- No migration required; no RSVP data will be changed.
+
+## Verification before I call it done
+
+Sign in as Tina (last name + phone) on a mobile viewport, open her committee workspace, and confirm the header reads 35 contacts with 25 awaiting, the awaiting group is expanded, 6 rows carry the "not texted yet" badge, and the totals still match a direct database read.

@@ -78,7 +78,8 @@ export function CommitteeWorkspace() {
   const [committeeNames, setCommitteeNames] = useState<Set<string>>(new Set());
   const [committeePhones, setCommitteePhones] = useState<Set<string>>(new Set());
   const [myGuestsFilter, setMyGuestsFilter] = useState<"all" | "committee">("all");
-  const [openMyGroup, setOpenMyGroup] = useState<{ inPerson: boolean; zoom: boolean; declined: boolean; awaiting: boolean }>({ inPerson: false, zoom: false, declined: false, awaiting: false });
+  // "No RSVP yet" opens by default so outstanding contacts are never hidden.
+  const [openMyGroup, setOpenMyGroup] = useState<{ inPerson: boolean; zoom: boolean; declined: boolean; awaiting: boolean }>({ inPerson: false, zoom: false, declined: false, awaiting: true });
   const [openTotals, setOpenTotals] = useState(true);
   const [openMyGuestsCard, setOpenMyGuestsCard] = useState(true);
   const [openConfirmed, setOpenConfirmed] = useState(false);
@@ -573,7 +574,11 @@ export function CommitteeWorkspace() {
     .sort(byName);
   const myAwaiting = myGuests
     .filter((g) => !g.rsvp_status || g.rsvp_status === "waitlist" || g.rsvp_status === "maybe")
-    .sort(byPendingSort);
+    .sort(byPendingSort)
+    // Contacts that were never texted come first — they're the ones that need action.
+    .sort((a, b) => Number(!!a.invite_sent_at) - Number(!!b.invite_sent_at));
+  const myAwaitingNotTexted = myAwaiting.filter((g) => !g.invite_sent_at).length;
+  const myRepliedContacts = myGuests.filter((g) => g.rsvp_status === "yes" || g.rsvp_status === "no").length;
   const myDeclined = myGuests.filter((g) => g.rsvp_status === "no").sort(byName);
 
 
@@ -598,7 +603,12 @@ export function CommitteeWorkspace() {
     const firstName = (guest.guest_name || "Friend").split(/\s+/)[0];
     const senderFirst = senderName.split(/\s+/)[0];
     const link = `${siteOrigin}/rsvp/${rsvpLinkToken(guest.rsvp_token)}`;
-    const body = `Hi ${firstName}, it's ${senderFirst}. You're invited to A Taste of Special Conventions on Sunday, August 30, 2026. Please RSVP here: ${link}`;
+    const alreadyTexted = Boolean(guest.invite_sent_at);
+    const stillWaiting = !guest.rsvp_status || guest.rsvp_status === "waitlist" || guest.rsvp_status === "maybe";
+    const body =
+      alreadyTexted && stillWaiting
+        ? `Hi ${firstName}, it's ${senderFirst} — just a friendly reminder to RSVP for A Taste of Special Conventions on Sunday, August 30, 2026: ${link}`
+        : `Hi ${firstName}, it's ${senderFirst}. You're invited to A Taste of Special Conventions on Sunday, August 30, 2026. Please RSVP here: ${link}`;
     return { phone: guest.guest_phone, body };
   };
 
@@ -829,6 +839,14 @@ export function CommitteeWorkspace() {
             Committee ({loadingGuests ? "…" : `${committeeIds.size} contacts`})
           </Button>
         </div>
+        {!loadingGuests && myGuests.length > 0 && (
+          <p className="px-4 pt-3 text-xs font-medium text-ink">
+            {myGuests.length} contacts • {myRepliedContacts} replied • {myAwaiting.length} awaiting reply • {myDeclined.length} declined
+            {myAwaitingNotTexted > 0 && (
+              <span className="text-brand-red"> • {myAwaitingNotTexted} not texted yet</span>
+            )}
+          </p>
+        )}
         <p className="px-4 pt-3 text-xs text-muted-foreground">
             Contacts you've uploaded. In-person and Zoom RSVP totals are tracked separately above.
         </p>
@@ -1271,6 +1289,11 @@ function MyGuestsGroup({
                           <AlertTriangle className="w-3 h-3" /> Duplicate
                         </span>
                       )}
+                      {!guest.invite_sent_at && !guest.rsvp_status && (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-brand-red px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brand-red">
+                          Not texted yet
+                        </span>
+                      )}
                     </div>
                     {guest.guest_phone && (
                       <span className="inline-flex items-center gap-1 text-xs text-muted-foreground mt-1">
@@ -1369,7 +1392,7 @@ function SendTextButton({
       className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-sage text-cream text-xs font-medium hover:bg-sage/90"
       aria-label={`Send text to ${guest.guest_name || "guest"}`}
     >
-      <MessageSquare className="w-4 h-4" /> {guest.invite_sent_at ? "Resend text" : "Send text"}
+      <MessageSquare className="w-4 h-4" /> {guest.invite_sent_at ? (guest.rsvp_status ? "Resend text" : "Send reminder") : "Send text"}
     </a>
   );
 }
