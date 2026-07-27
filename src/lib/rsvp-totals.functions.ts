@@ -64,12 +64,14 @@ export type CommitteeWorkspaceGuest = {
   responded_at: string | null;
   invited_by: string | null;
   host_id: string;
+  inviter_id: string | null;
   rsvp_token: string | null;
 };
 
 export type CommitteeWorkspaceGuestsResult = {
   guests: CommitteeWorkspaceGuest[];
   myHostIds: string[];
+  myInviterIds: string[];
 };
 
 export type RsvpEventOption = {
