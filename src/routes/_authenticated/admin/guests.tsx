@@ -35,7 +35,7 @@ export const Route = createFileRoute("/_authenticated/admin/guests")({
       status: z.enum(["all", "confirmed", "declined", "maybe", "waitlist", "pending"]).optional(),
       mode: z.enum(["in_person", "zoom"]).optional(),
       audience: z.enum(["all", "guest", "committee"]).optional(),
-      sort: z.enum(["alpha", "newest", "oldest"]).optional(),
+      sort: z.enum(["alpha", "newest", "oldest", "replied"]).optional(),
       inviter: z.string().optional(),
     }).parse(s),
   component: GuestsPage,
