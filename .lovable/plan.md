@@ -1,16 +1,13 @@
-## Data updates (2026-07-27 UTC)
+## Tierza → decline (2026-07-27 UTC)
 
-Verified against the database first — no code changes needed, data only.
+Only one matching guest exists in the database: **Tirzah Corbin** (608-412-4014), currently **Yes / In-person / party of 2**. Assuming this is who you mean.
 
-### 1. Kiara Sadler → Declined
-- Invitation `Kiara Sadler` (402-297-6765) currently has **no RSVP row** at all.
-- Add an RSVP for her: status **no** (declined), party size 1, responded now.
-
-### 2. Mark as texted
-These three currently have an empty "invite sent" date; set it to now so they show as texted:
-- **Brittany Avery** — 402-676-1298
-- **Faviola and Israel Gamino family** — 402-298-6695
-- **Jackie Williams** — 402-378-5424
+### Change
+- Update her existing RSVP to status **no** (declined), party size 1, responded now.
+- Keep the record and history intact — nothing deleted.
 
 ### Verification
-Read the rows back after the update and confirm Tina's committee list shows the three as texted (no "NOT TEXTED YET" badge) and the declined count reflects Kiara.
+- Read the row back to confirm status is `no`.
+- Confirm the confirmed-people total drops by her 2 seats and the declined count increases.
+
+If "Tierza" is a different person not on the list, tell me the phone number and I'll add/locate that record instead.
