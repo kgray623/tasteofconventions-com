@@ -239,7 +239,7 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
 
     let invitationsQuery = supabase
       .from("invitations")
-      .select("id,host_id,guest_name,guest_phone_normalized");
+      .select("id,host_id,inviter_id,guest_name,guest_phone_normalized");
     if (data.eventId) invitationsQuery = invitationsQuery.eq("event_id", data.eventId);
 
     const [invitersRes, rsvpsRes, invitationsRes] = await Promise.all([
@@ -256,6 +256,7 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
     const invitationRows = (invitationsRes.data ?? []) as Array<{
       id: string;
       host_id: string | null;
+      inviter_id: string | null;
       guest_name: string | null;
       guest_phone_normalized: string | null;
     }>;
