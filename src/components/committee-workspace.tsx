@@ -487,7 +487,14 @@ export function CommitteeWorkspace() {
   };
 
   const mineHostIdSet = new Set(myHostIds.length ? myHostIds : user ? [user.id] : []);
-  const myGuestsUnsorted = user ? guests.filter((g) => mineHostIdSet.has(g.host_id)) : [];
+  // A guest belongs to me if I uploaded them (host_id) OR I'm recorded as the
+  // person who invited them (inviter_id) — admins often upload on our behalf.
+  const mineInviterIdSet = new Set(myInviterIds);
+  const myGuestsUnsorted = user
+    ? guests.filter(
+        (g) => mineHostIdSet.has(g.host_id) || (g.inviter_id ? mineInviterIdSet.has(g.inviter_id) : false),
+      )
+    : [];
 
   // Detect duplicates among my guests (same normalized name OR same last-10-digit phone)
   const normName = (s: string) => s.toLowerCase().replace(/[^a-z]/g, "");
