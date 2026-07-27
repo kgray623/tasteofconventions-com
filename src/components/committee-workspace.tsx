@@ -205,7 +205,7 @@ export function CommitteeWorkspace() {
     const { data, error: invitationsError } = await withTimeout(
       supabase
         .from("invitations")
-          .select("id,created_at,invite_sent_at,guest_name,guest_phone,host_id,rsvp_token,rsvps(status,party_size,attendance_mode,responded_at)")
+          .select("id,created_at,invite_sent_at,guest_name,guest_phone,host_id,inviter_id,rsvp_token,rsvps(status,party_size,attendance_mode,responded_at)")
         .eq("event_id", eventId)
         .order("created_at", { ascending: false }),
       LOAD_TIMEOUT_MS,
@@ -219,6 +219,7 @@ export function CommitteeWorkspace() {
       guest_name: string;
       guest_phone: string | null;
       host_id: string;
+      inviter_id: string | null;
       rsvp_token: string | null;
       rsvps:
         | { status: string | null; party_size: number | null; attendance_mode: string | null; responded_at: string | null }[]
@@ -242,6 +243,7 @@ export function CommitteeWorkspace() {
 
     return {
       myHostIds: Array.from(mineSet),
+      myInviterIds: Array.from(mineInviterSet),
       guests: rows.map((row) => {
         const rsvp = pickSingleRsvp(row.rsvps);
         return {
@@ -254,13 +256,18 @@ export function CommitteeWorkspace() {
           party_size: rsvp?.party_size ?? 1,
           attendance_mode: rsvp?.attendance_mode ?? null,
           responded_at: rsvp?.responded_at ?? null,
-          invited_by: hostNames.get(row.host_id) ?? null,
+          invited_by:
+            (row.inviter_id ? inviterNames.get(row.inviter_id) : undefined) ??
+            hostNames.get(row.host_id) ??
+            null,
           host_id: row.host_id,
+          inviter_id: row.inviter_id ?? null,
           rsvp_token: row.rsvp_token ?? null,
         };
       }),
     };
   };
+
 
   useEffect(() => {
     let alive = true;
