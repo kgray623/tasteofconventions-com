@@ -35,8 +35,10 @@ export const getNewRsvpNotifications = createServerFn({ method: "POST" })
   .handler(async ({ context }): Promise<RsvpNotificationsResult> => {
     const { supabase, userId } = context;
 
-    const [{ data: isAdminData }, { data: seenRow }] = await Promise.all([
-      supabase.rpc("has_role", { _user_id: userId, _role: "admin" }),
+    // Read roles straight from user_roles (authenticated can read their own);
+    // the has_role RPC is not executable by signed-in users on this project.
+    const [{ data: roleRows }, { data: seenRow }] = await Promise.all([
+      supabase.from("user_roles").select("role").eq("user_id", userId),
       supabase
         .from("chat_last_seen")
         .select("last_seen_at")
@@ -46,7 +48,8 @@ export const getNewRsvpNotifications = createServerFn({ method: "POST" })
         .maybeSingle(),
     ]);
 
-    const isAdmin = Boolean(isAdminData);
+    const isAdmin = (roleRows ?? []).some((r) => r.role === "admin");
+
     const lastSeenAt = seenRow?.last_seen_at ?? null;
     const floor = new Date(Date.now() - MAX_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
     const since = lastSeenAt && lastSeenAt > floor ? lastSeenAt : floor;
