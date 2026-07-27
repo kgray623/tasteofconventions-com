@@ -229,6 +229,12 @@ function GuestsPage() {
       }
       return true;
     }).sort((a, b) => {
+      if (activeSort === "replied") {
+        const at = a.responded_at ? Date.parse(a.responded_at) : 0;
+        const bt = b.responded_at ? Date.parse(b.responded_at) : 0;
+        if (at !== bt) return bt - at;
+        return a.name.localeCompare(b.name);
+      }
       if (activeSort === "newest" || activeSort === "oldest") {
         const at = a.created_at ? Date.parse(a.created_at) : 0;
         const bt = b.created_at ? Date.parse(b.created_at) : 0;
