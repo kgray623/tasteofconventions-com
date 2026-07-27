@@ -127,7 +127,8 @@ const cleanGuestSearch = (search: GuestSearchState): GuestSearchState => ({
   status: search.status && search.status !== "all" ? search.status : undefined,
   mode: search.mode,
   audience: search.audience && search.audience !== "all" ? search.audience : undefined,
-  sort: search.sort && search.sort !== "alpha" ? search.sort : undefined,
+  // "replied" (latest reply first) is the default, so it stays out of the URL.
+  sort: search.sort && search.sort !== "replied" ? search.sort : undefined,
   inviter: search.inviter && search.inviter !== "all" ? search.inviter : undefined,
 });
 
@@ -140,7 +141,7 @@ function GuestsPage() {
   const [query, setQuery] = useState("");
   const activeStatus: StatusFilter = status ?? "all";
   const activeAudience = audience ?? "all";
-  const activeSort: SortMode = sort ?? "alpha";
+  const activeSort: SortMode = sort ?? "replied";
   const activeInviter = inviter ?? "all";
 
 

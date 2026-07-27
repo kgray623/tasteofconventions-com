@@ -565,13 +565,20 @@ export function CommitteeWorkspace() {
   const confirmedInPersonPeople = myGuestRollup.people.inPerson;
   const confirmedVirtualPeople = myGuestRollup.people.zoom;
   const declinedPeople = myGuestRollup.people.declined;
-  // Group uploaded contacts by RSVP status, alphabetized within each group.
+  // Group uploaded contacts by RSVP status. Guests who have replied are ordered
+  // newest reply first so a brand-new RSVP is always at the top of its group.
+  const byLatestReply = (a: CommitteeGuest, b: CommitteeGuest) => {
+    const at = a.responded_at ? Date.parse(a.responded_at) : 0;
+    const bt = b.responded_at ? Date.parse(b.responded_at) : 0;
+    if (at !== bt) return bt - at;
+    return byName(a, b);
+  };
   const myInPerson = myGuests
     .filter((g) => g.rsvp_status === "yes" && g.attendance_mode !== "zoom")
-    .sort(byName);
+    .sort(byLatestReply);
   const myZoom = myGuests
     .filter((g) => g.rsvp_status === "yes" && g.attendance_mode === "zoom")
-    .sort(byName);
+    .sort(byLatestReply);
   const myAwaiting = myGuests
     .filter((g) => !g.rsvp_status || g.rsvp_status === "waitlist" || g.rsvp_status === "maybe")
     .sort(byPendingSort)
@@ -579,7 +586,7 @@ export function CommitteeWorkspace() {
     .sort((a, b) => Number(!!a.invite_sent_at) - Number(!!b.invite_sent_at));
   const myAwaitingNotTexted = myAwaiting.filter((g) => !g.invite_sent_at).length;
   const myRepliedContacts = myGuests.filter((g) => g.rsvp_status === "yes" || g.rsvp_status === "no").length;
-  const myDeclined = myGuests.filter((g) => g.rsvp_status === "no").sort(byName);
+  const myDeclined = myGuests.filter((g) => g.rsvp_status === "no").sort(byLatestReply);
 
 
   // Build a sms: link for the phone's Messages app. Same wording as the
