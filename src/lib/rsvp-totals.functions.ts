@@ -309,21 +309,23 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
       const myName = normName(prof?.display_name);
       const mineHostIds = new Set<string>([userId]);
       const myInviters = inviterRows.filter((r) => {
-        if (!r.host_id) return false;
-        if (r.host_id === userId) return true;
+        if (r.host_id && r.host_id === userId) return true;
         const rowTail = phoneTail(r.phone);
         if (myPhoneTail && rowTail && rowTail === myPhoneTail) return true;
         if (myName && normName(r.name) === myName) return true;
         return false;
       });
       myInviters.forEach((r) => r.host_id && mineHostIds.add(r.host_id));
+      // Count guests I invited even when someone else (an admin) uploaded them.
+      const mineInviterIds = new Set(myInviters.map((r) => r.id).filter(Boolean) as string[]);
+      const isMine = (inv: { host_id: string | null; inviter_id: string | null }) =>
+        (!!inv.host_id && mineHostIds.has(inv.host_id)) ||
+        (!!inv.inviter_id && mineInviterIds.has(inv.inviter_id));
 
       const myGroupIds = new Set(
-        invitationRows
-          .filter((inv) => inv.host_id && mineHostIds.has(inv.host_id))
-          .map((inv) => idToGroup.get(inv.id) ?? inv.id),
+        invitationRows.filter(isMine).map((inv) => idToGroup.get(inv.id) ?? inv.id),
       );
-      const uploaded = invitationRows.filter((inv) => inv.host_id && mineHostIds.has(inv.host_id)).length;
+      const uploaded = invitationRows.filter(isMine).length;
       const myRollup = computeRsvpRollup(invitationRows
         .filter((inv) => myGroupIds.has(idToGroup.get(inv.id) ?? inv.id))
         .map((inv) => {
