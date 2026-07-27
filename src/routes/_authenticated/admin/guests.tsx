@@ -11,7 +11,7 @@ import { Download, ExternalLink, Search, Users } from "lucide-react";
 import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
 
 type StatusFilter = "all" | "confirmed" | "declined" | "maybe" | "waitlist" | "pending";
-type SortMode = "alpha" | "newest" | "oldest";
+type SortMode = "alpha" | "newest" | "oldest" | "replied";
 
 export const Route = createFileRoute("/_authenticated/admin/guests")({
   head: () => ({
@@ -35,7 +35,7 @@ export const Route = createFileRoute("/_authenticated/admin/guests")({
       status: z.enum(["all", "confirmed", "declined", "maybe", "waitlist", "pending"]).optional(),
       mode: z.enum(["in_person", "zoom"]).optional(),
       audience: z.enum(["all", "guest", "committee"]).optional(),
-      sort: z.enum(["alpha", "newest", "oldest"]).optional(),
+      sort: z.enum(["alpha", "newest", "oldest", "replied"]).optional(),
       inviter: z.string().optional(),
     }).parse(s),
   component: GuestsPage,
@@ -229,6 +229,12 @@ function GuestsPage() {
       }
       return true;
     }).sort((a, b) => {
+      if (activeSort === "replied") {
+        const at = a.responded_at ? Date.parse(a.responded_at) : 0;
+        const bt = b.responded_at ? Date.parse(b.responded_at) : 0;
+        if (at !== bt) return bt - at;
+        return a.name.localeCompare(b.name);
+      }
       if (activeSort === "newest" || activeSort === "oldest") {
         const at = a.created_at ? Date.parse(a.created_at) : 0;
         const bt = b.created_at ? Date.parse(b.created_at) : 0;
@@ -401,6 +407,7 @@ function GuestsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="alpha">Alphabetical</SelectItem>
+            <SelectItem value="replied">Latest reply</SelectItem>
             <SelectItem value="newest">Newest first</SelectItem>
             <SelectItem value="oldest">Oldest first</SelectItem>
           </SelectContent>
