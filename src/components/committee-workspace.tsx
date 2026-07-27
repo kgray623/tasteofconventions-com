@@ -1289,6 +1289,11 @@ function MyGuestsGroup({
                           <AlertTriangle className="w-3 h-3" /> Duplicate
                         </span>
                       )}
+                      {!guest.invite_sent_at && !guest.rsvp_status && (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-brand-red px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brand-red">
+                          Not texted yet
+                        </span>
+                      )}
                     </div>
                     {guest.guest_phone && (
                       <span className="inline-flex items-center gap-1 text-xs text-muted-foreground mt-1">
@@ -1387,7 +1392,7 @@ function SendTextButton({
       className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-sage text-cream text-xs font-medium hover:bg-sage/90"
       aria-label={`Send text to ${guest.guest_name || "guest"}`}
     >
-      <MessageSquare className="w-4 h-4" /> {guest.invite_sent_at ? "Resend text" : "Send text"}
+      <MessageSquare className="w-4 h-4" /> {guest.invite_sent_at ? (guest.rsvp_status ? "Resend text" : "Send reminder") : "Send text"}
     </a>
   );
 }
