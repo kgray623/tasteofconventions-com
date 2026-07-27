@@ -67,6 +67,7 @@ export function CommitteeWorkspace() {
   const chatsCardRef = useRef<HTMLDivElement>(null);
   const [guests, setGuests] = useState<CommitteeGuest[]>([]);
   const [myHostIds, setMyHostIds] = useState<string[]>([]);
+  const [myInviterIds, setMyInviterIds] = useState<string[]>([]);
   const [loadingGuests, setLoadingGuests] = useState(true);
   const [settingRsvpId, setSettingRsvpId] = useState<string | null>(null);
   const [hideWelcome, setHideWelcome] = useState(false);
@@ -137,6 +138,7 @@ export function CommitteeWorkspace() {
 
       if (!alive()) return;
       setMyHostIds(result.myHostIds);
+      setMyInviterIds(result.myInviterIds ?? []);
       setGuests(result.guests);
       setTotalsRefreshKey((key) => key + 1);
     } catch (error) {
@@ -145,6 +147,7 @@ export function CommitteeWorkspace() {
         const fallback = await loadGuestsFromBrowser();
         if (!alive()) return;
         setMyHostIds(fallback.myHostIds);
+        setMyInviterIds(fallback.myInviterIds ?? []);
         setGuests(fallback.guests);
         setTotalsRefreshKey((key) => key + 1);
       } catch (fallbackError) {
@@ -175,17 +178,20 @@ export function CommitteeWorkspace() {
       myName = (prof?.display_name ?? "").trim().toLowerCase();
     }
 
+    const mineInviterSet = new Set<string>();
+    const inviterNames = new Map<string, string>();
     const { data: inviterRows, error: inviterError } = await withTimeout(
-      supabase.from("inviters").select("host_id,phone,name"),
+      supabase.from("inviters").select("id,host_id,phone,name"),
       LOAD_TIMEOUT_MS,
     );
     if (inviterError) throw inviterError;
     for (const row of inviterRows ?? []) {
-      if (!row.host_id) continue;
       const rowTail = (row.phone ?? "").replace(/\D/g, "").slice(-10);
       const rowName = (row.name ?? "").trim().toLowerCase();
+      if (row.id && rowName) inviterNames.set(row.id, (row.name ?? "").trim());
       if (row.host_id === user?.id || (tail10 && rowTail === tail10) || (myName && rowName === myName)) {
-        mineSet.add(row.host_id);
+        if (row.host_id) mineSet.add(row.host_id);
+        if (row.id) mineInviterSet.add(row.id);
       }
     }
 
@@ -195,12 +201,14 @@ export function CommitteeWorkspace() {
     );
     if (eventsError) throw eventsError;
     const eventId = events?.[0]?.id;
-    if (!eventId) return { guests: [], myHostIds: Array.from(mineSet) };
+    if (!eventId)
+      return { guests: [], myHostIds: Array.from(mineSet), myInviterIds: Array.from(mineInviterSet) };
+
 
     const { data, error: invitationsError } = await withTimeout(
       supabase
         .from("invitations")
-          .select("id,created_at,invite_sent_at,guest_name,guest_phone,host_id,rsvp_token,rsvps(status,party_size,attendance_mode,responded_at)")
+          .select("id,created_at,invite_sent_at,guest_name,guest_phone,host_id,inviter_id,rsvp_token,rsvps(status,party_size,attendance_mode,responded_at)")
         .eq("event_id", eventId)
         .order("created_at", { ascending: false }),
       LOAD_TIMEOUT_MS,
@@ -214,6 +222,7 @@ export function CommitteeWorkspace() {
       guest_name: string;
       guest_phone: string | null;
       host_id: string;
+      inviter_id: string | null;
       rsvp_token: string | null;
       rsvps:
         | { status: string | null; party_size: number | null; attendance_mode: string | null; responded_at: string | null }[]
@@ -237,6 +246,7 @@ export function CommitteeWorkspace() {
 
     return {
       myHostIds: Array.from(mineSet),
+      myInviterIds: Array.from(mineInviterSet),
       guests: rows.map((row) => {
         const rsvp = pickSingleRsvp(row.rsvps);
         return {
@@ -249,13 +259,18 @@ export function CommitteeWorkspace() {
           party_size: rsvp?.party_size ?? 1,
           attendance_mode: rsvp?.attendance_mode ?? null,
           responded_at: rsvp?.responded_at ?? null,
-          invited_by: hostNames.get(row.host_id) ?? null,
+          invited_by:
+            (row.inviter_id ? inviterNames.get(row.inviter_id) : undefined) ??
+            hostNames.get(row.host_id) ??
+            null,
           host_id: row.host_id,
+          inviter_id: row.inviter_id ?? null,
           rsvp_token: row.rsvp_token ?? null,
         };
       }),
     };
   };
+
 
   useEffect(() => {
     let alive = true;
@@ -472,7 +487,14 @@ export function CommitteeWorkspace() {
   };
 
   const mineHostIdSet = new Set(myHostIds.length ? myHostIds : user ? [user.id] : []);
-  const myGuestsUnsorted = user ? guests.filter((g) => mineHostIdSet.has(g.host_id)) : [];
+  // A guest belongs to me if I uploaded them (host_id) OR I'm recorded as the
+  // person who invited them (inviter_id) — admins often upload on our behalf.
+  const mineInviterIdSet = new Set(myInviterIds);
+  const myGuestsUnsorted = user
+    ? guests.filter(
+        (g) => mineHostIdSet.has(g.host_id) || (g.inviter_id ? mineInviterIdSet.has(g.inviter_id) : false),
+      )
+    : [];
 
   // Detect duplicates among my guests (same normalized name OR same last-10-digit phone)
   const normName = (s: string) => s.toLowerCase().replace(/[^a-z]/g, "");

@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.sync_rsvp_ordering_food() FROM PUBLIC, anon, authenticated;

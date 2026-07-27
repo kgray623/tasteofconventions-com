@@ -64,12 +64,14 @@ export type CommitteeWorkspaceGuest = {
   responded_at: string | null;
   invited_by: string | null;
   host_id: string;
+  inviter_id: string | null;
   rsvp_token: string | null;
 };
 
 export type CommitteeWorkspaceGuestsResult = {
   guests: CommitteeWorkspaceGuest[];
   myHostIds: string[];
+  myInviterIds: string[];
 };
 
 export type RsvpEventOption = {
@@ -114,13 +116,13 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
     if (eventsError) throw friendlyDbError("the event", eventsError);
 
     const eventId = events?.[0]?.id;
-    if (!eventId) return { guests: [], myHostIds: [userId] };
+    if (!eventId) return { guests: [], myHostIds: [userId], myInviterIds: [] };
 
     const [invitersRes, invitationsRes, rsvpsRes] = await Promise.all([
-      supabase.from("inviters").select("host_id,phone,name"),
+      supabase.from("inviters").select("id,host_id,phone,name"),
       supabase
         .from("invitations")
-        .select("id,guest_name,guest_phone,host_id,created_at,invite_sent_at,rsvp_token")
+        .select("id,guest_name,guest_phone,host_id,inviter_id,created_at,invite_sent_at,rsvp_token")
         .eq("event_id", eventId)
         .order("created_at", { ascending: false }),
       supabase.from("rsvps").select("invitation_id,status,party_size,attendance_mode,responded_at"),
@@ -141,13 +143,22 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
       .maybeSingle();
     const myName = normName(prof?.display_name);
     const mineHostIds = new Set<string>([userId]);
+    // Guests can be uploaded by an admin on a committee member's behalf, in
+    // which case host_id is the admin and only inviter_id points at the real
+    // committee member. Track both so nobody loses guests they invited.
+    const mineInviterIds = new Set<string>();
     inviterRows.forEach((r) => {
-      if (!r.host_id) return;
-      if (r.host_id === userId) mineHostIds.add(r.host_id);
       const rowTail = phoneTail(r.phone);
-      if (myPhoneTail && rowTail && rowTail === myPhoneTail) mineHostIds.add(r.host_id);
-      if (myName && normName(r.name) === myName) mineHostIds.add(r.host_id);
+      const isMine =
+        (r.host_id && r.host_id === userId) ||
+        (!!myPhoneTail && !!rowTail && rowTail === myPhoneTail) ||
+        (!!myName && normName(r.name) === myName);
+      if (!isMine) return;
+      if (r.host_id) mineHostIds.add(r.host_id);
+      if (r.id) mineInviterIds.add(r.id);
     });
+
+
 
 
     const invitationRows = (invitationsRes.data ?? []) as Array<{
@@ -157,6 +168,7 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
       guest_name: string;
       guest_phone: string | null;
       host_id: string | null;
+      inviter_id: string | null;
       rsvp_token: string | null;
     }>;
 
@@ -170,6 +182,12 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
         responded_at: rsvp.responded_at ?? null,
       });
     }
+
+    const inviterNames = new Map<string, string>();
+    inviterRows.forEach((r) => {
+      const name = (r.name ?? "").trim();
+      if (r.id && name) inviterNames.set(r.id, name);
+    });
 
     const hostIds = Array.from(new Set(invitationRows.map((r) => r.host_id).filter((id): id is string => !!id)));
     const hostNames = new Map<string, string>();
@@ -187,6 +205,7 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
 
     return {
       myHostIds: Array.from(mineHostIds),
+      myInviterIds: Array.from(mineInviterIds),
       guests: invitationRows.map((row) => {
         const rsvp = rsvpByInvitation.get(row.id);
         return {
@@ -199,10 +218,15 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
           party_size: rsvp?.party_size ?? 1,
           attendance_mode: rsvp?.attendance_mode ?? null,
           responded_at: rsvp?.responded_at ?? null,
-          invited_by: row.host_id ? hostNames.get(row.host_id) ?? null : null,
+          invited_by:
+            (row.inviter_id ? inviterNames.get(row.inviter_id) : undefined) ??
+            (row.host_id ? hostNames.get(row.host_id) : undefined) ??
+            null,
           host_id: row.host_id ?? "",
+          inviter_id: row.inviter_id ?? null,
           rsvp_token: row.rsvp_token ?? null,
         };
+
       }),
     };
   });
@@ -215,7 +239,7 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
 
     let invitationsQuery = supabase
       .from("invitations")
-      .select("id,host_id,guest_name,guest_phone_normalized");
+      .select("id,host_id,inviter_id,guest_name,guest_phone_normalized");
     if (data.eventId) invitationsQuery = invitationsQuery.eq("event_id", data.eventId);
 
     const [invitersRes, rsvpsRes, invitationsRes] = await Promise.all([
@@ -232,6 +256,7 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
     const invitationRows = (invitationsRes.data ?? []) as Array<{
       id: string;
       host_id: string | null;
+      inviter_id: string | null;
       guest_name: string | null;
       guest_phone_normalized: string | null;
     }>;
@@ -284,21 +309,23 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
       const myName = normName(prof?.display_name);
       const mineHostIds = new Set<string>([userId]);
       const myInviters = inviterRows.filter((r) => {
-        if (!r.host_id) return false;
-        if (r.host_id === userId) return true;
+        if (r.host_id && r.host_id === userId) return true;
         const rowTail = phoneTail(r.phone);
         if (myPhoneTail && rowTail && rowTail === myPhoneTail) return true;
         if (myName && normName(r.name) === myName) return true;
         return false;
       });
       myInviters.forEach((r) => r.host_id && mineHostIds.add(r.host_id));
+      // Count guests I invited even when someone else (an admin) uploaded them.
+      const mineInviterIds = new Set(myInviters.map((r) => r.id).filter(Boolean) as string[]);
+      const isMine = (inv: { host_id: string | null; inviter_id: string | null }) =>
+        (!!inv.host_id && mineHostIds.has(inv.host_id)) ||
+        (!!inv.inviter_id && mineInviterIds.has(inv.inviter_id));
 
       const myGroupIds = new Set(
-        invitationRows
-          .filter((inv) => inv.host_id && mineHostIds.has(inv.host_id))
-          .map((inv) => idToGroup.get(inv.id) ?? inv.id),
+        invitationRows.filter(isMine).map((inv) => idToGroup.get(inv.id) ?? inv.id),
       );
-      const uploaded = invitationRows.filter((inv) => inv.host_id && mineHostIds.has(inv.host_id)).length;
+      const uploaded = invitationRows.filter(isMine).length;
       const myRollup = computeRsvpRollup(invitationRows
         .filter((inv) => myGroupIds.has(idToGroup.get(inv.id) ?? inv.id))
         .map((inv) => {
