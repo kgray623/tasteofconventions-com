@@ -175,17 +175,20 @@ export function CommitteeWorkspace() {
       myName = (prof?.display_name ?? "").trim().toLowerCase();
     }
 
+    const mineInviterSet = new Set<string>();
+    const inviterNames = new Map<string, string>();
     const { data: inviterRows, error: inviterError } = await withTimeout(
-      supabase.from("inviters").select("host_id,phone,name"),
+      supabase.from("inviters").select("id,host_id,phone,name"),
       LOAD_TIMEOUT_MS,
     );
     if (inviterError) throw inviterError;
     for (const row of inviterRows ?? []) {
-      if (!row.host_id) continue;
       const rowTail = (row.phone ?? "").replace(/\D/g, "").slice(-10);
       const rowName = (row.name ?? "").trim().toLowerCase();
+      if (row.id && rowName) inviterNames.set(row.id, (row.name ?? "").trim());
       if (row.host_id === user?.id || (tail10 && rowTail === tail10) || (myName && rowName === myName)) {
-        mineSet.add(row.host_id);
+        if (row.host_id) mineSet.add(row.host_id);
+        if (row.id) mineInviterSet.add(row.id);
       }
     }
 
@@ -195,7 +198,9 @@ export function CommitteeWorkspace() {
     );
     if (eventsError) throw eventsError;
     const eventId = events?.[0]?.id;
-    if (!eventId) return { guests: [], myHostIds: Array.from(mineSet) };
+    if (!eventId)
+      return { guests: [], myHostIds: Array.from(mineSet), myInviterIds: Array.from(mineInviterSet) };
+
 
     const { data, error: invitationsError } = await withTimeout(
       supabase
