@@ -1,37 +1,30 @@
-## What the database actually shows for Tina Santana (verified 2026-07-27 UTC)
+## Verified from the database (2026-07-27 UTC)
 
-Her 35 uploaded contacts break down exactly like this:
+**Alma Hauz** (402) 968-4098 is currently attributed to Tina Santana — both the uploader (host) and the "invited by" (inviter) fields point at Tina. Marked as texted 2026-06-19.
 
-| Group | Families | People |
+**Tina's guests with no "texted" date — 6:**
+
+| Guest | Phone | RSVP |
 |---|---|---|
-| Confirmed in person | 7 | 12 |
-| Confirmed Zoom | 1 | 1 |
-| Declined | 2 | 2 |
-| **No RSVP submitted at all** | **25** | **25 (counted as 1 each until they reply)** |
-| Total | 35 | — |
+| Brittany Avery | 402-676-1298 | none yet |
+| Faviola and Israel Gamino family | 402-298-6695 | none yet |
+| Jackie Williams | 402-378-5424 | none yet |
+| Margaret Gibson | 402-917-4152 | Yes |
+| Whitney Hopkins | 402-598-6777 | Yes |
+| Sharon Allison | 402-709-7164 | Declined |
 
-So nothing is missing or hidden. The numbers she is seeing (7 families / 12 people confirmed, 2 declined, 1 Zoom) are correct, and **the "rest" are 25 people who have simply never submitted an RSVP**.
+So only 3 actually still need an invite text; the other 3 already replied even though the sent flag was never set.
 
-One more fact from the data: of those 35, **29 are marked as invitation sent and 6 have never been marked as sent** — meaning 6 of her contacts may not have been texted their invite link yet.
+## Proposed change
 
-## The real gap
-
-Her workspace does have an "Awaiting reply" group, but it's collapsed by default and doesn't call out how many people are still outstanding or which ones were never texted. That's why it reads as "where did they go?" rather than "25 haven't answered yet."
-
-## Proposed changes (committee workspace, Tina's view and every other committee member's)
-
-1. **Always-visible awaiting summary line** at the top of "My guests": `35 contacts • 8 replied • 25 awaiting reply • 2 declined`, so the math reconciles at a glance with no expanding needed.
-2. **Open the "Awaiting reply" group by default** when there are outstanding guests, instead of collapsed.
-3. **"Not texted yet" flag** — inside the awaiting list, badge the contacts with no sent date (6 for Tina) and sort them first, with the existing one-tap SMS invite link and "Mark as sent" button right there.
-4. **"Send reminder" SMS link** on every awaiting guest who was already texted, pre-filled with a short reminder plus their RSVP link (still sent from her own phone; the system never texts anyone).
-5. No counting logic changes — the people-first totals stay exactly as they are.
+1. Reassign **Alma Hauz** from Tina Santana to **Kari Gray** — set both her uploader and "invited by" to Kari's committee record. This moves her out of Tina's 35 (Tina drops to 34) and into Kari's list. No RSVP, phone, or contact data is touched or deleted.
+2. No other guest is changed.
 
 ## Technical notes
 
-- Source of truth is `getCommitteeWorkspaceGuests` in `src/lib/rsvp-totals.functions.ts` (already matches on both `host_id` and `inviter_id`, which is why Tina's 35 are complete).
-- UI work is in `src/components/committee-workspace.tsx`: the `openMyGroup` default state, the "My guests" header summary, and the awaiting-group row rendering (`invite_sent_at` is already returned per guest).
-- No migration required; no RSVP data will be changed.
+- One migration updating `public.invitations` row `c2da937c` : `host_id` → Kari's host id, `inviter_id` → Kari's `inviters.id`.
+- Change is captured by the existing audit trigger, so it stays in the audit log.
 
 ## Verification before I call it done
 
-Sign in as Tina (last name + phone) on a mobile viewport, open her committee workspace, and confirm the header reads 35 contacts with 25 awaiting, the awaiting group is expanded, 6 rows carry the "not texted yet" badge, and the totals still match a direct database read.
+Read back the row to confirm it points at Kari, then sign in as Tina on mobile at `/admin/subcommittee` and confirm her count reads 34 with Alma no longer listed, and confirm Alma appears under Kari's guests.
