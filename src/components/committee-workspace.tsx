@@ -78,7 +78,8 @@ export function CommitteeWorkspace() {
   const [committeeNames, setCommitteeNames] = useState<Set<string>>(new Set());
   const [committeePhones, setCommitteePhones] = useState<Set<string>>(new Set());
   const [myGuestsFilter, setMyGuestsFilter] = useState<"all" | "committee">("all");
-  const [openMyGroup, setOpenMyGroup] = useState<{ inPerson: boolean; zoom: boolean; declined: boolean; awaiting: boolean }>({ inPerson: false, zoom: false, declined: false, awaiting: false });
+  // "No RSVP yet" opens by default so outstanding contacts are never hidden.
+  const [openMyGroup, setOpenMyGroup] = useState<{ inPerson: boolean; zoom: boolean; declined: boolean; awaiting: boolean }>({ inPerson: false, zoom: false, declined: false, awaiting: true });
   const [openTotals, setOpenTotals] = useState(true);
   const [openMyGuestsCard, setOpenMyGuestsCard] = useState(true);
   const [openConfirmed, setOpenConfirmed] = useState(false);
@@ -573,7 +574,11 @@ export function CommitteeWorkspace() {
     .sort(byName);
   const myAwaiting = myGuests
     .filter((g) => !g.rsvp_status || g.rsvp_status === "waitlist" || g.rsvp_status === "maybe")
-    .sort(byPendingSort);
+    .sort(byPendingSort)
+    // Contacts that were never texted come first — they're the ones that need action.
+    .sort((a, b) => Number(!!a.invite_sent_at) - Number(!!b.invite_sent_at));
+  const myAwaitingNotTexted = myAwaiting.filter((g) => !g.invite_sent_at).length;
+  const myRepliedContacts = myGuests.filter((g) => g.rsvp_status === "yes" || g.rsvp_status === "no").length;
   const myDeclined = myGuests.filter((g) => g.rsvp_status === "no").sort(byName);
 
 
