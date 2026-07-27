@@ -21,6 +21,9 @@ export const WHATS_NEW: Record<string, { addedAt: string; expiresInDays?: number
 
   "dashboard:my-volunteer-chats": { addedAt: "2026-06-30" },
   "admin:my-volunteer-chats": { addedAt: "2026-06-30" },
+
+  "bell:new-rsvps": { addedAt: "2026-07-27" },
+
 };
 
 
