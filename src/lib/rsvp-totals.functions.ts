@@ -168,6 +168,7 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
       guest_name: string;
       guest_phone: string | null;
       host_id: string | null;
+      inviter_id: string | null;
       rsvp_token: string | null;
     }>;
 
@@ -181,6 +182,12 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
         responded_at: rsvp.responded_at ?? null,
       });
     }
+
+    const inviterNames = new Map<string, string>();
+    inviterRows.forEach((r) => {
+      const name = (r.name ?? "").trim();
+      if (r.id && name) inviterNames.set(r.id, name);
+    });
 
     const hostIds = Array.from(new Set(invitationRows.map((r) => r.host_id).filter((id): id is string => !!id)));
     const hostNames = new Map<string, string>();
@@ -198,6 +205,7 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
 
     return {
       myHostIds: Array.from(mineHostIds),
+      myInviterIds: Array.from(mineInviterIds),
       guests: invitationRows.map((row) => {
         const rsvp = rsvpByInvitation.get(row.id);
         return {
@@ -210,10 +218,14 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
           party_size: rsvp?.party_size ?? 1,
           attendance_mode: rsvp?.attendance_mode ?? null,
           responded_at: rsvp?.responded_at ?? null,
-          invited_by: row.host_id ? hostNames.get(row.host_id) ?? null : null,
+          invited_by:
+            (row.inviter_id ? inviterNames.get(row.inviter_id) ?? null : null) ??
+            (row.host_id ? hostNames.get(row.host_id) ?? null : null),
           host_id: row.host_id ?? "",
+          inviter_id: row.inviter_id ?? null,
           rsvp_token: row.rsvp_token ?? null,
         };
+
       }),
     };
   });
