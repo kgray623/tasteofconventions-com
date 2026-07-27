@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION private.user_owns_invitation(uuid, uuid) TO authenticated;
