@@ -138,6 +138,7 @@ export function CommitteeWorkspace() {
 
       if (!alive()) return;
       setMyHostIds(result.myHostIds);
+      setMyInviterIds(result.myInviterIds ?? []);
       setGuests(result.guests);
       setTotalsRefreshKey((key) => key + 1);
     } catch (error) {
@@ -146,6 +147,7 @@ export function CommitteeWorkspace() {
         const fallback = await loadGuestsFromBrowser();
         if (!alive()) return;
         setMyHostIds(fallback.myHostIds);
+        setMyInviterIds(fallback.myInviterIds ?? []);
         setGuests(fallback.guests);
         setTotalsRefreshKey((key) => key + 1);
       } catch (fallbackError) {
