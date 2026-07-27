@@ -116,13 +116,13 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
     if (eventsError) throw friendlyDbError("the event", eventsError);
 
     const eventId = events?.[0]?.id;
-    if (!eventId) return { guests: [], myHostIds: [userId] };
+    if (!eventId) return { guests: [], myHostIds: [userId], myInviterIds: [] };
 
     const [invitersRes, invitationsRes, rsvpsRes] = await Promise.all([
-      supabase.from("inviters").select("host_id,phone,name"),
+      supabase.from("inviters").select("id,host_id,phone,name"),
       supabase
         .from("invitations")
-        .select("id,guest_name,guest_phone,host_id,created_at,invite_sent_at,rsvp_token")
+        .select("id,guest_name,guest_phone,host_id,inviter_id,created_at,invite_sent_at,rsvp_token")
         .eq("event_id", eventId)
         .order("created_at", { ascending: false }),
       supabase.from("rsvps").select("invitation_id,status,party_size,attendance_mode,responded_at"),
@@ -143,13 +143,22 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
       .maybeSingle();
     const myName = normName(prof?.display_name);
     const mineHostIds = new Set<string>([userId]);
+    // Guests can be uploaded by an admin on a committee member's behalf, in
+    // which case host_id is the admin and only inviter_id points at the real
+    // committee member. Track both so nobody loses guests they invited.
+    const mineInviterIds = new Set<string>();
     inviterRows.forEach((r) => {
-      if (!r.host_id) return;
-      if (r.host_id === userId) mineHostIds.add(r.host_id);
       const rowTail = phoneTail(r.phone);
-      if (myPhoneTail && rowTail && rowTail === myPhoneTail) mineHostIds.add(r.host_id);
-      if (myName && normName(r.name) === myName) mineHostIds.add(r.host_id);
+      const isMine =
+        (r.host_id && r.host_id === userId) ||
+        (!!myPhoneTail && !!rowTail && rowTail === myPhoneTail) ||
+        (!!myName && normName(r.name) === myName);
+      if (!isMine) return;
+      if (r.host_id) mineHostIds.add(r.host_id);
+      if (r.id) mineInviterIds.add(r.id);
     });
+
+
 
 
     const invitationRows = (invitationsRes.data ?? []) as Array<{
