@@ -219,8 +219,9 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
           attendance_mode: rsvp?.attendance_mode ?? null,
           responded_at: rsvp?.responded_at ?? null,
           invited_by:
-            (row.inviter_id ? inviterNames.get(row.inviter_id) ?? null : null) ??
-            (row.host_id ? hostNames.get(row.host_id) ?? null : null),
+            (row.inviter_id ? inviterNames.get(row.inviter_id) : undefined) ??
+            (row.host_id ? hostNames.get(row.host_id) : undefined) ??
+            null,
           host_id: row.host_id ?? "",
           inviter_id: row.inviter_id ?? null,
           rsvp_token: row.rsvp_token ?? null,
