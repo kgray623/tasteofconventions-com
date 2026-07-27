@@ -603,7 +603,12 @@ export function CommitteeWorkspace() {
     const firstName = (guest.guest_name || "Friend").split(/\s+/)[0];
     const senderFirst = senderName.split(/\s+/)[0];
     const link = `${siteOrigin}/rsvp/${rsvpLinkToken(guest.rsvp_token)}`;
-    const body = `Hi ${firstName}, it's ${senderFirst}. You're invited to A Taste of Special Conventions on Sunday, August 30, 2026. Please RSVP here: ${link}`;
+    const alreadyTexted = Boolean(guest.invite_sent_at);
+    const stillWaiting = !guest.rsvp_status || guest.rsvp_status === "waitlist" || guest.rsvp_status === "maybe";
+    const body =
+      alreadyTexted && stillWaiting
+        ? `Hi ${firstName}, it's ${senderFirst} — just a friendly reminder to RSVP for A Taste of Special Conventions on Sunday, August 30, 2026: ${link}`
+        : `Hi ${firstName}, it's ${senderFirst}. You're invited to A Taste of Special Conventions on Sunday, August 30, 2026. Please RSVP here: ${link}`;
     return { phone: guest.guest_phone, body };
   };
 
@@ -834,6 +839,14 @@ export function CommitteeWorkspace() {
             Committee ({loadingGuests ? "…" : `${committeeIds.size} contacts`})
           </Button>
         </div>
+        {!loadingGuests && myGuests.length > 0 && (
+          <p className="px-4 pt-3 text-xs font-medium text-ink">
+            {myGuests.length} contacts • {myRepliedContacts} replied • {myAwaiting.length} awaiting reply • {myDeclined.length} declined
+            {myAwaitingNotTexted > 0 && (
+              <span className="text-brand-red"> • {myAwaitingNotTexted} not texted yet</span>
+            )}
+          </p>
+        )}
         <p className="px-4 pt-3 text-xs text-muted-foreground">
             Contacts you've uploaded. In-person and Zoom RSVP totals are tracked separately above.
         </p>
