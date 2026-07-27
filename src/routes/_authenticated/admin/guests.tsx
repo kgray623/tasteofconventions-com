@@ -11,7 +11,7 @@ import { Download, ExternalLink, Search, Users } from "lucide-react";
 import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
 
 type StatusFilter = "all" | "confirmed" | "declined" | "maybe" | "waitlist" | "pending";
-type SortMode = "alpha" | "newest" | "oldest";
+type SortMode = "alpha" | "newest" | "oldest" | "replied";
 
 export const Route = createFileRoute("/_authenticated/admin/guests")({
   head: () => ({
