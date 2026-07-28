@@ -1,19 +1,11 @@
-## Plan
+## Goal
+Add Tamara Madlock (531-721-5586) — the only Tamara on the guest list — as a committee member, matching how existing committee members are set up.
 
-1. **Update Jody Wade’s RSVP**
-   - Change Jody Wade’s RSVP from **Yes / In person** to **Yes / Virtual (Zoom)**.
-   - Preserve the existing guest record and RSVP history fields that should not change, including name, phone, invitation link, and party size unless you tell me otherwise.
+## Changes (data only, no code changes)
+1. Flag her guest record as committee: set `is_committee = true` on her invitation.
+2. Create her committee (inviter) record: name "Tamara Madlock", phone 531-721-5586, active, so she can be picked in "Invited by" and can own guests.
+3. Add a pending team invite with the `team` role for her phone, so when she logs in (last name + phone number) she is granted the team role and sees the Committee workspace.
 
-2. **Verify the database read-back**
-   - Read Jody Wade’s row after the update and confirm it shows:
-     - `status = yes`
-     - `attendance_mode = zoom`
-     - the same invitation/guest record
-
-3. **Verify the admin/committee visibility path**
-   - Check that the corrected RSVP can appear in the guest list / newest RSVP views with the correct virtual status.
-   - If any notification or newest-RSVP ordering depends on this changed timestamp, update only what is necessary so the correction is visible when requested.
-
-## Confirmed current state
-
-Jody Wade currently exists as one invitation record and one RSVP record, and the RSVP is currently marked **yes / in_person**. The correction is to make that RSVP virtual/Zoom.
+## Verification
+- Read back from the database that her invitation is flagged committee, the inviter row exists and is active, and the team invite is present.
+- Confirm her name appears in the committee roster used by the "Invited by" picker.
