@@ -1387,17 +1387,18 @@ function UploadPage() {
     }
     setQuickBusy(true);
     try {
-      const { error } = await supabase.from("invitations").insert({
-        event_id: eventId,
-        host_id: uploadOwnerHostId,
-        guest_name: name,
-        guest_phone: quick.phone.trim() || null,
-        notes: null,
-        is_committee: importAsCommittee,
-        inviter_id: uploadInviterId || null,
+      const { results } = await addGuestsFn({
+        data: {
+          eventId,
+          inviterId: uploadInviterId || null,
+          isCommittee: importAsCommittee,
+          guests: [{ name, phone: quick.phone.trim() || null, notes: null }],
+        },
       });
+      const res = results[0];
+      if (!res?.ok) throw Object.assign(new Error(res?.error?.message ?? "Add failed"), { code: res?.error?.code });
 
-      if (error) throw error;
+
       setQuickAdded((n) => n + 1);
       setQuick({ name: "", phone: "" });
       saveUploadDraft(user.id, pasted, { name: "", phone: "" }, rows);
