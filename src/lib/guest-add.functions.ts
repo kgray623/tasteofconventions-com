@@ -9,8 +9,8 @@ const guestSchema = z.object({
 });
 
 const inputSchema = z.object({
-  eventId: z.string().uuid(),
-  inviterId: z.string().uuid().nullable().optional(),
+  eventId: z.string().min(1),
+  inviterId: z.string().min(1).nullable().optional(),
   isCommittee: z.boolean().optional(),
   guests: z.array(guestSchema).min(1).max(500),
 });
