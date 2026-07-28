@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.link_inviter_host_from_phone() FROM PUBLIC, anon, authenticated;

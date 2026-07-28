@@ -37,6 +37,7 @@ import {
 import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 import { useServerFn } from "@tanstack/react-start";
 import { extractContactsFromImages } from "@/lib/extract-contacts.functions";
+import { addGuests } from "@/lib/guest-add.functions";
 import { removeTeamInvitesForPhone } from "@/lib/team.functions";
 import { getRsvpEvents, getRsvpTotals } from "@/lib/rsvp-totals.functions";
 import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
@@ -312,6 +313,7 @@ function UploadPage() {
   const removeTeamInvitesFn = useServerFn(removeTeamInvitesForPhone);
   const fetchRsvpTotals = useServerFn(getRsvpTotals);
   const fetchRsvpEvents = useServerFn(getRsvpEvents);
+  const addGuestsFn = useServerFn(addGuests);
   const [inviterId, setInviterId] = useState<string | null>(null);
   const [requestedQuota, setRequestedQuota] = useState<string>("");
   const [quotaRequestedAt, setQuotaRequestedAt] = useState<string | null>(null);
@@ -1090,15 +1092,17 @@ function UploadPage() {
           continue;
         }
         try {
-          const { error } = await supabase.from("invitations").insert({
-            event_id: eventId,
-            host_id: uploadOwnerHostId,
-            guest_name: r.guest_name,
-            guest_phone: r.guest_phone || null,
-            notes: r.notes || null,
-            is_committee: importAsCommittee,
-            inviter_id: uploadInviterId || null,
+          const { results } = await addGuestsFn({
+            data: {
+              eventId,
+              inviterId: uploadInviterId || null,
+              isCommittee: importAsCommittee,
+              guests: [{ name: r.guest_name, phone: r.guest_phone || null, notes: r.notes || null }],
+            },
           });
+          const error = results[0]?.ok ? null : results[0]?.error ?? { message: "Add failed", code: "" };
+
+
 
           if (error) {
             const dup = parseDuplicateGuestError(error);
@@ -1218,32 +1222,27 @@ function UploadPage() {
           failed++;
           continue;
         }
-        const { data, error } = await supabase
-          .from("invitations")
-          .insert({
-            event_id: eventId,
-            host_id: uploadOwnerHostId,
-            guest_name: name,
-            guest_phone: (c.phone || "").trim() || null,
-            notes: null,
-            is_committee: importAsCommittee,
-            inviter_id: uploadInviterId || null,
-          })
-
-          .select("id,guest_name")
-          .single();
-        if (error || !data) {
-          const dup = parseDuplicateGuestError(error);
+        const { results } = await addGuestsFn({
+          data: {
+            eventId,
+            inviterId: uploadInviterId || null,
+            isCommittee: importAsCommittee,
+            guests: [{ name, phone: (c.phone || "").trim() || null, notes: null }],
+          },
+        });
+        const res = results[0];
+        if (!res?.ok) {
+          const dup = parseDuplicateGuestError(res?.error);
           if (dup) {
             dupBlocked.push(`${name} (matches ${dup.existingName})`);
           } else {
-            console.error("[upload] screenshot insert failed", error);
+            console.error("[upload] screenshot insert failed", res?.error);
             failed++;
           }
           continue;
         }
-        insertedIds.push(data.id);
-        insertedNames.push(data.guest_name);
+        insertedIds.push(res.id!);
+        insertedNames.push(res.name);
       }
       if (dupBlocked.length) {
         toast.warning(
@@ -1388,17 +1387,18 @@ function UploadPage() {
     }
     setQuickBusy(true);
     try {
-      const { error } = await supabase.from("invitations").insert({
-        event_id: eventId,
-        host_id: uploadOwnerHostId,
-        guest_name: name,
-        guest_phone: quick.phone.trim() || null,
-        notes: null,
-        is_committee: importAsCommittee,
-        inviter_id: uploadInviterId || null,
+      const { results } = await addGuestsFn({
+        data: {
+          eventId,
+          inviterId: uploadInviterId || null,
+          isCommittee: importAsCommittee,
+          guests: [{ name, phone: quick.phone.trim() || null, notes: null }],
+        },
       });
+      const res = results[0];
+      if (!res?.ok) throw Object.assign(new Error(res?.error?.message ?? "Add failed"), { code: res?.error?.code });
 
-      if (error) throw error;
+
       setQuickAdded((n) => n + 1);
       setQuick({ name: "", phone: "" });
       saveUploadDraft(user.id, pasted, { name: "", phone: "" }, rows);
