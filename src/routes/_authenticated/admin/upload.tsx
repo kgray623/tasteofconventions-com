@@ -1222,32 +1222,27 @@ function UploadPage() {
           failed++;
           continue;
         }
-        const { data, error } = await supabase
-          .from("invitations")
-          .insert({
-            event_id: eventId,
-            host_id: uploadOwnerHostId,
-            guest_name: name,
-            guest_phone: (c.phone || "").trim() || null,
-            notes: null,
-            is_committee: importAsCommittee,
-            inviter_id: uploadInviterId || null,
-          })
-
-          .select("id,guest_name")
-          .single();
-        if (error || !data) {
-          const dup = parseDuplicateGuestError(error);
+        const { results } = await addGuestsFn({
+          data: {
+            eventId,
+            inviterId: uploadInviterId || null,
+            isCommittee: importAsCommittee,
+            guests: [{ name, phone: (c.phone || "").trim() || null, notes: null }],
+          },
+        });
+        const res = results[0];
+        if (!res?.ok) {
+          const dup = parseDuplicateGuestError(res?.error);
           if (dup) {
             dupBlocked.push(`${name} (matches ${dup.existingName})`);
           } else {
-            console.error("[upload] screenshot insert failed", error);
+            console.error("[upload] screenshot insert failed", res?.error);
             failed++;
           }
           continue;
         }
-        insertedIds.push(data.id);
-        insertedNames.push(data.guest_name);
+        insertedIds.push(res.id!);
+        insertedNames.push(res.name);
       }
       if (dupBlocked.length) {
         toast.warning(
