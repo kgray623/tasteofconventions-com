@@ -313,6 +313,7 @@ function UploadPage() {
   const removeTeamInvitesFn = useServerFn(removeTeamInvitesForPhone);
   const fetchRsvpTotals = useServerFn(getRsvpTotals);
   const fetchRsvpEvents = useServerFn(getRsvpEvents);
+  const addGuestsFn = useServerFn(addGuests);
   const [inviterId, setInviterId] = useState<string | null>(null);
   const [requestedQuota, setRequestedQuota] = useState<string>("");
   const [quotaRequestedAt, setQuotaRequestedAt] = useState<string | null>(null);
