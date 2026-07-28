@@ -1092,15 +1092,17 @@ function UploadPage() {
           continue;
         }
         try {
-          const { error } = await supabase.from("invitations").insert({
-            event_id: eventId,
-            host_id: uploadOwnerHostId,
-            guest_name: r.guest_name,
-            guest_phone: r.guest_phone || null,
-            notes: r.notes || null,
-            is_committee: importAsCommittee,
-            inviter_id: uploadInviterId || null,
+          const { results } = await addGuestsFn({
+            data: {
+              eventId,
+              inviterId: uploadInviterId || null,
+              isCommittee: importAsCommittee,
+              guests: [{ name: r.guest_name, phone: r.guest_phone || null, notes: r.notes || null }],
+            },
           });
+          const error = results[0]?.ok ? null : results[0]?.error ?? { message: "Add failed", code: "" };
+
+
 
           if (error) {
             const dup = parseDuplicateGuestError(error);
