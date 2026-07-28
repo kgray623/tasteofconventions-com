@@ -37,6 +37,7 @@ import {
 import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 import { useServerFn } from "@tanstack/react-start";
 import { extractContactsFromImages } from "@/lib/extract-contacts.functions";
+import { addGuests } from "@/lib/guest-add.functions";
 import { removeTeamInvitesForPhone } from "@/lib/team.functions";
 import { getRsvpEvents, getRsvpTotals } from "@/lib/rsvp-totals.functions";
 import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
