@@ -165,7 +165,10 @@ function GuestsPage() {
       }
     })();
     return () => { alive = false; };
-  }, [fetchRows]);
+    // Load once on page open; depending on the wrapped server function can
+    // restart the request repeatedly before the full roster finishes loading.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const counts = useMemo(() => {
     const c: Record<StatusFilter, number> = { all: 0, confirmed: 0, declined: 0, maybe: 0, waitlist: 0, pending: 0 };
