@@ -260,7 +260,8 @@ export function CommitteeWorkspace() {
           party_size: rsvp?.party_size ?? 1,
           attendance_mode: rsvp?.attendance_mode ?? null,
           responded_at: rsvp?.responded_at ?? null,
-          invited_by:
+          invited_by: null,
+          linked_inviter_name:
             (row.inviter_id ? inviterNames.get(row.inviter_id) : undefined) ??
             hostNames.get(row.host_id) ??
             null,
@@ -595,7 +596,7 @@ export function CommitteeWorkspace() {
   const siteOrigin =
     typeof window !== "undefined" ? window.location.origin : "https://tasteofconventions.com";
   const senderName =
-    (myGuestsUnsorted.find((g) => g.host_id === user?.id)?.invited_by ?? "").trim() ||
+    (myGuestsUnsorted.find((g) => g.host_id === user?.id)?.linked_inviter_name ?? "").trim() ||
     (((user?.user_metadata as { full_name?: string; name?: string; display_name?: string } | undefined)?.full_name ??
       (user?.user_metadata as { name?: string } | undefined)?.name ??
       (user?.user_metadata as { display_name?: string } | undefined)?.display_name ??
