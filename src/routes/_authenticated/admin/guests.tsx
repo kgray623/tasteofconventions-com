@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Download, ExternalLink, Search, Users } from "lucide-react";
 import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
 
+const GUEST_LOAD_TIMEOUT_MS = 20_000;
+
 type StatusFilter = "all" | "confirmed" | "declined" | "maybe" | "waitlist" | "pending";
 type SortMode = "alpha" | "newest" | "oldest" | "replied";
 
@@ -151,7 +153,12 @@ function GuestsPage() {
     let alive = true;
     (async () => {
       try {
-        const res = (await fetchRows()) as { rows: Row[] };
+        const res = (await Promise.race([
+          fetchRows(),
+          new Promise<never>((_, reject) => {
+            window.setTimeout(() => reject(new Error("Guest list took too long to load. Please refresh.")), GUEST_LOAD_TIMEOUT_MS);
+          }),
+        ])) as { rows: Row[] };
         if (alive) setRows(res.rows);
       } catch (e) {
         if (alive) setError(e instanceof Error ? e.message : "Failed to load guests");
