@@ -40,11 +40,13 @@ export const deleteProtectedRow = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!adminRole) throw new Error("Only administrators can delete records.");
 
-    const { data: n, error } = await context.supabase.rpc("admin_delete_rows" as any, {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: n, error } = await supabaseAdmin.rpc("admin_delete_rows" as any, {
       _table: data.table,
       _column: data.column,
       _value: data.value,
       _reason: data.reason,
+      _actor_user_id: context.userId,
     });
     if (error) {
       console.error("[protected-delete] rpc error:", error.message);

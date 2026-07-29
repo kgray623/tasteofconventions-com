@@ -203,7 +203,7 @@ export const getReconciliationRows = createServerFn({ method: "GET" })
         .order("created_at", { ascending: true }),
       supabaseAdmin
         .from("rsvps")
-        .select("invitation_id,status,party_size,attendance_mode,ordering_food,responded_at"),
+        .select("invitation_id,status,party_size,attendance_mode,ordering_food,responded_at,invited_by"),
       supabaseAdmin
         .from("cuisine_preorders")
         .select("invitation_id,selections,updated_at"),
@@ -250,7 +250,9 @@ export const getReconciliationRows = createServerFn({ method: "GET" })
         preorder_selections: selectionText,
         preorder_meals: meals,
         inviter_id: (inv.inviter_id as string | null) ?? "",
-        inviter_name: inv.inviter_id ? (inviterNameById.get(inv.inviter_id) ?? "") : "",
+        inviter_name: (r?.invited_by as string | null | undefined)?.trim() || "",
+        invited_by_rsvp: (r?.invited_by as string | null | undefined)?.trim() || "",
+        linked_inviter_name: inv.inviter_id ? (inviterNameById.get(inv.inviter_id) ?? "") : "",
         guest_phone_normalized: inv.guest_phone_normalized ?? "",
       };
     });

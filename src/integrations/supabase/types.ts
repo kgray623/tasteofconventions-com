@@ -1049,15 +1049,26 @@ export type Database = {
       }
     }
     Functions: {
-      admin_delete_rows: {
-        Args: {
-          _column: string
-          _reason: string
-          _table: string
-          _value: string
-        }
-        Returns: number
-      }
+      admin_delete_rows:
+        | {
+            Args: {
+              _column: string
+              _reason: string
+              _table: string
+              _value: string
+            }
+            Returns: number
+          }
+        | {
+            Args: {
+              _actor_user_id?: string
+              _column: string
+              _reason: string
+              _table: string
+              _value: string
+            }
+            Returns: number
+          }
       claim_admin: { Args: never; Returns: boolean }
       delete_email: {
         Args: { message_id: number; queue_name: string }
@@ -1105,6 +1116,7 @@ export type Database = {
       }
       normalize_name_for_match: { Args: { _name: string }; Returns: string }
       normalize_preorder_selection: { Args: { _item: Json }; Returns: Json }
+      normalize_referral_name: { Args: { _name: string }; Returns: string }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
@@ -1112,6 +1124,10 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      resolve_referral_inviter_id: {
+        Args: { _raw_name: string }
+        Returns: string
       }
       search_invitations_fuzzy: {
         Args: { _event_id: string; _query: string; _threshold?: number }

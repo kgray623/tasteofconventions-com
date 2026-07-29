@@ -36,11 +36,16 @@ export const searchGuests = createServerFn({ method: "POST" })
     const like = `%${q.replace(/[%_]/g, "")}%`;
     const digits = digitsOnly(q);
 
-    // Match inviters by name -> get host_ids
+    // Match inviters by name -> get both roster ids and host ids. Admins often
+    // upload on a committee member's behalf, so inviter_id is the authority for
+    // "Brought by" whenever it is present.
     const { data: inviterMatches } = await supabase
       .from("inviters")
-      .select("host_id,name")
+      .select("id,host_id,name")
       .ilike("name", like);
+    const inviterIds = (inviterMatches ?? [])
+      .map((r) => r.id)
+      .filter((v): v is string => !!v);
     const inviterHostIds = (inviterMatches ?? [])
       .map((r) => r.host_id)
       .filter((v): v is string => !!v);
@@ -56,10 +61,13 @@ export const searchGuests = createServerFn({ method: "POST" })
     if (inviterHostIds.length > 0) {
       orParts.push(`host_id.in.(${inviterHostIds.join(",")})`);
     }
+    if (inviterIds.length > 0) {
+      orParts.push(`inviter_id.in.(${inviterIds.join(",")})`);
+    }
 
     const { data: invitations, error: invErr } = await supabase
       .from("invitations")
-      .select("id,guest_name,guest_phone,host_id")
+      .select("id,guest_name,guest_phone,host_id,inviter_id")
       .eq("event_id", eventId)
       .or(orParts.join(","))
       .order("guest_name")
@@ -71,8 +79,9 @@ export const searchGuests = createServerFn({ method: "POST" })
 
     const invIds = rows.map((r) => r.id);
     const hostIds = Array.from(new Set(rows.map((r) => r.host_id).filter(Boolean))) as string[];
+    const rowInviterIds = Array.from(new Set(rows.map((r) => r.inviter_id).filter(Boolean))) as string[];
 
-    const [rsvpsRes, allInvitersRes] = await Promise.all([
+    const [rsvpsRes, hostInvitersRes, rowInvitersRes] = await Promise.all([
       supabase
         .from("rsvps")
         .select("invitation_id,status,party_size,attendance_mode,responded_at")
@@ -80,6 +89,9 @@ export const searchGuests = createServerFn({ method: "POST" })
       hostIds.length > 0
         ? supabase.from("inviters").select("host_id,name").in("host_id", hostIds)
         : Promise.resolve({ data: [] as { host_id: string; name: string | null }[], error: null }),
+      rowInviterIds.length > 0
+        ? supabase.from("inviters").select("id,name").in("id", rowInviterIds)
+        : Promise.resolve({ data: [] as { id: string; name: string | null }[], error: null }),
     ]);
 
     const rsvpByInv = new Map<string, { status: string | null; party_size: number | null; attendance_mode: string | null; responded_at: string | null }>();
@@ -87,8 +99,12 @@ export const searchGuests = createServerFn({ method: "POST" })
       rsvpByInv.set(r.invitation_id as string, r as never);
     }
     const inviterByHost = new Map<string, string | null>();
-    for (const r of (allInvitersRes.data ?? []) as { host_id: string; name: string | null }[]) {
+    for (const r of (hostInvitersRes.data ?? []) as { host_id: string; name: string | null }[]) {
       inviterByHost.set(r.host_id, r.name);
+    }
+    const inviterById = new Map<string, string | null>();
+    for (const r of (rowInvitersRes.data ?? []) as { id: string; name: string | null }[]) {
+      inviterById.set(r.id, r.name);
     }
 
     return rows.map((row) => {
@@ -100,7 +116,10 @@ export const searchGuests = createServerFn({ method: "POST" })
         status: rsvp?.status ?? "not_confirmed",
         attendanceMode: rsvp?.attendance_mode ?? null,
         partySize: rsvp?.party_size ?? 1,
-        inviterName: row.host_id ? inviterByHost.get(row.host_id) ?? null : null,
+        inviterName:
+          (row.inviter_id ? inviterById.get(row.inviter_id) : undefined) ??
+          (row.host_id ? inviterByHost.get(row.host_id) : undefined) ??
+          null,
         respondedAt: rsvp?.responded_at ?? null,
       };
     });

@@ -63,6 +63,7 @@ export type CommitteeWorkspaceGuest = {
   attendance_mode: string | null;
   responded_at: string | null;
   invited_by: string | null;
+  linked_inviter_name: string | null;
   host_id: string;
   inviter_id: string | null;
   rsvp_token: string | null;
@@ -125,7 +126,7 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
         .select("id,guest_name,guest_phone,host_id,inviter_id,created_at,invite_sent_at,rsvp_token")
         .eq("event_id", eventId)
         .order("created_at", { ascending: false }),
-      supabase.from("rsvps").select("invitation_id,status,party_size,attendance_mode,responded_at"),
+      supabase.from("rsvps").select("invitation_id,status,party_size,attendance_mode,responded_at,invited_by"),
     ]);
 
     if (invitersRes.error) throw friendlyDbError("the committee list", invitersRes.error);
@@ -172,7 +173,7 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
       rsvp_token: string | null;
     }>;
 
-    const rsvpByInvitation = new Map<string, { status: string | null; party_size: number | null; attendance_mode: string | null; responded_at: string | null }>();
+    const rsvpByInvitation = new Map<string, { status: string | null; party_size: number | null; attendance_mode: string | null; responded_at: string | null; invited_by: string | null }>();
     for (const rsvp of rsvpsRes.data ?? []) {
       if (!rsvp.invitation_id) continue;
       rsvpByInvitation.set(rsvp.invitation_id, {
@@ -180,6 +181,7 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
         party_size: rsvp.party_size ?? 1,
         attendance_mode: rsvp.attendance_mode ?? null,
         responded_at: rsvp.responded_at ?? null,
+        invited_by: rsvp.invited_by ?? null,
       });
     }
 
@@ -218,7 +220,8 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
           party_size: rsvp?.party_size ?? 1,
           attendance_mode: rsvp?.attendance_mode ?? null,
           responded_at: rsvp?.responded_at ?? null,
-          invited_by:
+          invited_by: (rsvp?.invited_by ?? "").trim() || null,
+          linked_inviter_name:
             (row.inviter_id ? inviterNames.get(row.inviter_id) : undefined) ??
             (row.host_id ? hostNames.get(row.host_id) : undefined) ??
             null,
