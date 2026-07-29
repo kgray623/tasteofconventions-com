@@ -59,6 +59,8 @@ type Row = {
   preorder_meals: number;
   inviter_id?: string;
   inviter_name?: string;
+  invited_by_rsvp?: string;
+  linked_inviter_name?: string;
 };
 
 
@@ -221,7 +223,7 @@ function GuestsPage() {
       }
       if (q) {
         const nameNorm = r.name.toLowerCase().replace(/[^a-z]/g, "");
-        const hay = `${r.name} ${r.phone} ${r.inviter_name ?? ""}`.toLowerCase();
+        const hay = `${r.name} ${r.phone} ${r.inviter_name ?? ""} ${r.linked_inviter_name ?? ""}`.toLowerCase();
         if (hay.includes(q)) return true;
         if (qNorm && (nameNorm.includes(qNameNorm) || r.phone.replace(/\D/g, "").includes(qNorm))) return true;
         // Fuzzy spelling match (e.g. "Daisy" finds "Deisy")
@@ -252,7 +254,7 @@ function GuestsPage() {
       if (!r.inviter_id) continue;
       const cur = map.get(r.inviter_id);
       if (cur) cur.count++;
-      else map.set(r.inviter_id, { id: r.inviter_id, name: r.inviter_name || "(unnamed)", count: 1 });
+      else map.set(r.inviter_id, { id: r.inviter_id, name: r.linked_inviter_name || r.inviter_name || "(unnamed)", count: 1 });
     }
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [rows]);
@@ -288,13 +290,14 @@ function GuestsPage() {
 
 
   const exportCsv = () => {
-    const headers = ["name", "phone", "audience", "status", "party_size", "attendance_mode", "responded_at", "brought_by"];
+    const headers = ["name", "phone", "audience", "status", "party_size", "attendance_mode", "responded_at", "invited_by_rsvp", "linked_under"];
     const lines = [headers.join(",")];
     for (const r of filtered) {
       lines.push([
         r.name, r.phone, r.audience, r.rsvp_status,
         r.party_size, r.attendance_mode, r.responded_at,
         r.inviter_name ?? "",
+        r.linked_inviter_name ?? "",
       ].map(escapeCsv).join(","));
     }
     const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
@@ -477,11 +480,15 @@ function GuestsPage() {
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {r.phone || "no phone"}
                   </p>
-                  {r.inviter_name && (
+                  {r.inviter_name ? (
                     <p className="text-[11px] text-muted-foreground/80 mt-0.5">
                       Brought by <span className="text-ink/80 font-medium">{r.inviter_name}</span>
                     </p>
-                  )}
+                  ) : r.linked_inviter_name ? (
+                    <p className="text-[11px] text-muted-foreground/80 mt-0.5">
+                      Referral not recorded · linked under <span className="text-ink/80 font-medium">{r.linked_inviter_name}</span>
+                    </p>
+                  ) : null}
 
                   {(s === "confirmed" || s === "maybe" || s === "waitlist" || (s === "declined" && r.party_size)) && (
                     <p className="text-xs text-muted-foreground mt-0.5">

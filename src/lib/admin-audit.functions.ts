@@ -250,7 +250,7 @@ export const getReconciliationRows = createServerFn({ method: "GET" })
         preorder_selections: selectionText,
         preorder_meals: meals,
         inviter_id: (inv.inviter_id as string | null) ?? "",
-        inviter_name: (r?.invited_by as string | null | undefined)?.trim() || (inv.inviter_id ? (inviterNameById.get(inv.inviter_id) ?? "") : ""),
+        inviter_name: (r?.invited_by as string | null | undefined)?.trim() || "",
         invited_by_rsvp: (r?.invited_by as string | null | undefined)?.trim() || "",
         linked_inviter_name: inv.inviter_id ? (inviterNameById.get(inv.inviter_id) ?? "") : "",
         guest_phone_normalized: inv.guest_phone_normalized ?? "",
