@@ -1,36 +1,39 @@
-## What's happening
+## Plan: repair “Brought by” referral accounting
 
-Mysha Woods can't add any guest — every attempt shows "Couldn't add that guest / Something went wrong."
+**Verified current state**
+- The admin guest list is currently reading `invitations.inviter_id` for “Brought by.”
+- The RSVP form stores the typed/referral-picked answer in `rsvps.invited_by`.
+- The database has a trigger meant to copy `rsvps.invited_by` to `invitations.inviter_id`, but it only handles exact committee roster names.
+- Current data shows mismatches: 80 RSVPs have an `invited_by` value, 19 of the ones with exact committee matches are linked to a different “Brought by” person, and 3 confirmed rows currently have no `inviter_id`.
+- Examples from the screenshots are real data mismatches: Deshon Bradley, Cynthia Futo, Leticia Tchato, Mike and Tracey Curtis, Sara Reikofski, Lenora Clark, Cheri Kimball, and others have an RSVP `invited_by` that does not match the displayed “Brought by.”
 
-Confirmed root cause (verified in the database, not a guess):
+## What I will change
 
-- The Add guest / paste / spreadsheet flows on the committee upload screen insert directly into `invitations` from the browser.
-- The insert rule on `invitations` only allows a row when `host_id` equals the signed-in user's own ID (or the user is an admin).
-- The screen sets `host_id` from the selected committee roster row, not from the signed-in user. Mysha's roster row is owned by Kari's account (`host_id` = Kari), while Mysha signs in as her own account.
-- Result: the row is rejected every single time. Same failure applies to any committee member whose roster row is owned by someone else — this is not specific to Mysha or to that one brother.
+1. **Database forward-fix**
+   - Replace the existing RSVP referral trigger with a safer resolver that uses the actual `rsvps.invited_by` value.
+   - Resolve common name variations already present in the data, including:
+     - `Myisha Woods` → `Mysha Woods`
+     - `Jamie Elker` → `Jamy Elker`
+     - name-prefix/suffix matching for names like `Shelley Monaghan` matching the existing `Shelley & Pat Monaghan` roster row when unambiguous.
+   - If a guest invited another guest, resolve through that guest’s existing committee chain so the new guest still appears under the correct committee-side list.
+   - If the typed name cannot be resolved safely, clear the stale/wrong `inviter_id` instead of leaving an old wrong “Brought by.”
 
-Mysha does have the correct `team` + `host` roles, so roles are not the problem.
+2. **Database backfill**
+   - Recalculate existing `invitations.inviter_id` from current `rsvps.invited_by` values.
+   - This will correct the existing wrong “Brought by” labels where the referral can be resolved safely.
+   - It will not delete guest records, RSVP records, meal orders, or submitted data.
 
-## The fix
+3. **Code display fix**
+   - Update admin guest search/results so “Added/Brought by” uses `inviter_id` first, not only `host_id`, because admins can upload guests on behalf of committee members.
+   - Keep existing committee workspace ownership rules: a guest belongs to a committee member when either the host account or the referral/roster id points to them.
 
-1. **Add a server-side "add guest" path** (authenticated server function) used by the committee/admin upload screen for single add, pasted list, and spreadsheet import:
-   - Verifies the caller is admin or committee/team.
-   - Sets `host_id` to the caller's own account (admins keep the ability to add on behalf of another roster owner).
-   - Keeps `inviter_id` set to the selected committee member, so the guest still shows under the right person's list and counts.
-   - Preserves existing duplicate detection and the friendly "already on the guest list" message; real errors return the actual reason instead of a generic "Something went wrong."
-2. **Repair the roster ownership data** so committee members own their own roster rows: backfill `inviters.host_id` to each committee member's own account where one exists (Mysha's row currently points at Kari), without changing which guests belong to whom.
-3. **Forward-fix** so newly created committee roster rows are linked to that person's account automatically instead of the admin who created them.
-4. **Better error surface**: on failure, show the real cause (permission, duplicate, missing phone) rather than a generic toast.
+4. **Verification**
+   - Re-query the database for the screenshot names and confirm the displayed “Brought by” matches the RSVP referral where resolvable.
+   - Re-check counts for rows with missing `inviter_id`, exact referral mismatches, and unresolved referral names.
+   - Verify the admin guest list route loads and shows the corrected labels.
 
-## Verification before I call it fixed
+## Important limits
 
-- Sign in as Mysha's account in the preview, add "James Mantos / 808-393-0550", confirm the row is written and appears on her list and in her counts.
-- Repeat with the paste and spreadsheet paths.
-- Re-check that another committee member (e.g. Tina) can still add, and that guest totals/seat counts update.
-- Read the rows back from the database to confirm `inviter_id` and `host_id` are correct.
-
-## Technical notes
-
-- New authenticated server function in `src/lib/` (e.g. `guest-add.functions.ts`) with `requireSupabaseAuth`; role check via `private.has_role` through the user's own client.
-- `src/routes/_authenticated/admin/upload.tsx` switches its three `supabase.from("invitations").insert(...)` call sites to the server function.
-- One migration for the `inviters.host_id` backfill + trigger/default for new roster rows. No RLS loosening — the insert rule stays as-is.
+- I will not guess unknown relationships. Rows with an unresolved `invited_by` name will be flagged/left unattributed rather than silently assigned to the wrong person.
+- I will not delete, hide, or overwrite any submitted guests, RSVPs, phone numbers, or meal orders.
+- Some relationships may still require your decision if the referral text points to a person who is not in the committee/guest chain or has multiple possible matches.
