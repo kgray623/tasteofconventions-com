@@ -1105,6 +1105,7 @@ export type Database = {
       }
       normalize_name_for_match: { Args: { _name: string }; Returns: string }
       normalize_preorder_selection: { Args: { _item: Json }; Returns: Json }
+      normalize_referral_name: { Args: { _name: string }; Returns: string }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
@@ -1112,6 +1113,10 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      resolve_referral_inviter_id: {
+        Args: { _raw_name: string }
+        Returns: string
       }
       search_invitations_fuzzy: {
         Args: { _event_id: string; _query: string; _threshold?: number }
