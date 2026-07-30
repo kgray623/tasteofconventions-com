@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.count_referral_matches(text) FROM authenticated;
