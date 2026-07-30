@@ -7,6 +7,8 @@ import {
   forgetRememberedLoginPhone,
   getRememberedLoginName,
   getRememberedLoginPhone,
+  publishSessionRecovery,
+  rememberLoginName,
   rememberLoginPhone,
   rememberLoginPhoneFromStoredSession,
 } from "@/lib/session-recovery";
@@ -55,6 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) throw error;
         return data.session ?? null;
       })();
+      publishSessionRecovery(recoveryPromiseRef.current);
       try {
         return await recoveryPromiseRef.current;
       } catch {
@@ -69,6 +72,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (nextSession) recoveryAttemptedRef.current = false;
       const phone = nextSession?.user.phone || (nextSession?.user.user_metadata?.phone as string | undefined);
       if (phone) rememberLoginPhone(phone);
+      const displayName = nextSession?.user.user_metadata?.display_name || nextSession?.user.user_metadata?.name;
+      if (typeof displayName === "string" && displayName.trim()) rememberLoginName(displayName);
       sessionRef.current = nextSession;
       setSession(nextSession);
       setLoading(false);
