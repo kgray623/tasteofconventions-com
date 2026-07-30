@@ -4,9 +4,13 @@ import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { recoverPhoneLoginFromCookie, signInWithPhoneOnly } from "@/lib/auth-phone.functions";
 import {
+  beginRecoveryServerLogin,
+  endRecoveryServerLogin,
   forgetRememberedLoginPhone,
   getRememberedLoginName,
   getRememberedLoginPhone,
+  publishSessionRecovery,
+  rememberLoginName,
   rememberLoginPhone,
   rememberLoginPhoneFromStoredSession,
 } from "@/lib/session-recovery";
@@ -43,9 +47,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       recoveryAttemptedRef.current = true;
       recoveryPromiseRef.current = (async () => {
         if (!name) return null;
-        const tokens = phone
-          ? await phoneLogin({ data: { phone, name } })
-          : await cookieLogin({ data: { name } });
+        beginRecoveryServerLogin();
+        const tokens = await (phone
+          ? phoneLogin({ data: { phone, name } })
+          : cookieLogin({ data: { name } })).finally(() => endRecoveryServerLogin());
         if (!tokens) return null;
         if ("error" in tokens) return null;
         const { data, error } = await supabase.auth.setSession({
@@ -55,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) throw error;
         return data.session ?? null;
       })();
+      publishSessionRecovery(recoveryPromiseRef.current);
       try {
         return await recoveryPromiseRef.current;
       } catch {
@@ -69,6 +75,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (nextSession) recoveryAttemptedRef.current = false;
       const phone = nextSession?.user.phone || (nextSession?.user.user_metadata?.phone as string | undefined);
       if (phone) rememberLoginPhone(phone);
+      const displayName = nextSession?.user.user_metadata?.display_name || nextSession?.user.user_metadata?.name;
+      if (typeof displayName === "string" && displayName.trim()) rememberLoginName(displayName);
       sessionRef.current = nextSession;
       setSession(nextSession);
       setLoading(false);

@@ -1,7 +1,10 @@
 const REMEMBERED_PHONE_KEY = "taste-of-conventions:last-login-phone";
 const REMEMBERED_NAME_KEY = "taste-of-conventions:last-login-name";
 const REMEMBERED_PHONE_COOKIE = "taste_of_conventions_last_login_phone";
+const REMEMBERED_NAME_COOKIE = "taste_of_conventions_last_login_name";
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
+let activeSessionRecovery: Promise<unknown> | null = null;
+let recoveryServerLoginDepth = 0;
 
 function hasBrowserStorage() {
   if (typeof window === "undefined") return false;
@@ -24,6 +27,14 @@ function rememberLoginPhoneCookie(phone: string) {
   document.cookie = `${REMEMBERED_PHONE_COOKIE}=${encodeURIComponent(phone)}; Path=/; Max-Age=${ONE_YEAR_SECONDS}${crossSiteAttrs}`;
 }
 
+function rememberLoginNameCookie(name: string) {
+  if (!hasDocumentCookie()) return;
+  const crossSiteAttrs = typeof window !== "undefined" && window.location.protocol === "https:"
+    ? "; Secure; SameSite=None; Partitioned"
+    : "; SameSite=Lax";
+  document.cookie = `${REMEMBERED_NAME_COOKIE}=${encodeURIComponent(name)}; Path=/; Max-Age=${ONE_YEAR_SECONDS}${crossSiteAttrs}`;
+}
+
 function getRememberedLoginPhoneCookie() {
   if (!hasDocumentCookie()) return null;
   const match = document.cookie
@@ -39,10 +50,27 @@ function getRememberedLoginPhoneCookie() {
   }
 }
 
+function getRememberedLoginNameCookie() {
+  if (!hasDocumentCookie()) return null;
+  const match = document.cookie
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${REMEMBERED_NAME_COOKIE}=`));
+  if (!match) return null;
+  const value = match.slice(REMEMBERED_NAME_COOKIE.length + 1);
+  try {
+    return decodeURIComponent(value) || null;
+  } catch {
+    return value || null;
+  }
+}
+
 function forgetRememberedLoginPhoneCookie() {
   if (!hasDocumentCookie()) return;
   document.cookie = `${REMEMBERED_PHONE_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
   document.cookie = `${REMEMBERED_PHONE_COOKIE}=; Path=/; Max-Age=0; Secure; SameSite=None; Partitioned`;
+  document.cookie = `${REMEMBERED_NAME_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
+  document.cookie = `${REMEMBERED_NAME_COOKIE}=; Path=/; Max-Age=0; Secure; SameSite=None; Partitioned`;
 }
 
 export function rememberLoginPhone(phone: string) {
@@ -69,8 +97,10 @@ export function rememberLoginPhoneFromStoredSession() {
       const parsed = JSON.parse(window.localStorage.getItem(key) || "{}");
       const user = parsed.user || parsed.currentSession?.user;
       const phone = user?.phone || user?.user_metadata?.phone;
+      const name = user?.user_metadata?.display_name || user?.user_metadata?.name;
       if (typeof phone === "string" && phone.trim()) {
         rememberLoginPhone(phone);
+        if (typeof name === "string" && name.trim()) rememberLoginName(name);
         return;
       }
     } catch {
@@ -89,11 +119,51 @@ export function forgetRememberedLoginPhone() {
 
 export function rememberLoginName(name: string) {
   const cleaned = name.trim();
-  if (!cleaned || !hasBrowserStorage()) return;
-  window.localStorage.setItem(REMEMBERED_NAME_KEY, cleaned);
+  if (!cleaned) return;
+  if (hasBrowserStorage()) window.localStorage.setItem(REMEMBERED_NAME_KEY, cleaned);
+  rememberLoginNameCookie(cleaned);
 }
 
 export function getRememberedLoginName() {
-  if (!hasBrowserStorage()) return null;
-  return window.localStorage.getItem(REMEMBERED_NAME_KEY);
+  const stored = hasBrowserStorage() ? window.localStorage.getItem(REMEMBERED_NAME_KEY) : null;
+  if (stored) return stored;
+  const cookieName = getRememberedLoginNameCookie();
+  if (cookieName && hasBrowserStorage()) window.localStorage.setItem(REMEMBERED_NAME_KEY, cookieName);
+  return cookieName;
+}
+
+export function hasRememberedLoginCredentials() {
+  return Boolean(getRememberedLoginPhone() && getRememberedLoginName());
+}
+
+export function publishSessionRecovery(promise: Promise<unknown>) {
+  activeSessionRecovery = promise;
+  void promise.finally(() => {
+    if (activeSessionRecovery === promise) activeSessionRecovery = null;
+  });
+}
+
+export function isSessionRecoveryActive() {
+  return Boolean(activeSessionRecovery);
+}
+
+export function beginRecoveryServerLogin() {
+  recoveryServerLoginDepth += 1;
+}
+
+export function endRecoveryServerLogin() {
+  recoveryServerLoginDepth = Math.max(0, recoveryServerLoginDepth - 1);
+}
+
+export function isRecoveryServerLoginAllowed() {
+  return recoveryServerLoginDepth > 0;
+}
+
+export async function waitForSessionRecovery(timeoutMs = 4000) {
+  const recovery = activeSessionRecovery;
+  if (!recovery) return;
+  await Promise.race([
+    recovery.catch(() => null),
+    new Promise((resolve) => setTimeout(resolve, timeoutMs)),
+  ]);
 }
