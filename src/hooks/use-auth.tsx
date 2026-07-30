@@ -4,6 +4,8 @@ import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { recoverPhoneLoginFromCookie, signInWithPhoneOnly } from "@/lib/auth-phone.functions";
 import {
+  beginRecoveryServerLogin,
+  endRecoveryServerLogin,
   forgetRememberedLoginPhone,
   getRememberedLoginName,
   getRememberedLoginPhone,
@@ -45,9 +47,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       recoveryAttemptedRef.current = true;
       recoveryPromiseRef.current = (async () => {
         if (!name) return null;
-        const tokens = phone
-          ? await phoneLogin({ data: { phone, name } })
-          : await cookieLogin({ data: { name } });
+        beginRecoveryServerLogin();
+        const tokens = await (phone
+          ? phoneLogin({ data: { phone, name } })
+          : cookieLogin({ data: { name } })).finally(() => endRecoveryServerLogin());
         if (!tokens) return null;
         if ("error" in tokens) return null;
         const { data, error } = await supabase.auth.setSession({

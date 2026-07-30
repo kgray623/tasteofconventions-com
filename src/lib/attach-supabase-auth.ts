@@ -1,6 +1,10 @@
 import { createMiddleware } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { isSessionRecoveryActive, waitForSessionRecovery } from "@/lib/session-recovery";
+import {
+  isRecoveryServerLoginAllowed,
+  isSessionRecoveryActive,
+  waitForSessionRecovery,
+} from "@/lib/session-recovery";
 
 // Project-specific replacement for the generated attachSupabaseAuth.
 // Waits briefly for the Supabase session to hydrate (or refresh) so that
@@ -8,6 +12,10 @@ import { isSessionRecoveryActive, waitForSessionRecovery } from "@/lib/session-r
 // "No authorization header provided" on cold navigations / after tab wake.
 export const attachSupabaseAuth = createMiddleware({ type: "function" }).client(
   async ({ next }) => {
+    if (isRecoveryServerLoginAllowed()) {
+      return next({ headers: {} });
+    }
+
     let token: string | undefined;
     for (let i = 0; i < 25; i++) {
       const { data } = await supabase.auth.getSession();

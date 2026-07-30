@@ -4,6 +4,7 @@ const REMEMBERED_PHONE_COOKIE = "taste_of_conventions_last_login_phone";
 const REMEMBERED_NAME_COOKIE = "taste_of_conventions_last_login_name";
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 let activeSessionRecovery: Promise<unknown> | null = null;
+let recoveryServerLoginDepth = 0;
 
 function hasBrowserStorage() {
   if (typeof window === "undefined") return false;
@@ -144,6 +145,18 @@ export function publishSessionRecovery(promise: Promise<unknown>) {
 
 export function isSessionRecoveryActive() {
   return Boolean(activeSessionRecovery);
+}
+
+export function beginRecoveryServerLogin() {
+  recoveryServerLoginDepth += 1;
+}
+
+export function endRecoveryServerLogin() {
+  recoveryServerLoginDepth = Math.max(0, recoveryServerLoginDepth - 1);
+}
+
+export function isRecoveryServerLoginAllowed() {
+  return recoveryServerLoginDepth > 0;
 }
 
 export async function waitForSessionRecovery(timeoutMs = 4000) {
