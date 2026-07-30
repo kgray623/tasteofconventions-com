@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useEffect, useState } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { supabase } from "@/integrations/supabase/client";
-import { getRememberedLoginPhone } from "@/lib/session-recovery";
+import { hasRememberedLoginCredentials, waitForSessionRecovery } from "@/lib/session-recovery";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthLayout,
@@ -31,14 +31,24 @@ function AuthLayout() {
     // AuthProvider is still allowed to rebuild the session, so don't bounce
     // the user to /login just because the browser auth cache was cleared.
     void (async () => {
-      for (let attempt = 0; attempt < 8 && !cancelled; attempt++) {
+      for (let attempt = 0; attempt < 20 && !cancelled; attempt++) {
+        if (hasRememberedLoginCredentials()) {
+          await waitForSessionRecovery(1500);
+          if (cancelled) return;
+        }
+
         const { data: sessionData } = await supabase.auth
           .getSession()
           .catch(() => ({ data: { session: null } as { session: null } }));
         if (cancelled) return;
-        if (sessionData.session || getRememberedLoginPhone()) {
+        if (sessionData.session) {
           setVerifying(false);
           return;
+        }
+
+        if (hasRememberedLoginCredentials()) {
+          await new Promise((r) => setTimeout(r, 500));
+          continue;
         }
 
         const { data } = await supabase.auth
@@ -53,6 +63,10 @@ function AuthLayout() {
         await new Promise((r) => setTimeout(r, 500));
       }
       if (cancelled) return;
+      if (hasRememberedLoginCredentials()) {
+        setVerifying(true);
+        return;
+      }
       const search = new URLSearchParams({ redirect: safeLoginRedirect(location.pathname) });
       await navigate({ to: "/login", search: { redirect: safeLoginRedirect(location.pathname) } as never, replace: true })
         .catch(() => {
