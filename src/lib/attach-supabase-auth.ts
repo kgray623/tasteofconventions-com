@@ -1,10 +1,6 @@
 import { createMiddleware } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  hasRememberedLoginCredentials,
-  isSessionRecoveryActive,
-  waitForSessionRecovery,
-} from "@/lib/session-recovery";
+import { isSessionRecoveryActive, waitForSessionRecovery } from "@/lib/session-recovery";
 
 // Project-specific replacement for the generated attachSupabaseAuth.
 // Waits briefly for the Supabase session to hydrate (or refresh) so that
@@ -17,17 +13,12 @@ export const attachSupabaseAuth = createMiddleware({ type: "function" }).client(
       const { data } = await supabase.auth.getSession();
       token = data.session?.access_token;
       if (token) break;
-      if (isSessionRecoveryActive()) await waitForSessionRecovery(1200);
+      if (isSessionRecoveryActive()) await waitForSessionRecovery(500);
       await new Promise((r) => setTimeout(r, 200));
     }
     if (!token) {
       // Try one explicit refresh before giving up.
       const { data } = await supabase.auth.refreshSession();
-      token = data.session?.access_token;
-    }
-    if (!token && hasRememberedLoginCredentials()) {
-      await waitForSessionRecovery(3000);
-      const { data } = await supabase.auth.getSession();
       token = data.session?.access_token;
     }
     return next({
