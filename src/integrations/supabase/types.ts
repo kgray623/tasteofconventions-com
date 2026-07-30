@@ -1070,6 +1070,7 @@ export type Database = {
             Returns: number
           }
       claim_admin: { Args: never; Returns: boolean }
+      count_referral_matches: { Args: { _raw_name: string }; Returns: number }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
