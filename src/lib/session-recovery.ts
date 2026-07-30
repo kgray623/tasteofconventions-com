@@ -142,6 +142,10 @@ export function publishSessionRecovery(promise: Promise<unknown>) {
   });
 }
 
+export function isSessionRecoveryActive() {
+  return Boolean(activeSessionRecovery);
+}
+
 export async function waitForSessionRecovery(timeoutMs = 4000) {
   const recovery = activeSessionRecovery;
   if (!recovery) return;
