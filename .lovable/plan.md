@@ -1,24 +1,24 @@
-## Plan to stop the repeated kick-outs
+## Goal
 
-1. **Make session recovery reliable**
-   - Update the login/session recovery storage so it remembers both required credentials: last name + phone number.
-   - Right now the recovery path can have a phone but no name, which means it cannot rebuild the session after the browser auth cache drops.
+Angela Waters (402-616-1025) and Moriah Waters (402-619-0764) become steering committee members and are signed up to volunteer for **Set Up** and **Clean Up**.
 
-2. **Prevent false redirects to login**
-   - Adjust the protected-route guard so it waits for either a valid session or recoverable login credentials before redirecting.
-   - If recovery is in progress, keep the user on the protected page with a loading state instead of bouncing them out.
+## Current state (verified in the database)
 
-3. **Keep sign-out intentional only**
-   - Preserve the explicit logout behavior so pressing “Log out” still clears the remembered credentials and sends the user out.
-   - Do not clear remembered credentials for temporary session loss, tab wake, mobile refresh, or backend token refresh delay.
+- Angela Waters exists on the guest list with phone 402-616-1025, `is_committee = false`, linked under an existing inviter.
+- Moriah Waters does not exist anywhere yet (no guest row, no committee row).
+- Neither has a committee roster (inviter) row or a team invite.
+- The **Set Up** and **Clean Up** volunteer categories both exist and currently hold signed-in-user assignments only.
 
-4. **Harden authenticated server calls**
-   - Update the auth header middleware so protected server functions wait for recovery/refresh before sending a request without a bearer token.
-   - This prevents a temporary missing token from cascading into 401s that make the UI look logged out.
+## Changes (data only — no code changes)
 
-5. **Verify on the actual protected route**
-   - Log in with the existing last-name + phone flow.
-   - Open the admin/committee dashboard, refresh, and confirm it stays signed in.
-   - Confirm Log out still actually logs out.
+1. **Moriah Waters** — add to the guest list with phone 402-619-0764 under the same event as Angela, marked as committee.
+2. **Angela Waters** — flip her existing guest record to committee (her submitted RSVP, referral link, and meal data are left untouched).
+3. **Committee roster** — create an active inviter row for each of them (name + phone) so they show on the Committee page and can add/see their own guests.
+4. **Committee access** — create a pending team invite (`team`) for each phone, so when they log in with last name + phone number they automatically get committee access.
+5. **Volunteer sign-ups** — add each of them by name to both the **Set Up** and **Clean Up** categories.
 
-**Timestamp:** 2026-07-30 03:36 UTC
+## Verification before reporting done
+
+- Read back both guest rows (committee flag + phone), both inviter rows, both team invites, and all four volunteer assignments.
+- Confirm on the actual pages at mobile width: Admin → Committee Guests lists both names, and Admin → Volunteers shows both under Set Up and Clean Up.
+- Confirm nothing existing was removed: re-count guest rows and existing Set Up / Clean Up assignments before and after.
