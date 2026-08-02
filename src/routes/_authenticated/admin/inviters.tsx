@@ -582,7 +582,32 @@ function InvitersPage() {
                       )}
                     </div>
                   )}
+                  {(duplicatesByInviter[i.id]?.length ?? 0) > 0 && (
+                    <div className="rounded border border-amber-300 bg-amber-50/60 p-2">
+                      <p className="text-xs font-semibold text-amber-800">
+                        Duplicates — credited to someone else ({duplicatesByInviter[i.id].length})
+                      </p>
+                      <ul className="mt-1 space-y-1">
+                        {duplicatesByInviter[i.id].map((d) => {
+                          const owner = inviters.find((x) => x.id === d.owner_inviter_id)?.name;
+                          return (
+                            <li key={d.id} className="text-xs">
+                              <span className="font-medium">{d.guest_name}</span>
+                              {d.guest_phone ? ` · ${d.guest_phone}` : ""}
+                              <span className="text-muted-foreground">
+                                {" "}— credited to {owner ?? "another committee member"}
+                                {d.first_loaded_at
+                                  ? ` (first loaded ${new Date(d.first_loaded_at).toLocaleDateString()})`
+                                  : ""}
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
                 </div>
+
               );
             })}
           </div>
