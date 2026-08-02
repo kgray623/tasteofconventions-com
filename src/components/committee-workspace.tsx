@@ -1176,6 +1176,63 @@ export function CommitteeWorkspace() {
         </Collapsible>
       </Card>
 
+      {creditedElsewhere.length > 0 && (
+        <Card className="overflow-hidden border-amber-300">
+          <Collapsible open={openCreditedElsewhere} onOpenChange={() => setOpenCreditedElsewhere((v) => !v)}>
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="w-full p-4 flex items-center justify-between gap-2 text-left bg-amber-50/60 hover:bg-amber-100/60 transition-colors"
+              >
+                <span className="flex items-center gap-2 font-semibold text-sm">
+                  <AlertTriangle className="w-4 h-4 text-amber-600" />
+                  Duplicates — credited to someone else ({creditedElsewhere.length})
+                </span>
+                <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${openCreditedElsewhere ? "rotate-180" : ""}`} />
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <p className="px-4 py-3 text-xs text-muted-foreground border-t border-border">
+                You gave us these names, but they were already on the guest list under another
+                committee member. Whoever loaded a guest first keeps the referral credit, so these
+                are <strong>not</strong> counted in your totals — they are listed here so you know
+                nothing was dropped.
+              </p>
+              <div className="divide-y divide-border border-t border-border">
+                {creditedElsewhere.map((row) => (
+                  <div key={row.id} className="p-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-medium">{row.guest_name}</p>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                        <AlertTriangle className="w-3 h-3" /> Duplicate
+                      </span>
+                      {row.rsvp_status && (
+                        <Badge variant="secondary" className="text-[10px] uppercase">
+                          {row.rsvp_status === "yes" ? "Confirmed" : row.rsvp_status === "no" ? "Declined" : row.rsvp_status}
+                        </Badge>
+                      )}
+                    </div>
+                    {row.guest_phone && (
+                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                        <Phone className="w-3 h-3" /> {row.guest_phone}
+                      </span>
+                    )}
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Already credited to <strong>{row.owner_name ?? "another committee member"}</strong>
+                      {row.first_loaded_at
+                        ? ` — first loaded ${new Date(row.first_loaded_at).toLocaleDateString()}`
+                        : ""}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
+      )}
+
+
+
 
 
 
