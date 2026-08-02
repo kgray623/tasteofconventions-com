@@ -70,6 +70,8 @@ function InvitersPage() {
   const [broughtCounts, setBroughtCounts] = useState<Record<string, number>>({});
   const [guestsByHost, setGuestsByHost] = useState<Record<string, GuestRow[]>>({});
   const [guestsByInviter, setGuestsByInviter] = useState<Record<string, GuestRow[]>>({});
+  const [duplicatesByInviter, setDuplicatesByInviter] = useState<Record<string, DuplicateRow[]>>({});
+
   const [expandedHost, setExpandedHost] = useState<string | null>(null);
   const [rowBusy, setRowBusy] = useState<string | null>(null);
   const [committee, setCommittee] = useState<CommitteeRow[]>([]);
