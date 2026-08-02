@@ -37,6 +37,7 @@ import { Route as AuthenticatedAdminUploadRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminTeamRouteImport } from './routes/_authenticated/admin/team'
 import { Route as AuthenticatedAdminSubcommitteeRouteImport } from './routes/_authenticated/admin/subcommittee'
 import { Route as AuthenticatedAdminRestaurantsRouteImport } from './routes/_authenticated/admin/restaurants'
+import { Route as AuthenticatedAdminReconcileRouteImport } from './routes/_authenticated/admin/reconcile'
 import { Route as AuthenticatedAdminRecentlyDeletedRouteImport } from './routes/_authenticated/admin/recently-deleted'
 import { Route as AuthenticatedAdminPreordersRouteImport } from './routes/_authenticated/admin/preorders'
 import { Route as AuthenticatedAdminMyVolunteerChatsRouteImport } from './routes/_authenticated/admin/my-volunteer-chats'
@@ -204,6 +205,12 @@ const AuthenticatedAdminRestaurantsRoute =
     path: '/restaurants',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminReconcileRoute =
+  AuthenticatedAdminReconcileRouteImport.update({
+    id: '/reconcile',
+    path: '/reconcile',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminRecentlyDeletedRoute =
   AuthenticatedAdminRecentlyDeletedRouteImport.update({
     id: '/recently-deleted',
@@ -363,6 +370,7 @@ export interface FileRoutesByFullPath {
   '/admin/my-volunteer-chats': typeof AuthenticatedAdminMyVolunteerChatsRoute
   '/admin/preorders': typeof AuthenticatedAdminPreordersRoute
   '/admin/recently-deleted': typeof AuthenticatedAdminRecentlyDeletedRoute
+  '/admin/reconcile': typeof AuthenticatedAdminReconcileRoute
   '/admin/restaurants': typeof AuthenticatedAdminRestaurantsRoute
   '/admin/subcommittee': typeof AuthenticatedAdminSubcommitteeRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
@@ -412,6 +420,7 @@ export interface FileRoutesByTo {
   '/admin/my-volunteer-chats': typeof AuthenticatedAdminMyVolunteerChatsRoute
   '/admin/preorders': typeof AuthenticatedAdminPreordersRoute
   '/admin/recently-deleted': typeof AuthenticatedAdminRecentlyDeletedRoute
+  '/admin/reconcile': typeof AuthenticatedAdminReconcileRoute
   '/admin/restaurants': typeof AuthenticatedAdminRestaurantsRoute
   '/admin/subcommittee': typeof AuthenticatedAdminSubcommitteeRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
@@ -464,6 +473,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/my-volunteer-chats': typeof AuthenticatedAdminMyVolunteerChatsRoute
   '/_authenticated/admin/preorders': typeof AuthenticatedAdminPreordersRoute
   '/_authenticated/admin/recently-deleted': typeof AuthenticatedAdminRecentlyDeletedRoute
+  '/_authenticated/admin/reconcile': typeof AuthenticatedAdminReconcileRoute
   '/_authenticated/admin/restaurants': typeof AuthenticatedAdminRestaurantsRoute
   '/_authenticated/admin/subcommittee': typeof AuthenticatedAdminSubcommitteeRoute
   '/_authenticated/admin/team': typeof AuthenticatedAdminTeamRoute
@@ -516,6 +526,7 @@ export interface FileRouteTypes {
     | '/admin/my-volunteer-chats'
     | '/admin/preorders'
     | '/admin/recently-deleted'
+    | '/admin/reconcile'
     | '/admin/restaurants'
     | '/admin/subcommittee'
     | '/admin/team'
@@ -565,6 +576,7 @@ export interface FileRouteTypes {
     | '/admin/my-volunteer-chats'
     | '/admin/preorders'
     | '/admin/recently-deleted'
+    | '/admin/reconcile'
     | '/admin/restaurants'
     | '/admin/subcommittee'
     | '/admin/team'
@@ -616,6 +628,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/my-volunteer-chats'
     | '/_authenticated/admin/preorders'
     | '/_authenticated/admin/recently-deleted'
+    | '/_authenticated/admin/reconcile'
     | '/_authenticated/admin/restaurants'
     | '/_authenticated/admin/subcommittee'
     | '/_authenticated/admin/team'
@@ -858,6 +871,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRestaurantsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/reconcile': {
+      id: '/_authenticated/admin/reconcile'
+      path: '/reconcile'
+      fullPath: '/admin/reconcile'
+      preLoaderRoute: typeof AuthenticatedAdminReconcileRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/recently-deleted': {
       id: '/_authenticated/admin/recently-deleted'
       path: '/recently-deleted'
@@ -1023,6 +1043,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminMyVolunteerChatsRoute: typeof AuthenticatedAdminMyVolunteerChatsRoute
   AuthenticatedAdminPreordersRoute: typeof AuthenticatedAdminPreordersRoute
   AuthenticatedAdminRecentlyDeletedRoute: typeof AuthenticatedAdminRecentlyDeletedRoute
+  AuthenticatedAdminReconcileRoute: typeof AuthenticatedAdminReconcileRoute
   AuthenticatedAdminRestaurantsRoute: typeof AuthenticatedAdminRestaurantsRoute
   AuthenticatedAdminSubcommitteeRoute: typeof AuthenticatedAdminSubcommitteeRoute
   AuthenticatedAdminTeamRoute: typeof AuthenticatedAdminTeamRoute
@@ -1048,6 +1069,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminPreordersRoute: AuthenticatedAdminPreordersRoute,
   AuthenticatedAdminRecentlyDeletedRoute:
     AuthenticatedAdminRecentlyDeletedRoute,
+  AuthenticatedAdminReconcileRoute: AuthenticatedAdminReconcileRoute,
   AuthenticatedAdminRestaurantsRoute: AuthenticatedAdminRestaurantsRoute,
   AuthenticatedAdminSubcommitteeRoute: AuthenticatedAdminSubcommitteeRoute,
   AuthenticatedAdminTeamRoute: AuthenticatedAdminTeamRoute,

@@ -1,51 +1,31 @@
-## Goal
+## What the database says right now (verified this minute)
 
-1. Every committee member (and admin) can see, on their own dashboard, which of the names they submitted are **duplicates already credited to another referrer** — so nobody thinks a name was dropped.
-2. Produce a line-by-line accounting for Tina Santana's **second list image**, matching the same keep/move/add ledger format as her first list.
+- Tina Santana inviter record: 1 only (no duplicate inviter rows).
+- Invitations credited to her (`inviter_id`): **36 households**.
+- Invitations uploaded under her host account (`host_id`): 35 (2 of her credited rows were uploaded by the admin account).
+- Overlap rows recorded in `referral_duplicates` (credited to an earlier owner): **6**.
+- If couples in the name field count as 2 people, her 36 households = **40 people**.
+- RSVPs whose typed "Invited by" says Tina: 8.
 
-## Part 1 — New "Duplicate" category on the committee dashboard
+So no combination of the current data reaches 54. The gap is real and it is one of three things: (a) lines on her lists that were never entered as invitations, (b) her people sitting under someone else's `inviter_id` or under an unlinked/null owner, or (c) 54 counts individual people while the system counts households.
 
-Today the dashboard only flags duplicates *inside* a single person's own list (same name/phone twice). It has no way to show "you submitted this person, but they were already on someone else's list" — that name simply disappears from the submitter's view, which is what caused the confusion.
+## Plan
 
-Fix in two pieces:
+1. **Re-transcribe every screenshot she has sent** (all 12 already provided, plus the second image called out again) into one numbered ledger — one row per line as written, phone as written. No summarizing, no de-duping at this stage.
+2. **Match each ledger line against all 388 invitations** by last-10-digit phone, then by normalized name, then by fuzzy name. Record for every line exactly one outcome:
+   - credited to Tina,
+   - exists but credited to an earlier owner (name the owner and the earlier `created_at`),
+   - exists with no owner (`inviter_id` null — 5 such rows exist),
+   - not in the system at all.
+3. **Fix the two fixable categories**: attach the null-owner rows to Tina where they match her ledger, and create invitations for every ledger line that is genuinely missing, credited to Tina.
+4. **Leave earlier-owned rows with their original owner** (First-Loaded Wins) but list each one explicitly under "Duplicates — credited to someone else" so she can see it on her own dashboard.
+5. **Produce a printable reconciliation report** — every line numbered, with its outcome and the owner's name — and a matching spreadsheet, so the 54 can be audited against the system row by row.
+6. **Verify by logging in as Tina on mobile** (Santana / 402-657-7364) and read back the on-screen counts: owned households, total people, and duplicates. Report the exact numbers, not an estimate.
 
-**A. Record the overlap (currently nowhere in the database).**
-New table `referral_duplicates`:
-- `claimed_by_inviter_id` — the committee member who submitted the name later
-- `invitation_id` — the existing guest record
-- `owner_inviter_id` — the first-loaded owner who keeps the credit
-- `source_note` — e.g. "Tina list image 2, 2026-08-02"
-- standard timestamps, RLS so a committee member reads only rows where they are the claimer or owner, admins read all
+## One thing I need from you
 
-Backfill it with every overlap already identified in Tina's lists (the 6–7 households retained with Gray, Monaghan, Moore, Diaz, Cole, Bey, Hopkins) plus any found in her second image.
-
-**B. Show it.**
-On `committee-workspace.tsx`, add a collapsible group **"Duplicates — credited to someone else"** alongside the existing groups, listing each name with:
-- guest name + phone
-- an amber `Duplicate` badge (distinct from the existing red in-list `Duplicate` badge)
-- "Already credited to **{owner name}** — first loaded {date}"
-- RSVP status if any, read-only (no text/mark-sent actions, since they aren't this person's to text)
-
-Counts stay honest: these rows are **not** added to the member's own referral totals; the group header shows its own count, e.g. "Duplicates — credited to someone else (6)". Admin view at `/admin/inviters` gets the same group per committee member.
-
-## Part 2 — Accounting for Tina's second list image
-
-Method (no guessing):
-1. Re-read the second image from this conversation and transcribe every line verbatim into a ledger (name as written, phone as written).
-2. Match each line against live `invitations` by last-10-digit phone first, then normalized name.
-3. Classify each into exactly one bucket:
-   - **Already Tina's** — `inviter_id` = Tina, no change
-   - **Newly credited to Tina** — existed with no referral owner → credit Tina
-   - **Duplicate, stays with earlier owner** — First-Loaded Wins → record in `referral_duplicates` so it shows on Tina's dashboard
-   - **New — added** — not in the system → create under Tina
-   - **Unreadable / needs confirmation** — listed back to you rather than guessed
-4. Apply the changes, then read back from the database and report totals: `X already hers + Y newly credited + Z added = her new owned count`, plus `D duplicates visible but credited elsewhere`.
-5. Verify on Tina's actual mobile committee dashboard that the owned count and the new Duplicates group both render correctly.
-
-If any line in the second image is not legible enough to match with certainty, it will be reported to you for confirmation instead of being invented.
+When you say 54, is that **54 names/people** (couples counted as two) or **54 lines/households** on her lists? The answer changes what "found them all" means. If you can re-send the list images in this thread I will work from those exact images rather than my earlier transcription — that transcription is the most likely place the missing lines were lost.
 
 ## Technical notes
 
-- One migration: create `referral_duplicates` with GRANTs, RLS, and owner/claimer read policies; no changes to existing referral triggers (the First-Loaded-Wins guard in `link_invitation_inviter_from_rsvp` stays as-is).
-- Frontend changes limited to `src/components/committee-workspace.tsx` and the admin committee-guests route; existing in-list duplicate detection is untouched.
-- No guest record is deleted, renamed, or hidden at any point.
+Files/objects involved: `invitations.inviter_id`, `public.referral_duplicates`, `public.resolve_referral_inviter_id`, `link_invitation_inviter_from_rsvp` trigger, `src/components/committee-workspace.tsx`, `src/routes/_authenticated/admin/inviters.tsx`. No deletions, no reassignments away from existing owners; every change is logged to `audit_log`.
