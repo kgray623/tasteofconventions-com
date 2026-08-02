@@ -430,6 +430,18 @@ export function MyRsvpContent() {
             </Button>
           </Link>
         </Card>
+        <Card className="p-5 space-y-3">
+          <h2 className="font-display text-2xl">Want to help?</h2>
+          <p className="text-sm text-muted-foreground">
+            We need volunteers for set up, clean up, hospitality and more. Pick any roles you'd like
+            to help with.
+          </p>
+          <Link to="/volunteer">
+            <Button className="w-full bg-terracotta text-cream hover:bg-terracotta/90">
+              Volunteer to help
+            </Button>
+          </Link>
+        </Card>
         <Dialog open={lightbox !== null} onOpenChange={(o) => !o && setLightbox(null)}>
           <DialogContent className="max-w-2xl p-2 bg-ink border-ink">
             <DialogTitle className="sr-only">Cultural meal photo</DialogTitle>

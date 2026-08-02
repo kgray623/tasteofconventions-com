@@ -1,4 +1,10 @@
 import { createFileRoute, useSearch } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import {
+  volunteerSignUp,
+  volunteerAssignByName,
+  volunteerRemoveAssignment,
+} from "@/lib/volunteer.functions";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -141,6 +147,9 @@ function CategoriesPage() {
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [editingDesc, setEditingDesc] = useState<Record<string, string>>({});
   const [chatOpen, setChatOpen] = useState<string | null>(null);
+  const signUpFn = useServerFn(volunteerSignUp);
+  const assignByNameFn = useServerFn(volunteerAssignByName);
+  const removeAssignFn = useServerFn(volunteerRemoveAssignment);
 
   const load = async () => {
     const [c, a, p] = await Promise.all([
@@ -195,26 +204,22 @@ function CategoriesPage() {
       if (!user) return toast.error("Please sign in to volunteer.");
       const exists = assigns.some((a) => a.category_id === catId && a.user_id === user.id);
       if (exists) { toast.info("You're already volunteering for this."); return; }
-      const { error } = await supabase.from("category_assignments").insert({
-        category_id: catId,
-        user_id: user.id,
-        volunteer_name: null,
-      });
-      if (error) return toast.error(error.message);
-      toast.success("Thanks for volunteering!");
+      try {
+        await signUpFn({ data: { categoryId: catId } });
+        toast.success("Thanks for volunteering!");
+      } catch (e) {
+        return toast.error(e instanceof Error ? e.message : "Couldn't sign you up.");
+      }
       load();
       return;
     }
     const value = (valueOverride ?? drafts[catId] ?? "").trim();
     if (!value) return;
-    const valueLower = value.toLowerCase();
-    const profile = profiles.find((p) => p.display_name?.trim().toLowerCase() === valueLower);
-    const { error } = await supabase.from("category_assignments").insert({
-      category_id: catId,
-      user_id: profile?.id ?? null,
-      volunteer_name: profile ? null : value,
-    });
-    if (error) return toast.error(error.message);
+    try {
+      await assignByNameFn({ data: { categoryId: catId, name: value } });
+    } catch (e) {
+      return toast.error(e instanceof Error ? e.message : "Couldn't add that volunteer.");
+    }
     toast.success("Volunteer added.");
     setDrafts({ ...drafts, [catId]: "" });
     if (valueOverride !== undefined) setQuickVolunteerName("");
@@ -222,10 +227,14 @@ function CategoriesPage() {
   };
 
   const removeAssign = async (id: string) => {
-    const { error } = await supabase.from("category_assignments").delete().eq("id", id);
-    if (error) return toast.error(error.message);
+    try {
+      await removeAssignFn({ data: { assignmentId: id } });
+    } catch (e) {
+      return toast.error(e instanceof Error ? e.message : "Couldn't remove that volunteer.");
+    }
     load();
   };
+
 
   const labelFor = (a: Assign) => {
     if (a.volunteer_name) return a.volunteer_name;
