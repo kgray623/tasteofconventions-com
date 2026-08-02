@@ -1,42 +1,51 @@
-# Tina Santana Referral Reconciliation
+## Goal
 
-**Rule:** Every referral you provided from Tina’s 12 screenshots belongs to Tina **unless the same guest/household was already loaded for another committee member first**. Existing first ownership wins. No guessing and no moving first-loaded guests.
+1. Every committee member (and admin) can see, on their own dashboard, which of the names they submitted are **duplicates already credited to another referrer** — so nobody thinks a name was dropped.
+2. Produce a line-by-line accounting for Tina Santana's **second list image**, matching the same keep/move/add ledger format as her first list.
 
-## 1. Reconstruct Tina’s complete source list
-- Combine every Tina list previously supplied: the two confirmed upload batches, the first handwritten/SMS group, and the second handwritten list.
-- Build one authoritative working roster containing each supplied name/household and phone number.
-- Preserve household entries exactly as submitted; do not split, merge, rename, or discard them unless your screenshot explicitly supplies a correction such as **Selina Neizer**.
-- Report two totals separately:
-  - referral/household records;
-  - named people represented by those records.
+## Part 1 — New "Duplicate" category on the committee dashboard
 
-## 2. Match every entry against the database
-- Match primarily by normalized phone number, including country-code and punctuation differences.
-- Use names only to flag possible matches for manual review; never transfer ownership from a name-only guess.
-- For every Tina entry, classify it as:
-  1. already credited to Tina;
-  2. first loaded under another committee member, with that owner and original load date;
-  3. present but uncredited;
-  4. genuinely missing.
-- Detect duplicate database rows sharing the same normalized phone so one household is not counted twice.
+Today the dashboard only flags duplicates *inside* a single person's own list (same name/phone twice). It has no way to show "you submitted this person, but they were already on someone else's list" — that name simply disappears from the submitter's view, which is what caused the confusion.
 
-## 3. Apply first-loaded-wins correctly
-- Keep every guest already loaded first by Shelley/Pat Monaghan, Kari Gray, Mysha Woods, Betsaida Ruiz, or another committee member with that original owner.
-- Credit every uncredited matching row from Tina’s supplied lists to Tina.
-- Add **every genuinely missing Tina referral**, not merely the four previously identified, with Tina’s `inviter_id`, a valid RSVP token, pending RSVP state, and not-yet-texted state.
-- Preserve all existing RSVP responses, party sizes, meal preorders, sent dates, notes, and guest information.
-- Apply the explicit Selina surname correction without changing her referral ownership or related submissions.
+Fix in two pieces:
 
-## 4. Protect tracking permanently
-- Change automatic RSVP referral linking so it may populate an empty referral only; it must never overwrite a non-null first-loaded committee owner.
-- Keep explicit admin corrections possible through the audited admin path.
-- Record the permanent project rule: **referral ownership is assigned from the committee member’s submitted list; normalized-phone first-loaded ownership wins; duplicates never transfer ownership; no referral association is guessed or overwritten from RSVP text.**
+**A. Record the overlap (currently nowhere in the database).**
+New table `referral_duplicates`:
+- `claimed_by_inviter_id` — the committee member who submitted the name later
+- `invitation_id` — the existing guest record
+- `owner_inviter_id` — the first-loaded owner who keeps the credit
+- `source_note` — e.g. "Tina list image 2, 2026-08-02"
+- standard timestamps, RLS so a committee member reads only rows where they are the claimer or owner, admins read all
 
-## 5. Prove the result end to end
-- Read back every source-list entry and produce a reconciliation table showing: submitted name, phone, database name, status, credited committee member, original load date, and action taken.
-- Confirm Tina’s final totals for both referral records and represented people.
-- Verify Tina’s exact committee dashboard on the mobile viewport shows all referrals credited to her and does not show first-loaded referrals belonging to others.
-- Verify the admin Committee Guests view shows the same ownership and counts.
-- Confirm no RSVP, meal preorder, guest submission, or other committee member’s first-loaded referral was removed, hidden, or overwritten.
+Backfill it with every overlap already identified in Tina's lists (the 6–7 households retained with Gray, Monaghan, Moore, Diaz, Cole, Bey, Hopkins) plus any found in her second image.
 
-**Timestamp:** 2026-08-02 18:14 UTC
+**B. Show it.**
+On `committee-workspace.tsx`, add a collapsible group **"Duplicates — credited to someone else"** alongside the existing groups, listing each name with:
+- guest name + phone
+- an amber `Duplicate` badge (distinct from the existing red in-list `Duplicate` badge)
+- "Already credited to **{owner name}** — first loaded {date}"
+- RSVP status if any, read-only (no text/mark-sent actions, since they aren't this person's to text)
+
+Counts stay honest: these rows are **not** added to the member's own referral totals; the group header shows its own count, e.g. "Duplicates — credited to someone else (6)". Admin view at `/admin/inviters` gets the same group per committee member.
+
+## Part 2 — Accounting for Tina's second list image
+
+Method (no guessing):
+1. Re-read the second image from this conversation and transcribe every line verbatim into a ledger (name as written, phone as written).
+2. Match each line against live `invitations` by last-10-digit phone first, then normalized name.
+3. Classify each into exactly one bucket:
+   - **Already Tina's** — `inviter_id` = Tina, no change
+   - **Newly credited to Tina** — existed with no referral owner → credit Tina
+   - **Duplicate, stays with earlier owner** — First-Loaded Wins → record in `referral_duplicates` so it shows on Tina's dashboard
+   - **New — added** — not in the system → create under Tina
+   - **Unreadable / needs confirmation** — listed back to you rather than guessed
+4. Apply the changes, then read back from the database and report totals: `X already hers + Y newly credited + Z added = her new owned count`, plus `D duplicates visible but credited elsewhere`.
+5. Verify on Tina's actual mobile committee dashboard that the owned count and the new Duplicates group both render correctly.
+
+If any line in the second image is not legible enough to match with certainty, it will be reported to you for confirmation instead of being invented.
+
+## Technical notes
+
+- One migration: create `referral_duplicates` with GRANTs, RLS, and owner/claimer read policies; no changes to existing referral triggers (the First-Loaded-Wins guard in `link_invitation_inviter_from_rsvp` stays as-is).
+- Frontend changes limited to `src/components/committee-workspace.tsx` and the admin committee-guests route; existing in-list duplicate detection is untouched.
+- No guest record is deleted, renamed, or hidden at any point.
