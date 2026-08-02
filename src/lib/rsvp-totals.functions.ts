@@ -322,8 +322,9 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
       // Count guests I invited even when someone else (an admin) uploaded them.
       const mineInviterIds = new Set(myInviters.map((r) => r.id).filter(Boolean) as string[]);
       const isMine = (inv: { host_id: string | null; inviter_id: string | null }) =>
-        (!!inv.host_id && mineHostIds.has(inv.host_id)) ||
-        (!!inv.inviter_id && mineInviterIds.has(inv.inviter_id));
+        inv.inviter_id
+          ? mineInviterIds.has(inv.inviter_id)
+          : !!inv.host_id && mineHostIds.has(inv.host_id);
 
       const myGroupIds = new Set(
         invitationRows.filter(isMine).map((inv) => idToGroup.get(inv.id) ?? inv.id),
