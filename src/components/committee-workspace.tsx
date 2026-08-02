@@ -489,12 +489,15 @@ export function CommitteeWorkspace() {
   };
 
   const mineHostIdSet = new Set(myHostIds.length ? myHostIds : user ? [user.id] : []);
-  // A guest belongs to me if I uploaded them (host_id) OR I'm recorded as the
-  // person who invited them (inviter_id) — admins often upload on our behalf.
+  // Referral ownership is authoritative when inviter_id exists. host_id is
+  // only the fallback for older/uncredited uploads; otherwise an admin or
+  // committee uploader would see guests already credited to someone else.
   const mineInviterIdSet = new Set(myInviterIds);
   const myGuestsUnsorted = user
     ? guests.filter(
-        (g) => mineHostIdSet.has(g.host_id) || (g.inviter_id ? mineInviterIdSet.has(g.inviter_id) : false),
+        (g) => g.inviter_id
+          ? mineInviterIdSet.has(g.inviter_id)
+          : mineHostIdSet.has(g.host_id),
       )
     : [];
 
