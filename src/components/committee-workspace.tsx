@@ -57,6 +57,22 @@ const pickSingleRsvp = (
     | null,
 ) => (Array.isArray(rsvps) ? rsvps[0] : rsvps) ?? null;
 
+/**
+ * A name this committee member submitted that was already on the guest list
+ * under an earlier referrer. First-Loaded Wins: the credit stays with the
+ * original owner, but the name is shown here so nobody thinks it was dropped.
+ */
+type CreditedElsewhereRow = {
+  id: string;
+  guest_name: string;
+  guest_phone: string | null;
+  owner_name: string | null;
+  first_loaded_at: string | null;
+  rsvp_status: string | null;
+  source_note: string | null;
+};
+
+
 export function CommitteeWorkspace() {
   const { user } = useAuth();
   const { isAdmin } = useAdminView();
