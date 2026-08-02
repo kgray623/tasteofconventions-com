@@ -526,7 +526,7 @@ function Dashboard() {
             {myCats.length === 0 ? (
               <Card className="p-8 text-center text-sm text-muted-foreground">
                 You haven't volunteered for any roles yet.{" "}
-                <Link to="/admin/categories" className="text-terracotta underline">
+                <Link to="/volunteer" className="text-terracotta underline">
                   Browse volunteer opportunities
                 </Link>
                 .
