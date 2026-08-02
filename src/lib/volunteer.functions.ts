@@ -119,3 +119,62 @@ export const listMyVolunteerRoles = createServerFn({ method: "GET" })
       .order("sort_order");
     return (cats ?? []).map((c) => ({ id: c.id, name: c.name, description: c.description ?? null }));
   });
+
+/** Admin/committee: add someone to a category by typed name. */
+export const volunteerAssignByName = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { categoryId: string; name: string }) => {
+    if (!data?.categoryId || !data?.name?.trim()) throw new Error("Name and category are required.");
+    return { categoryId: data.categoryId, name: data.name.trim() };
+  })
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: roles } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId);
+    const allowed = (roles ?? []).some((r) => r.role === "admin" || r.role === "team");
+    if (!allowed) throw new Error("Not allowed.");
+
+    const { data: profiles } = await supabaseAdmin.from("profiles").select("id,display_name");
+    const lower = data.name.toLowerCase();
+    const profile = (profiles ?? []).find(
+      (p) => (p.display_name ?? "").trim().toLowerCase() === lower,
+    );
+    const { error } = await supabaseAdmin.from("category_assignments").insert({
+      category_id: data.categoryId,
+      user_id: profile?.id ?? null,
+      volunteer_name: profile ? null : data.name,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Admin/committee: remove any assignment row. */
+export const volunteerRemoveAssignment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { assignmentId: string }) => {
+    if (!data?.assignmentId) throw new Error("Missing assignment.");
+    return { assignmentId: data.assignmentId };
+  })
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: roles } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId);
+    const allowed = (roles ?? []).some((r) => r.role === "admin" || r.role === "team");
+    const { data: row } = await supabaseAdmin
+      .from("category_assignments")
+      .select("id,user_id")
+      .eq("id", data.assignmentId)
+      .maybeSingle();
+    if (!row) return { ok: true };
+    if (!allowed && row.user_id !== context.userId) throw new Error("Not allowed.");
+    const { error } = await supabaseAdmin
+      .from("category_assignments")
+      .delete()
+      .eq("id", data.assignmentId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
