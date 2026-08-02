@@ -26,6 +26,7 @@ import { Route as RsvpIndexRouteImport } from './routes/rsvp.index'
 import { Route as RsvpTokenRouteImport } from './routes/rsvp.$token'
 import { Route as ExportsFilenameRouteImport } from './routes/exports.$filename'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
+import { Route as AuthenticatedVolunteerRouteImport } from './routes/_authenticated/volunteer'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
@@ -143,6 +144,11 @@ const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
   id: '/email/unsubscribe',
   path: '/email/unsubscribe',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedVolunteerRoute = AuthenticatedVolunteerRouteImport.update({
+  id: '/volunteer',
+  path: '/volunteer',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
@@ -350,6 +356,7 @@ export interface FileRoutesByFullPath {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/volunteer': typeof AuthenticatedVolunteerRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/exports/$filename': typeof ExportsFilenameRoute
   '/rsvp/$token': typeof RsvpTokenRoute
@@ -400,6 +407,7 @@ export interface FileRoutesByTo {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/volunteer': typeof AuthenticatedVolunteerRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/exports/$filename': typeof ExportsFilenameRoute
   '/rsvp/$token': typeof RsvpTokenRoute
@@ -453,6 +461,7 @@ export interface FileRoutesById {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/volunteer': typeof AuthenticatedVolunteerRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/exports/$filename': typeof ExportsFilenameRoute
   '/rsvp/$token': typeof RsvpTokenRoute
@@ -506,6 +515,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/admin'
     | '/dashboard'
+    | '/volunteer'
     | '/email/unsubscribe'
     | '/exports/$filename'
     | '/rsvp/$token'
@@ -556,6 +566,7 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/dashboard'
+    | '/volunteer'
     | '/email/unsubscribe'
     | '/exports/$filename'
     | '/rsvp/$token'
@@ -608,6 +619,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
+    | '/_authenticated/volunteer'
     | '/email/unsubscribe'
     | '/exports/$filename'
     | '/rsvp/$token'
@@ -793,6 +805,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/email/unsubscribe'
       preLoaderRoute: typeof EmailUnsubscribeRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/volunteer': {
+      id: '/_authenticated/volunteer'
+      path: '/volunteer'
+      fullPath: '/volunteer'
+      preLoaderRoute: typeof AuthenticatedVolunteerRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
@@ -1083,12 +1102,14 @@ const AuthenticatedAdminRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedVolunteerRoute: typeof AuthenticatedVolunteerRoute
   AuthenticatedInvitationsNewRoute: typeof AuthenticatedInvitationsNewRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedVolunteerRoute: AuthenticatedVolunteerRoute,
   AuthenticatedInvitationsNewRoute: AuthenticatedInvitationsNewRoute,
 }
 
