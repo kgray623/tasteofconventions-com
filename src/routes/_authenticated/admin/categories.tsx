@@ -141,6 +141,9 @@ function CategoriesPage() {
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [editingDesc, setEditingDesc] = useState<Record<string, string>>({});
   const [chatOpen, setChatOpen] = useState<string | null>(null);
+  const signUpFn = useServerFn(volunteerSignUp);
+  const assignByNameFn = useServerFn(volunteerAssignByName);
+  const removeAssignFn = useServerFn(volunteerRemoveAssignment);
 
   const load = async () => {
     const [c, a, p] = await Promise.all([
