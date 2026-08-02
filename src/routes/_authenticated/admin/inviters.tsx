@@ -57,6 +57,15 @@ type GuestRow = {
   rsvp_id: string | null;
 };
 
+/** A name this committee member submitted that an earlier referrer already owns. */
+type DuplicateRow = {
+  id: string;
+  guest_name: string;
+  guest_phone: string | null;
+  owner_inviter_id: string | null;
+  first_loaded_at: string | null;
+};
+
 
 const TOTAL_CAP = 550;
 
