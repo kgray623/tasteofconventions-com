@@ -87,6 +87,10 @@ export function CommitteeWorkspace() {
   const [myGuestsSort, setMyGuestsSort] = useState<"grouped" | "alpha" | "newest" | "oldest">("grouped");
   const [openFlatGroup, setOpenFlatGroup] = useState(true);
   const [totalsRefreshKey, setTotalsRefreshKey] = useState(0);
+  const [creditedElsewhere, setCreditedElsewhere] = useState<CreditedElsewhereRow[]>([]);
+  const [openCreditedElsewhere, setOpenCreditedElsewhere] = useState(true);
+
+
 
 
   const [lastSeenYesAt, setLastSeenYesAt] = useState<number | null>(null);
