@@ -302,6 +302,57 @@ export function CommitteeWorkspace() {
     };
   }, [user?.id]);
 
+  // Names I submitted that were already credited to an earlier referrer.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (!myInviterIds.length) {
+        if (alive) setCreditedElsewhere([]);
+        return;
+      }
+      const { data, error } = await supabase
+        .from("referral_duplicates")
+        .select(
+          "id,source_note,owner_inviter_id,invitation_id,invitations(guest_name,guest_phone,created_at,rsvps(status))",
+        )
+        .in("claimed_by_inviter_id", myInviterIds);
+      if (error || !alive) return;
+      const ownerIds = Array.from(
+        new Set((data ?? []).map((r) => r.owner_inviter_id).filter(Boolean) as string[]),
+      );
+      const ownerNames = new Map<string, string>();
+      if (ownerIds.length) {
+        const { data: owners } = await supabase.from("inviters").select("id,name").in("id", ownerIds);
+        for (const o of owners ?? []) ownerNames.set(o.id, (o.name ?? "").trim());
+      }
+      if (!alive) return;
+      const rows: CreditedElsewhereRow[] = (data ?? []).map((r) => {
+        const inv = (Array.isArray(r.invitations) ? r.invitations[0] : r.invitations) as
+          | { guest_name: string; guest_phone: string | null; created_at: string | null; rsvps: unknown }
+          | null;
+        const rsvp = pickSingleRsvp(
+          (inv?.rsvps ?? null) as Parameters<typeof pickSingleRsvp>[0],
+        );
+        return {
+          id: r.id,
+          guest_name: inv?.guest_name ?? "Unknown",
+          guest_phone: inv?.guest_phone ?? null,
+          owner_name: r.owner_inviter_id ? ownerNames.get(r.owner_inviter_id) ?? null : null,
+          first_loaded_at: inv?.created_at ?? null,
+          rsvp_status: rsvp?.status ?? null,
+          source_note: r.source_note ?? null,
+        };
+      });
+      rows.sort((a, b) => a.guest_name.localeCompare(b.guest_name, undefined, { sensitivity: "base" }));
+      setCreditedElsewhere(rows);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [myInviterIds.join(",")]);
+
+
+
   const refreshGuestsNow = async () => {
     if (manualRefreshingGuests) return;
     loadingGuestsRef.current = false;
