@@ -821,6 +821,58 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_duplicates: {
+        Row: {
+          claimed_by_inviter_id: string
+          created_at: string
+          id: string
+          invitation_id: string
+          owner_inviter_id: string | null
+          source_note: string | null
+          updated_at: string
+        }
+        Insert: {
+          claimed_by_inviter_id: string
+          created_at?: string
+          id?: string
+          invitation_id: string
+          owner_inviter_id?: string | null
+          source_note?: string | null
+          updated_at?: string
+        }
+        Update: {
+          claimed_by_inviter_id?: string
+          created_at?: string
+          id?: string
+          invitation_id?: string
+          owner_inviter_id?: string | null
+          source_note?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_duplicates_claimed_by_inviter_id_fkey"
+            columns: ["claimed_by_inviter_id"]
+            isOneToOne: false
+            referencedRelation: "inviters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_duplicates_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "invitations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_duplicates_owner_inviter_id_fkey"
+            columns: ["owner_inviter_id"]
+            isOneToOne: false
+            referencedRelation: "inviters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       restaurants: {
         Row: {
           active: boolean

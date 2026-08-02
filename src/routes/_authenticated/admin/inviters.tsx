@@ -57,6 +57,15 @@ type GuestRow = {
   rsvp_id: string | null;
 };
 
+/** A name this committee member submitted that an earlier referrer already owns. */
+type DuplicateRow = {
+  id: string;
+  guest_name: string;
+  guest_phone: string | null;
+  owner_inviter_id: string | null;
+  first_loaded_at: string | null;
+};
+
 
 const TOTAL_CAP = 550;
 
@@ -70,6 +79,8 @@ function InvitersPage() {
   const [broughtCounts, setBroughtCounts] = useState<Record<string, number>>({});
   const [guestsByHost, setGuestsByHost] = useState<Record<string, GuestRow[]>>({});
   const [guestsByInviter, setGuestsByInviter] = useState<Record<string, GuestRow[]>>({});
+  const [duplicatesByInviter, setDuplicatesByInviter] = useState<Record<string, DuplicateRow[]>>({});
+
   const [expandedHost, setExpandedHost] = useState<string | null>(null);
   const [rowBusy, setRowBusy] = useState<string | null>(null);
   const [committee, setCommittee] = useState<CommitteeRow[]>([]);
@@ -129,6 +140,31 @@ function InvitersPage() {
       }
       setGuestsByHost(byHost);
       setGuestsByInviter(byInviter);
+
+      // Names a committee member submitted that were already credited to an
+      // earlier referrer (First-Loaded Wins). Shown so nothing looks dropped.
+      const { data: dupRows } = await supabase
+        .from("referral_duplicates")
+        .select("id,claimed_by_inviter_id,owner_inviter_id,invitations(guest_name,guest_phone,created_at)");
+      const dupMap: Record<string, DuplicateRow[]> = {};
+      for (const row of dupRows ?? []) {
+        const inv = (Array.isArray(row.invitations) ? row.invitations[0] : row.invitations) as
+          | { guest_name: string; guest_phone: string | null; created_at: string | null }
+          | null;
+        (dupMap[row.claimed_by_inviter_id] ||= []).push({
+          id: row.id,
+          guest_name: inv?.guest_name ?? "Unknown",
+          guest_phone: inv?.guest_phone ?? null,
+          owner_inviter_id: row.owner_inviter_id,
+          first_loaded_at: inv?.created_at ?? null,
+        });
+      }
+      for (const list of Object.values(dupMap)) {
+        list.sort((a, b) => a.guest_name.localeCompare(b.guest_name));
+      }
+      setDuplicatesByInviter(dupMap);
+
+
 
       const [{ data: commData }, { data: teamInviteData }] = await Promise.all([
         supabase
@@ -546,7 +582,32 @@ function InvitersPage() {
                       )}
                     </div>
                   )}
+                  {(duplicatesByInviter[i.id]?.length ?? 0) > 0 && (
+                    <div className="rounded border border-amber-300 bg-amber-50/60 p-2">
+                      <p className="text-xs font-semibold text-amber-800">
+                        Duplicates — credited to someone else ({duplicatesByInviter[i.id].length})
+                      </p>
+                      <ul className="mt-1 space-y-1">
+                        {duplicatesByInviter[i.id].map((d) => {
+                          const owner = inviters.find((x) => x.id === d.owner_inviter_id)?.name;
+                          return (
+                            <li key={d.id} className="text-xs">
+                              <span className="font-medium">{d.guest_name}</span>
+                              {d.guest_phone ? ` · ${d.guest_phone}` : ""}
+                              <span className="text-muted-foreground">
+                                {" "}— credited to {owner ?? "another committee member"}
+                                {d.first_loaded_at
+                                  ? ` (first loaded ${new Date(d.first_loaded_at).toLocaleDateString()})`
+                                  : ""}
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
                 </div>
+
               );
             })}
           </div>
