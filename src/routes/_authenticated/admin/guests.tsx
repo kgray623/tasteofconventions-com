@@ -310,16 +310,20 @@ function GuestsPage() {
         r.linked_inviter_name ?? "",
       ].map(escapeCsv).join(","));
     }
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `guests-${activeStatus}-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    const csv = lines.join("\n");
+    const filename = `guests-${activeStatus}-${new Date().toISOString().slice(0, 10)}.csv`;
+    setFallback({ filename, text: csv });
+    const res = downloadTextFile(filename, csv);
+    if (res.ok) {
+      toast.success("Guest list downloaded", {
+        action: { label: "Copy instead", onClick: () => setFallbackOpen(true) },
+      });
+    } else {
+      setFallbackOpen(true);
+      toast.error("Your browser blocked the download", { description: res.reason });
+    }
   };
+
 
 
   const tabs: StatusFilter[] = ["all", "confirmed", "declined", "maybe", "waitlist", "pending"];
