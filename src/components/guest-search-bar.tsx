@@ -208,6 +208,13 @@ export function GuestSearchBar() {
               {voiceSupported ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
             </button>
           </div>
+          {(listening || voiceError) && (
+            <p className={cn("mt-1 text-xs", voiceError ? "text-destructive" : "text-muted-foreground")}>
+              {voiceError ?? "Listening… speak a guest name."}
+            </p>
+          )}
+
+
 
           {showPanel && (
             <div className="absolute left-0 right-0 mt-1 rounded-md border border-border bg-popover shadow-lg max-h-[420px] overflow-auto z-50">
