@@ -97,6 +97,65 @@ export function GuestSearchBar() {
     };
   }, []);
 
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const [listening, setListening] = useState(false);
+  const [voiceSupported, setVoiceSupported] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setVoiceSupported(!!getSpeechRecognitionCtor());
+    return () => {
+      recognitionRef.current?.abort();
+      recognitionRef.current = null;
+    };
+  }, []);
+
+  const toggleVoice = useCallback(() => {
+    setVoiceError(null);
+    if (listening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    const Ctor = getSpeechRecognitionCtor();
+    if (!Ctor) {
+      setVoiceError("Voice search isn't supported in this browser.");
+      return;
+    }
+    const rec = new Ctor();
+    rec.lang = "en-US";
+    rec.continuous = false;
+    rec.interimResults = true;
+    rec.onresult = (event: any) => {
+      let text = "";
+      for (let i = 0; i < event.results.length; i += 1) {
+        text += event.results[i][0].transcript;
+      }
+      const cleaned = text.replace(/[.,!?]+$/g, "").trim();
+      setQ(cleaned);
+      setOpen(true);
+    };
+    rec.onerror = (event: any) => {
+      const code = event?.error;
+      setVoiceError(
+        code === "not-allowed" || code === "service-not-allowed"
+          ? "Microphone access was blocked. Allow it in your browser settings."
+          : code === "no-speech"
+            ? "I didn't catch that — try again."
+            : "Voice search failed. Please try again.",
+      );
+      setListening(false);
+    };
+    rec.onend = () => setListening(false);
+    recognitionRef.current = rec;
+    try {
+      rec.start();
+      setListening(true);
+    } catch {
+      setVoiceError("Voice search couldn't start. Please try again.");
+      setListening(false);
+    }
+  }, [listening]);
+
   const showPanel = open && trimmed.length >= 2;
 
   return (
@@ -114,24 +173,42 @@ export function GuestSearchBar() {
               setOpen(true);
             }}
             onFocus={() => setOpen(true)}
-            placeholder="Search guests by name, phone, or committee member"
-            className="pl-9 pr-9 h-10"
+            placeholder={listening ? "Listening… say a name" : "Search guests by name, phone, or committee member"}
+            className={cn("pl-9 h-10", q ? "pr-20" : "pr-11")}
             aria-label="Search guests"
           />
-          {q && (
+          <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+            {q && (
+              <button
+                type="button"
+                onClick={() => {
+                  setQ("");
+                  setResults([]);
+                  setOpen(false);
+                }}
+                className="p-1 text-muted-foreground hover:text-foreground"
+                aria-label="Clear search"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
             <button
               type="button"
-              onClick={() => {
-                setQ("");
-                setResults([]);
-                setOpen(false);
-              }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
-              aria-label="Clear search"
+              onClick={toggleVoice}
+              aria-label={listening ? "Stop voice search" : "Search by voice"}
+              aria-pressed={listening}
+              title={voiceSupported ? "Search by voice" : "Voice search isn't supported in this browser"}
+              className={cn(
+                "p-1.5 rounded-full transition-colors",
+                listening
+                  ? "bg-primary text-primary-foreground animate-pulse"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
             >
-              <X className="w-4 h-4" />
+              {voiceSupported ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
             </button>
-          )}
+          </div>
+
           {showPanel && (
             <div className="absolute left-0 right-0 mt-1 rounded-md border border-border bg-popover shadow-lg max-h-[420px] overflow-auto z-50">
               {loading && (
