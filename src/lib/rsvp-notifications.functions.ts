@@ -12,7 +12,12 @@ export type RsvpNotification = {
   attendance_mode: string | null;
   responded_at: string;
   mine: boolean;
+  /** Committee member the guest is credited to, if any. */
+  inviter_name: string | null;
+  /** Exactly what the guest typed for "Who invited you?", if anything. */
+  referred_by_text: string | null;
 };
+
 
 export type RsvpNotificationsResult = {
   items: RsvpNotification[];
