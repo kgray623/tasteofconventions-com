@@ -686,7 +686,30 @@ export const getPublicRsvpByPhone = createServerFn({ method: "GET" })
 export const submitPublicRsvp = createServerFn({ method: "POST" })
   .inputValidator((d) => PublicRsvpInput.parse(d))
   .handler(async ({ data }) => {
-    const validatedInvitedBy = await assertInvitedByIsCommittee(data.invited_by);
+    try {
+      return await submitPublicRsvpInner(data);
+    } catch (err) {
+      await logRsvpEvent(
+        "RSVP SUBMIT FAILED",
+        {
+          source: "public",
+          guest_name: data.guest_name,
+          guest_phone: data.guest_phone ?? null,
+          invited_by_raw: data.invited_by ?? null,
+          status: data.status,
+          party_size: data.party_size,
+          attendance_mode: data.attendance_mode ?? null,
+          reason: err instanceof Error ? err.message : String(err),
+        },
+        false,
+      );
+      throw err;
+    }
+  });
+
+async function submitPublicRsvpInner(data: z.infer<typeof PublicRsvpInput>) {
+    const invitedBy = await resolveInvitedBy(data.invited_by);
+
     // Find an event to attach to
     const { data: ev } = await supabaseAdmin
       .from("events")
