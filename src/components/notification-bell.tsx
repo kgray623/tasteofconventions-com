@@ -27,6 +27,34 @@ function replyLabel(status: string | null, mode: string | null, party: number) {
   return `Replied · ${who}`;
 }
 
+function normName(s: string | null | undefined) {
+  return (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
+}
+
+/** "Referred by <who>", showing the guest → committee chain when they differ. */
+function ReferredBy({ typed, inviter }: { typed: string | null; inviter: string | null }) {
+  if (!inviter && !typed) {
+    return <p className="text-[11px] text-muted-foreground italic">Referrer not recorded</p>;
+  }
+  const sameName = !!typed && !!inviter && normName(typed) === normName(inviter);
+  if (!inviter) {
+    return (
+      <p className="text-[11px] text-muted-foreground truncate">
+        Referred by <span className="italic">{typed}</span> · not yet credited
+      </p>
+    );
+  }
+  if (!typed || sameName) {
+    return <p className="text-[11px] text-muted-foreground truncate">Referred by {inviter}</p>;
+  }
+  return (
+    <p className="text-[11px] text-muted-foreground truncate">
+      Referred by <span className="italic">{typed}</span> · credited to {inviter}
+    </p>
+  );
+}
+
+
 export function NotificationBell() {
   const unread = useChatUnread();
   const rsvps = useNewRsvps();
