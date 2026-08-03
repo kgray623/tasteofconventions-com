@@ -67,6 +67,9 @@ function PreorderReportPage() {
     setLoading(false);
   };
 
+  const [fallback, setFallback] = useState<{ filename: string; text: string } | null>(null);
+  const [fallbackOpen, setFallbackOpen] = useState(false);
+
   const deleteRow = async (id: string, name: string) => {
     const ok = await performProtectedDelete({
       table: "cuisine_preorders",
