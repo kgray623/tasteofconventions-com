@@ -355,6 +355,15 @@ function AdminOverview() {
           <StatRow row={{ label: "Recently deleted", value: "→", to: "/admin/recently-deleted" }} />
         </Card>
       </div>
+
+      <ExportFallbackDialog
+        open={fallbackOpen}
+        onOpenChange={setFallbackOpen}
+        filename={fallback?.filename ?? "reconciliation.csv"}
+        text={fallback?.text ?? ""}
+        title="Reconciliation export"
+      />
     </div>
+
   );
 }
