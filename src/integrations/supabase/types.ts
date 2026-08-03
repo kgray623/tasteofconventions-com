@@ -905,6 +905,7 @@ export type Database = {
           name: string
           order_ready: boolean
           phone: string | null
+          website: string | null
         }
         Insert: {
           active?: boolean
@@ -916,6 +917,7 @@ export type Database = {
           name: string
           order_ready?: boolean
           phone?: string | null
+          website?: string | null
         }
         Update: {
           active?: boolean
@@ -927,6 +929,7 @@ export type Database = {
           name?: string
           order_ready?: boolean
           phone?: string | null
+          website?: string | null
         }
         Relationships: []
       }

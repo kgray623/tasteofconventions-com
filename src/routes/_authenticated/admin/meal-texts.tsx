@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Check, Copy, Loader2, MessageSquare, Phone, RotateCcw, Send, Utensils } from "lucide-react";
+import { Check, Copy, Globe, Loader2, MessageSquare, Phone, RotateCcw, Send, Utensils } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -58,14 +58,24 @@ function smsHref(numbers: string[], body: string) {
 
 function renderTemplate(
   tpl: string,
-  ctx: { firstName: string; restaurantName: string; restaurantPhone: string; order: string },
+  ctx: {
+    firstName: string;
+    restaurantName: string;
+    restaurantPhone: string;
+    restaurantWebsite: string;
+    order: string;
+  },
 ) {
   return tpl
     .replaceAll("{first_name}", ctx.firstName)
     .replaceAll("{restaurant_name}", ctx.restaurantName)
     .replaceAll("{restaurant_phone}", ctx.restaurantPhone)
-    .replaceAll("{order}", ctx.order);
+    .replaceAll("{restaurant_website}", ctx.restaurantWebsite)
+    .replaceAll("{order}", ctx.order)
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
+
 
 const orderText = (qty: number, cuisine: string) =>
   `${qty} ${cuisine} meal${qty === 1 ? "" : "s"}`;
@@ -128,6 +138,7 @@ function MealTextsPage() {
       firstName: row.name.split(/\s+/)[0] ?? row.name,
       restaurantName: r?.name ?? row.cuisine,
       restaurantPhone: r?.phone?.trim() || "[add the restaurant's phone number]",
+      restaurantWebsite: r?.website?.trim() || "",
       order: orderText(row.qty, row.cuisine),
     });
   };
@@ -138,9 +149,11 @@ function MealTextsPage() {
       firstName: "friends",
       restaurantName: r?.name ?? cuisine,
       restaurantPhone: r?.phone?.trim() || "[add the restaurant's phone number]",
+      restaurantWebsite: r?.website?.trim() || "",
       order: `your ${cuisine} meal order`,
     });
   };
+
 
   const setSent = async (ids: string[], sent: boolean) => {
     const unique = [...new Set(ids)];
@@ -157,16 +170,25 @@ function MealTextsPage() {
     }
   };
 
-  const updateContact = async (r: MealRestaurant, phone: string, orderReady: boolean) => {
+  const updateContact = async (
+    r: MealRestaurant,
+    phone: string,
+    orderReady: boolean,
+    website?: string | null,
+  ) => {
+    const nextWebsite = website === undefined ? r.website : website;
     setRestaurants((prev) =>
-      prev.map((x) => (x.id === r.id ? { ...x, phone, order_ready: orderReady } : x)),
+      prev.map((x) =>
+        x.id === r.id ? { ...x, phone, order_ready: orderReady, website: nextWebsite } : x,
+      ),
     );
     try {
-      await saveContact({ data: { id: r.id, phone, orderReady } });
+      await saveContact({ data: { id: r.id, phone, orderReady, website: nextWebsite ?? null } });
     } catch (e) {
       toast.error("Couldn't save the restaurant details", { description: getErrorMessage(e) });
     }
   };
+
 
   const copy = async (text: string) => {
     try {
@@ -232,11 +254,28 @@ function MealTextsPage() {
                   onBlur={(e) => void updateContact(r, e.target.value, r.order_ready)}
                 />
               </div>
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
+                <Input
+                  value={r.website ?? ""}
+                  placeholder="Restaurant website (optional)"
+                  inputMode="url"
+                  onChange={(e) =>
+                    setRestaurants((prev) =>
+                      prev.map((x) => (x.id === r.id ? { ...x, website: e.target.value } : x)),
+                    )
+                  }
+                  onBlur={(e) =>
+                    void updateContact(r, r.phone ?? "", r.order_ready, e.target.value)
+                  }
+                />
+              </div>
               {!r.phone?.trim() && (
                 <p className="text-xs text-brand-red">
                   Add this number before texting — the message needs it.
                 </p>
               )}
+
             </div>
           ))}
         </div>
@@ -281,8 +320,10 @@ function MealTextsPage() {
         />
         <p className="text-xs text-muted-foreground">
           Placeholders: <code>{"{first_name}"}</code>, <code>{"{restaurant_name}"}</code>,{" "}
-          <code>{"{restaurant_phone}"}</code>, <code>{"{order}"}</code>.
+          <code>{"{restaurant_phone}"}</code>, <code>{"{restaurant_website}"}</code>,{" "}
+          <code>{"{order}"}</code>.
         </p>
+
       </Card>
 
       <div className="flex items-center gap-2">
