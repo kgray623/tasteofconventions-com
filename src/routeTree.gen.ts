@@ -44,6 +44,7 @@ import { Route as AuthenticatedAdminRecentlyDeletedRouteImport } from './routes/
 import { Route as AuthenticatedAdminPreordersRouteImport } from './routes/_authenticated/admin/preorders'
 import { Route as AuthenticatedAdminMyVolunteerChatsRouteImport } from './routes/_authenticated/admin/my-volunteer-chats'
 import { Route as AuthenticatedAdminMyRsvpRouteImport } from './routes/_authenticated/admin/my-rsvp'
+import { Route as AuthenticatedAdminMealTextsMineRouteImport } from './routes/_authenticated/admin/meal-texts-mine'
 import { Route as AuthenticatedAdminMealTextsRouteImport } from './routes/_authenticated/admin/meal-texts'
 import { Route as AuthenticatedAdminInvitersRouteImport } from './routes/_authenticated/admin/inviters'
 import { Route as AuthenticatedAdminInvitationRouteImport } from './routes/_authenticated/admin/invitation'
@@ -249,6 +250,12 @@ const AuthenticatedAdminMyRsvpRoute =
     path: '/my-rsvp',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminMealTextsMineRoute =
+  AuthenticatedAdminMealTextsMineRouteImport.update({
+    id: '/meal-texts-mine',
+    path: '/meal-texts-mine',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminMealTextsRoute =
   AuthenticatedAdminMealTextsRouteImport.update({
     id: '/meal-texts',
@@ -388,6 +395,7 @@ export interface FileRoutesByFullPath {
   '/admin/invitation': typeof AuthenticatedAdminInvitationRoute
   '/admin/inviters': typeof AuthenticatedAdminInvitersRoute
   '/admin/meal-texts': typeof AuthenticatedAdminMealTextsRoute
+  '/admin/meal-texts-mine': typeof AuthenticatedAdminMealTextsMineRoute
   '/admin/my-rsvp': typeof AuthenticatedAdminMyRsvpRoute
   '/admin/my-volunteer-chats': typeof AuthenticatedAdminMyVolunteerChatsRoute
   '/admin/preorders': typeof AuthenticatedAdminPreordersRoute
@@ -441,6 +449,7 @@ export interface FileRoutesByTo {
   '/admin/invitation': typeof AuthenticatedAdminInvitationRoute
   '/admin/inviters': typeof AuthenticatedAdminInvitersRoute
   '/admin/meal-texts': typeof AuthenticatedAdminMealTextsRoute
+  '/admin/meal-texts-mine': typeof AuthenticatedAdminMealTextsMineRoute
   '/admin/my-rsvp': typeof AuthenticatedAdminMyRsvpRoute
   '/admin/my-volunteer-chats': typeof AuthenticatedAdminMyVolunteerChatsRoute
   '/admin/preorders': typeof AuthenticatedAdminPreordersRoute
@@ -497,6 +506,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/invitation': typeof AuthenticatedAdminInvitationRoute
   '/_authenticated/admin/inviters': typeof AuthenticatedAdminInvitersRoute
   '/_authenticated/admin/meal-texts': typeof AuthenticatedAdminMealTextsRoute
+  '/_authenticated/admin/meal-texts-mine': typeof AuthenticatedAdminMealTextsMineRoute
   '/_authenticated/admin/my-rsvp': typeof AuthenticatedAdminMyRsvpRoute
   '/_authenticated/admin/my-volunteer-chats': typeof AuthenticatedAdminMyVolunteerChatsRoute
   '/_authenticated/admin/preorders': typeof AuthenticatedAdminPreordersRoute
@@ -553,6 +563,7 @@ export interface FileRouteTypes {
     | '/admin/invitation'
     | '/admin/inviters'
     | '/admin/meal-texts'
+    | '/admin/meal-texts-mine'
     | '/admin/my-rsvp'
     | '/admin/my-volunteer-chats'
     | '/admin/preorders'
@@ -606,6 +617,7 @@ export interface FileRouteTypes {
     | '/admin/invitation'
     | '/admin/inviters'
     | '/admin/meal-texts'
+    | '/admin/meal-texts-mine'
     | '/admin/my-rsvp'
     | '/admin/my-volunteer-chats'
     | '/admin/preorders'
@@ -661,6 +673,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/invitation'
     | '/_authenticated/admin/inviters'
     | '/_authenticated/admin/meal-texts'
+    | '/_authenticated/admin/meal-texts-mine'
     | '/_authenticated/admin/my-rsvp'
     | '/_authenticated/admin/my-volunteer-chats'
     | '/_authenticated/admin/preorders'
@@ -958,6 +971,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminMyRsvpRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/meal-texts-mine': {
+      id: '/_authenticated/admin/meal-texts-mine'
+      path: '/meal-texts-mine'
+      fullPath: '/admin/meal-texts-mine'
+      preLoaderRoute: typeof AuthenticatedAdminMealTextsMineRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/meal-texts': {
       id: '/_authenticated/admin/meal-texts'
       path: '/meal-texts'
@@ -1099,6 +1119,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminInvitationRoute: typeof AuthenticatedAdminInvitationRoute
   AuthenticatedAdminInvitersRoute: typeof AuthenticatedAdminInvitersRoute
   AuthenticatedAdminMealTextsRoute: typeof AuthenticatedAdminMealTextsRoute
+  AuthenticatedAdminMealTextsMineRoute: typeof AuthenticatedAdminMealTextsMineRoute
   AuthenticatedAdminMyRsvpRoute: typeof AuthenticatedAdminMyRsvpRoute
   AuthenticatedAdminMyVolunteerChatsRoute: typeof AuthenticatedAdminMyVolunteerChatsRoute
   AuthenticatedAdminPreordersRoute: typeof AuthenticatedAdminPreordersRoute
@@ -1125,6 +1146,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminInvitationRoute: AuthenticatedAdminInvitationRoute,
   AuthenticatedAdminInvitersRoute: AuthenticatedAdminInvitersRoute,
   AuthenticatedAdminMealTextsRoute: AuthenticatedAdminMealTextsRoute,
+  AuthenticatedAdminMealTextsMineRoute: AuthenticatedAdminMealTextsMineRoute,
   AuthenticatedAdminMyRsvpRoute: AuthenticatedAdminMyRsvpRoute,
   AuthenticatedAdminMyVolunteerChatsRoute:
     AuthenticatedAdminMyVolunteerChatsRoute,
