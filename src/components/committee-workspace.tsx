@@ -775,7 +775,13 @@ export function CommitteeWorkspace() {
             <Utensils className="w-4 h-4" /> Food report
           </Link>
         </Button>
+        <Button asChild className="bg-pink-500 text-white hover:bg-pink-600 justify-start h-14">
+          <Link to="/admin/meal-texts-mine" search={{ view: "committee" }}>
+            <MessageSquare className="w-4 h-4" /> Text my guests their restaurant
+          </Link>
+        </Button>
       </div>
+
 
       {!hideWelcome && (
         <div className="space-y-2">
