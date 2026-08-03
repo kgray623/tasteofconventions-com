@@ -40,6 +40,7 @@ export type ReconcileRow = {
   invitationId: string | null;
   matchedName: string | null;
   matchedPhone: string | null;
+  ownerInviterId: string | null;
   ownerName: string | null;
   ownerCreatedAt: string | null;
   rsvpStatus: string | null;
@@ -203,6 +204,7 @@ export const reconcileReferralList = createServerFn({ method: "POST" })
           invitationId: null,
           matchedName: null,
           matchedPhone: null,
+          ownerInviterId: null,
           ownerName: null,
           ownerCreatedAt: null,
           rsvpStatus: null,
@@ -225,6 +227,7 @@ export const reconcileReferralList = createServerFn({ method: "POST" })
         invitationId: match.id as string,
         matchedName: match.guest_name as string,
         matchedPhone: (match.guest_phone as string | null) ?? null,
+        ownerInviterId: ownerId,
         ownerName: ownerId ? (inviterNames.get(ownerId) ?? "another committee member") : null,
         ownerCreatedAt: (match.created_at as string) ?? null,
         rsvpStatus: rsvp?.status ?? null,
