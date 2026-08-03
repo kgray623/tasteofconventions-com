@@ -479,31 +479,105 @@ export const getCommitteeRoster = createServerFn({ method: "GET" }).handler(asyn
   return { members: Array.from(byKey.values()) };
 });
 
-async function assertInvitedByIsCommittee(rawName: string | null | undefined): Promise<string> {
+export type InvitedByResolution = {
+  /** Text stored verbatim on the RSVP row — never discarded. */
+  text: string;
+  /** Committee member the text resolved to, when confident. */
+  inviterId: string | null;
+  /** True when we could not confidently match; the RSVP is still saved and flagged. */
+  needsReview: boolean;
+};
+
+/**
+ * Resolve the "invited by" text a guest typed.
+ *
+ * IMPORTANT: this must never throw for an unrecognized name. A guest's reply is
+ * never thrown away because they typed "Tina" instead of "Tina Santana" — we
+ * fuzzy-resolve first, and if that fails we still save the RSVP and flag it for
+ * admin review (see logRsvpReferrerReview / listRsvpIssues).
+ */
+async function resolveInvitedBy(rawName: string | null | undefined): Promise<InvitedByResolution> {
   const name = (rawName ?? "").trim();
   if (!name || name === "__other__") {
-    throw new Error("Please select the person who invited you.");
+    throw new Error("Please tell us who invited you.");
   }
+
+  // 1) Exact roster match (fast path, unchanged behaviour for good input).
   const [invitersRes, invitationsRes, teamRes] = await Promise.all([
-    supabaseAdmin.from("inviters").select("name").eq("active", true),
+    supabaseAdmin.from("inviters").select("id,name").eq("active", true),
     supabaseAdmin.from("invitations").select("guest_name,is_committee,rsvps(status)"),
     supabaseAdmin.from("team_invites").select("name").eq("role", "team"),
   ]);
-  const roster = new Set<string>();
-  for (const r of invitersRes.data ?? []) if (r.name) roster.add(r.name.trim().toLowerCase());
+
+  const norm = (v: string) =>
+    v
+      .trim()
+      .toLowerCase()
+      .replace(/^(sister|sis|sr|brother|bro|br|elder|pastor|pr|dr|mr|mrs|ms)\.?\s+/i, "")
+      .replace(/[^a-z0-9]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const roster = new Map<string, string | null>();
+  for (const r of invitersRes.data ?? []) if (r.name) roster.set(norm(r.name), r.id);
   for (const r of invitationsRes.data ?? []) {
     const statuses = Array.isArray(r.rsvps) ? r.rsvps.map((row) => row.status) : [];
     const isEligibleGuest = statuses.some((status) => status === "yes" || status === "waitlist");
     if (r.guest_name && (r.is_committee || isEligibleGuest)) {
-      roster.add(r.guest_name.trim().toLowerCase());
+      if (!roster.has(norm(r.guest_name))) roster.set(norm(r.guest_name), null);
     }
   }
-  for (const r of teamRes.data ?? []) if (r.name) roster.add(r.name.trim().toLowerCase());
-  if (!roster.has(name.toLowerCase())) {
-    throw new Error("Please pick the person who invited you from the suggestions — the name you typed isn't on our list.");
+  for (const r of teamRes.data ?? []) if (r.name && !roster.has(norm(r.name))) roster.set(norm(r.name), null);
+
+  const target = norm(name);
+  if (roster.has(target)) {
+    const exactId = roster.get(target) ?? null;
+    if (exactId) return { text: name, inviterId: exactId, needsReview: false };
   }
-  return name;
+
+  // 2) Fuzzy / partial resolution through the shared referral resolver.
+  const { data: resolvedId } = await supabaseAdmin.rpc("resolve_referral_inviter_id" as any, {
+    _raw_name: name,
+  });
+  if (typeof resolvedId === "string" && resolvedId) {
+    return { text: name, inviterId: resolvedId, needsReview: false };
+  }
+
+  // 3) First-name-only / unique-prefix match against the committee roster.
+  const rosterEntries = [...roster.entries()].filter(([, id]) => !!id) as [string, string][];
+  const candidates = rosterEntries.filter(
+    ([key]) => key === target || key.startsWith(`${target} `) || key.split(" ").includes(target),
+  );
+  const uniqueIds = new Set(candidates.map(([, id]) => id));
+  if (uniqueIds.size === 1) {
+    return { text: name, inviterId: [...uniqueIds][0], needsReview: false };
+  }
+
+  // 4) Could not resolve — keep the guest's text, save the RSVP, flag for review.
+  if (roster.has(target)) return { text: name, inviterId: null, needsReview: false };
+  return { text: name, inviterId: null, needsReview: true };
 }
+
+/** Records a rejected/flagged RSVP so no reply is ever silently lost. */
+async function logRsvpEvent(
+  action: string,
+  metadata: Record<string, unknown>,
+  success: boolean,
+  targetId?: string | null,
+) {
+  try {
+    await supabaseAdmin.from("audit_log").insert({
+      action,
+      target_type: "rsvps",
+      target_id: targetId ?? null,
+      metadata: metadata as any,
+      success,
+    });
+  } catch (err) {
+    console.error("[invitations] failed to log rsvp event", err);
+  }
+}
+
 
 const PublicRsvpInput = z.object({
   guest_name: z.string().min(1).max(120),
