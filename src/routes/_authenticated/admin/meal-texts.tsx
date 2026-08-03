@@ -397,7 +397,7 @@ function MealTextsPage() {
                       {num && !onHold && (
                         <Button
                           size="sm"
-                          className="bg-brand-pink text-white hover:bg-brand-pink/90"
+                          className="bg-pink-500 text-white hover:bg-pink-600"
                           asChild
                           onClick={() => void setSent([row.id], true)}
                         >
