@@ -30,6 +30,8 @@ const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boole
   { to: "/admin/guests", label: "Guests", icon: UserCheck, group: "main" },
   { to: "/admin/inviters", label: "Committee Guests", icon: UserPlus, team: true, teamLabel: "Committee Guests", group: "main" },
   { to: "/admin/reconcile", label: "Reconcile list", icon: ListChecks, group: "main" },
+  { to: "/admin/rsvp-issues", label: "Replies that didn't stick", icon: ListChecks, group: "main" },
+
   { to: "/admin/invitation", label: "Invitation page", icon: Mail, group: "main" },
   { to: "/admin/donations", label: "Donations", icon: HandCoins, group: "main" },
   { to: "/admin/my-rsvp", label: "My RSVP", icon: Ticket, team: true, group: "main" },
