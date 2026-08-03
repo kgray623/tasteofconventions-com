@@ -544,6 +544,15 @@ function GuestsPage() {
           );
         })}
       </div>
+
+      <ExportFallbackDialog
+        open={fallbackOpen}
+        onOpenChange={setFallbackOpen}
+        filename={fallback?.filename ?? "guests.csv"}
+        text={fallback?.text ?? ""}
+        title="Guest list export"
+      />
     </div>
+
   );
 }
