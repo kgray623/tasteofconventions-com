@@ -840,12 +840,26 @@ async function submitPublicRsvpInner(data: z.infer<typeof PublicRsvpInput>) {
         attendance_mode: mode,
         ordering_food: orderingFood,
         message: null,
-        invited_by: validatedInvitedBy,
+        invited_by: invitedBy.text,
         responded_at: new Date().toISOString(),
       },
       { onConflict: "invitation_id" },
     );
     if (rsvpErr) throw publicDbError(rsvpErr);
+
+    if (invitedBy.needsReview) {
+      await logRsvpEvent(
+        "RSVP REFERRER NEEDS REVIEW",
+        {
+          source: "public",
+          invited_by_raw: invitedBy.text,
+          guest_name: data.guest_name,
+          invitation_id: invitationId,
+        },
+        true,
+        invitationId,
+      );
+    }
 
     // Capture cuisine pre-order interest (separate table, no restaurant binding yet)
     if (selections.length > 0 && (data.guest_name || phone)) {
@@ -866,8 +880,9 @@ async function submitPublicRsvpInner(data: z.infer<typeof PublicRsvpInput>) {
       });
     }
 
-    return { ok: true, invitation_id: invitationId, waitlisted };
-  });
+    return { ok: true, invitation_id: invitationId, waitlisted, referrerNeedsReview: invitedBy.needsReview };
+}
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Admin: list & restore archived (deleted) rows
