@@ -1,25 +1,54 @@
-## 2026-08-02 23:20 UTC — Security hardening plan
+# Volunteer Reliability and Security Verification
 
-### What I checked first (read-only)
-- Ran a fresh backend security scan: **zero active findings** right now (including dependencies).
-- Read the saved security notes: only **two items were ever accepted/ignored** as intentional:
-  1. Public read access on content tables: `categories`, `events`, `invitation_content`, `menu_items`, `restaurants` (needed for the public invitation page).
-  2. The private `entertainment-videos` storage bucket has no anonymous read policy by design (uploads go through a server function).
-- Verified guest data is **not** anonymously readable: `rsvps`, `inviters`, `guest_messages`, `entertainment_submissions` all deny anonymous access, and every table in the app has row-level security on.
+**Current verified state — 2026-08-03 00:31 UTC**
+- Fresh dependency scan: **no high or critical vulnerabilities**.
+- Fresh comprehensive backend security scan: **no findings**.
+- Fresh database linter: **no findings**.
+- The database currently has **16 volunteer responsibilities** and **50 retained assignments**; no assignment is missing both an account and a name.
+- No duplicate account/category assignments currently exist, but the database has no uniqueness guard to prevent a rapid double-submit from creating one.
+- Volunteer signup currently exists in two UI paths: `/volunteer` and `/admin/categories`; both call the authenticated server functions, while admin/category list loading still uses separate direct browser reads.
 
-So there is no open vulnerability sitting ignored. What *is* loose is defense-in-depth: many tables still hand out broad INSERT/UPDATE/DELETE permission to the anonymous and signed-in roles even though no policy allows those actions. Today that is blocked by row-level security, but one mistaken policy would expose it. That's the real work worth doing.
+## 1. Reproduce every volunteer path before editing
+- Test the exact mobile viewport in use: **384 × 681**.
+- Sign in through the real last-name/phone-number login flow as a guest, committee member, and admin.
+- Open `/my-rsvp`, follow **Volunteer to help**, and verify `/volunteer` loads every current responsibility.
+- For each role, capture the actual failing request/error and trace it through route → button → server function → database policy/write.
 
-### What I'll do
-1. **Tighten table permissions to match policies.** For every table in the app, audit the actual policies and revoke any permission that no policy uses — especially anonymous INSERT/UPDATE/DELETE on `audit_log`, `deleted_rows_archive`, `invitations`, `cuisine_preorders`, `profiles`, `team_invites`, `page_visits`, `referral_duplicates`, `donations_summary`, `duplicate_flags`, `chat_last_seen`, `category_messages`, `category_assignments`, `orders`, and the email/suppression tables. Public content tables keep anonymous **read only**.
-2. **Keep everything working.** All writes that legitimately come from anonymous visitors (RSVP submission, entertainment submission, traffic tracking) already run through server functions with the service role, so removing the direct anonymous write permission does not break them. I'll confirm each write path in code before revoking.
-3. **Narrow the two accepted exceptions instead of just accepting them.** Restrict the public content tables to read-only for anonymous and confirm no column in them contains guest names or phone numbers; leave the private video bucket as-is (server-side only) and document why.
-4. **Verify end-to-end, not just compile.** After the migration I'll test on the live preview at mobile size: public invitation page loads, a guest RSVP submits and reads back, meal pre-order saves, committee dashboard shows guests, admin guest list and audit log load, volunteer signup works. Then re-run the security scan and dependency scan.
-5. **Refresh the security notes** so future scans know which exceptions are intentional and which were tightened.
+## 2. Make one dependable signup implementation
+- Keep all existing responsibilities and submitted volunteer records intact.
+- Consolidate self-signup, withdrawal, category loading, and read-back around the authenticated server-function path rather than maintaining competing browser/database implementations.
+- Preserve admin/committee name-based assignment and existing name-only volunteers.
+- Return explicit errors for missing categories, unauthorized actions, failed reads, failed writes, and failed read-backs instead of silently showing an empty list.
+- Add per-category busy states so repeated taps cannot send duplicate requests.
+- Ensure the selected state, assignment count, and withdrawal state update only after the stored row is read back successfully.
 
-### Technical notes
-- One migration containing `REVOKE`/`GRANT` statements only — no table, column, or data changes, so no submitted guest data is touched, hidden, or overwritten.
-- Grants will be derived from the policy list per table (read where a SELECT policy exists, write only where an INSERT/UPDATE/DELETE policy exists), keeping `service_role` full access for server functions.
-- No application logic or UI changes are planned; if a revoke breaks a client-side write, the fix is to move that write into an existing server function rather than re-widening the grant.
+## 3. Prevent duplicate or lost assignments
+- Add a database uniqueness guard for one account per responsibility while leaving name-only admin assignments untouched.
+- Make signup idempotent: an existing assignment is treated as success and returned to the UI.
+- Keep withdrawal limited to the volunteer’s own assignment unless an authorized committee/admin user performs it.
+- Verify the auth bearer token reaches every protected volunteer server function and that ownership is always derived from the authenticated user.
 
-### One thing to confirm
-If you were expecting a specific ignored warning to be fixed (something you saw listed in the Security tab), tell me which one and I'll fold it in — from my side the scanner currently reports nothing outstanding.
+## 4. Keep volunteer access reachable
+- Verify `/volunteer` remains available to every signed-in guest, committee member, and admin—not only committee/admin users.
+- Preserve the `/my-rsvp` volunteer link and ensure login/session recovery returns users to `/volunteer` instead of sending them to an unrelated dashboard.
+- Confirm every responsibility card has a usable signup/withdraw control on mobile with clear saved, busy, and error states.
+
+## 5. End-to-end verification for every responsibility
+For **each of the 16 current responsibilities**:
+1. Sign up using the real mobile UI.
+2. Read the new assignment directly from the database and confirm the authenticated account owns it.
+3. Refresh `/volunteer` and confirm it remains selected and its count is correct.
+4. Confirm it appears in the volunteer’s own list/chat access where applicable.
+5. Withdraw using the UI.
+6. Confirm the database row is removed and the refreshed UI/count match.
+
+Also verify:
+- committee/admin name-based assignment and removal;
+- unauthorized users cannot assign or remove another person;
+- rapid double-taps create only one assignment;
+- existing 50 assignments remain present unless the specific test assignment is intentionally created and removed.
+
+## 6. Final scans and evidence
+- Re-run the dependency scan, comprehensive security scan, persisted findings check, and database linter after the changes.
+- Resolve only findings actually corrected; do not ignore or alter unrelated findings.
+- Report security results separately from volunteer results, with route, viewport, role, database write/read-back, and any unverified limitation stated explicitly.
