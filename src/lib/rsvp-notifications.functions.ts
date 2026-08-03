@@ -112,6 +112,17 @@ export const getNewRsvpNotifications = createServerFn({ method: "POST" })
       (invitationRows ?? []).map((row) => [row.id, row] as const),
     );
 
+    // Names for the "Referred by" line: inviter_id is the authority, host_id is
+    // the fallback for older rows that were never linked to a roster row.
+    const inviterNameById = new Map<string, string | null>();
+    const inviterNameByHost = new Map<string, string | null>();
+    for (const r of inviterRows ?? []) {
+      if (r.id) inviterNameById.set(r.id, r.name ?? null);
+      if (r.host_id && !inviterNameByHost.has(r.host_id)) {
+        inviterNameByHost.set(r.host_id, r.name ?? null);
+      }
+    }
+
     const items: RsvpNotification[] = [];
     for (const r of rsvpRows) {
       if (!r.invitation_id || !r.responded_at) continue;
@@ -121,6 +132,11 @@ export const getNewRsvpNotifications = createServerFn({ method: "POST" })
         (inv.host_id ? mineHostIds.has(inv.host_id) : false) ||
         (inv.inviter_id ? mineInviterIds.has(inv.inviter_id) : false);
       if (!isAdmin && !mine) continue;
+      const inviterName =
+        (inv.inviter_id ? inviterNameById.get(inv.inviter_id) : null) ??
+        (inv.host_id ? inviterNameByHost.get(inv.host_id) : null) ??
+        null;
+      const typed = (r.invited_by ?? "").trim();
       items.push({
         invitation_id: inv.id,
         guest_name: inv.guest_name,
@@ -129,7 +145,10 @@ export const getNewRsvpNotifications = createServerFn({ method: "POST" })
         attendance_mode: r.attendance_mode ?? null,
         responded_at: r.responded_at,
         mine,
+        inviter_name: inviterName,
+        referred_by_text: typed.length > 0 ? typed : null,
       });
+
       if (items.length >= MAX_ITEMS) break;
     }
 
