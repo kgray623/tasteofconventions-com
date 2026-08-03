@@ -9,7 +9,7 @@ export const Route = createFileRoute("/_authenticated")({
   component: AuthLayout,
 });
 
-const protectedPrefixes = ["/admin", "/dashboard", "/invitations"];
+const protectedPrefixes = ["/admin", "/dashboard", "/invitations", "/my-rsvp", "/volunteer"];
 
 function safeLoginRedirect(pathname: string) {
   return protectedPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
