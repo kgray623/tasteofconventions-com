@@ -1,11 +1,19 @@
 // Shared, client-safe meal-text defaults and types.
-export const DEFAULT_MEAL_TEXT_TEMPLATE = `Hi {first_name} — based on your RSVP for A Taste of Special Conventions, please contact the restaurant below to pre-order and pay for your catered meal.
+export const DEFAULT_MEAL_TEXT_TEMPLATE = `Hi {first_name} —
+
+Because you RSVP'd for A Taste of Special Conventions and pre ordered a catered meal, the following is the contact information for the restaurant to pre-pay your catered meal direct.
 
 {restaurant_name} — {restaurant_phone}
 {restaurant_website}
-Your order: {order}
 
-The restaurant has been notified that you will be calling, so please do so promptly. Thank you!`;
+Your order is for {order}
+
+The restaurant has been notified you will call to pre pay your meal, so please do so promptly.
+
+Save your receipt to present at the event in order to verify your purchase and obtain your meal.
+
+Thank you! 😊`;
+
 
 export type MealRestaurant = {
   id: string;
