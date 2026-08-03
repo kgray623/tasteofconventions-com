@@ -40,6 +40,7 @@ export type ReconcileRow = {
   invitationId: string | null;
   matchedName: string | null;
   matchedPhone: string | null;
+  ownerInviterId: string | null;
   ownerName: string | null;
   ownerCreatedAt: string | null;
   rsvpStatus: string | null;
