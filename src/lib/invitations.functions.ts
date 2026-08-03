@@ -219,13 +219,34 @@ const RsvpInput = z.object({
 export const submitRsvp = createServerFn({ method: "POST" })
   .inputValidator((d) => RsvpInput.parse(d))
   .handler(async ({ data }) => {
-    const validatedInvitedBy = await assertInvitedByIsCommittee(data.invited_by);
+    try {
+      return await submitRsvpInner(data);
+    } catch (err) {
+      await logRsvpEvent(
+        "RSVP SUBMIT FAILED",
+        {
+          source: "token",
+          invited_by_raw: data.invited_by ?? null,
+          status: data.status,
+          party_size: data.party_size,
+          attendance_mode: data.attendance_mode ?? null,
+          reason: err instanceof Error ? err.message : String(err),
+        },
+        false,
+      );
+      throw err;
+    }
+  });
+
+async function submitRsvpInner(data: z.infer<typeof RsvpInput>) {
+    const invitedBy = await resolveInvitedBy(data.invited_by);
     const { data: inv } = await supabaseAdmin
       .from("invitations")
       .select("id")
       .in("rsvp_token", rsvpTokenCandidates(data.token))
       .maybeSingle();
     if (!inv) throw new Error("Invitation not found");
+
     if (data.guest_name || data.guest_phone) {
       const { error: invitationError } = await supabaseAdmin
         .from("invitations")
