@@ -185,7 +185,7 @@ function ReconcilePage() {
               .map((r) => ({ name: r.name, phone: r.phone })),
             recordDuplicates: result.rows
               .filter((r) => r.outcome === "duplicate" && r.invitationId)
-              .map((r) => ({ invitationId: r.invitationId as string, ownerInviterId: null })),
+              .map((r) => ({ invitationId: r.invitationId as string, ownerInviterId: r.ownerInviterId ?? null })),
           },
         }),
         120_000,
