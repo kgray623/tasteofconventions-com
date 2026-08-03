@@ -53,10 +53,6 @@ const smsNumber = (s: string) => {
   return d ? `+${d}` : "";
 };
 
-function smsHref(numbers: string[], body: string) {
-  const to = numbers.filter(Boolean).join(",");
-  return `sms:${to}?&body=${encodeURIComponent(body)}`;
-}
 
 function renderTemplate(
   tpl: string,
