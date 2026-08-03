@@ -492,13 +492,18 @@ function GuestsPage() {
                   </p>
                   {r.inviter_name ? (
                     <p className="text-[11px] text-muted-foreground/80 mt-0.5">
-                      Brought by <span className="text-ink/80 font-medium">{r.inviter_name}</span>
+                      Referred by <span className="text-ink/80 font-medium">{r.inviter_name}</span>
+                      {r.linked_inviter_name &&
+                        r.linked_inviter_name.trim().toLowerCase() !== r.inviter_name.trim().toLowerCase() && (
+                          <> · credited to <span className="text-ink/80 font-medium">{r.linked_inviter_name}</span></>
+                        )}
                     </p>
                   ) : r.linked_inviter_name ? (
                     <p className="text-[11px] text-muted-foreground/80 mt-0.5">
-                      Referral not recorded · linked under <span className="text-ink/80 font-medium">{r.linked_inviter_name}</span>
+                      Referral not recorded · credited to <span className="text-ink/80 font-medium">{r.linked_inviter_name}</span>
                     </p>
                   ) : null}
+
 
                   {(s === "confirmed" || s === "maybe" || s === "waitlist" || (s === "declined" && r.party_size)) && (
                     <p className="text-xs text-muted-foreground mt-0.5">
