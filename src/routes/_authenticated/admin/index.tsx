@@ -172,19 +172,23 @@ function AdminOverview() {
       for (const row of rows) {
         lines.push(headers.map((h) => escapeCsv(row[h])).join(","));
       }
-      const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `reconciliation-${new Date().toISOString().slice(0, 10)}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      const csv = lines.join("\n");
+      const filename = `reconciliation-${new Date().toISOString().slice(0, 10)}.csv`;
+      setFallback({ filename, text: csv });
+      const res = downloadTextFile(filename, csv);
+      if (res.ok) {
+        toast.success("Reconciliation CSV downloaded", {
+          action: { label: "Copy instead", onClick: () => setFallbackOpen(true) },
+        });
+      } else {
+        setFallbackOpen(true);
+        toast.error("Your browser blocked the download", { description: res.reason });
+      }
     } finally {
       setDownloading(false);
     }
   };
+
 
 
   type Row = { label: string; value: number | string; to?: string; search?: Record<string, string>; newKey?: "admin:rsvps-tile"; emphasis?: boolean };
