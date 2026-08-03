@@ -12,7 +12,12 @@ export type RsvpNotification = {
   attendance_mode: string | null;
   responded_at: string;
   mine: boolean;
+  /** Committee member the guest is credited to, if any. */
+  inviter_name: string | null;
+  /** Exactly what the guest typed for "Who invited you?", if anything. */
+  referred_by_text: string | null;
 };
+
 
 export type RsvpNotificationsResult = {
   items: RsvpNotification[];
@@ -56,11 +61,12 @@ export const getNewRsvpNotifications = createServerFn({ method: "POST" })
 
     const { data: rsvpRows, error: rsvpError } = await supabase
       .from("rsvps")
-      .select("invitation_id,status,party_size,attendance_mode,responded_at")
+      .select("invitation_id,status,party_size,attendance_mode,responded_at,invited_by")
       .not("responded_at", "is", null)
       .gt("responded_at", since)
       .order("responded_at", { ascending: false })
       .limit(200);
+
     if (rsvpError) throw new Error("Couldn't load new RSVPs. Please try again.");
     if (!rsvpRows || rsvpRows.length === 0) {
       return { items: [], count: 0, isAdmin, lastSeenAt };
@@ -106,6 +112,17 @@ export const getNewRsvpNotifications = createServerFn({ method: "POST" })
       (invitationRows ?? []).map((row) => [row.id, row] as const),
     );
 
+    // Names for the "Referred by" line: inviter_id is the authority, host_id is
+    // the fallback for older rows that were never linked to a roster row.
+    const inviterNameById = new Map<string, string | null>();
+    const inviterNameByHost = new Map<string, string | null>();
+    for (const r of inviterRows ?? []) {
+      if (r.id) inviterNameById.set(r.id, r.name ?? null);
+      if (r.host_id && !inviterNameByHost.has(r.host_id)) {
+        inviterNameByHost.set(r.host_id, r.name ?? null);
+      }
+    }
+
     const items: RsvpNotification[] = [];
     for (const r of rsvpRows) {
       if (!r.invitation_id || !r.responded_at) continue;
@@ -115,6 +132,11 @@ export const getNewRsvpNotifications = createServerFn({ method: "POST" })
         (inv.host_id ? mineHostIds.has(inv.host_id) : false) ||
         (inv.inviter_id ? mineInviterIds.has(inv.inviter_id) : false);
       if (!isAdmin && !mine) continue;
+      const inviterName =
+        (inv.inviter_id ? inviterNameById.get(inv.inviter_id) : null) ??
+        (inv.host_id ? inviterNameByHost.get(inv.host_id) : null) ??
+        null;
+      const typed = (r.invited_by ?? "").trim();
       items.push({
         invitation_id: inv.id,
         guest_name: inv.guest_name,
@@ -123,7 +145,10 @@ export const getNewRsvpNotifications = createServerFn({ method: "POST" })
         attendance_mode: r.attendance_mode ?? null,
         responded_at: r.responded_at,
         mine,
+        inviter_name: inviterName,
+        referred_by_text: typed.length > 0 ? typed : null,
       });
+
       if (items.length >= MAX_ITEMS) break;
     }
 
