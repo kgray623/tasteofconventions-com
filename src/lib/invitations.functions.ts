@@ -281,14 +281,23 @@ async function submitRsvpInner(data: z.infer<typeof RsvpInput>) {
         ordering_food: orderingFood,
         dietary_notes: data.dietary_notes ?? null,
         message: null,
-        invited_by: validatedInvitedBy,
+        invited_by: invitedBy.text,
         responded_at: new Date().toISOString(),
       },
       { onConflict: "invitation_id" },
     );
     if (error) throw publicDbError(error);
-    return { ok: true, waitlisted };
-  });
+    if (invitedBy.needsReview) {
+      await logRsvpEvent(
+        "RSVP REFERRER NEEDS REVIEW",
+        { source: "token", invited_by_raw: invitedBy.text, invitation_id: inv.id },
+        true,
+        inv.id,
+      );
+    }
+    return { ok: true, waitlisted, referrerNeedsReview: invitedBy.needsReview };
+}
+
 
 const OrderInput = z.object({
   token: z.string().min(8).max(120),
