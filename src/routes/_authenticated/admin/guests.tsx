@@ -9,6 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, ExternalLink, Search, Users } from "lucide-react";
 import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
+import { toast } from "sonner";
+import { downloadTextFile } from "@/lib/download-file";
+import { ExportFallbackDialog } from "@/components/export-fallback-dialog";
+
 
 const GUEST_LOAD_TIMEOUT_MS = 20_000;
 
@@ -298,6 +302,9 @@ function GuestsPage() {
     };
   }, [filtered]);
 
+  const [fallback, setFallback] = useState<{ filename: string; text: string } | null>(null);
+  const [fallbackOpen, setFallbackOpen] = useState(false);
+
 
   const exportCsv = () => {
     const headers = ["name", "phone", "audience", "status", "party_size", "attendance_mode", "responded_at", "invited_by_rsvp", "linked_under"];
@@ -310,16 +317,20 @@ function GuestsPage() {
         r.linked_inviter_name ?? "",
       ].map(escapeCsv).join(","));
     }
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `guests-${activeStatus}-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    const csv = lines.join("\n");
+    const filename = `guests-${activeStatus}-${new Date().toISOString().slice(0, 10)}.csv`;
+    setFallback({ filename, text: csv });
+    const res = downloadTextFile(filename, csv);
+    if (res.ok) {
+      toast.success("Guest list downloaded", {
+        action: { label: "Copy instead", onClick: () => setFallbackOpen(true) },
+      });
+    } else {
+      setFallbackOpen(true);
+      toast.error("Your browser blocked the download", { description: res.reason });
+    }
   };
+
 
 
   const tabs: StatusFilter[] = ["all", "confirmed", "declined", "maybe", "waitlist", "pending"];
@@ -533,6 +544,15 @@ function GuestsPage() {
           );
         })}
       </div>
+
+      <ExportFallbackDialog
+        open={fallbackOpen}
+        onOpenChange={setFallbackOpen}
+        filename={fallback?.filename ?? "guests.csv"}
+        text={fallback?.text ?? ""}
+        title="Guest list export"
+      />
     </div>
+
   );
 }

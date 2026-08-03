@@ -12,6 +12,10 @@ import { getAdminAudit, getReconciliationRows, type AudienceTotals } from "@/lib
 import { RsvpTotalsCard } from "@/components/rsvp-totals-card";
 import { SiteTrafficCard } from "@/components/site-traffic-card";
 import { ExternalLink, User, Users, Download, AlertTriangle, Archive, ArrowRight, ShieldCheck } from "lucide-react";
+import { toast } from "sonner";
+import { downloadTextFile } from "@/lib/download-file";
+import { ExportFallbackDialog } from "@/components/export-fallback-dialog";
+
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: AdminOverview,
@@ -54,7 +58,10 @@ function AdminOverview() {
   const [auditError, setAuditError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [ops, setOps] = useState({ flags: 0, categories: 0 });
+  const [fallback, setFallback] = useState<{ filename: string; text: string } | null>(null);
+  const [fallbackOpen, setFallbackOpen] = useState(false);
   const loadingAdminDataRef = useRef(false);
+
 
   useEffect(() => {
     if (rolesLoading || !isAdmin) return;
@@ -172,19 +179,23 @@ function AdminOverview() {
       for (const row of rows) {
         lines.push(headers.map((h) => escapeCsv(row[h])).join(","));
       }
-      const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `reconciliation-${new Date().toISOString().slice(0, 10)}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      const csv = lines.join("\n");
+      const filename = `reconciliation-${new Date().toISOString().slice(0, 10)}.csv`;
+      setFallback({ filename, text: csv });
+      const res = downloadTextFile(filename, csv);
+      if (res.ok) {
+        toast.success("Reconciliation CSV downloaded", {
+          action: { label: "Copy instead", onClick: () => setFallbackOpen(true) },
+        });
+      } else {
+        setFallbackOpen(true);
+        toast.error("Your browser blocked the download", { description: res.reason });
+      }
     } finally {
       setDownloading(false);
     }
   };
+
 
 
   type Row = { label: string; value: number | string; to?: string; search?: Record<string, string>; newKey?: "admin:rsvps-tile"; emphasis?: boolean };
@@ -344,6 +355,15 @@ function AdminOverview() {
           <StatRow row={{ label: "Recently deleted", value: "→", to: "/admin/recently-deleted" }} />
         </Card>
       </div>
+
+      <ExportFallbackDialog
+        open={fallbackOpen}
+        onOpenChange={setFallbackOpen}
+        filename={fallback?.filename ?? "reconciliation.csv"}
+        text={fallback?.text ?? ""}
+        title="Reconciliation export"
+      />
     </div>
+
   );
 }
