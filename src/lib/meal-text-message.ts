@@ -15,8 +15,56 @@ export function smsNumber(value: string | null | undefined) {
 
 export function smsHref(numbers: string[], body: string) {
   const to = numbers.filter(Boolean).join(",");
-  return `sms:${to}?&body=${encodeURIComponent(body)}`;
+  return `sms:${to}?body=${encodeURIComponent(body)}`;
 }
+
+export type OpenSmsResult = { ok: true } | { ok: false; reason: string };
+
+// Opens the phone's Messages app. Inside a framed preview (and some mobile
+// browsers) a plain <a href="sms:..."> click is swallowed, so hand the URL to
+// the top-level document when we're allowed to reach it.
+export function openSms(numbers: string[], body: string): OpenSmsResult {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return { ok: false, reason: "Texting is only available in a browser." };
+  }
+  const to = numbers.filter(Boolean);
+  if (to.length === 0) return { ok: false, reason: "No phone number on file." };
+
+  const url = smsHref(to, body);
+
+  // 1. Anchor click inside the top-level document (works in framed previews).
+  try {
+    const topDoc = window.top?.document ?? document;
+    const a = topDoc.createElement("a");
+    a.href = url;
+    a.style.display = "none";
+    topDoc.body.appendChild(a);
+    a.click();
+    setTimeout(() => a.remove(), 2000);
+    return { ok: true };
+  } catch {
+    /* cross-origin frame — fall through */
+  }
+
+  // 2. Same-document navigation.
+  try {
+    window.location.assign(url);
+    return { ok: true };
+  } catch {
+    /* fall through */
+  }
+
+  // 3. New window as a last resort.
+  try {
+    const w = window.open(url, "_blank");
+    if (w) return { ok: true };
+  } catch {
+    /* ignore */
+  }
+
+  return { ok: false, reason: "Your browser blocked opening Messages." };
+}
+
 
 export type MealTextContext = {
   firstName: string;
