@@ -61,11 +61,12 @@ export const getNewRsvpNotifications = createServerFn({ method: "POST" })
 
     const { data: rsvpRows, error: rsvpError } = await supabase
       .from("rsvps")
-      .select("invitation_id,status,party_size,attendance_mode,responded_at")
+      .select("invitation_id,status,party_size,attendance_mode,responded_at,invited_by")
       .not("responded_at", "is", null)
       .gt("responded_at", since)
       .order("responded_at", { ascending: false })
       .limit(200);
+
     if (rsvpError) throw new Error("Couldn't load new RSVPs. Please try again.");
     if (!rsvpRows || rsvpRows.length === 0) {
       return { items: [], count: 0, isAdmin, lastSeenAt };
