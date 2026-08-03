@@ -6,6 +6,7 @@ import { clearPhoneLoginCookie } from "@/lib/auth-phone.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notification-bell";
+import { NewBadge } from "@/components/new-badge";
 
 
 
@@ -30,6 +31,7 @@ export function SiteHeader() {
         <nav className="flex items-center gap-2 text-sm">
           {user ? (
             <>
+              <NewBadge target="header:bell-check-it" />
               <NotificationBell />
               {loading ? null : isTeam ? (
                 location.pathname.startsWith("/admin") ? null : (
