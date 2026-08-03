@@ -1,54 +1,36 @@
-# Volunteer Reliability and Security Verification
+# Carol's missing RSVP — find it, then stop it happening silently
 
-**Current verified state — 2026-08-03 00:31 UTC**
-- Fresh dependency scan: **no high or critical vulnerabilities**.
-- Fresh comprehensive backend security scan: **no findings**.
-- Fresh database linter: **no findings**.
-- The database currently has **16 volunteer responsibilities** and **50 retained assignments**; no assignment is missing both an account and a name.
-- No duplicate account/category assignments currently exist, but the database has no uniqueness guard to prevent a rapid double-submit from creating one.
-- Volunteer signup currently exists in two UI paths: `/volunteer` and `/admin/categories`; both call the authenticated server functions, while admin/category list loading still uses separate direct browser reads.
+2026-08-03 14:25 UTC
 
-## 1. Reproduce every volunteer path before editing
-- Test the exact mobile viewport in use: **384 × 681**.
-- Sign in through the real last-name/phone-number login flow as a guest, committee member, and admin.
-- Open `/my-rsvp`, follow **Volunteer to help**, and verify `/volunteer` loads every current responsibility.
-- For each role, capture the actual failing request/error and trace it through route → button → server function → database policy/write.
+## What the database actually shows
 
-## 2. Make one dependable signup implementation
-- Keep all existing responsibilities and submitted volunteer records intact.
-- Consolidate self-signup, withdrawal, category loading, and read-back around the authenticated server-function path rather than maintaining competing browser/database implementations.
-- Preserve admin/committee name-based assignment and existing name-only volunteers.
-- Return explicit errors for missing categories, unauthorized actions, failed reads, failed writes, and failed read-backs instead of silently showing an empty list.
-- Add per-category busy states so repeated taps cannot send duplicate requests.
-- Ensure the selected state, assignment count, and withdrawal state update only after the stored row is read back successfully.
+- Tina Santana's Carol is **Carol Torres, 773-750-7270**, loaded 2026-07-11, credited to Tina.
+- There is **no RSVP row of any kind** for her — not "yes", not "no", nothing. That is why the app shows Pending. Nothing was deleted: there is no archived row, no pre-order, and no audit entry for her.
+- Other Carols in the system (Carol Humphrey / Dixie, Carol Getzman / Kari, Carole Fuscone / Dixie, "Carol, Andy Fisher" / Mysha) are different people, so her reply did not land on the wrong record either.
 
-## 3. Prevent duplicate or lost assignments
-- Add a database uniqueness guard for one account per responsibility while leaving name-only admin assignments untouched.
-- Make signup idempotent: an existing assignment is treated as success and returned to the UI.
-- Keep withdrawal limited to the volunteer’s own assignment unless an authorized committee/admin user performs it.
-- Verify the auth bearer token reaches every protected volunteer server function and that ownership is always derived from the authenticated user.
+So Carol's submission never reached the database. RSVPs generally are working (several saved today), so this is a submission that was rejected or abandoned, not a system-wide outage.
 
-## 4. Keep volunteer access reachable
-- Verify `/volunteer` remains available to every signed-in guest, committee member, and admin—not only committee/admin users.
-- Preserve the `/my-rsvp` volunteer link and ensure login/session recovery returns users to `/volunteer` instead of sending them to an unrelated dashboard.
-- Confirm every responsibility card has a usable signup/withdraw control on mobile with clear saved, busy, and error states.
+## The most likely reason (confirmed in code, not yet proven for Carol)
 
-## 5. End-to-end verification for every responsibility
-For **each of the 16 current responsibilities**:
-1. Sign up using the real mobile UI.
-2. Read the new assignment directly from the database and confirm the authenticated account owns it.
-3. Refresh `/volunteer` and confirm it remains selected and its count is correct.
-4. Confirm it appears in the volunteer’s own list/chat access where applicable.
-5. Withdraw using the UI.
-6. Confirm the database row is removed and the refreshed UI/count match.
+Every RSVP submit is blocked unless the "Invited by" name is an **exact** match to a roster name. If Carol typed "Tina", "Tina S", or "Santana" instead of the exact "Tina Santana", the save was refused and nothing was stored. Today there is no record of these refusals, so a guest can believe they RSVP'd while the app has nothing.
 
-Also verify:
-- committee/admin name-based assignment and removal;
-- unauthorized users cannot assign or remove another person;
-- rapid double-taps create only one assignment;
-- existing 50 assignments remain present unless the specific test assignment is intentionally created and removed.
+I have not proven this is what happened to Carol, because failed attempts are not logged anywhere. Step 1 below fixes that blind spot.
 
-## 6. Final scans and evidence
-- Re-run the dependency scan, comprehensive security scan, persisted findings check, and database linter after the changes.
-- Resolve only findings actually corrected; do not ignore or alter unrelated findings.
-- Report security results separately from volunteer results, with route, viewport, role, database write/read-back, and any unverified limitation stated explicitly.
+## Plan
+
+1. **Log every rejected RSVP attempt** (name, phone, chosen status, reason, time) so a guest saying "I RSVP'd" can always be checked instead of guessed at.
+2. **Make the referrer field forgiving instead of a wall**: accept close matches (first name only, extra/missing last name, spelling slips) and resolve them to the real committee member. If it is genuinely ambiguous, still save the RSVP and flag it for admin review rather than throwing the whole reply away.
+3. **Never lose a reply again**: if the referrer cannot be resolved, the RSVP is still recorded with the guest's typed text kept verbatim, shown in the admin list as "needs referrer confirmation".
+4. **Admin "unmatched / rejected replies" panel** under Admin so you can see, in one place, anyone whose reply didn't stick and fix it with one tap.
+5. **Carol specifically**: I need her actual answer before writing it in — I will not invent it.
+
+## What I need from you
+
+Carol's reply details: attending yes/no, in-person or Zoom, and how many people. I will record it under Carol Torres, credited to Tina Santana, and read it back from the database plus the committee dashboard to prove it shows.
+
+## Technical notes
+
+- `assertInvitedByIsCommittee` in `src/lib/invitations.functions.ts` throws on any non-exact roster match, before the `rsvps` upsert — the reject point.
+- Replace the exact-set check with the existing fuzzy resolver used by referral reconciliation (`public.resolve_referral_inviter_id` / dice-coefficient matching in `src/lib/rsvp-math.ts`) and downgrade failure from throw to flag.
+- Add a `rsvp_submission_failures` insert (or `audit_log` row with `success = false`) in the catch path of `submitRsvp`.
+- Admin panel: new section on `/admin/guests` (or a small route under `_authenticated/admin`) reading the failure log plus RSVPs with unresolved referrer text.
