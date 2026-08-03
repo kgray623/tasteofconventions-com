@@ -112,17 +112,19 @@ export function NotificationBell() {
               to={guestListTo}
               search={isAdmin ? { sort: "replied" as const } : undefined}
               onClick={() => void rsvps.markSeen()}
-              className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-secondary transition border-b"
+              className="flex items-start justify-between gap-3 px-4 py-3 hover:bg-secondary transition border-b"
             >
               <div className="min-w-0">
                 <p className="text-sm font-medium text-ink truncate">{r.guest_name}</p>
                 <p className="text-xs text-muted-foreground truncate">
                   {replyLabel(r.status, r.attendance_mode, r.party_size)}
                 </p>
+                <ReferredBy typed={r.referred_by_text} inviter={r.inviter_name} />
               </div>
               <span className="text-[11px] text-muted-foreground shrink-0">
                 {timeAgo(r.responded_at)}
               </span>
+
             </Link>
           ))}
 
