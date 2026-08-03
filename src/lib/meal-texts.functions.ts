@@ -14,6 +14,7 @@ async function assertStaff(supabase: any, userId: string) {
 export const DEFAULT_MEAL_TEXT_TEMPLATE = `Hi {first_name} — based on your RSVP for A Taste of Special Conventions, please contact the restaurant below to pre-order and pay for your catered meal.
 
 {restaurant_name} — {restaurant_phone}
+{restaurant_website}
 Your order: {order}
 
 The restaurant has been notified that you will be calling, so please do so promptly. Thank you!`;
@@ -23,8 +24,10 @@ export type MealRestaurant = {
   name: string;
   cuisine: string | null;
   phone: string | null;
+  website: string | null;
   order_ready: boolean;
 };
+
 
 export type MealTextRow = {
   id: string;
@@ -42,7 +45,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const [{ data: restaurants }, { data: preorders }, { data: setting }] = await Promise.all([
-      supabaseAdmin.from("restaurants").select("id,name,cuisine,phone,order_ready,active").order("name"),
+      supabaseAdmin.from("restaurants").select("id,name,cuisine,phone,website,order_ready,active").order("name"),
       supabaseAdmin
         .from("cuisine_preorders")
         .select("id,name,phone,selections,meal_text_sent_at")
@@ -89,6 +92,8 @@ export const getMealTextData = createServerFn({ method: "POST" })
           name: r.name as string,
           cuisine: (r.cuisine ?? null) as string | null,
           phone: (r.phone ?? null) as string | null,
+          website: (r.website ?? null) as string | null,
+
           order_ready: r.order_ready !== false,
         })) as MealRestaurant[],
       rows,
@@ -103,6 +108,7 @@ export const saveRestaurantContact = createServerFn({ method: "POST" })
       .object({
         id: z.string().uuid(),
         phone: z.string().max(40).nullable(),
+        website: z.string().max(300).nullable().optional(),
         orderReady: z.boolean(),
       })
       .parse(d),
@@ -110,10 +116,17 @@ export const saveRestaurantContact = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertStaff(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const patch: { phone: string | null; order_ready: boolean; website?: string | null } = {
+      phone: data.phone?.trim() || null,
+      order_ready: data.orderReady,
+    };
+    if (data.website !== undefined) patch.website = data.website?.trim() || null;
+
     const { error } = await supabaseAdmin
       .from("restaurants")
-      .update({ phone: data.phone?.trim() || null, order_ready: data.orderReady })
+      .update(patch)
       .eq("id", data.id);
+
     if (error) throw new Error(error.message);
     return { ok: true };
   });

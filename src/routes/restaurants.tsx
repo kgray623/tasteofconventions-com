@@ -17,7 +17,7 @@ export const Route = createFileRoute("/restaurants")({
   component: Restaurants,
 });
 
-type R = { id: string; name: string; description: string | null; cuisine: string | null; image_url: string | null };
+type R = { id: string; name: string; description: string | null; cuisine: string | null; image_url: string | null; phone: string | null; website: string | null };
 type M = { id: string; restaurant_id: string; name: string; description: string | null; price: number; category: string | null; dietary_flags: string[] | null };
 
 function Restaurants() {
@@ -66,7 +66,20 @@ function Restaurants() {
                   <div>
                     <h2 className="font-display text-3xl">{r.name}</h2>
                     {r.cuisine && <p className="text-sm text-muted-foreground mt-1">{r.cuisine}</p>}
+                    <div className="flex flex-wrap items-center gap-3 mt-2 text-sm">
+                      {r.phone && (
+                        <a href={`tel:${r.phone.replace(/[^\d+]/g, "")}`} className="text-terracotta underline underline-offset-4">
+                          {r.phone}
+                        </a>
+                      )}
+                      {r.website && (
+                        <a href={r.website} target="_blank" rel="noopener noreferrer" className="text-terracotta underline underline-offset-4">
+                          Visit website
+                        </a>
+                      )}
+                    </div>
                   </div>
+
                   {r.description && <p className="text-sm text-muted-foreground max-w-md text-right">{r.description}</p>}
                 </div>
                 {menu.length === 0 ? (
