@@ -28,8 +28,8 @@ export const Route = createFileRoute("/login")({
   component: HelperLogin,
 });
 
-type RouteDestination = { to: "/admin" } | { to: "/admin/upload" } | { to: "/dashboard" } | { to: "/my-rsvp" };
-const allowedRedirects = new Set(["/admin", "/admin/upload", "/my-rsvp", "/dashboard"]);
+type RouteDestination = { to: "/admin" } | { to: "/admin/upload" } | { to: "/dashboard" } | { to: "/my-rsvp" } | { to: "/volunteer" };
+const allowedRedirects = new Set(["/admin", "/admin/upload", "/my-rsvp", "/dashboard", "/volunteer"]);
 
 function safeRedirect(value: string | undefined) {
   if (!value) return undefined;
@@ -97,8 +97,9 @@ function HelperLogin() {
         window.location.replace(redirect);
         return;
       }
-      const nextTo =
-        redirect === "/admin/upload" && destination.to === "/admin"
+      const nextTo = redirect === "/volunteer"
+        ? "/volunteer"
+        : redirect === "/admin/upload" && destination.to === "/admin"
           ? "/admin/upload"
           : destination.to;
       await navigate({ to: nextTo, replace: true });

@@ -4,6 +4,7 @@ import {
   volunteerSignUp,
   volunteerAssignByName,
   volunteerRemoveAssignment,
+  listVolunteerManagementData,
 } from "@/lib/volunteer.functions";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -147,20 +148,26 @@ function CategoriesPage() {
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [editingDesc, setEditingDesc] = useState<Record<string, string>>({});
   const [chatOpen, setChatOpen] = useState<string | null>(null);
+  const [busyCategory, setBusyCategory] = useState<string | null>(null);
+  const [loadingRoster, setLoadingRoster] = useState(true);
   const signUpFn = useServerFn(volunteerSignUp);
   const assignByNameFn = useServerFn(volunteerAssignByName);
   const removeAssignFn = useServerFn(volunteerRemoveAssignment);
+  const loadManagementData = useServerFn(listVolunteerManagementData);
 
   const load = async () => {
-    const [c, a, p] = await Promise.all([
-      supabase.from("categories").select("*").order("sort_order"),
-      supabase.from("category_assignments").select("*"),
-      supabase.from("profiles").select("id,display_name"),
-    ]);
-    setCats(c.data ?? []);
-    setAssigns(a.data ?? []);
-    setProfiles(p.data ?? []);
-    setQuickCatId((current) => current || c.data?.[0]?.id || "");
+    setLoadingRoster(true);
+    try {
+      const data = await loadManagementData();
+      setCats(data.categories);
+      setAssigns(data.assignments);
+      setProfiles(data.profiles);
+      setQuickCatId((current) => current || data.categories[0]?.id || "");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "The volunteer roster could not be loaded.");
+    } finally {
+      setLoadingRoster(false);
+    }
   };
   useEffect(() => { load(); }, []);
 
@@ -200,30 +207,46 @@ function CategoriesPage() {
   };
 
   const addAssign = async (catId: string, selfVolunteer = false, valueOverride?: string) => {
+    if (busyCategory) return;
+    setBusyCategory(catId);
     if (selfVolunteer) {
-      if (!user) return toast.error("Please sign in to volunteer.");
+      if (!user) {
+        setBusyCategory(null);
+        return toast.error("Please sign in to volunteer.");
+      }
       const exists = assigns.some((a) => a.category_id === catId && a.user_id === user.id);
-      if (exists) { toast.info("You're already volunteering for this."); return; }
+      if (exists) {
+        setBusyCategory(null);
+        toast.info("You're already volunteering for this.");
+        return;
+      }
       try {
         await signUpFn({ data: { categoryId: catId } });
+        await load();
         toast.success("Thanks for volunteering!");
       } catch (e) {
-        return toast.error(e instanceof Error ? e.message : "Couldn't sign you up.");
+        toast.error(e instanceof Error ? e.message : "Couldn't sign you up.");
+      } finally {
+        setBusyCategory(null);
       }
-      load();
       return;
     }
     const value = (valueOverride ?? drafts[catId] ?? "").trim();
-    if (!value) return;
+    if (!value) {
+      setBusyCategory(null);
+      return;
+    }
     try {
       await assignByNameFn({ data: { categoryId: catId, name: value } });
+      await load();
+      toast.success("Volunteer added.");
+      setDrafts({ ...drafts, [catId]: "" });
+      if (valueOverride !== undefined) setQuickVolunteerName("");
     } catch (e) {
-      return toast.error(e instanceof Error ? e.message : "Couldn't add that volunteer.");
+      toast.error(e instanceof Error ? e.message : "Couldn't add that volunteer.");
+    } finally {
+      setBusyCategory(null);
     }
-    toast.success("Volunteer added.");
-    setDrafts({ ...drafts, [catId]: "" });
-    if (valueOverride !== undefined) setQuickVolunteerName("");
-    load();
   };
 
   const removeAssign = async (id: string) => {
@@ -256,7 +279,7 @@ function CategoriesPage() {
     return !!displayName && !!volunteerName && displayName === volunteerName;
   };
 
-  if (rolesLoading) return <p className="text-muted-foreground">Loading assignments…</p>;
+  if (rolesLoading || loadingRoster) return <p className="text-muted-foreground">Loading assignments…</p>;
 
   return (
     <div className="space-y-6">
@@ -410,11 +433,11 @@ function CategoriesPage() {
                       <Button
                         size="sm"
                         onClick={() => addAssign(c.id, true)}
-                        disabled={!user}
+                        disabled={!user || busyCategory === c.id}
                         className="w-full bg-terracotta text-cream hover:bg-terracotta/90"
                       >
                         <Hand className="w-4 h-4 mr-2" />
-                        I want to volunteer
+                        {busyCategory === c.id ? "Saving…" : "I want to volunteer"}
                       </Button>
                       <Button
                         size="sm"
