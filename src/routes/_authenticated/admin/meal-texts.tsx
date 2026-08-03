@@ -393,22 +393,21 @@ function MealTextsPage() {
                         key={i}
                         size="sm"
                         className="bg-terracotta text-cream hover:bg-terracotta/90"
-                        asChild
                         onClick={() =>
-                          void setSent(
+                          void sendText(
+                            chunk,
+                            groupBody(cuisine),
                             list
                               .filter((x) => !x.sent_at && chunk.includes(smsNumber(x.phone)))
                               .map((x) => x.id),
-                            true,
                           )
                         }
                       >
-                        <a href={smsHref(chunk, groupBody(cuisine))}>
-                          <Send className="w-3.5 h-3.5 mr-1.5" />
-                          Text group {chunks.length > 1 ? `${i + 1} of ${chunks.length}` : ""} (
-                          {chunk.length})
-                        </a>
+                        <Send className="w-3.5 h-3.5 mr-1.5" />
+                        Text group {chunks.length > 1 ? `${i + 1} of ${chunks.length}` : ""} (
+                        {chunk.length})
                       </Button>
+
                     ))
                   )}
                   <Button
