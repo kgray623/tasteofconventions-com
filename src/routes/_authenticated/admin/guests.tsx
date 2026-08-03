@@ -302,6 +302,9 @@ function GuestsPage() {
     };
   }, [filtered]);
 
+  const [fallback, setFallback] = useState<{ filename: string; text: string } | null>(null);
+  const [fallbackOpen, setFallbackOpen] = useState(false);
+
 
   const exportCsv = () => {
     const headers = ["name", "phone", "audience", "status", "party_size", "attendance_mode", "responded_at", "invited_by_rsvp", "linked_under"];
