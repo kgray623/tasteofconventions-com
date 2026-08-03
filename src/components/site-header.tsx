@@ -30,6 +30,7 @@ export function SiteHeader() {
         <nav className="flex items-center gap-2 text-sm">
           {user ? (
             <>
+              <NewBadge target="header:bell-check-it" />
               <NotificationBell />
               {loading ? null : isTeam ? (
                 location.pathname.startsWith("/admin") ? null : (
