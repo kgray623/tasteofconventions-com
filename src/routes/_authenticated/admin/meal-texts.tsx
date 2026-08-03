@@ -451,13 +451,11 @@ function MealTextsPage() {
                         <Button
                           size="sm"
                           className="bg-pink-500 text-white hover:bg-pink-600"
-                          asChild
-                          onClick={() => void setSent([row.id], true)}
+                          onClick={() => void sendText([num], body, [row.id])}
                         >
-                          <a href={smsHref([num], body)}>
-                            <Send className="w-3.5 h-3.5 mr-1.5" /> Text {row.name.split(/\s+/)[0]}
-                          </a>
+                          <Send className="w-3.5 h-3.5 mr-1.5" /> Text {row.name.split(/\s+/)[0]}
                         </Button>
+
                       )}
                       <Button size="sm" variant="outline" onClick={() => void copy(body)}>
                         <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy
