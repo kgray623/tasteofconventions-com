@@ -94,8 +94,12 @@ export const listRsvpIssues = createServerFn({ method: "POST" })
       .filter((r) => {
         const inv = invMap.get(r.invitation_id);
         if (!inv) return false;
-        return !inv.inviter_id || flaggedIds.has(r.invitation_id);
+        // Once a committee owner is credited (manually or by the guest-name
+        // rollup), the reply is resolved — an older "needs review" flag must
+        // not keep it in the queue forever.
+        return !inv.inviter_id;
       })
+
       .map((r) => {
         const inv = invMap.get(r.invitation_id)!;
         return {
