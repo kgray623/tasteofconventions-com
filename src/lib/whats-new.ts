@@ -23,6 +23,8 @@ export const WHATS_NEW: Record<string, { addedAt: string; expiresInDays?: number
   "admin:my-volunteer-chats": { addedAt: "2026-06-30" },
 
   "bell:new-rsvps": { addedAt: "2026-07-27" },
+  "header:bell-check-it": { addedAt: "2026-08-03" },
+  "admin:meal-texts": { addedAt: "2026-08-03" },
 
 };
 
