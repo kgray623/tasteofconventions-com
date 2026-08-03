@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { getErrorMessage } from "@/lib/async-safety";
+import { openSms } from "@/lib/meal-text-message";
+
 import {
   DEFAULT_MEAL_TEXT_TEMPLATE,
   getMealTextData,
@@ -51,10 +53,6 @@ const smsNumber = (s: string) => {
   return d ? `+${d}` : "";
 };
 
-function smsHref(numbers: string[], body: string) {
-  const to = numbers.filter(Boolean).join(",");
-  return `sms:${to}?&body=${encodeURIComponent(body)}`;
-}
 
 function renderTemplate(
   tpl: string,
@@ -194,10 +192,25 @@ function MealTextsPage() {
     try {
       await navigator.clipboard.writeText(text);
       toast.success("Message copied");
+      return true;
     } catch (e) {
       toast.error("Couldn't copy", { description: getErrorMessage(e) });
+      return false;
     }
   };
+
+  const sendText = async (numbers: string[], body: string, ids: string[]) => {
+    const res = openSms(numbers, body);
+    if (!res.ok) {
+      const copied = await copy(body);
+      toast.error("Couldn't open Messages", {
+        description: copied ? `${res.reason} The message was copied instead.` : res.reason,
+      });
+      return;
+    }
+    await setSent(ids, true);
+  };
+
 
   const totalPeople = rows.length;
   const totalMeals = rows.reduce((s, r) => s + r.qty, 0);
@@ -380,22 +393,21 @@ function MealTextsPage() {
                         key={i}
                         size="sm"
                         className="bg-terracotta text-cream hover:bg-terracotta/90"
-                        asChild
                         onClick={() =>
-                          void setSent(
+                          void sendText(
+                            chunk,
+                            groupBody(cuisine),
                             list
                               .filter((x) => !x.sent_at && chunk.includes(smsNumber(x.phone)))
                               .map((x) => x.id),
-                            true,
                           )
                         }
                       >
-                        <a href={smsHref(chunk, groupBody(cuisine))}>
-                          <Send className="w-3.5 h-3.5 mr-1.5" />
-                          Text group {chunks.length > 1 ? `${i + 1} of ${chunks.length}` : ""} (
-                          {chunk.length})
-                        </a>
+                        <Send className="w-3.5 h-3.5 mr-1.5" />
+                        Text group {chunks.length > 1 ? `${i + 1} of ${chunks.length}` : ""} (
+                        {chunk.length})
                       </Button>
+
                     ))
                   )}
                   <Button
@@ -439,13 +451,11 @@ function MealTextsPage() {
                         <Button
                           size="sm"
                           className="bg-pink-500 text-white hover:bg-pink-600"
-                          asChild
-                          onClick={() => void setSent([row.id], true)}
+                          onClick={() => void sendText([num], body, [row.id])}
                         >
-                          <a href={smsHref([num], body)}>
-                            <Send className="w-3.5 h-3.5 mr-1.5" /> Text {row.name.split(/\s+/)[0]}
-                          </a>
+                          <Send className="w-3.5 h-3.5 mr-1.5" /> Text {row.name.split(/\s+/)[0]}
                         </Button>
+
                       )}
                       <Button size="sm" variant="outline" onClick={() => void copy(body)}>
                         <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy
