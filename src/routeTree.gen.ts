@@ -37,6 +37,7 @@ import { Route as AuthenticatedInvitationsNewRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminUploadRouteImport } from './routes/_authenticated/admin/upload'
 import { Route as AuthenticatedAdminTeamRouteImport } from './routes/_authenticated/admin/team'
 import { Route as AuthenticatedAdminSubcommitteeRouteImport } from './routes/_authenticated/admin/subcommittee'
+import { Route as AuthenticatedAdminRsvpIssuesRouteImport } from './routes/_authenticated/admin/rsvp-issues'
 import { Route as AuthenticatedAdminRestaurantsRouteImport } from './routes/_authenticated/admin/restaurants'
 import { Route as AuthenticatedAdminReconcileRouteImport } from './routes/_authenticated/admin/reconcile'
 import { Route as AuthenticatedAdminRecentlyDeletedRouteImport } from './routes/_authenticated/admin/recently-deleted'
@@ -203,6 +204,12 @@ const AuthenticatedAdminSubcommitteeRoute =
   AuthenticatedAdminSubcommitteeRouteImport.update({
     id: '/subcommittee',
     path: '/subcommittee',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminRsvpIssuesRoute =
+  AuthenticatedAdminRsvpIssuesRouteImport.update({
+    id: '/rsvp-issues',
+    path: '/rsvp-issues',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
 const AuthenticatedAdminRestaurantsRoute =
@@ -379,6 +386,7 @@ export interface FileRoutesByFullPath {
   '/admin/recently-deleted': typeof AuthenticatedAdminRecentlyDeletedRoute
   '/admin/reconcile': typeof AuthenticatedAdminReconcileRoute
   '/admin/restaurants': typeof AuthenticatedAdminRestaurantsRoute
+  '/admin/rsvp-issues': typeof AuthenticatedAdminRsvpIssuesRoute
   '/admin/subcommittee': typeof AuthenticatedAdminSubcommitteeRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
   '/admin/upload': typeof AuthenticatedAdminUploadRoute
@@ -430,6 +438,7 @@ export interface FileRoutesByTo {
   '/admin/recently-deleted': typeof AuthenticatedAdminRecentlyDeletedRoute
   '/admin/reconcile': typeof AuthenticatedAdminReconcileRoute
   '/admin/restaurants': typeof AuthenticatedAdminRestaurantsRoute
+  '/admin/rsvp-issues': typeof AuthenticatedAdminRsvpIssuesRoute
   '/admin/subcommittee': typeof AuthenticatedAdminSubcommitteeRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
   '/admin/upload': typeof AuthenticatedAdminUploadRoute
@@ -484,6 +493,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/recently-deleted': typeof AuthenticatedAdminRecentlyDeletedRoute
   '/_authenticated/admin/reconcile': typeof AuthenticatedAdminReconcileRoute
   '/_authenticated/admin/restaurants': typeof AuthenticatedAdminRestaurantsRoute
+  '/_authenticated/admin/rsvp-issues': typeof AuthenticatedAdminRsvpIssuesRoute
   '/_authenticated/admin/subcommittee': typeof AuthenticatedAdminSubcommitteeRoute
   '/_authenticated/admin/team': typeof AuthenticatedAdminTeamRoute
   '/_authenticated/admin/upload': typeof AuthenticatedAdminUploadRoute
@@ -538,6 +548,7 @@ export interface FileRouteTypes {
     | '/admin/recently-deleted'
     | '/admin/reconcile'
     | '/admin/restaurants'
+    | '/admin/rsvp-issues'
     | '/admin/subcommittee'
     | '/admin/team'
     | '/admin/upload'
@@ -589,6 +600,7 @@ export interface FileRouteTypes {
     | '/admin/recently-deleted'
     | '/admin/reconcile'
     | '/admin/restaurants'
+    | '/admin/rsvp-issues'
     | '/admin/subcommittee'
     | '/admin/team'
     | '/admin/upload'
@@ -642,6 +654,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/recently-deleted'
     | '/_authenticated/admin/reconcile'
     | '/_authenticated/admin/restaurants'
+    | '/_authenticated/admin/rsvp-issues'
     | '/_authenticated/admin/subcommittee'
     | '/_authenticated/admin/team'
     | '/_authenticated/admin/upload'
@@ -883,6 +896,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminSubcommitteeRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/rsvp-issues': {
+      id: '/_authenticated/admin/rsvp-issues'
+      path: '/rsvp-issues'
+      fullPath: '/admin/rsvp-issues'
+      preLoaderRoute: typeof AuthenticatedAdminRsvpIssuesRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/restaurants': {
       id: '/_authenticated/admin/restaurants'
       path: '/restaurants'
@@ -1064,6 +1084,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminRecentlyDeletedRoute: typeof AuthenticatedAdminRecentlyDeletedRoute
   AuthenticatedAdminReconcileRoute: typeof AuthenticatedAdminReconcileRoute
   AuthenticatedAdminRestaurantsRoute: typeof AuthenticatedAdminRestaurantsRoute
+  AuthenticatedAdminRsvpIssuesRoute: typeof AuthenticatedAdminRsvpIssuesRoute
   AuthenticatedAdminSubcommitteeRoute: typeof AuthenticatedAdminSubcommitteeRoute
   AuthenticatedAdminTeamRoute: typeof AuthenticatedAdminTeamRoute
   AuthenticatedAdminUploadRoute: typeof AuthenticatedAdminUploadRoute
@@ -1090,6 +1111,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
     AuthenticatedAdminRecentlyDeletedRoute,
   AuthenticatedAdminReconcileRoute: AuthenticatedAdminReconcileRoute,
   AuthenticatedAdminRestaurantsRoute: AuthenticatedAdminRestaurantsRoute,
+  AuthenticatedAdminRsvpIssuesRoute: AuthenticatedAdminRsvpIssuesRoute,
   AuthenticatedAdminSubcommitteeRoute: AuthenticatedAdminSubcommitteeRoute,
   AuthenticatedAdminTeamRoute: AuthenticatedAdminTeamRoute,
   AuthenticatedAdminUploadRoute: AuthenticatedAdminUploadRoute,
