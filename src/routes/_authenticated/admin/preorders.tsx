@@ -311,6 +311,15 @@ function PreorderReportPage() {
           </div>
         )}
       </Card>
+
+      <ExportFallbackDialog
+        open={fallbackOpen}
+        onOpenChange={setFallbackOpen}
+        filename={fallback?.filename ?? "cuisine-preorder-report.csv"}
+        text={fallback?.text ?? ""}
+        title="Meal pre-order report"
+      />
     </div>
+
   );
 }
