@@ -140,10 +140,25 @@ function MyMealTextsPage() {
     try {
       await navigator.clipboard.writeText(text);
       toast.success("Message copied — paste it into a text");
+      return true;
     } catch (e) {
       toast.error("Couldn't copy", { description: getErrorMessage(e) });
+      return false;
     }
   };
+
+  const sendText = async (numbers: string[], body: string, ids: string[]) => {
+    const res = openSms(numbers, body);
+    if (!res.ok) {
+      const copied = await copy(body);
+      toast.error("Couldn't open Messages", {
+        description: copied ? `${res.reason} The message was copied instead.` : res.reason,
+      });
+      return;
+    }
+    await setSent(ids, true);
+  };
+
 
   const exportSheet = (cuisine: string, list: CommitteeMealTextRow[]) => {
     const header = ["Guest", "Phone", "Cuisine", "Meals", "Event"].join(",");
