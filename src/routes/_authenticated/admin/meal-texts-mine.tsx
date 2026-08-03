@@ -15,10 +15,11 @@ import {
   cuisineLabel,
   matchRestaurant,
   mealOrderText,
+  openSms,
   renderMealTemplate,
-  smsHref,
   smsNumber,
 } from "@/lib/meal-text-message";
+
 import { DEFAULT_MEAL_TEXT_TEMPLATE, type MealRestaurant } from "@/lib/meal-text-defaults";
 import {
   getMyMealTexts,
