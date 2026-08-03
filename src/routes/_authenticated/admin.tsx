@@ -33,6 +33,8 @@ const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boole
   { to: "/admin/rsvp-issues", label: "Replies that didn't stick", icon: ListChecks, group: "main" },
 
   { to: "/admin/meal-texts", label: "Meal texts", icon: MessageSquare, group: "main" },
+  { to: "/admin/meal-texts-mine", label: "My meal texts", icon: MessageSquare, team: true, teamLabel: "My meal texts", group: "committee" },
+
   { to: "/admin/invitation", label: "Invitation page", icon: Mail, group: "main" },
   { to: "/admin/donations", label: "Donations", icon: HandCoins, group: "main" },
   { to: "/admin/my-rsvp", label: "My RSVP", icon: Ticket, team: true, group: "main" },
