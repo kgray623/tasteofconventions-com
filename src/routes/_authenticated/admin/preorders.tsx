@@ -119,7 +119,7 @@ function PreorderReportPage() {
   const restaurantMeals = totals.reduce((sum, row) => (CUISINES.includes(row.cuisine as (typeof CUISINES)[number]) ? sum + row.qty : sum), 0);
   const unlinkedMeals = unlinkedDetailed.reduce((sum, r) => sum + r.qty, 0);
 
-  const exportCsv = () => {
+  const buildCsv = () => {
     const summaryLines = [
       ["Cuisine", "Total dishes"],
       ...totals.map((row) => [row.cuisine, row.qty]),
@@ -128,17 +128,25 @@ function PreorderReportPage() {
       ["Guest name", "Phone", "Cuisine", "Dishes", "Last updated"],
       ...detailedRows.map((row) => [row.name, row.phone, row.cuisine, row.qty, new Date(row.updatedAt).toLocaleString()]),
     ];
-    const csv = summaryLines.map((line) => line.map(escapeCsv).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `cuisine-preorder-report-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    return summaryLines.map((line) => line.map(escapeCsv).join(",")).join("\n");
   };
+
+  const exportCsv = () => {
+    const csv = buildCsv();
+    const filename = `cuisine-preorder-report-${new Date().toISOString().slice(0, 10)}.csv`;
+    setFallback({ filename, text: csv });
+    const res = downloadTextFile(filename, csv);
+    if (res.ok) {
+      toast.success("Meal report downloaded", {
+        description: "If you don't see it, tap Download CSV again and use Copy report.",
+        action: { label: "Copy instead", onClick: () => setFallbackOpen(true) },
+      });
+    } else {
+      setFallbackOpen(true);
+      toast.error("Your browser blocked the download", { description: res.reason });
+    }
+  };
+
 
   if (rolesLoading || loading) return <p className="text-muted-foreground">Loading preorder report…</p>;
   if (!isTeam) return <p className="text-muted-foreground">You do not have access to this report.</p>;
