@@ -58,7 +58,10 @@ function AdminOverview() {
   const [auditError, setAuditError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [ops, setOps] = useState({ flags: 0, categories: 0 });
+  const [fallback, setFallback] = useState<{ filename: string; text: string } | null>(null);
+  const [fallbackOpen, setFallbackOpen] = useState(false);
   const loadingAdminDataRef = useRef(false);
+
 
   useEffect(() => {
     if (rolesLoading || !isAdmin) return;
