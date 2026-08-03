@@ -192,10 +192,25 @@ function MealTextsPage() {
     try {
       await navigator.clipboard.writeText(text);
       toast.success("Message copied");
+      return true;
     } catch (e) {
       toast.error("Couldn't copy", { description: getErrorMessage(e) });
+      return false;
     }
   };
+
+  const sendText = async (numbers: string[], body: string, ids: string[]) => {
+    const res = openSms(numbers, body);
+    if (!res.ok) {
+      const copied = await copy(body);
+      toast.error("Couldn't open Messages", {
+        description: copied ? `${res.reason} The message was copied instead.` : res.reason,
+      });
+      return;
+    }
+    await setSent(ids, true);
+  };
+
 
   const totalPeople = rows.length;
   const totalMeals = rows.reduce((s, r) => s + r.qty, 0);
