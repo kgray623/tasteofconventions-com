@@ -361,15 +361,27 @@ function MyMealTextsPage() {
                       <Button size="sm" variant="outline" onClick={() => void copy(body)}>
                         <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy message
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled={busy?.includes(row.id)}
-                        onClick={() => void setSent([row.id], !row.sent_at)}
-                      >
-                        <Check className="w-3.5 h-3.5 mr-1.5" />
-                        {row.sent_at ? "Mark not texted" : "Mark texted"}
-                      </Button>
+                      {row.sent_at ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={busy?.includes(row.id)}
+                          onClick={() => void setSent([row.id], false)}
+                        >
+                          <Check className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
+                          Texted · Undo
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={busy?.includes(row.id)}
+                          onClick={() => void setSent([row.id], true)}
+                        >
+                          <Check className="w-3.5 h-3.5 mr-1.5" />
+                          Check here after you text
+                        </Button>
+                      )}
                     </div>
                   </div>
                 );
