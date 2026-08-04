@@ -446,90 +446,43 @@ function RsvpPage() {
 
         <Card className="p-7 space-y-5">
           <h2 className="font-display text-2xl">Will you be joining us?</h2>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             {[
-              { v: "yes", icon: Check, label: "Attending" },
-              { v: "no", icon: X, label: "Decline" },
+              { v: "in_person", icon: Users, label: "In person", sub: "Attend at the venue" },
+              { v: "zoom", icon: Video, label: "Zoom", sub: "Attend virtually" },
+              { v: "no", icon: X, label: "Decline", sub: "Cannot attend" },
             ].map((o) => (
-              <button
+              <Button
+                type="button"
+                variant="outline"
                 key={o.v}
-                onClick={() => setStatus(o.v as "yes" | "no")}
-                className={`p-4 rounded-md border-2 transition flex flex-col items-center gap-2 ${
-                  status === o.v
-                    ? o.v === "yes"
-                      ? "border-pink-500 bg-pink-500 text-white"
-                      : "border-ink bg-ink text-cream"
-                    : o.v === "yes"
-                      ? "border-border bg-card hover:border-pink-500/40"
-                      : "border-border bg-card hover:border-ink/40"
+                onClick={() => {
+                  if (o.v === "no") {
+                    setStatus("no");
+                    return;
+                  }
+                  setStatus("yes");
+                  setAttendanceMode(o.v as "in_person" | "zoom");
+                  if (o.v === "zoom") setPartySize(1);
+                }}
+                className={`h-auto min-h-24 rounded-md border-2 p-4 transition flex flex-col items-center gap-1.5 whitespace-normal ${
+                  (status === "no" ? "no" : attendanceMode) === o.v
+                    ? o.v === "in_person"
+                      ? "border-terracotta bg-terracotta text-cream hover:bg-terracotta/90"
+                      : o.v === "zoom"
+                        ? "border-teal-500 bg-teal-500 text-white hover:bg-teal-500/90"
+                        : "border-ink bg-ink text-cream hover:bg-ink/90"
+                    : "border-border bg-card text-ink hover:border-ink/40 hover:bg-card"
                 }`}
               >
                 <o.icon className="w-5 h-5" />
                 <span className="text-sm font-medium">{o.label}</span>
-              </button>
+                <span className="text-xs font-normal opacity-80">{o.sub}</span>
+              </Button>
             ))}
           </div>
-          {status === "no" && (
-            <div className="rounded-md border-2 border-terracotta bg-terracotta/5 p-4 space-y-3">
-              <p className="text-sm text-ink">
-                Sorry you can't join us in person. Would you like to attend virtually on Zoom instead?
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  className="bg-terracotta text-cream hover:bg-terracotta/90"
-                  onClick={() => {
-                    setStatus("yes");
-                    setAttendanceMode("zoom");
-                    setPartySize(1);
-                  }}
-                >
-                  <Video className="w-4 h-4 mr-2" /> Yes, join by Zoom
-                </Button>
-                <span className="text-xs text-muted-foreground self-center">
-                  Or continue below to decline entirely.
-                </span>
-              </div>
-            </div>
-          )}
           {status !== "no" && (
             <>
-              <div className="space-y-1.5">
-                <Label>How will you attend?</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    {
-                      v: "in_person",
-                      icon: Users,
-                      label: "In-person Attendance",
-                      sub: "Limited seating",
-                    },
-                    { v: "zoom", icon: Video, label: "Virtual Attendance", sub: "Join on Zoom" },
-                  ].map((o) => (
-                    <button
-                      key={o.v}
-                      onClick={() => setAttendanceMode(o.v as "in_person" | "zoom")}
-                      className={`p-4 rounded-md border-2 transition flex flex-col items-center gap-1.5 ${
-                        attendanceMode === o.v
-                          ? o.v === "in_person"
-                            ? "border-terracotta bg-terracotta text-cream"
-                            : "border-teal-500 bg-teal-500 text-white"
-                          : o.v === "in_person"
-                            ? "border-border bg-card hover:border-terracotta/40"
-                            : "border-border bg-card hover:border-teal-500/40"
-                      }`}
-                    >
-                      <o.icon className="w-5 h-5" />
-                      <span className="text-sm font-medium">{o.label}</span>
-                      <span
-                        className={`text-[10px] uppercase tracking-widest ${attendanceMode === o.v ? "text-cream/80" : "text-muted-foreground"}`}
-                      >
-                        {o.sub}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
               {attendanceMode === "in_person" && (
                 <div className="space-y-1.5">
                   <Label>Party size (including you)</Label>
