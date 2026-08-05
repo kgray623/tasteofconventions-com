@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { getErrorMessage } from "@/lib/async-safety";
-import { openSms } from "@/lib/meal-text-message";
+import { smsHref, smsNumber } from "@/lib/meal-text-message";
 
 import {
   DEFAULT_MEAL_TEXT_TEMPLATE,
@@ -42,17 +42,6 @@ export const Route = createFileRoute("/_authenticated/admin/meal-texts")({
   }),
   component: MealTextsPage,
 });
-
-const CHUNK = 20;
-
-const digits = (s: string) => (s ?? "").replace(/\D/g, "");
-const smsNumber = (s: string) => {
-  const d = digits(s);
-  if (d.length === 10) return `+1${d}`;
-  if (d.length === 11 && d.startsWith("1")) return `+${d}`;
-  return d ? `+${d}` : "";
-};
-
 
 function renderTemplate(
   tpl: string,
@@ -141,18 +130,6 @@ function MealTextsPage() {
     });
   };
 
-  const groupBody = (cuisine: string) => {
-    const r = restaurantFor(cuisine);
-    return renderTemplate(template, {
-      firstName: "friends",
-      restaurantName: r?.name ?? cuisine,
-      restaurantPhone: r?.phone?.trim() || "[add the restaurant's phone number]",
-      restaurantWebsite: r?.website?.trim() || "",
-      order: `your ${cuisine} meal order`,
-    });
-  };
-
-
   const setSent = async (ids: string[], sent: boolean) => {
     const unique = [...new Set(ids)];
     setBusy(unique.join(","));
@@ -198,19 +175,6 @@ function MealTextsPage() {
       return false;
     }
   };
-
-  const sendText = async (numbers: string[], body: string, ids: string[]) => {
-    const res = openSms(numbers, body);
-    if (!res.ok) {
-      const copied = await copy(body);
-      toast.error("Couldn't open Messages", {
-        description: copied ? `${res.reason} The message was copied instead.` : res.reason,
-      });
-      return;
-    }
-    await setSent(ids, true);
-  };
-
 
   const totalPeople = rows.length;
   const totalMeals = rows.reduce((s, r) => s + r.qty, 0);
@@ -362,10 +326,6 @@ function MealTextsPage() {
         const r = restaurantFor(cuisine);
         const onHold = r ? !r.order_ready : false;
         const visible = onlyUnsent ? list.filter((x) => !x.sent_at) : list;
-        const numbers = list.filter((x) => !x.sent_at).map((x) => smsNumber(x.phone)).filter(Boolean);
-        const chunks: string[][] = [];
-        for (let i = 0; i < numbers.length; i += CHUNK) chunks.push(numbers.slice(i, i + CHUNK));
-
         return (
           <Card key={cuisine} className="overflow-hidden">
             <div className="p-4 border-b border-border space-y-2">
@@ -379,45 +339,10 @@ function MealTextsPage() {
                 </Badge>
                 {onHold && <Badge className="bg-ink text-cream">Hold — not ready to text</Badge>}
               </div>
-              {onHold ? (
+              {onHold && (
                 <p className="text-xs text-muted-foreground">
                   Turn on “Ready to text” above when this restaurant is taking orders.
                 </p>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {chunks.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">Everyone here has been texted.</p>
-                  ) : (
-                    chunks.map((chunk, i) => (
-                      <Button
-                        key={i}
-                        size="sm"
-                        className="bg-terracotta text-cream hover:bg-terracotta/90"
-                        onClick={() =>
-                          void sendText(
-                            chunk,
-                            groupBody(cuisine),
-                            list
-                              .filter((x) => !x.sent_at && chunk.includes(smsNumber(x.phone)))
-                              .map((x) => x.id),
-                          )
-                        }
-                      >
-                        <Send className="w-3.5 h-3.5 mr-1.5" />
-                        Text group {chunks.length > 1 ? `${i + 1} of ${chunks.length}` : ""} (
-                        {chunk.length})
-                      </Button>
-
-                    ))
-                  )}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => void copy(groupBody(cuisine))}
-                  >
-                    <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy group message
-                  </Button>
-                </div>
               )}
             </div>
 
@@ -451,11 +376,16 @@ function MealTextsPage() {
                         <Button
                           size="sm"
                           className="bg-pink-500 text-white hover:bg-pink-600"
-                          onClick={() => void sendText([num], body, [row.id])}
+                          asChild
                         >
-                          <Send className="w-3.5 h-3.5 mr-1.5" /> Text {row.name.split(/\s+/)[0]}
+                          <a href={smsHref([num], body)} target="_top">
+                            <Send className="w-3.5 h-3.5 mr-1.5" /> Text {row.name.split(/\s+/)[0]}
+                          </a>
                         </Button>
 
+                      )}
+                      {!num && (
+                        <span className="text-xs font-medium text-brand-red">No usable phone number</span>
                       )}
                       <Button size="sm" variant="outline" onClick={() => void copy(body)}>
                         <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy
