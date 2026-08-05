@@ -13,7 +13,7 @@ import {
   restaurantPortalLogin,
   restaurantPortalLogout,
 } from "@/lib/restaurant-portal.functions";
-import type { PortalData } from "@/lib/restaurant-portal.server";
+import type { PortalData } from "@/lib/restaurant-portal-types";
 import { downloadTextFile } from "@/lib/download-file";
 
 export const Route = createFileRoute("/restaurant")({

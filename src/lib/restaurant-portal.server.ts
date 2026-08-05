@@ -2,22 +2,9 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { normalizeCuisine, parseSelections } from "@/lib/preorder-math";
 
-export type PortalOrderRow = {
-  preorderId: string;
-  guestName: string;
-  phone: string;
-  cuisine: string;
-  qty: number;
-  paid: boolean;
-  paidAt: string | null;
-  qtyPaid: number;
-};
+import type { PortalData, PortalOrderRow } from "@/lib/restaurant-portal-types";
 
-export type PortalData = {
-  restaurant: { id: string; name: string; cuisine: string | null; phone: string | null };
-  rows: PortalOrderRow[];
-  totals: { meals: number; mealsPaid: number; mealsUnpaid: number; households: number; householdsPaid: number };
-};
+export type { PortalData, PortalOrderRow };
 
 export function hashCode(code: string) {
   return createHash("sha256").update(code.trim().toLowerCase(), "utf8").digest("hex");

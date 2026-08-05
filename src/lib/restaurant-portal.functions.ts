@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { useSession } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { PortalData } from "@/lib/restaurant-portal.server";
+import type { PortalData } from "@/lib/restaurant-portal-types";
 
 type PortalSession = { restaurantId?: string; restaurantName?: string };
 
