@@ -292,21 +292,13 @@ function MyMealTextsPage() {
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {num && !onHold && (
-                        <Button
-                          size="sm"
-                          className="bg-pink-500 text-white hover:bg-pink-600"
-                          onClick={() => {
-                            const result = openSms([num], body);
-                            if (!result.ok) {
-                              void copy(body);
-                              toast.error(`${result.reason} Message copied — paste it into Messages.`);
-                            }
-                          }}
-                        >
-                          <Send className="w-3.5 h-3.5 mr-1.5" /> Text{" "}
-                          {row.name.split(/\s+/)[0]}
-                        </Button>
+                        <SmsTextButton
+                          numbers={[num]}
+                          body={body}
+                          label={`Text ${row.name.split(/\s+/)[0]}`}
+                        />
                       )}
+
                       {!num && (
                         <span className="text-xs font-medium text-brand-red">No usable phone number</span>
                       )}
