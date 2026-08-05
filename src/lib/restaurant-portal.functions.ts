@@ -118,18 +118,20 @@ export const listRestaurantAccess = createServerFn({ method: "POST" })
       ),
     );
     return {
-      restaurants: ((restaurants ?? []) as Array<{ id: string; name: string; cuisine: string | null; active: boolean }>)
+      restaurants: ((restaurants ?? []) as Array<{ id: string; name: string; cuisine: string | null; phone: string | null; active: boolean }>)
         .filter((r) => r.active !== false)
         .map((r) => ({
           id: r.id,
           name: r.name,
           cuisine: r.cuisine,
+          phone: r.phone ?? null,
           hasCode: accessMap.has(r.id),
           codeActive: accessMap.get(r.id)?.active ?? false,
           rotatedAt: accessMap.get(r.id)?.rotated_at ?? null,
           mealsPaid: paidByRestaurant.get(r.id) ?? 0,
         })),
     };
+
   });
 
 export const setRestaurantAccessCode = createServerFn({ method: "POST" })
