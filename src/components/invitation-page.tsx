@@ -596,6 +596,12 @@ export function InvitationPage() {
       <footer className="border-t border-border py-10 text-center text-sm text-muted-foreground">
         <p className="font-display text-2xl text-ink">A Taste of Special Conventions</p>
         <p className="mt-2 italic">An event and an evening to remember · this side of paradise.</p>
+        <p className="mt-5">
+          Partner restaurant?{" "}
+          <Link to="/restaurant" className="text-terracotta font-medium underline-offset-2 hover:underline">
+            Open your restaurant portal
+          </Link>
+        </p>
       </footer>
     </div>
   );
