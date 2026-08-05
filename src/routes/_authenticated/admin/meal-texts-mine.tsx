@@ -11,7 +11,6 @@ import { getErrorMessage } from "@/lib/async-safety";
 import { downloadTextFile } from "@/lib/download-file";
 import { ExportFallbackDialog } from "@/components/export-fallback-dialog";
 import {
-  chunkNumbers,
   cuisineLabel,
   matchRestaurant,
   mealOrderText,
@@ -108,17 +107,6 @@ function MyMealTextsPage() {
       restaurantPhone: r?.phone?.trim() || "[ask the admin for the restaurant's phone number]",
       restaurantWebsite: r?.website?.trim() || "",
       order: mealOrderText(row.qty, row.cuisine),
-    });
-  };
-
-  const groupBody = (cuisine: string) => {
-    const r = restaurantFor(cuisine);
-    return renderMealTemplate(template, {
-      firstName: "friends",
-      restaurantName: r?.name ?? cuisine,
-      restaurantPhone: r?.phone?.trim() || "[ask the admin for the restaurant's phone number]",
-      restaurantWebsite: r?.website?.trim() || "",
-      order: `your ${cuisine} meal order`,
     });
   };
 
@@ -243,12 +231,6 @@ function MyMealTextsPage() {
         const r = restaurantFor(cuisine);
         const onHold = r ? !r.order_ready : false;
         const visible = onlyUnsent ? list.filter((x) => !x.sent_at) : list;
-        const numbers = list
-          .filter((x) => !x.sent_at)
-          .map((x) => smsNumber(x.phone))
-          .filter(Boolean);
-        const chunks = chunkNumbers(numbers);
-
         return (
           <Card key={cuisine} className="overflow-hidden">
             <div className="p-4 border-b border-border space-y-2">
@@ -265,46 +247,14 @@ function MyMealTextsPage() {
                   {r.website ? ` · ${r.website}` : ""}
                 </p>
               )}
-              {onHold ? (
+              {onHold && (
                 <p className="text-xs text-muted-foreground">
                   This restaurant isn't taking orders yet — hold off on texting this group.
                 </p>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {chunks.map((chunk, i) => (
-                    <Button
-                      key={i}
-                      size="sm"
-                      className="bg-terracotta text-cream hover:bg-terracotta/90"
-                      asChild
-                    >
-                      <a
-                        href={smsHref(chunk, groupBody(cuisine))}
-                        target="_top"
-                        onClick={() =>
-                          void setSent(
-                            list
-                              .filter((x) => !x.sent_at && chunk.includes(smsNumber(x.phone)))
-                              .map((x) => x.id),
-                            true,
-                          )
-                        }
-                      >
-                        <Send className="w-3.5 h-3.5 mr-1.5" />
-                        Text group {chunks.length > 1 ? `${i + 1} of ${chunks.length}` : ""} (
-                        {chunk.length})
-                      </a>
-                    </Button>
-
-                  ))}
-                  <Button size="sm" variant="outline" onClick={() => void copy(groupBody(cuisine))}>
-                    <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy group message
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => exportSheet(cuisine, list)}>
-                    <Download className="w-3.5 h-3.5 mr-1.5" /> Restaurant sheet
-                  </Button>
-                </div>
               )}
+              <Button size="sm" variant="ghost" onClick={() => exportSheet(cuisine, list)}>
+                <Download className="w-3.5 h-3.5 mr-1.5" /> Restaurant sheet
+              </Button>
             </div>
 
             <div className="divide-y divide-border">
@@ -350,13 +300,15 @@ function MyMealTextsPage() {
                           <a
                             href={smsHref([num], body)}
                             target="_top"
-                            onClick={() => void setSent([row.id], true)}
                           >
                             <Send className="w-3.5 h-3.5 mr-1.5" /> Text{" "}
                             {row.name.split(/\s+/)[0]}
                           </a>
                         </Button>
 
+                      )}
+                      {!num && (
+                        <span className="text-xs font-medium text-brand-red">No usable phone number</span>
                       )}
                       <Button size="sm" variant="outline" onClick={() => void copy(body)}>
                         <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy message
