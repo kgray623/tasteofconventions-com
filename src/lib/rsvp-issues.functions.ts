@@ -1,8 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-async function assertStaff(supabase: any, userId: string) {
+async function assertStaff(supabase: SupabaseClient<Database>, userId: string) {
   const { data } = await supabase
     .from("user_roles")
     .select("role")
@@ -34,6 +36,13 @@ export type RsvpNeedsReferrer = {
   responded_at: string | null;
 };
 
+export type RsvpIntegrityIssue = {
+  kind: "meal_without_attending_rsvp" | "owner_without_account" | "orphan_preorder";
+  invitation_id: string | null;
+  guest_name: string;
+  detail: string;
+};
+
 /** Everything that didn't stick: rejected submissions + replies with no confident referrer. */
 export const listRsvpIssues = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -51,18 +60,18 @@ export const listRsvpIssues = createServerFn({ method: "POST" })
     const failures: RsvpFailure[] = (logs ?? [])
       .filter((r) => r.action === "RSVP SUBMIT FAILED")
       .map((r) => {
-        const m = (r.metadata ?? {}) as Record<string, any>;
+        const m = (r.metadata ?? {}) as Record<string, unknown>;
         return {
           id: r.id,
           created_at: r.created_at,
-          guest_name: m['guest_name'] ?? null,
-          guest_phone: m['guest_phone'] ?? null,
-          invited_by_raw: m['invited_by_raw'] ?? null,
-          status: m['status'] ?? null,
-          party_size: m['party_size'] ?? null,
-          attendance_mode: m['attendance_mode'] ?? null,
-          reason: m['reason'] ?? null,
-          source: m['source'] ?? null,
+          guest_name: typeof m["guest_name"] === "string" ? m["guest_name"] : null,
+          guest_phone: typeof m["guest_phone"] === "string" ? m["guest_phone"] : null,
+          invited_by_raw: typeof m["invited_by_raw"] === "string" ? m["invited_by_raw"] : null,
+          status: typeof m["status"] === "string" ? m["status"] : null,
+          party_size: typeof m["party_size"] === "number" ? m["party_size"] : null,
+          attendance_mode: typeof m["attendance_mode"] === "string" ? m["attendance_mode"] : null,
+          reason: typeof m["reason"] === "string" ? m["reason"] : null,
+          source: typeof m["source"] === "string" ? m["source"] : null,
         };
       });
 
@@ -80,13 +89,22 @@ export const listRsvpIssues = createServerFn({ method: "POST" })
       .order("responded_at", { ascending: false })
       .limit(1000);
 
-    const invitationIds = [...new Set([...(rsvpRows ?? []).map((r) => r.invitation_id), ...flaggedIds])];
+    const invitationIds = [
+      ...new Set([...(rsvpRows ?? []).map((r) => r.invitation_id), ...flaggedIds]),
+    ];
     const { data: invRows } = invitationIds.length
       ? await supabaseAdmin
           .from("invitations")
           .select("id,guest_name,guest_phone,inviter_id")
           .in("id", invitationIds)
-      : { data: [] as any[] };
+      : {
+          data: [] as Array<{
+            id: string;
+            guest_name: string;
+            guest_phone: string | null;
+            inviter_id: string | null;
+          }>,
+        };
 
     const invMap = new Map((invRows ?? []).map((i) => [i.id, i]));
 
@@ -115,13 +133,69 @@ export const listRsvpIssues = createServerFn({ method: "POST" })
 
     const { data: inviters } = await supabaseAdmin
       .from("inviters")
-      .select("id,name")
+      .select("id,name,host_id")
       .eq("active", true)
       .order("name");
+
+    const [{ data: preorderRows }, { data: creditedInvitations }] = await Promise.all([
+      supabaseAdmin
+        .from("cuisine_preorders")
+        .select("id,invitation_id,name,selections,invitations(guest_name,rsvps(status))"),
+      supabaseAdmin
+        .from("invitations")
+        .select("id,guest_name,inviter_id,inviters(name,host_id)")
+        .not("inviter_id", "is", null),
+    ]);
+
+    const integrity: RsvpIntegrityIssue[] = [];
+    for (const preorder of preorderRows ?? []) {
+      const invitation = Array.isArray(preorder.invitations)
+        ? preorder.invitations[0]
+        : preorder.invitations;
+      if (!preorder.invitation_id || !invitation) {
+        integrity.push({
+          kind: "orphan_preorder",
+          invitation_id: preorder.invitation_id ?? null,
+          guest_name: preorder.name ?? "Unknown guest",
+          detail: "Meal selections are retained but are not linked to an invitation.",
+        });
+        continue;
+      }
+      const rsvps = Array.isArray(invitation.rsvps)
+        ? invitation.rsvps
+        : invitation.rsvps
+          ? [invitation.rsvps]
+          : [];
+      const attending = rsvps.some((row: { status?: string | null }) => row.status === "yes");
+      const hasSelections = Array.isArray(preorder.selections) && preorder.selections.length > 0;
+      if (hasSelections && !attending) {
+        const status = rsvps[0]?.status ?? "pending";
+        integrity.push({
+          kind: "meal_without_attending_rsvp",
+          invitation_id: preorder.invitation_id,
+          guest_name: invitation.guest_name ?? preorder.name ?? "Unknown guest",
+          detail: `Meal selections are retained while the RSVP is ${status}. Organizer review required.`,
+        });
+      }
+    }
+    for (const invitation of creditedInvitations ?? []) {
+      const owner = Array.isArray(invitation.inviters)
+        ? invitation.inviters[0]
+        : invitation.inviters;
+      if (owner && !owner.host_id) {
+        integrity.push({
+          kind: "owner_without_account",
+          invitation_id: invitation.id,
+          guest_name: invitation.guest_name,
+          detail: `${owner.name ?? "Credited committee member"} has no linked sign-in account.`,
+        });
+      }
+    }
 
     return {
       failures,
       needsReferrer,
+      integrity,
       inviters: (inviters ?? []).map((i) => ({ id: i.id, name: i.name })),
     };
   });
@@ -150,7 +224,9 @@ export const assignRsvpReferrer = createServerFn({ method: "POST" })
 
     return {
       ok: readBack?.inviter_id === data.inviterId,
-      owner: (readBack as any)?.inviters?.name ?? null,
+      owner: Array.isArray(readBack?.inviters)
+        ? (readBack.inviters[0]?.name ?? null)
+        : (readBack?.inviters?.name ?? null),
     };
   });
 

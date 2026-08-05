@@ -18,7 +18,6 @@ export type RsvpNotification = {
   referred_by_text: string | null;
 };
 
-
 export type RsvpNotificationsResult = {
   items: RsvpNotification[];
   count: number;
@@ -84,7 +83,8 @@ export const getNewRsvpNotifications = createServerFn({ method: "POST" })
     // Work out which invitations belong to this user (same identity rules the
     // committee workspace uses: own host_id, or an inviter row matched by
     // host_id / phone / display name).
-    const normName = (s: string | null | undefined) => (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
+    const normName = (s: string | null | undefined) =>
+      (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
     const { data: authUser } = await supabase.auth.getUser();
     const myPhoneTail = phoneTail(authUser?.user?.phone);
     const { data: prof } = await supabase
@@ -108,9 +108,7 @@ export const getNewRsvpNotifications = createServerFn({ method: "POST" })
       if (r.id) mineInviterIds.add(r.id);
     }
 
-    const invitationById = new Map(
-      (invitationRows ?? []).map((row) => [row.id, row] as const),
-    );
+    const invitationById = new Map((invitationRows ?? []).map((row) => [row.id, row] as const));
 
     // Names for the "Referred by" line: inviter_id is the authority, host_id is
     // the fallback for older rows that were never linked to a roster row.
@@ -128,9 +126,13 @@ export const getNewRsvpNotifications = createServerFn({ method: "POST" })
       if (!r.invitation_id || !r.responded_at) continue;
       const inv = invitationById.get(r.invitation_id);
       if (!inv) continue;
-      const mine =
-        (inv.host_id ? mineHostIds.has(inv.host_id) : false) ||
-        (inv.inviter_id ? mineInviterIds.has(inv.inviter_id) : false);
+      // Referral credit is authoritative. host_id is only a compatibility
+      // fallback for historical rows that have not yet been credited.
+      const mine = inv.inviter_id
+        ? mineInviterIds.has(inv.inviter_id)
+        : inv.host_id
+          ? mineHostIds.has(inv.host_id)
+          : false;
       if (!isAdmin && !mine) continue;
       const inviterName =
         (inv.inviter_id ? inviterNameById.get(inv.inviter_id) : null) ??

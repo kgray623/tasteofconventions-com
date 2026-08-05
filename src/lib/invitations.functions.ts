@@ -4,7 +4,10 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isSingleExtraDigitPhoneVariant } from "@/lib/phone";
 
-function publicDbError(error: { message?: string } | null | undefined, fallback = "Something went wrong. Please try again."): Error {
+function publicDbError(
+  error: { message?: string } | null | undefined,
+  fallback = "Something went wrong. Please try again.",
+): Error {
   if (error?.message) console.error("[invitations] db error:", error.message);
   return new Error(fallback);
 }
@@ -33,7 +36,8 @@ function phoneCandidates(phone: string) {
 function normalizeCuisineName(value: string) {
   const lower = value.toLowerCase();
   if (lower.includes("myanmar") || lower.includes("burmese")) return "Myanmar";
-  if (lower.includes("african") || lower.includes("africa") || lower.includes("mozambique")) return "African";
+  if (lower.includes("african") || lower.includes("africa") || lower.includes("mozambique"))
+    return "African";
   if (lower.includes("indonesia")) return "Indonesian";
   return value.trim();
 }
@@ -90,7 +94,6 @@ async function findCuisinePreorder(invitationId: string, phone?: string | null) 
   return normalizePreorder(match ?? null);
 }
 
-
 // Lookup the currently signed-in guest's most recent invitation (by phone number).
 export const getMyInvitation = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -140,7 +143,11 @@ const BUILDING_IN_PERSON_CAPACITY = 550;
 // Determine if a "yes" RSVP should be placed on the waiting list because
 // the building's in-person attendance cap is full. Inviter/member quotas do
 // not create a waitlist; they are only committee allocation/admin numbers.
-async function shouldWaitlist(invitationId: string, partySize: number, attendanceMode: string): Promise<boolean> {
+async function shouldWaitlist(
+  invitationId: string,
+  partySize: number,
+  attendanceMode: string,
+): Promise<boolean> {
   if (attendanceMode === "zoom") return false;
 
   const { data: inv, error: invitationError } = await supabaseAdmin
@@ -172,7 +179,9 @@ async function shouldWaitlist(invitationId: string, partySize: number, attendanc
     .eq("status", "yes");
   if (rsvpsError) throw publicDbError(rsvpsError);
 
-  const confirmedInPerson = ((yesRsvps ?? []) as Array<{ party_size?: number | null; attendance_mode?: string | null }>)
+  const confirmedInPerson = (
+    (yesRsvps ?? []) as Array<{ party_size?: number | null; attendance_mode?: string | null }>
+  )
     .filter((row) => row.attendance_mode !== "zoom")
     .reduce((sum, row) => sum + (row.party_size ?? 1), 0);
 
@@ -256,65 +265,64 @@ export const submitRsvp = createServerFn({ method: "POST" })
   });
 
 async function submitRsvpInner(data: z.infer<typeof RsvpInput>) {
-    const invitedBy = await resolveInvitedBy(data.invited_by);
-    const { data: inv } = await supabaseAdmin
+  const invitedBy = await resolveInvitedBy(data.invited_by);
+  const { data: inv } = await supabaseAdmin
+    .from("invitations")
+    .select("id")
+    .in("rsvp_token", rsvpTokenCandidates(data.token))
+    .maybeSingle();
+  if (!inv) throw new Error("Invitation not found");
+
+  if (data.guest_name || data.guest_phone) {
+    const { error: invitationError } = await supabaseAdmin
       .from("invitations")
-      .select("id")
-      .in("rsvp_token", rsvpTokenCandidates(data.token))
-      .maybeSingle();
-    if (!inv) throw new Error("Invitation not found");
-
-    if (data.guest_name || data.guest_phone) {
-      const { error: invitationError } = await supabaseAdmin
-        .from("invitations")
-        .update({
-          ...(data.guest_name ? { guest_name: data.guest_name.trim() } : {}),
-          ...(data.guest_phone ? { guest_phone: data.guest_phone.trim() } : {}),
-        })
-        .eq("id", inv.id);
-      if (invitationError) throw publicDbError(invitationError);
-    }
-    const { data: existingRsvp } = await supabaseAdmin
-      .from("rsvps")
-      .select("status")
-      .eq("invitation_id", inv.id)
-      .maybeSingle();
-    void existingRsvp;
-    const mode = data.attendance_mode ?? "in_person";
-    const effectivePartySize = mode === "zoom" ? 1 : data.party_size;
-    const orderingFood = mode === "in_person" ? (data.ordering_food ?? null) : null;
-    let finalStatus: "yes" | "no" | "maybe" | "waitlist" = data.status;
-    let waitlisted = false;
-    if (data.status === "yes" && (await shouldWaitlist(inv.id, effectivePartySize, mode))) {
-      finalStatus = "waitlist";
-      waitlisted = true;
-    }
-    const { error } = await supabaseAdmin.from("rsvps").upsert(
-      {
-        invitation_id: inv.id,
-        status: finalStatus,
-        party_size: effectivePartySize,
-        attendance_mode: mode,
-        ordering_food: orderingFood,
-        dietary_notes: data.dietary_notes ?? null,
-        message: null,
-        invited_by: invitedBy.text,
-        responded_at: new Date().toISOString(),
-      },
-      { onConflict: "invitation_id" },
+      .update({
+        ...(data.guest_name ? { guest_name: data.guest_name.trim() } : {}),
+        ...(data.guest_phone ? { guest_phone: data.guest_phone.trim() } : {}),
+      })
+      .eq("id", inv.id);
+    if (invitationError) throw publicDbError(invitationError);
+  }
+  const { data: existingRsvp } = await supabaseAdmin
+    .from("rsvps")
+    .select("status")
+    .eq("invitation_id", inv.id)
+    .maybeSingle();
+  void existingRsvp;
+  const mode = data.attendance_mode ?? "in_person";
+  const effectivePartySize = mode === "zoom" ? 1 : data.party_size;
+  const orderingFood = mode === "in_person" ? (data.ordering_food ?? null) : null;
+  let finalStatus: "yes" | "no" | "maybe" | "waitlist" = data.status;
+  let waitlisted = false;
+  if (data.status === "yes" && (await shouldWaitlist(inv.id, effectivePartySize, mode))) {
+    finalStatus = "waitlist";
+    waitlisted = true;
+  }
+  const { error } = await supabaseAdmin.from("rsvps").upsert(
+    {
+      invitation_id: inv.id,
+      status: finalStatus,
+      party_size: effectivePartySize,
+      attendance_mode: mode,
+      ordering_food: orderingFood,
+      dietary_notes: data.dietary_notes ?? null,
+      message: null,
+      invited_by: invitedBy.text,
+      responded_at: new Date().toISOString(),
+    },
+    { onConflict: "invitation_id" },
+  );
+  if (error) throw publicDbError(error);
+  if (invitedBy.needsReview) {
+    await logRsvpEvent(
+      "RSVP REFERRER NEEDS REVIEW",
+      { source: "token", invited_by_raw: invitedBy.text, invitation_id: inv.id },
+      true,
+      inv.id,
     );
-    if (error) throw publicDbError(error);
-    if (invitedBy.needsReview) {
-      await logRsvpEvent(
-        "RSVP REFERRER NEEDS REVIEW",
-        { source: "token", invited_by_raw: invitedBy.text, invitation_id: inv.id },
-        true,
-        inv.id,
-      );
-    }
-    return { ok: true, waitlisted, referrerNeedsReview: invitedBy.needsReview };
+  }
+  return { ok: true, waitlisted, referrerNeedsReview: invitedBy.needsReview };
 }
-
 
 const OrderInput = z.object({
   token: z.string().min(8).max(120),
@@ -415,7 +423,8 @@ export const submitStandaloneCuisinePreorder = createServerFn({ method: "POST" }
       .limit(1)
       .maybeSingle();
     if (invErr) throw publicDbError(invErr);
-    if (!invitation) throw new Error("Please RSVP first using the same mobile number before choosing meals.");
+    if (!invitation)
+      throw new Error("Please RSVP first using the same mobile number before choosing meals.");
 
     const { data: rsvp, error: rsvpErr } = await supabaseAdmin
       .from("rsvps")
@@ -574,7 +583,8 @@ async function resolveInvitedBy(rawName: string | null | undefined): Promise<Inv
       if (!roster.has(norm(r.guest_name))) roster.set(norm(r.guest_name), null);
     }
   }
-  for (const r of teamRes.data ?? []) if (r.name && !roster.has(norm(r.name))) roster.set(norm(r.name), null);
+  for (const r of teamRes.data ?? [])
+    if (r.name && !roster.has(norm(r.name))) roster.set(norm(r.name), null);
 
   const target = norm(name);
   if (roster.has(target)) {
@@ -624,7 +634,6 @@ async function logRsvpEvent(
     console.error("[invitations] failed to log rsvp event", err);
   }
 }
-
 
 const PublicRsvpInput = z.object({
   guest_name: z.string().min(1).max(120),
@@ -688,13 +697,13 @@ export const getPublicRsvpByPhone = createServerFn({ method: "GET" })
     if (!invitation) return { invitation: null, rsvp: null, preorder: null };
 
     const [{ data: rsvp, error: rsvpErr }, preorder] = await Promise.all([
-        supabaseAdmin
-          .from("rsvps")
-          .select("status,party_size,attendance_mode,ordering_food,invited_by,responded_at")
-          .eq("invitation_id", invitation.id)
-          .maybeSingle(),
-        findCuisinePreorder(invitation.id, invitation.guest_phone ?? data.phone),
-      ]);
+      supabaseAdmin
+        .from("rsvps")
+        .select("status,party_size,attendance_mode,ordering_food,invited_by,responded_at")
+        .eq("invitation_id", invitation.id)
+        .maybeSingle(),
+      findCuisinePreorder(invitation.id, invitation.guest_phone ?? data.phone),
+    ]);
     if (rsvpErr) throw publicDbError(rsvpErr);
 
     return { invitation, rsvp, preorder };
@@ -725,232 +734,238 @@ export const submitPublicRsvp = createServerFn({ method: "POST" })
   });
 
 async function submitPublicRsvpInner(data: z.infer<typeof PublicRsvpInput>) {
-    const invitedBy = await resolveInvitedBy(data.invited_by);
+  const invitedBy = await resolveInvitedBy(data.invited_by);
 
-    // Find an event to attach to
-    const { data: ev } = await supabaseAdmin
-      .from("events")
-      .select("id")
-      .order("starts_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-    if (!ev) throw new Error("No event configured yet");
-    // Find a host (first profile / admin)
-    const { data: host } = await supabaseAdmin
-      .from("profiles")
-      .select("id")
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-    if (!host) throw new Error("No host configured yet");
+  // Find an event to attach to
+  const { data: ev } = await supabaseAdmin
+    .from("events")
+    .select("id")
+    .order("starts_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (!ev) throw new Error("No event configured yet");
+  // Find a host (first profile / admin)
+  const { data: host } = await supabaseAdmin
+    .from("profiles")
+    .select("id")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (!host) throw new Error("No host configured yet");
 
-    const phone = data.guest_phone?.trim() || null;
-    const password = data.password?.trim() || null;
-    const selections = (data.cuisine_selections ?? []).filter((s) => s.qty > 0);
-    const authPhone = normalizeAuthPhone(phone);
+  const phone = data.guest_phone?.trim() || null;
+  const password = data.password?.trim() || null;
+  const selections = (data.cuisine_selections ?? []).filter((s) => s.qty > 0);
+  const authPhone = normalizeAuthPhone(phone);
 
-    if (selections.length > 0 && !phone) {
-      throw new Error("A mobile number is required before meal choices can be saved.");
+  if (selections.length > 0 && !phone) {
+    throw new Error("A mobile number is required before meal choices can be saved.");
+  }
+
+  if (authPhone && password) {
+    const { data: createdUser, error: createUserErr } = await supabaseAdmin.auth.admin.createUser({
+      phone: authPhone,
+      password,
+      phone_confirm: true,
+      user_metadata: { display_name: data.guest_name, phone },
+    });
+
+    if (createUserErr && !/already|registered|exists/i.test(createUserErr.message)) {
+      throw publicDbError(createUserErr);
     }
 
-    if (authPhone && password) {
-      const { data: createdUser, error: createUserErr } = await supabaseAdmin.auth.admin.createUser(
-        {
-          phone: authPhone,
-          password,
-          phone_confirm: true,
-          user_metadata: { display_name: data.guest_name, phone },
-        },
-      );
-
-      if (createUserErr && !/already|registered|exists/i.test(createUserErr.message)) {
-        throw publicDbError(createUserErr);
-      }
-
-      // SECURITY: Only seed profile for newly created users. NEVER call
-      // updateUserById here — that would let an anonymous RSVP submission
-      // overwrite the password of any existing account (account takeover).
-      // If the phone is already registered, silently skip account setup;
-      // the user can sign in with their existing credentials.
-      const userId = createdUser?.user?.id ?? null;
-      if (userId) {
-        await supabaseAdmin.from("profiles").upsert({
-          id: userId,
-          display_name: data.guest_name,
-        });
-      }
+    // SECURITY: Only seed profile for newly created users. NEVER call
+    // updateUserById here — that would let an anonymous RSVP submission
+    // overwrite the password of any existing account (account takeover).
+    // If the phone is already registered, silently skip account setup;
+    // the user can sign in with their existing credentials.
+    const userId = createdUser?.user?.id ?? null;
+    if (userId) {
+      await supabaseAdmin.from("profiles").upsert({
+        id: userId,
+        display_name: data.guest_name,
+      });
     }
+  }
 
-    // Reuse an existing invitation when the submitted phone is an exact match.
-    // If someone accidentally typed one extra digit, link only when there is
-    // exactly one same-referrer record with the same first name. Ambiguous near
-    // matches remain separate and are logged for review; submitted data is never
-    // discarded or silently moved between committee members.
-    let invitationId: string | null = null;
-    if (phone) {
-      const phoneNorm = phone.replace(/\D/g, "");
-      if (phoneNorm.length >= 7) {
-        const { data: exactRows, error: exactError } = await supabaseAdmin
-          .from("invitations")
-          .select("id")
-          .eq("event_id", ev.id)
-          .in("guest_phone_normalized", phoneCandidates(phoneNorm))
-          .limit(2);
-        if (exactError) throw publicDbError(exactError);
-        if (exactRows?.length === 1) invitationId = exactRows[0].id;
-
-        if (!invitationId && invitedBy.inviterId) {
-          const submittedFirstName = data.guest_name.trim().toLowerCase().split(/\s+/)[0] ?? "";
-          const { data: ownerRows, error: ownerRowsError } = await supabaseAdmin
-            .from("invitations")
-            .select("id,guest_name,guest_phone")
-            .eq("event_id", ev.id)
-            .eq("inviter_id", invitedBy.inviterId)
-            .not("guest_phone", "is", null)
-            .limit(500);
-          if (ownerRowsError) throw publicDbError(ownerRowsError);
-          const nearMatches = (ownerRows ?? []).filter((row) => {
-            const existingFirstName = (row.guest_name ?? "").trim().toLowerCase().split(/\s+/)[0] ?? "";
-            return (
-              submittedFirstName.length >= 2 &&
-              submittedFirstName === existingFirstName &&
-              isSingleExtraDigitPhoneVariant(phoneNorm, row.guest_phone)
-            );
-          });
-          if (nearMatches.length === 1) {
-            invitationId = nearMatches[0].id;
-            await logRsvpEvent(
-              "RSVP LINKED PHONE TYPO",
-              {
-                source: "public",
-                guest_name_submitted: data.guest_name,
-                guest_phone_submitted: phone,
-                matched_guest_name: nearMatches[0].guest_name,
-                invitation_id: invitationId,
-              },
-              true,
-              invitationId,
-            );
-          } else if (nearMatches.length > 1) {
-            await logRsvpEvent(
-              "RSVP PHONE TYPO NEEDS REVIEW",
-              {
-                source: "public",
-                guest_name: data.guest_name,
-                guest_phone: phone,
-                candidate_invitation_ids: nearMatches.map((row) => row.id),
-              },
-              true,
-            );
-          }
-        }
-      }
-    }
-
-    let isNewInvitation = false;
-    if (!invitationId) {
-      const { data: inv, error: invErr } = await supabaseAdmin
+  // Reuse an existing invitation when the submitted phone is an exact match.
+  // If someone accidentally typed one extra digit, link only when there is
+  // exactly one same-referrer record with the same first name. Ambiguous near
+  // matches remain separate and are logged for review; submitted data is never
+  // discarded or silently moved between committee members.
+  let invitationId: string | null = null;
+  if (phone) {
+    const phoneNorm = phone.replace(/\D/g, "");
+    if (phoneNorm.length >= 7) {
+      const { data: exactRows, error: exactError } = await supabaseAdmin
         .from("invitations")
-        .insert({
-          event_id: ev.id,
-          host_id: host.id,
-          guest_name: data.guest_name,
-          guest_phone: phone,
-        })
         .select("id")
-        .single();
-      if (invErr) throw publicDbError(invErr);
-      invitationId = inv.id;
-      isNewInvitation = true;
-    }
+        .eq("event_id", ev.id)
+        .in("guest_phone_normalized", phoneCandidates(phoneNorm))
+        .limit(2);
+      if (exactError) throw publicDbError(exactError);
+      if (exactRows?.length === 1) invitationId = exactRows[0].id;
 
-    const mode = data.attendance_mode ?? "in_person";
-    const effectivePartySize = mode === "zoom" ? 1 : data.party_size;
-    const orderingFood = mode === "in_person" ? (data.ordering_food ?? null) : null;
-    let finalStatus: "yes" | "no" | "waitlist" = data.status;
-    let waitlisted = false;
-    if (data.status === "yes" && (await shouldWaitlist(invitationId, effectivePartySize, mode))) {
-      finalStatus = "waitlist";
-      waitlisted = true;
-    }
-
-    // SECURITY: For matched (pre-existing) invitations — especially admin-uploaded
-    // records that have already been sent an SMS — do NOT overwrite guest_name /
-    // guest_phone from an unauthenticated submitter. Anyone who
-    // knows a phone number could otherwise rewrite the invitee's identity.
-    // Only fill fields that are currently empty.
-    if (!isNewInvitation) {
-      const { data: current } = await supabaseAdmin
-        .from("invitations")
-        .select("guest_name, guest_phone, invite_sent_at")
-        .eq("id", invitationId)
-        .maybeSingle();
-      const patch: { guest_name?: string; guest_phone?: string } = {};
-      if (current && !current.invite_sent_at) {
-        if (!current.guest_name && data.guest_name) patch.guest_name = data.guest_name;
-        if (!current.guest_phone && phone) patch.guest_phone = phone;
-        if (Object.keys(patch).length > 0) {
-          const { error: invUpdateErr } = await supabaseAdmin
-            .from("invitations")
-            .update(patch)
-            .eq("id", invitationId);
-          if (invUpdateErr) throw publicDbError(invUpdateErr);
+      if (!invitationId && invitedBy.inviterId) {
+        const submittedFirstName = data.guest_name.trim().toLowerCase().split(/\s+/)[0] ?? "";
+        const { data: ownerRows, error: ownerRowsError } = await supabaseAdmin
+          .from("invitations")
+          .select("id,guest_name,guest_phone")
+          .eq("event_id", ev.id)
+          .eq("inviter_id", invitedBy.inviterId)
+          .not("guest_phone", "is", null)
+          .limit(500);
+        if (ownerRowsError) throw publicDbError(ownerRowsError);
+        const nearMatches = (ownerRows ?? []).filter((row) => {
+          const existingFirstName =
+            (row.guest_name ?? "").trim().toLowerCase().split(/\s+/)[0] ?? "";
+          return (
+            submittedFirstName.length >= 2 &&
+            submittedFirstName === existingFirstName &&
+            isSingleExtraDigitPhoneVariant(phoneNorm, row.guest_phone)
+          );
+        });
+        if (nearMatches.length === 1) {
+          invitationId = nearMatches[0].id;
+          await logRsvpEvent(
+            "RSVP LINKED PHONE TYPO",
+            {
+              source: "public",
+              guest_name_submitted: data.guest_name,
+              guest_phone_submitted: phone,
+              matched_guest_name: nearMatches[0].guest_name,
+              invitation_id: invitationId,
+            },
+            true,
+            invitationId,
+          );
+        } else if (nearMatches.length > 1) {
+          await logRsvpEvent(
+            "RSVP PHONE TYPO NEEDS REVIEW",
+            {
+              source: "public",
+              guest_name: data.guest_name,
+              guest_phone: phone,
+              candidate_invitation_ids: nearMatches.map((row) => row.id),
+            },
+            true,
+          );
         }
       }
     }
+  }
 
+  let isNewInvitation = false;
+  if (!invitationId) {
+    const { data: inv, error: invErr } = await supabaseAdmin
+      .from("invitations")
+      .insert({
+        event_id: ev.id,
+        host_id: host.id,
+        guest_name: data.guest_name,
+        guest_phone: phone,
+        // Store the resolved First-Loaded referral owner at creation time.
+        // The database trigger aligns host_id to this inviter's linked account
+        // when one exists; unresolved text is retained on the RSVP for review.
+        inviter_id: invitedBy.inviterId,
+      })
+      .select("id")
+      .single();
+    if (invErr) throw publicDbError(invErr);
+    invitationId = inv.id;
+    isNewInvitation = true;
+  }
 
-    const { error: rsvpErr } = await supabaseAdmin.from("rsvps").upsert(
+  const mode = data.attendance_mode ?? "in_person";
+  const effectivePartySize = mode === "zoom" ? 1 : data.party_size;
+  const orderingFood = mode === "in_person" ? (data.ordering_food ?? null) : null;
+  let finalStatus: "yes" | "no" | "waitlist" = data.status;
+  let waitlisted = false;
+  if (data.status === "yes" && (await shouldWaitlist(invitationId, effectivePartySize, mode))) {
+    finalStatus = "waitlist";
+    waitlisted = true;
+  }
+
+  // SECURITY: For matched (pre-existing) invitations — especially admin-uploaded
+  // records that have already been sent an SMS — do NOT overwrite guest_name /
+  // guest_phone from an unauthenticated submitter. Anyone who
+  // knows a phone number could otherwise rewrite the invitee's identity.
+  // Only fill fields that are currently empty.
+  if (!isNewInvitation) {
+    const { data: current } = await supabaseAdmin
+      .from("invitations")
+      .select("guest_name, guest_phone, invite_sent_at")
+      .eq("id", invitationId)
+      .maybeSingle();
+    const patch: { guest_name?: string; guest_phone?: string } = {};
+    if (current && !current.invite_sent_at) {
+      if (!current.guest_name && data.guest_name) patch.guest_name = data.guest_name;
+      if (!current.guest_phone && phone) patch.guest_phone = phone;
+      if (Object.keys(patch).length > 0) {
+        const { error: invUpdateErr } = await supabaseAdmin
+          .from("invitations")
+          .update(patch)
+          .eq("id", invitationId);
+        if (invUpdateErr) throw publicDbError(invUpdateErr);
+      }
+    }
+  }
+
+  const { error: rsvpErr } = await supabaseAdmin.from("rsvps").upsert(
+    {
+      invitation_id: invitationId,
+      status: finalStatus,
+      party_size: effectivePartySize,
+      attendance_mode: mode,
+      ordering_food: orderingFood,
+      message: null,
+      invited_by: invitedBy.text,
+      responded_at: new Date().toISOString(),
+    },
+    { onConflict: "invitation_id" },
+  );
+  if (rsvpErr) throw publicDbError(rsvpErr);
+
+  if (invitedBy.needsReview) {
+    await logRsvpEvent(
+      "RSVP REFERRER NEEDS REVIEW",
+      {
+        source: "public",
+        invited_by_raw: invitedBy.text,
+        guest_name: data.guest_name,
+        invitation_id: invitationId,
+      },
+      true,
+      invitationId,
+    );
+  }
+
+  // Capture cuisine pre-order interest (separate table, no restaurant binding yet)
+  if (selections.length > 0 && (data.guest_name || phone)) {
+    await supabaseAdmin.from("cuisine_preorders").upsert(
       {
         invitation_id: invitationId,
-        status: finalStatus,
-        party_size: effectivePartySize,
-        attendance_mode: mode,
-        ordering_food: orderingFood,
-        message: null,
-        invited_by: invitedBy.text,
-        responded_at: new Date().toISOString(),
+        name: data.guest_name.slice(0, 120),
+        phone: (phone ?? "").slice(0, 40) || "—",
+        selections,
       },
       { onConflict: "invitation_id" },
     );
-    if (rsvpErr) throw publicDbError(rsvpErr);
+  } else if (invitationId) {
+    await supabaseAdmin.rpc("system_delete_rows" as any, {
+      _table: "cuisine_preorders",
+      _column: "invitation_id",
+      _value: invitationId,
+    });
+  }
 
-    if (invitedBy.needsReview) {
-      await logRsvpEvent(
-        "RSVP REFERRER NEEDS REVIEW",
-        {
-          source: "public",
-          invited_by_raw: invitedBy.text,
-          guest_name: data.guest_name,
-          invitation_id: invitationId,
-        },
-        true,
-        invitationId,
-      );
-    }
-
-    // Capture cuisine pre-order interest (separate table, no restaurant binding yet)
-    if (selections.length > 0 && (data.guest_name || phone)) {
-      await supabaseAdmin.from("cuisine_preorders").upsert(
-        {
-          invitation_id: invitationId,
-          name: data.guest_name.slice(0, 120),
-          phone: (phone ?? "").slice(0, 40) || "—",
-          selections,
-        },
-        { onConflict: "invitation_id" },
-      );
-    } else if (invitationId) {
-      await supabaseAdmin.rpc("system_delete_rows" as any, {
-        _table: "cuisine_preorders",
-        _column: "invitation_id",
-        _value: invitationId,
-      });
-    }
-
-    return { ok: true, invitation_id: invitationId, waitlisted, referrerNeedsReview: invitedBy.needsReview };
+  return {
+    ok: true,
+    invitation_id: invitationId,
+    waitlisted,
+    referrerNeedsReview: invitedBy.needsReview,
+  };
 }
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Admin: list & restore archived (deleted) rows
@@ -998,7 +1013,13 @@ export const restoreDeletedRow = createServerFn({ method: "POST" })
       .maybeSingle();
     if (aerr || !arch) throw new Error("Archive entry not found");
 
-    const allowed = new Set(["invitations", "rsvps", "inviters", "team_invites", "cuisine_preorders"]);
+    const allowed = new Set([
+      "invitations",
+      "rsvps",
+      "inviters",
+      "team_invites",
+      "cuisine_preorders",
+    ]);
     if (!allowed.has(arch.table_name)) throw new Error("Unsupported table");
 
     const row = arch.row_data as Record<string, unknown>;
@@ -1008,4 +1029,3 @@ export const restoreDeletedRow = createServerFn({ method: "POST" })
     await supabaseAdmin.from("deleted_rows_archive").delete().eq("id", data.archive_id);
     return { ok: true };
   });
-

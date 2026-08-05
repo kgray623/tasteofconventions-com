@@ -8,6 +8,7 @@ import {
   assignRsvpReferrer,
   listRsvpIssues,
   type RsvpFailure,
+  type RsvpIntegrityIssue,
   type RsvpNeedsReferrer,
 } from "@/lib/rsvp-issues.functions";
 
@@ -42,6 +43,7 @@ function RsvpIssuesPage() {
   const [failures, setFailures] = useState<RsvpFailure[]>([]);
   const [needsReferrer, setNeedsReferrer] = useState<RsvpNeedsReferrer[]>([]);
   const [inviters, setInviters] = useState<{ id: string; name: string }[]>([]);
+  const [integrity, setIntegrity] = useState<RsvpIntegrityIssue[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
 
   const refresh = async () => {
@@ -51,8 +53,9 @@ function RsvpIssuesPage() {
       setFailures(res.failures);
       setNeedsReferrer(res.needsReferrer);
       setInviters(res.inviters);
-    } catch (e: any) {
-      toast.error(e?.message ?? "Couldn't load the list");
+      setIntegrity(res.integrity);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Couldn't load the list");
     } finally {
       setLoading(false);
     }
@@ -74,8 +77,8 @@ function RsvpIssuesPage() {
       } else {
         toast.error("That assignment did not save — try again");
       }
-    } catch (e: any) {
-      toast.error(e?.message ?? "Couldn't save that");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Couldn't save that");
     } finally {
       setBusy(null);
     }
@@ -95,9 +98,7 @@ function RsvpIssuesPage() {
       </header>
 
       <section className="space-y-2">
-        <h2 className="text-base font-semibold">
-          Rejected submissions ({failures.length})
-        </h2>
+        <h2 className="text-base font-semibold">Rejected submissions ({failures.length})</h2>
         {failures.length === 0 && !loading && (
           <p className="text-sm text-muted-foreground">
             No rejected submissions recorded. From now on, every refused reply is logged here.
@@ -123,6 +124,28 @@ function RsvpIssuesPage() {
       </section>
 
       <section className="space-y-2">
+        <h2 className="text-base font-semibold">Data integrity review ({integrity.length})</h2>
+        {integrity.length === 0 && !loading && (
+          <p className="text-sm text-muted-foreground">
+            No RSVP, ownership, or meal-link exceptions found.
+          </p>
+        )}
+        {integrity.map((issue, index) => (
+          <Card key={`${issue.kind}-${issue.invitation_id ?? index}`} className="p-3 text-sm">
+            <div className="font-medium">{issue.guest_name}</div>
+            <div className="mt-1 text-destructive">{issue.detail}</div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              {issue.kind === "meal_without_attending_rsvp"
+                ? "Meal / RSVP mismatch"
+                : issue.kind === "owner_without_account"
+                  ? "Committee account link missing"
+                  : "Meal invitation link missing"}
+            </div>
+          </Card>
+        ))}
+      </section>
+
+      <section className="space-y-2">
         <h2 className="text-base font-semibold">
           Needs referrer confirmation ({needsReferrer.length})
         </h2>
@@ -141,7 +164,10 @@ function RsvpIssuesPage() {
             <div className="mt-1">
               They typed: <strong>{r.invited_by_raw ?? "nothing"}</strong>
             </div>
-            <label className="mt-2 block text-xs text-muted-foreground" htmlFor={`a-${r.invitation_id}`}>
+            <label
+              className="mt-2 block text-xs text-muted-foreground"
+              htmlFor={`a-${r.invitation_id}`}
+            >
               Credit this guest to
             </label>
             <select

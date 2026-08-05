@@ -56,16 +56,21 @@ export const addGuests = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Ownership: the signed-in user owns the rows they add. Admins may add on
-    // behalf of a roster owner (so the guests land in that person's account).
+    // Referral credit is authoritative. Resolve the linked account owner from
+    // the selected inviter, and never allow a committee member to submit under
+    // somebody else's inviter record.
     let hostId = userId;
     const inviterId = data.inviterId || null;
-    if (isAdmin && inviterId) {
+    if (inviterId) {
       const { data: inviter } = await supabaseAdmin
         .from("inviters")
-        .select("host_id")
+        .select("host_id,phone")
         .eq("id", inviterId)
         .maybeSingle();
+      if (!inviter) throw new Error("That committee member was not found.");
+      if (!isAdmin && inviter.host_id !== userId) {
+        throw new Error("Committee members can only add guests to their own list.");
+      }
       if (inviter?.host_id) hostId = inviter.host_id;
     }
 
