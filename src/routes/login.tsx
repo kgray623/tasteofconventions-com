@@ -223,7 +223,9 @@ function HelperLogin() {
               Enter your mobile number and the last name on your invitation. Both must match.
             </p>
           </div>
-          <form onSubmit={signIn} className="space-y-4">
+          <form onSubmit={(e) => void signIn(e)} method="get" className="space-y-4">
+            {search.redirect ? <input type="hidden" name="redirect" value={search.redirect} /> : null}
+
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
                 <NewBadge target="login:last-name" />
