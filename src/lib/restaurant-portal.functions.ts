@@ -23,16 +23,12 @@ export const restaurantPortalLogin = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
     z.object({ restaurant: z.string().min(2).max(120), code: z.string().min(3).max(80) }).parse(d),
   )
-  .handler(async ({ data }): Promise<{ ok: boolean; data?: PortalData; dbg?: unknown }> => {
-    const dbg: Record<string, unknown> = {};
-    try {
+  .handler(async ({ data }): Promise<{ ok: boolean; data?: PortalData }> => {
     const { findRestaurantByName, codeMatches, loadPortalData } = await import(
       "@/lib/restaurant-portal.server"
     );
     const restaurant = await findRestaurantByName(data.restaurant);
-    console.log("[portal-dbg] restaurant", restaurant?.id, restaurant?.name);
-    dbg["restaurant"] = restaurant?.name ?? null;
-    if (!restaurant) return { ok: false, dbg };
+    if (!restaurant) return { ok: false };
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: access } = await supabaseAdmin
@@ -40,21 +36,13 @@ export const restaurantPortalLogin = createServerFn({ method: "POST" })
       .select("code_hash,active")
       .eq("restaurant_id", restaurant.id)
       .maybeSingle();
-    console.log("[portal-dbg] access", JSON.stringify(access));
-    dbg["access"] = access ?? null;
-    if (!access || access.active === false) return { ok: false, dbg };
+    if (!access || access.active === false) return { ok: false };
     const ok = codeMatches(data.code, access.code_hash as string);
-    console.log("[portal-dbg] codeMatches", ok);
-    dbg["codeMatches"] = ok;
-    if (!ok) return { ok: false, dbg };
+    if (!ok) return { ok: false };
 
     const session = await portalSession();
     await session.update({ restaurantId: restaurant.id, restaurantName: restaurant.name });
     return { ok: true, data: await loadPortalData(restaurant.id) };
-    } catch (e) {
-      dbg["error"] = e instanceof Error ? e.message : String(e);
-      return { ok: false, dbg };
-    }
   });
 
 export const restaurantPortalLogout = createServerFn({ method: "POST" }).handler(async () => {

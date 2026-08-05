@@ -69,18 +69,15 @@ function RestaurantPortalPage() {
   const doLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    console.log("[portal] submit");
     try {
       const res = await login({ data: { restaurant: restaurant.trim(), code: code.trim() } });
       if (!res.ok || !res.data) {
-        console.log("[portal] dbg", JSON.stringify((res as { dbg?: unknown }).dbg));
         toast.error("That restaurant name or access code isn't right.");
         return;
       }
       setData(res.data);
       setCode("");
     } catch (err) {
-      console.log("[portal] error", err);
       toast.error(err instanceof Error ? err.message : "Could not sign in");
     } finally {
       setBusy(false);
