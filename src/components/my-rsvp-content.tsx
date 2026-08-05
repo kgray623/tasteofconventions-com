@@ -44,6 +44,7 @@ type MyRsvpData = {
   } | null;
   order?: { items?: unknown; total?: number | string | null; notes?: string | null } | null;
   preorder?: { selections?: unknown; updated_at?: string | null } | null;
+  mealPayments?: Array<{ cuisine: string; qty_paid: number; paid_at: string | null }> | null;
 };
 
 function isCuisineSelection(value: unknown): value is CuisineSelection {
@@ -266,6 +267,36 @@ export function MyRsvpContent() {
                 Note: {order.notes}
               </p>
             )}
+          </Card>
+        )}
+
+        {(data.mealPayments ?? []).some((p) => Number(p.qty_paid) > 0) && (
+          <Card className="p-7 space-y-3 border-2 border-emerald-600">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-600 text-white text-lg">
+                ✓
+              </span>
+              <h2 className="font-display text-2xl">Meal payment received</h2>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              The restaurant has confirmed your pre-payment. Show this screen (or your receipt) at
+              the event to pick up your meal.
+            </p>
+            <ul className="divide-y divide-border">
+              {(data.mealPayments ?? [])
+                .filter((p) => Number(p.qty_paid) > 0)
+                .map((p) => (
+                  <li key={p.cuisine} className="py-2 flex items-center gap-3 text-sm">
+                    <span className="font-display text-lg w-8 text-emerald-700">
+                      {p.qty_paid}×
+                    </span>
+                    <span className="flex-1 text-ink">{p.cuisine}</span>
+                    <span className="text-emerald-700 font-medium">
+                      Paid{p.paid_at ? ` · ${new Date(p.paid_at).toLocaleDateString()}` : ""}
+                    </span>
+                  </li>
+                ))}
+            </ul>
           </Card>
         )}
 
