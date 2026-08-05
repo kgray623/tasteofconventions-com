@@ -73,6 +73,7 @@ function RestaurantPortalPage() {
     try {
       const res = await login({ data: { restaurant: restaurant.trim(), code: code.trim() } });
       if (!res.ok || !res.data) {
+        console.log("[portal] dbg", JSON.stringify((res as { dbg?: unknown }).dbg));
         toast.error("That restaurant name or access code isn't right.");
         return;
       }
