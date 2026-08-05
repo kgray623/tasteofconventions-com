@@ -133,6 +133,22 @@ function HelperLogin() {
     try {
       const session = await withTimeout(phoneLogin({ data: { phone, name: name.trim() } }), 15000);
       if ("error" in session) {
+        // Restaurant partners use the same name + phone pattern, so if the
+        // guest list doesn't recognize them, try the restaurant portal before
+        // telling them they're not on the list.
+        try {
+          const res = await withTimeout(
+            restaurantLogin({ data: { restaurant: name.trim(), code: phone.trim() } }),
+            15000,
+          );
+          if (res.ok) {
+            toast.success("Signed in to your restaurant portal.");
+            await navigate({ to: "/restaurant", replace: true });
+            return;
+          }
+        } catch {
+          /* fall through to the guest error */
+        }
         setBusy(false);
         return toast.error(session.error);
       }
