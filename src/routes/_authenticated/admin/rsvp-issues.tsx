@@ -8,6 +8,7 @@ import {
   assignRsvpReferrer,
   listRsvpIssues,
   type RsvpFailure,
+  type RsvpIntegrityIssue,
   type RsvpNeedsReferrer,
 } from "@/lib/rsvp-issues.functions";
 
@@ -42,6 +43,7 @@ function RsvpIssuesPage() {
   const [failures, setFailures] = useState<RsvpFailure[]>([]);
   const [needsReferrer, setNeedsReferrer] = useState<RsvpNeedsReferrer[]>([]);
   const [inviters, setInviters] = useState<{ id: string; name: string }[]>([]);
+  const [integrity, setIntegrity] = useState<RsvpIntegrityIssue[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
 
   const refresh = async () => {
@@ -51,6 +53,7 @@ function RsvpIssuesPage() {
       setFailures(res.failures);
       setNeedsReferrer(res.needsReferrer);
       setInviters(res.inviters);
+      setIntegrity(res.integrity);
     } catch (e: any) {
       toast.error(e?.message ?? "Couldn't load the list");
     } finally {
@@ -117,6 +120,26 @@ function RsvpIssuesPage() {
             <div className="mt-1 text-destructive">{f.reason ?? "Unknown reason"}</div>
             <div className="mt-1 text-xs text-muted-foreground">
               {fmt(f.created_at)} · {f.source === "public" ? "public RSVP page" : "invite link"}
+            </div>
+          </Card>
+        ))}
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="text-base font-semibold">Data integrity review ({integrity.length})</h2>
+        {integrity.length === 0 && !loading && (
+          <p className="text-sm text-muted-foreground">No RSVP, ownership, or meal-link exceptions found.</p>
+        )}
+        {integrity.map((issue, index) => (
+          <Card key={`${issue.kind}-${issue.invitation_id ?? index}`} className="p-3 text-sm">
+            <div className="font-medium">{issue.guest_name}</div>
+            <div className="mt-1 text-destructive">{issue.detail}</div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              {issue.kind === "meal_without_attending_rsvp"
+                ? "Meal / RSVP mismatch"
+                : issue.kind === "owner_without_account"
+                  ? "Committee account link missing"
+                  : "Meal invitation link missing"}
             </div>
           </Card>
         ))}

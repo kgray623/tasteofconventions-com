@@ -205,10 +205,16 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
       }
     }
 
+    const ownedInvitationRows = invitationRows.filter((row) =>
+      row.inviter_id
+        ? mineInviterIds.has(row.inviter_id)
+        : !!row.host_id && mineHostIds.has(row.host_id),
+    );
+
     return {
       myHostIds: Array.from(mineHostIds),
       myInviterIds: Array.from(mineInviterIds),
-      guests: invitationRows.map((row) => {
+      guests: ownedInvitationRows.map((row) => {
         const rsvp = rsvpByInvitation.get(row.id);
         return {
           id: row.id,

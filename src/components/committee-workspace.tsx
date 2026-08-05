@@ -265,10 +265,16 @@ export function CommitteeWorkspace() {
       }
     }
 
+    const ownedRows = rows.filter((row) =>
+      row.inviter_id
+        ? mineInviterSet.has(row.inviter_id)
+        : mineSet.has(row.host_id),
+    );
+
     return {
       myHostIds: Array.from(mineSet),
       myInviterIds: Array.from(mineInviterSet),
-      guests: rows.map((row) => {
+      guests: ownedRows.map((row) => {
         const rsvp = pickSingleRsvp(row.rsvps);
         return {
           id: row.id,
@@ -564,11 +570,11 @@ export function CommitteeWorkspace() {
   // only the fallback for older/uncredited uploads; otherwise an admin or
   // committee uploader would see guests already credited to someone else.
   const mineInviterIdSet = new Set(myInviterIds);
+  // The server already returns the canonical signed-in member's rows. Keep a
+  // local ownership guard for the browser fallback and stale cached responses.
   const myGuestsUnsorted = user
-    ? guests.filter(
-        (g) => g.inviter_id
-          ? mineInviterIdSet.has(g.inviter_id)
-          : mineHostIdSet.has(g.host_id),
+    ? guests.filter((g) =>
+        g.inviter_id ? mineInviterIdSet.has(g.inviter_id) : mineHostIdSet.has(g.host_id),
       )
     : [];
 

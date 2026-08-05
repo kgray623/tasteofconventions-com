@@ -34,6 +34,13 @@ export type RsvpNeedsReferrer = {
   responded_at: string | null;
 };
 
+export type RsvpIntegrityIssue = {
+  kind: "meal_without_attending_rsvp" | "owner_without_account" | "orphan_preorder";
+  invitation_id: string | null;
+  guest_name: string;
+  detail: string;
+};
+
 /** Everything that didn't stick: rejected submissions + replies with no confident referrer. */
 export const listRsvpIssues = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -115,13 +122,63 @@ export const listRsvpIssues = createServerFn({ method: "POST" })
 
     const { data: inviters } = await supabaseAdmin
       .from("inviters")
-      .select("id,name")
+      .select("id,name,host_id")
       .eq("active", true)
       .order("name");
+
+    const [{ data: preorderRows }, { data: creditedInvitations }] = await Promise.all([
+      supabaseAdmin
+        .from("cuisine_preorders")
+        .select("id,invitation_id,name,selections,invitations(guest_name,rsvps(status))"),
+      supabaseAdmin
+        .from("invitations")
+        .select("id,guest_name,inviter_id,inviters(name,host_id)")
+        .not("inviter_id", "is", null),
+    ]);
+
+    const integrity: RsvpIntegrityIssue[] = [];
+    for (const preorder of preorderRows ?? []) {
+      const invitation = Array.isArray(preorder.invitations)
+        ? preorder.invitations[0]
+        : preorder.invitations;
+      if (!preorder.invitation_id || !invitation) {
+        integrity.push({
+          kind: "orphan_preorder",
+          invitation_id: preorder.invitation_id ?? null,
+          guest_name: preorder.name ?? "Unknown guest",
+          detail: "Meal selections are retained but are not linked to an invitation.",
+        });
+        continue;
+      }
+      const rsvps = Array.isArray(invitation.rsvps) ? invitation.rsvps : invitation.rsvps ? [invitation.rsvps] : [];
+      const attending = rsvps.some((row) => row.status === "yes");
+      const hasSelections = Array.isArray(preorder.selections) && preorder.selections.length > 0;
+      if (hasSelections && !attending) {
+        const status = rsvps[0]?.status ?? "pending";
+        integrity.push({
+          kind: "meal_without_attending_rsvp",
+          invitation_id: preorder.invitation_id,
+          guest_name: invitation.guest_name ?? preorder.name ?? "Unknown guest",
+          detail: `Meal selections are retained while the RSVP is ${status}. Organizer review required.`,
+        });
+      }
+    }
+    for (const invitation of creditedInvitations ?? []) {
+      const owner = Array.isArray(invitation.inviters) ? invitation.inviters[0] : invitation.inviters;
+      if (owner && !owner.host_id) {
+        integrity.push({
+          kind: "owner_without_account",
+          invitation_id: invitation.id,
+          guest_name: invitation.guest_name,
+          detail: `${owner.name ?? "Credited committee member"} has no linked sign-in account.`,
+        });
+      }
+    }
 
     return {
       failures,
       needsReferrer,
+      integrity,
       inviters: (inviters ?? []).map((i) => ({ id: i.id, name: i.name })),
     };
   });

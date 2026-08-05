@@ -856,6 +856,10 @@ async function submitPublicRsvpInner(data: z.infer<typeof PublicRsvpInput>) {
           host_id: host.id,
           guest_name: data.guest_name,
           guest_phone: phone,
+          // Store the resolved First-Loaded referral owner at creation time.
+          // The database trigger aligns host_id to this inviter's linked account
+          // when one exists; unresolved text is retained on the RSVP for review.
+          inviter_id: invitedBy.inviterId,
         })
         .select("id")
         .single();

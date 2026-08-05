@@ -128,9 +128,13 @@ export const getNewRsvpNotifications = createServerFn({ method: "POST" })
       if (!r.invitation_id || !r.responded_at) continue;
       const inv = invitationById.get(r.invitation_id);
       if (!inv) continue;
-      const mine =
-        (inv.host_id ? mineHostIds.has(inv.host_id) : false) ||
-        (inv.inviter_id ? mineInviterIds.has(inv.inviter_id) : false);
+      // Referral credit is authoritative. host_id is only a compatibility
+      // fallback for historical rows that have not yet been credited.
+      const mine = inv.inviter_id
+        ? mineInviterIds.has(inv.inviter_id)
+        : inv.host_id
+          ? mineHostIds.has(inv.host_id)
+          : false;
       if (!isAdmin && !mine) continue;
       const inviterName =
         (inv.inviter_id ? inviterNameById.get(inv.inviter_id) : null) ??
