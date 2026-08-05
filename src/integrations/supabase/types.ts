@@ -696,6 +696,57 @@ export type Database = {
         }
         Relationships: []
       }
+      meal_payments: {
+        Row: {
+          created_at: string
+          cuisine: string
+          id: string
+          marked_by_label: string | null
+          paid_at: string
+          preorder_id: string
+          qty_paid: number
+          restaurant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cuisine: string
+          id?: string
+          marked_by_label?: string | null
+          paid_at?: string
+          preorder_id: string
+          qty_paid?: number
+          restaurant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cuisine?: string
+          id?: string
+          marked_by_label?: string | null
+          paid_at?: string
+          preorder_id?: string
+          qty_paid?: number
+          restaurant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_payments_preorder_id_fkey"
+            columns: ["preorder_id"]
+            isOneToOne: false
+            referencedRelation: "cuisine_preorders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_payments_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_items: {
         Row: {
           available: boolean
@@ -890,6 +941,47 @@ export type Database = {
             columns: ["owner_inviter_id"]
             isOneToOne: false
             referencedRelation: "inviters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      restaurant_portal_access: {
+        Row: {
+          active: boolean
+          code_hash: string
+          created_at: string
+          id: string
+          label: string | null
+          restaurant_id: string
+          rotated_at: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          code_hash: string
+          created_at?: string
+          id?: string
+          label?: string | null
+          restaurant_id: string
+          rotated_at?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          code_hash?: string
+          created_at?: string
+          id?: string
+          label?: string | null
+          restaurant_id?: string
+          rotated_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_portal_access_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: true
+            referencedRelation: "restaurants"
             referencedColumns: ["id"]
           },
         ]
