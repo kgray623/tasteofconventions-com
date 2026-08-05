@@ -362,7 +362,7 @@ function MealTextsPage() {
                       </Badge>
                       {row.sent_at ? (
                         <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 text-[10px]">
-                          Texted {new Date(row.sent_at).toLocaleDateString()}
+                          Texted {new Date(row.sent_at).toLocaleDateString()} (all their meals)
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="border-amber-400 text-amber-700 text-[10px]">
