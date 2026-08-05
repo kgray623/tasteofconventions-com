@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { listRestaurantAccess, setRestaurantAccessCode } from "@/lib/restaurant-portal.functions";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -284,5 +286,97 @@ function RestaurantsPage() {
         })}
       </div>
     </div>
+  );
+}
+
+function PortalAccessCard() {
+  const listAccess = useServerFn(listRestaurantAccess);
+  const setCode = useServerFn(setRestaurantAccessCode);
+  const [rows, setRows] = useState<
+    Array<{
+      id: string;
+      name: string;
+      cuisine: string | null;
+      hasCode: boolean;
+      codeActive: boolean;
+      rotatedAt: string | null;
+      mealsPaid: number;
+    }>
+  >([]);
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
+
+  const load = async () => {
+    try {
+      const res = await listAccess({ data: undefined } as never);
+      setRows(res.restaurants);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not load portal access");
+    }
+  };
+  useEffect(() => {
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const save = async (restaurantId: string) => {
+    const code = (drafts[restaurantId] ?? "").trim();
+    if (code.length < 4) return toast.error("Use at least 4 characters.");
+    setBusy(true);
+    try {
+      await setCode({ data: { restaurantId, code } });
+      toast.success("Access code saved. Share it with the restaurant.");
+      setDrafts({ ...drafts, [restaurantId]: "" });
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save code");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card className="p-5 space-y-4">
+      <div>
+        <p className="text-xs uppercase tracking-[0.3em] text-terracotta">Restaurant portal</p>
+        <h2 className="font-display text-xl mt-1">Access codes &amp; payments</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Each restaurant signs in at <span className="font-medium">/restaurant</span> with its name
+          and the code you set here. They see only their own pre-orders and tap “Mark paid” as guests
+          pre-pay.
+        </p>
+      </div>
+      <div className="space-y-3">
+        {rows.length === 0 && <p className="text-sm text-muted-foreground">Loading…</p>}
+        {rows.map((r) => (
+          <div key={r.id} className="rounded-md border border-border p-3 space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-medium">{r.name}</span>
+              {r.cuisine && (
+                <Badge variant="secondary" className="text-[10px]">
+                  {r.cuisine}
+                </Badge>
+              )}
+              <Badge variant={r.hasCode && r.codeActive ? "default" : "outline"} className="text-[10px]">
+                {r.hasCode && r.codeActive ? "code set" : "no code"}
+              </Badge>
+              <Badge variant="outline" className="text-[10px]">
+                {r.mealsPaid} meal{r.mealsPaid === 1 ? "" : "s"} paid
+              </Badge>
+            </div>
+            <div className="flex gap-2">
+              <Input
+                placeholder={r.hasCode ? "New code (replaces old)" : "Set access code"}
+                value={drafts[r.id] ?? ""}
+                onChange={(e) => setDrafts({ ...drafts, [r.id]: e.target.value })}
+              />
+              <Button size="sm" disabled={busy} onClick={() => save(r.id)} className="bg-ink text-cream hover:bg-ink/90 shrink-0">
+                Save
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }
