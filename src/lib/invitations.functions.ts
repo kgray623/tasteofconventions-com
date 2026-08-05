@@ -123,7 +123,15 @@ export const getMyInvitation = createServerFn({ method: "GET" })
       supabaseAdmin.from("orders").select("*").eq("invitation_id", inv.id).maybeSingle(),
       findCuisinePreorder(inv.id, inv.guest_phone ?? rawPhone),
     ]);
-    return { invitation: inv, rsvp, order, preorder };
+    let mealPayments: Array<{ cuisine: string; qty_paid: number; paid_at: string | null }> = [];
+    if (preorder?.id) {
+      const { data: paidRows } = await supabaseAdmin
+        .from("meal_payments")
+        .select("cuisine,qty_paid,paid_at")
+        .eq("preorder_id", preorder.id);
+      mealPayments = (paidRows ?? []) as typeof mealPayments;
+    }
+    return { invitation: inv, rsvp, order, preorder, mealPayments };
   });
 
 const BUILDING_IN_PERSON_CAPACITY = 550;
