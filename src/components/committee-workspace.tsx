@@ -1787,9 +1787,6 @@ function SendTextButton({
   return (
     <a
       href={`sms:${info.phone}?&body=${encodeURIComponent(info.body)}`}
-      onClick={() => {
-        if (!guest.invite_sent_at) void onSent(guest, true);
-      }}
       className="inline-flex h-9 items-center gap-1.5 rounded-md bg-sage px-3 text-xs font-medium text-cream hover:bg-sage/90 sm:h-8"
       aria-label={`Send text to ${guest.guest_name || "guest"}`}
     >
