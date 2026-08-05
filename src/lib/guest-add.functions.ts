@@ -3,7 +3,6 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { rosterNamesLikelySame } from "@/lib/committee-roster";
 
-const digitsOnly = (value: string | null | undefined) => (value ?? "").replace(/\D/g, "");
 
 
 const guestSchema = z.object({
@@ -41,6 +40,7 @@ export const addGuests = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => inputSchema.parse(data))
   .handler(async ({ data, context }): Promise<{ results: AddGuestResult[] }> => {
+    const digitsOnly = (value: string | null | undefined) => (value ?? "").replace(/\D/g, "");
     const { supabase, userId } = context;
 
     const { data: roleRows, error: roleErr } = await supabase
