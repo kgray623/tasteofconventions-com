@@ -151,7 +151,7 @@ export const listRsvpIssues = createServerFn({ method: "POST" })
         continue;
       }
       const rsvps = Array.isArray(invitation.rsvps) ? invitation.rsvps : invitation.rsvps ? [invitation.rsvps] : [];
-      const attending = rsvps.some((row) => row.status === "yes");
+      const attending = rsvps.some((row: { status?: string | null }) => row.status === "yes");
       const hasSelections = Array.isArray(preorder.selections) && preorder.selections.length > 0;
       if (hasSelections && !attending) {
         const status = rsvps[0]?.status ?? "pending";
