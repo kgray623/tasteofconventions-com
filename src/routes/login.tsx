@@ -81,6 +81,7 @@ function HelperLogin() {
   const navigate = useNavigate();
   const phoneLogin = useServerFn(signInWithPhoneOnly);
   const ensureRoles = useServerFn(ensureMyTeamRole);
+  const restaurantLogin = useServerFn(restaurantPortalLogin);
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
