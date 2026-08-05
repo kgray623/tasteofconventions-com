@@ -1,6 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { rosterNamesLikelySame } from "@/lib/committee-roster";
+
+const digitsOnly = (value: string | null | undefined) => (value ?? "").replace(/\D/g, "");
+
 
 const guestSchema = z.object({
   name: z.string().trim().min(1).max(200),
