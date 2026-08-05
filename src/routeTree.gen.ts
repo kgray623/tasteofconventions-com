@@ -13,6 +13,7 @@ import { Route as Char91indexChar93RouteImport } from './routes/[index]'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ShareRouteImport } from './routes/share'
 import { Route as RestaurantsRouteImport } from './routes/restaurants'
+import { Route as RestaurantRouteImport } from './routes/restaurant'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PreorderRouteImport } from './routes/preorder'
 import { Route as MyRsvpRouteImport } from './routes/my-rsvp'
@@ -82,6 +83,11 @@ const ShareRoute = ShareRouteImport.update({
 const RestaurantsRoute = RestaurantsRouteImport.update({
   id: '/restaurants',
   path: '/restaurants',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RestaurantRoute = RestaurantRouteImport.update({
+  id: '/restaurant',
+  path: '/restaurant',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -370,6 +376,7 @@ export interface FileRoutesByFullPath {
   '/my-rsvp': typeof MyRsvpRoute
   '/preorder': typeof PreorderRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/restaurant': typeof RestaurantRoute
   '/restaurants': typeof RestaurantsRoute
   '/share': typeof ShareRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -425,6 +432,7 @@ export interface FileRoutesByTo {
   '/my-rsvp': typeof MyRsvpRoute
   '/preorder': typeof PreorderRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/restaurant': typeof RestaurantRoute
   '/restaurants': typeof RestaurantsRoute
   '/share': typeof ShareRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -481,6 +489,7 @@ export interface FileRoutesById {
   '/my-rsvp': typeof MyRsvpRoute
   '/preorder': typeof PreorderRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/restaurant': typeof RestaurantRoute
   '/restaurants': typeof RestaurantsRoute
   '/share': typeof ShareRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -538,6 +547,7 @@ export interface FileRouteTypes {
     | '/my-rsvp'
     | '/preorder'
     | '/reset-password'
+    | '/restaurant'
     | '/restaurants'
     | '/share'
     | '/sitemap.xml'
@@ -593,6 +603,7 @@ export interface FileRouteTypes {
     | '/my-rsvp'
     | '/preorder'
     | '/reset-password'
+    | '/restaurant'
     | '/restaurants'
     | '/share'
     | '/sitemap.xml'
@@ -648,6 +659,7 @@ export interface FileRouteTypes {
     | '/my-rsvp'
     | '/preorder'
     | '/reset-password'
+    | '/restaurant'
     | '/restaurants'
     | '/share'
     | '/sitemap.xml'
@@ -705,6 +717,7 @@ export interface RootRouteChildren {
   MyRsvpRoute: typeof MyRsvpRoute
   PreorderRoute: typeof PreorderRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  RestaurantRoute: typeof RestaurantRoute
   RestaurantsRoute: typeof RestaurantsRoute
   ShareRoute: typeof ShareRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -752,6 +765,13 @@ declare module '@tanstack/react-router' {
       path: '/restaurants'
       fullPath: '/restaurants'
       preLoaderRoute: typeof RestaurantsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/restaurant': {
+      id: '/restaurant'
+      path: '/restaurant'
+      fullPath: '/restaurant'
+      preLoaderRoute: typeof RestaurantRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -1194,6 +1214,7 @@ const rootRouteChildren: RootRouteChildren = {
   MyRsvpRoute: MyRsvpRoute,
   PreorderRoute: PreorderRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  RestaurantRoute: RestaurantRoute,
   RestaurantsRoute: RestaurantsRoute,
   ShareRoute: ShareRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
