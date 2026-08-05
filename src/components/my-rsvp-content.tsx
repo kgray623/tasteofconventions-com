@@ -44,6 +44,7 @@ type MyRsvpData = {
   } | null;
   order?: { items?: unknown; total?: number | string | null; notes?: string | null } | null;
   preorder?: { selections?: unknown; updated_at?: string | null } | null;
+  mealPayments?: Array<{ cuisine: string; qty_paid: number; paid_at: string | null }> | null;
 };
 
 function isCuisineSelection(value: unknown): value is CuisineSelection {
