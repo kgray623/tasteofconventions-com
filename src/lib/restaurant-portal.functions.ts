@@ -1,10 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
-import { useSession } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { PortalData } from "@/lib/restaurant-portal-types";
 
 type PortalSession = { restaurantId?: string; restaurantName?: string };
+
+async function portalSession() {
+  const { useSession } = await import("@tanstack/react-start/server");
+  return useSession<PortalSession>(sessionConfig());
+}
 
 function sessionConfig() {
   return {
@@ -44,7 +48,7 @@ export const restaurantPortalLogin = createServerFn({ method: "POST" })
     dbg["codeMatches"] = ok;
     if (!ok) return { ok: false, dbg };
 
-    const session = await useSession<PortalSession>(sessionConfig());
+    const session = await portalSession();
     await session.update({ restaurantId: restaurant.id, restaurantName: restaurant.name });
     return { ok: true, data: await loadPortalData(restaurant.id) };
     } catch (e) {
@@ -54,14 +58,14 @@ export const restaurantPortalLogin = createServerFn({ method: "POST" })
   });
 
 export const restaurantPortalLogout = createServerFn({ method: "POST" }).handler(async () => {
-  const session = await useSession<PortalSession>(sessionConfig());
+  const session = await portalSession();
   await session.clear();
   return { ok: true };
 });
 
 export const getRestaurantPortalData = createServerFn({ method: "POST" }).handler(
   async (): Promise<{ signedIn: boolean; data?: PortalData }> => {
-    const session = await useSession<PortalSession>(sessionConfig());
+    const session = await portalSession();
     const restaurantId = session.data.restaurantId;
     if (!restaurantId) return { signedIn: false };
     const { loadPortalData } = await import("@/lib/restaurant-portal.server");
@@ -74,7 +78,7 @@ export const restaurantMarkPaid = createServerFn({ method: "POST" })
     z.object({ preorderId: z.string().uuid(), paid: z.boolean() }).parse(d),
   )
   .handler(async ({ data }): Promise<{ signedIn: boolean; data?: PortalData }> => {
-    const session = await useSession<PortalSession>(sessionConfig());
+    const session = await portalSession();
     const restaurantId = session.data.restaurantId;
     if (!restaurantId) return { signedIn: false };
     const { setPaid } = await import("@/lib/restaurant-portal.server");
