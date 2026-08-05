@@ -15,7 +15,7 @@ import {
   matchRestaurant,
   mealOrderText,
   renderMealTemplate,
-  smsHref,
+  openSms,
   smsNumber,
 } from "@/lib/meal-text-message";
 
