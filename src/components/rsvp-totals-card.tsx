@@ -12,6 +12,7 @@ import { NewBadge } from "@/components/new-badge";
 import { toast } from "sonner";
 import { getRsvpTotals, requestMoreQuota } from "@/lib/rsvp-totals.functions";
 import { withTimeout } from "@/lib/async-safety";
+import { useAuth } from "@/hooks/use-auth";
 
 const TOTAL_SEATS = 550;
 
@@ -54,6 +55,7 @@ type Props = {
 };
 
 export function RsvpTotalsCard({ personalHostIds, refreshKey = 0 }: Props) {
+  const { session, loading: authLoading } = useAuth();
   const fetchTotals = useServerFn(getRsvpTotals);
   const emptyDQ: DataQuality = { partySizeCoerced: 0, statusUnknown: 0, attendanceModeUnknown: 0 };
   const [event, setEvent] = useState<EventTotals>({ requested: 0, uploaded: 0, confirmed: 0, confirmedResponses: 0, inPersonResponses: 0, inPersonAssumed: 0, virtual: 0, virtualResponses: 0, dataQuality: emptyDQ });
@@ -61,10 +63,17 @@ export function RsvpTotalsCard({ personalHostIds, refreshKey = 0 }: Props) {
   const [myInviterIds, setMyInviterIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
 
   const showPersonal = Array.isArray(personalHostIds) && personalHostIds.length > 0;
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!session) {
+      setLoading(false);
+      setLoadError("Your session needs to be restored. Please sign in again.");
+      return;
+    }
     let alive = true;
     const load = async () => {
       setLoading(true);
@@ -90,7 +99,11 @@ export function RsvpTotalsCard({ personalHostIds, refreshKey = 0 }: Props) {
         }
       } catch (e) {
         console.error("[rsvp-totals] load failed", e);
-        if (alive) setLoadError(e instanceof Error ? e.message : "Couldn't load totals");
+        if (alive) {
+          const raw = e instanceof Error ? e.message : "";
+          const isHtml = /<!doctype|<html|<body|this page didn't load/i.test(raw);
+          setLoadError(isHtml || !raw ? "The totals couldn't load. Please try again." : raw);
+        }
       } finally {
         if (alive) setLoading(false);
       }
@@ -101,7 +114,7 @@ export function RsvpTotalsCard({ personalHostIds, refreshKey = 0 }: Props) {
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showPersonal, refreshKey]);
+  }, [showPersonal, refreshKey, retryKey, authLoading, session]);
 
 
   const available = Math.max(0, TOTAL_SEATS - event.confirmed);
@@ -120,7 +133,18 @@ export function RsvpTotalsCard({ personalHostIds, refreshKey = 0 }: Props) {
       </div>
 
       {loadError && (
-        <p className="text-xs text-brand-red">Couldn't load totals: {loadError}</p>
+        <div className="flex items-center justify-between gap-3 rounded-md border border-destructive/30 bg-destructive/5 p-3">
+          <p className="text-xs text-destructive">{loadError}</p>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={loading || authLoading || !session}
+            onClick={() => setRetryKey((value) => value + 1)}
+          >
+            Retry
+          </Button>
+        </div>
       )}
 
       {showPersonal && (

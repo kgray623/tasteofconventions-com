@@ -3,18 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
 import { phoneTail } from "@/lib/phone";
-
-/** MEDIUM-003: turn opaque Postgres errors into short, user-facing sentences. */
-const friendlyDbError = (context: string, err: { message?: string | null } | null): Error => {
-  const raw = err?.message ?? "";
-  if (/permission denied|not authorized|rls/i.test(raw)) {
-    return new Error(`You don't have access to ${context}. Sign in again or ask an admin.`);
-  }
-  if (/timeout|network|fetch failed/i.test(raw)) {
-    return new Error(`Couldn't reach the database while loading ${context}. Please retry.`);
-  }
-  return new Error(`Couldn't load ${context}. ${raw || "Please try again."}`.trim());
-};
+import { friendlyDbError } from "@/lib/rsvp-totals.server";
 
 export type RsvpDataQualityIssues = {
   partySizeCoerced: number;
@@ -134,13 +123,15 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
     const inviterRows = (invitersRes.data ?? []) as InviterIdentity[];
     const normName = (s: string | null | undefined) =>
       (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
-    const { data: authUser } = await supabase.auth.getUser();
+    const { data: authUser, error: authError } = await supabase.auth.getUser();
+    if (authError) throw friendlyDbError("your signed-in account", authError);
     const myPhoneTail = phoneTail(authUser?.user?.phone);
-    const { data: prof } = await supabase
+    const { data: prof, error: profileError } = await supabase
       .from("profiles")
       .select("display_name")
       .eq("id", userId)
       .maybeSingle();
+    if (profileError) throw friendlyDbError("your profile", profileError);
     const myName = normName(prof?.display_name);
     const mineHostIds = new Set<string>([userId]);
     // Guests can be uploaded by an admin on a committee member's behalf, in
@@ -264,6 +255,9 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
       supabase.from("rsvps").select("party_size,status,invitation_id,attendance_mode"),
       invitationsQuery,
     ]);
+    if (invitersRes.error) throw friendlyDbError("the committee totals", invitersRes.error);
+    if (rsvpsRes.error) throw friendlyDbError("the RSVP totals", rsvpsRes.error);
+    if (invitationsRes.error) throw friendlyDbError("the invitation totals", invitationsRes.error);
     const inviterRows = invitersRes.data ?? [];
     const rsvpRows = rsvpsRes.data ?? [];
     const invitationRows = (invitationsRes.data ?? []) as Array<{
@@ -318,13 +312,15 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
     if (data.includePersonal) {
       const normName = (s: string | null | undefined) =>
         (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
-      const { data: authUser } = await supabase.auth.getUser();
+      const { data: authUser, error: authError } = await supabase.auth.getUser();
+      if (authError) throw friendlyDbError("your signed-in account", authError);
       const myPhoneTail = phoneTail(authUser?.user?.phone);
-      const { data: prof } = await supabase
+      const { data: prof, error: profileError } = await supabase
         .from("profiles")
         .select("display_name")
         .eq("id", userId)
         .maybeSingle();
+      if (profileError) throw friendlyDbError("your profile", profileError);
       const myName = normName(prof?.display_name);
       const mineHostIds = new Set<string>([userId]);
       const myInviters = inviterRows.filter((r) => {
