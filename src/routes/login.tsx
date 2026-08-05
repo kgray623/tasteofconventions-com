@@ -13,6 +13,7 @@ import { rememberLoginName, rememberLoginPhone, getRememberedLoginName, getRemem
 import { NewBadge } from "@/components/new-badge";
 import { markSeen } from "@/lib/whats-new";
 import { ensureMyTeamRole } from "@/lib/account.functions";
+import { restaurantPortalLogin } from "@/lib/restaurant-portal.functions";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -80,6 +81,7 @@ function HelperLogin() {
   const navigate = useNavigate();
   const phoneLogin = useServerFn(signInWithPhoneOnly);
   const ensureRoles = useServerFn(ensureMyTeamRole);
+  const restaurantLogin = useServerFn(restaurantPortalLogin);
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -131,6 +133,22 @@ function HelperLogin() {
     try {
       const session = await withTimeout(phoneLogin({ data: { phone, name: name.trim() } }), 15000);
       if ("error" in session) {
+        // Restaurant partners use the same name + phone pattern, so if the
+        // guest list doesn't recognize them, try the restaurant portal before
+        // telling them they're not on the list.
+        try {
+          const res = await withTimeout(
+            restaurantLogin({ data: { restaurant: name.trim(), code: phone.trim() } }),
+            15000,
+          );
+          if (res.ok) {
+            toast.success("Signed in to your restaurant portal.");
+            await navigate({ to: "/restaurant", replace: true });
+            return;
+          }
+        } catch {
+          /* fall through to the guest error */
+        }
         setBusy(false);
         return toast.error(session.error);
       }
@@ -224,6 +242,12 @@ function HelperLogin() {
           </form>
           <p className="text-xs text-center text-muted-foreground pt-2">
             Don't see your account? You need to be on the invitation list first.
+          </p>
+          <p className="text-xs text-center text-muted-foreground">
+            Partner restaurant?{" "}
+            <Link to="/restaurant" className="underline text-ink">
+              Open the restaurant portal
+            </Link>
           </p>
         </main>
       </div>
