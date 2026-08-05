@@ -69,6 +69,7 @@ function RestaurantPortalPage() {
   const doLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
+    console.log("[portal] submit");
     try {
       const res = await login({ data: { restaurant: restaurant.trim(), code: code.trim() } });
       if (!res.ok || !res.data) {
@@ -78,6 +79,7 @@ function RestaurantPortalPage() {
       setData(res.data);
       setCode("");
     } catch (err) {
+      console.log("[portal] error", err);
       toast.error(err instanceof Error ? err.message : "Could not sign in");
     } finally {
       setBusy(false);
