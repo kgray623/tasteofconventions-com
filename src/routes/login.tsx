@@ -243,6 +243,12 @@ function HelperLogin() {
           <p className="text-xs text-center text-muted-foreground pt-2">
             Don't see your account? You need to be on the invitation list first.
           </p>
+          <p className="text-xs text-center text-muted-foreground">
+            Partner restaurant?{" "}
+            <Link to="/restaurant" className="underline text-ink">
+              Open the restaurant portal
+            </Link>
+          </p>
         </main>
       </div>
     </div>
