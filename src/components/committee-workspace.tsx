@@ -1713,7 +1713,7 @@ function MyGuestsGroup({
                       (() => {
                         const info = buildSmsInfo(guest);
                         if (!info) return null;
-                        return <SendTextButton guest={guest} info={info} onSent={toggleSent} />;
+                        return <SendTextButton guest={guest} info={info} />;
                       })()}
                     <SentTextControl
                       guest={guest}
@@ -1778,11 +1778,9 @@ function RsvpActionSelect({
 function SendTextButton({
   guest,
   info,
-  onSent,
 }: {
   guest: CommitteeGuest;
   info: { phone: string; body: string };
-  onSent: (guest: CommitteeGuest, checked: boolean) => Promise<void>;
 }) {
   return (
     <a
