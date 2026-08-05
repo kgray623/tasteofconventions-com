@@ -249,7 +249,7 @@ function MyMealTextsPage() {
               )}
               {onHold && (
                 <p className="text-xs text-muted-foreground">
-                  This restaurant isn't taking orders yet — hold off on texting this group.
+                  This restaurant isn't taking orders yet — hold off on texting these guests.
                 </p>
               )}
               <Button size="sm" variant="ghost" onClick={() => exportSheet(cuisine, list)}>
