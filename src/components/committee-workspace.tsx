@@ -1713,7 +1713,7 @@ function MyGuestsGroup({
                       (() => {
                         const info = buildSmsInfo(guest);
                         if (!info) return null;
-                        return <SendTextButton guest={guest} info={info} onSent={toggleSent} />;
+                        return <SendTextButton guest={guest} info={info} />;
                       })()}
                     <SentTextControl
                       guest={guest}
@@ -1778,18 +1778,13 @@ function RsvpActionSelect({
 function SendTextButton({
   guest,
   info,
-  onSent,
 }: {
   guest: CommitteeGuest;
   info: { phone: string; body: string };
-  onSent: (guest: CommitteeGuest, checked: boolean) => Promise<void>;
 }) {
   return (
     <a
       href={`sms:${info.phone}?&body=${encodeURIComponent(info.body)}`}
-      onClick={() => {
-        if (!guest.invite_sent_at) void onSent(guest, true);
-      }}
       className="inline-flex h-9 items-center gap-1.5 rounded-md bg-sage px-3 text-xs font-medium text-cream hover:bg-sage/90 sm:h-8"
       aria-label={`Send text to ${guest.guest_name || "guest"}`}
     >

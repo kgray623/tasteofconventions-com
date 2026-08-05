@@ -408,7 +408,7 @@ function Dashboard() {
                     <SelectItem value="clear">Clear RSVP</SelectItem>
                   </SelectContent>
                 </Select>
-                {smsInfo && <SendTextButton invite={i} info={smsInfo} onSent={toggleSent} />}
+                {smsInfo && <SendTextButton invite={i} info={smsInfo} />}
                 <SentTextControl invite={i} markingSentId={markingSentId} onToggleSent={toggleSent} />
                 <EditInviteButton invite={i} onSave={saveInviteEdits} />
                 <Link to="/rsvp/$token" params={{ token: i.rsvp_token }} className="text-xs text-terracotta hover:underline">
@@ -469,7 +469,7 @@ function Dashboard() {
                       </SelectContent>
                     </Select>
                   )}
-                  {smsInfo && i.host_id === user?.id && <SendTextButton invite={i} info={smsInfo} onSent={toggleSent} />}
+                  {smsInfo && i.host_id === user?.id && <SendTextButton invite={i} info={smsInfo} />}
                   {i.host_id === user?.id && <SentTextControl invite={i} markingSentId={markingSentId} onToggleSent={toggleSent} />}
                   {i.host_id === user?.id && <EditInviteButton invite={i} onSave={saveInviteEdits} />}
                   <Link to="/rsvp/$token" params={{ token: i.rsvp_token }} className="text-xs text-terracotta hover:underline">
@@ -598,18 +598,13 @@ function RsvpBadge({ status, attendanceMode }: { status?: string; attendanceMode
 function SendTextButton({
   invite,
   info,
-  onSent,
 }: {
   invite: Invite;
   info: { phone: string; body: string };
-  onSent: (invite: Invite, checked: boolean) => Promise<void>;
 }) {
   return (
     <a
       href={`sms:${info.phone}?&body=${encodeURIComponent(info.body)}`}
-      onClick={() => {
-        if (!invite.invite_sent_at) void onSent(invite, true);
-      }}
       className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-sage text-cream text-xs font-medium hover:bg-sage/90"
       aria-label={`Send text to ${invite.guest_name || "guest"}`}
     >

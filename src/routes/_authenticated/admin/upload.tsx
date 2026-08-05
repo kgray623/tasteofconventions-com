@@ -1957,9 +1957,6 @@ function UploadPage() {
                     {g.guest_phone && g.rsvp_token && (
                       <a
                         href={`sms:${g.guest_phone}?&body=${encodeURIComponent(buildSmsBody(g.guest_name, g.rsvp_token))}`}
-                        onClick={() => {
-                          if (!g.invite_sent_at) void toggleSent(g, true);
-                        }}
                         className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-terracotta text-cream text-xs font-medium hover:bg-terracotta/90"
                       >
                         {g.invite_sent_at ? "Resend SMS" : "Send SMS"}

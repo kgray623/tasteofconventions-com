@@ -187,7 +187,10 @@ function RestaurantPortalPage() {
         <div className="mx-auto max-w-sm">
           <h1 className="font-display text-3xl text-ink font-bold text-center">Restaurant Portal</h1>
           <p className="mt-2 text-center text-sm text-muted-foreground">
-            A Taste of Special Conventions — view your pre-ordered meals and mark each one paid.
+            A Taste of Special Conventions — sign in the same way everyone else does: your
+            restaurant name is your username, and your restaurant&rsquo;s own phone number is your
+            password. Inside you&rsquo;ll see only your own orders: who ordered, how many meals,
+            and you can confirm each order and mark it paid.
           </p>
           <Card className="mt-6 p-5 space-y-4">
             <form onSubmit={doLogin} className="space-y-4">
