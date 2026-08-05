@@ -1,6 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { rosterNamesLikelySame } from "@/lib/committee-roster";
+
+
 
 const guestSchema = z.object({
   name: z.string().trim().min(1).max(200),
@@ -37,6 +40,7 @@ export const addGuests = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => inputSchema.parse(data))
   .handler(async ({ data, context }): Promise<{ results: AddGuestResult[] }> => {
+    const digitsOnly = (value: string | null | undefined) => (value ?? "").replace(/\D/g, "");
     const { supabase, userId } = context;
 
     const { data: roleRows, error: roleErr } = await supabase
@@ -64,15 +68,41 @@ export const addGuests = createServerFn({ method: "POST" })
     if (inviterId) {
       const { data: inviter } = await supabaseAdmin
         .from("inviters")
-        .select("host_id,phone")
+        .select("id,name,host_id,phone")
         .eq("id", inviterId)
         .maybeSingle();
       if (!inviter) throw new Error("That committee member was not found.");
-      if (!isAdmin && inviter.host_id !== userId) {
-        throw new Error("Committee members can only add guests to their own list.");
+
+      if (!inviter.host_id && !isAdmin) {
+        // The roster row exists but was never linked to a sign-in account
+        // (common when the phone on the roster has a typo). Claim it for the
+        // caller when it plausibly belongs to them, so uploads never dead-end.
+        const [{ data: profile }, { data: authUser }] = await Promise.all([
+          supabaseAdmin.from("profiles").select("display_name").eq("id", userId).maybeSingle(),
+          supabaseAdmin.auth.admin.getUserById(userId),
+        ]);
+        const callerPhone = digitsOnly(
+          authUser?.user?.phone || String(authUser?.user?.user_metadata?.phone || ""),
+        );
+        const rosterPhone = digitsOnly(inviter.phone);
+        const phoneSame =
+          callerPhone.length >= 7 &&
+          rosterPhone.length >= 7 &&
+          callerPhone.slice(-10) === rosterPhone.slice(-10);
+        const nameSame = rosterNamesLikelySame(profile?.display_name ?? "", inviter.name ?? "");
+        if (!phoneSame && !nameSame) {
+          throw new Error("Committee members can only add guests to their own list.");
+        }
+        await supabaseAdmin.from("inviters").update({ host_id: userId }).eq("id", inviter.id);
+        hostId = userId;
+      } else {
+        if (!isAdmin && inviter.host_id && inviter.host_id !== userId) {
+          throw new Error("Committee members can only add guests to their own list.");
+        }
+        if (inviter.host_id) hostId = inviter.host_id;
       }
-      if (inviter?.host_id) hostId = inviter.host_id;
     }
+
 
     const results: AddGuestResult[] = [];
     for (const guest of data.guests) {
