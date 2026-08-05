@@ -66,12 +66,10 @@ export const listRsvpIssues = createServerFn({ method: "POST" })
           created_at: r.created_at,
           guest_name: typeof m["guest_name"] === "string" ? m["guest_name"] : null,
           guest_phone: typeof m["guest_phone"] === "string" ? m["guest_phone"] : null,
-          invited_by_raw:
-            typeof m["invited_by_raw"] === "string" ? m["invited_by_raw"] : null,
+          invited_by_raw: typeof m["invited_by_raw"] === "string" ? m["invited_by_raw"] : null,
           status: typeof m["status"] === "string" ? m["status"] : null,
           party_size: typeof m["party_size"] === "number" ? m["party_size"] : null,
-          attendance_mode:
-            typeof m["attendance_mode"] === "string" ? m["attendance_mode"] : null,
+          attendance_mode: typeof m["attendance_mode"] === "string" ? m["attendance_mode"] : null,
           reason: typeof m["reason"] === "string" ? m["reason"] : null,
           source: typeof m["source"] === "string" ? m["source"] : null,
         };
@@ -91,13 +89,22 @@ export const listRsvpIssues = createServerFn({ method: "POST" })
       .order("responded_at", { ascending: false })
       .limit(1000);
 
-    const invitationIds = [...new Set([...(rsvpRows ?? []).map((r) => r.invitation_id), ...flaggedIds])];
+    const invitationIds = [
+      ...new Set([...(rsvpRows ?? []).map((r) => r.invitation_id), ...flaggedIds]),
+    ];
     const { data: invRows } = invitationIds.length
       ? await supabaseAdmin
           .from("invitations")
           .select("id,guest_name,guest_phone,inviter_id")
           .in("id", invitationIds)
-      : { data: [] as Array<{ id: string; guest_name: string; guest_phone: string | null; inviter_id: string | null }> };
+      : {
+          data: [] as Array<{
+            id: string;
+            guest_name: string;
+            guest_phone: string | null;
+            inviter_id: string | null;
+          }>,
+        };
 
     const invMap = new Map((invRows ?? []).map((i) => [i.id, i]));
 
@@ -154,7 +161,11 @@ export const listRsvpIssues = createServerFn({ method: "POST" })
         });
         continue;
       }
-      const rsvps = Array.isArray(invitation.rsvps) ? invitation.rsvps : invitation.rsvps ? [invitation.rsvps] : [];
+      const rsvps = Array.isArray(invitation.rsvps)
+        ? invitation.rsvps
+        : invitation.rsvps
+          ? [invitation.rsvps]
+          : [];
       const attending = rsvps.some((row: { status?: string | null }) => row.status === "yes");
       const hasSelections = Array.isArray(preorder.selections) && preorder.selections.length > 0;
       if (hasSelections && !attending) {
@@ -168,7 +179,9 @@ export const listRsvpIssues = createServerFn({ method: "POST" })
       }
     }
     for (const invitation of creditedInvitations ?? []) {
-      const owner = Array.isArray(invitation.inviters) ? invitation.inviters[0] : invitation.inviters;
+      const owner = Array.isArray(invitation.inviters)
+        ? invitation.inviters[0]
+        : invitation.inviters;
       if (owner && !owner.host_id) {
         integrity.push({
           kind: "owner_without_account",
@@ -212,8 +225,8 @@ export const assignRsvpReferrer = createServerFn({ method: "POST" })
     return {
       ok: readBack?.inviter_id === data.inviterId,
       owner: Array.isArray(readBack?.inviters)
-        ? readBack.inviters[0]?.name ?? null
-        : readBack?.inviters?.name ?? null,
+        ? (readBack.inviters[0]?.name ?? null)
+        : (readBack?.inviters?.name ?? null),
     };
   });
 

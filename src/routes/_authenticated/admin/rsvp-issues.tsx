@@ -98,9 +98,7 @@ function RsvpIssuesPage() {
       </header>
 
       <section className="space-y-2">
-        <h2 className="text-base font-semibold">
-          Rejected submissions ({failures.length})
-        </h2>
+        <h2 className="text-base font-semibold">Rejected submissions ({failures.length})</h2>
         {failures.length === 0 && !loading && (
           <p className="text-sm text-muted-foreground">
             No rejected submissions recorded. From now on, every refused reply is logged here.
@@ -128,7 +126,9 @@ function RsvpIssuesPage() {
       <section className="space-y-2">
         <h2 className="text-base font-semibold">Data integrity review ({integrity.length})</h2>
         {integrity.length === 0 && !loading && (
-          <p className="text-sm text-muted-foreground">No RSVP, ownership, or meal-link exceptions found.</p>
+          <p className="text-sm text-muted-foreground">
+            No RSVP, ownership, or meal-link exceptions found.
+          </p>
         )}
         {integrity.map((issue, index) => (
           <Card key={`${issue.kind}-${issue.invitation_id ?? index}`} className="p-3 text-sm">
@@ -164,7 +164,10 @@ function RsvpIssuesPage() {
             <div className="mt-1">
               They typed: <strong>{r.invited_by_raw ?? "nothing"}</strong>
             </div>
-            <label className="mt-2 block text-xs text-muted-foreground" htmlFor={`a-${r.invitation_id}`}>
+            <label
+              className="mt-2 block text-xs text-muted-foreground"
+              htmlFor={`a-${r.invitation_id}`}
+            >
               Credit this guest to
             </label>
             <select

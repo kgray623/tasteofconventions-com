@@ -17,25 +17,25 @@ function phoneMatches(a: string | null | undefined, b: string | null | undefined
 async function syncCommitteeRoleForUser(userId: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId);
-  const phoneDigits = digitsOnly(authUser.user?.phone || String(authUser.user?.user_metadata?.phone || ""));
+  const phoneDigits = digitsOnly(
+    authUser.user?.phone || String(authUser.user?.user_metadata?.phone || ""),
+  );
   if (phoneDigits.length < 7) return;
 
   let shouldGrantTeam = false;
 
-  const [{ data: committeeInvitations }, { data: teamInvites }, { data: inviters }] = await Promise.all([
-    supabaseAdmin
-      .from("invitations")
-      .select("id,guest_phone_normalized")
-      .eq("is_committee", true),
-    supabaseAdmin
-      .from("team_invites")
-      .select("id,role,phone_normalized,accepted_at")
-      .is("accepted_at", null),
-    supabaseAdmin
-      .from("inviters")
-      .select("id,phone,active,host_id")
-      .eq("active", true),
-  ]);
+  const [{ data: committeeInvitations }, { data: teamInvites }, { data: inviters }] =
+    await Promise.all([
+      supabaseAdmin
+        .from("invitations")
+        .select("id,guest_phone_normalized")
+        .eq("is_committee", true),
+      supabaseAdmin
+        .from("team_invites")
+        .select("id,role,phone_normalized,accepted_at")
+        .is("accepted_at", null),
+      supabaseAdmin.from("inviters").select("id,phone,active,host_id").eq("active", true),
+    ]);
 
   shouldGrantTeam ||= (committeeInvitations ?? []).some((row: any) =>
     phoneMatches(row.guest_phone_normalized, phoneDigits),
@@ -102,7 +102,9 @@ export const getMyChatUnread = createServerFn({ method: "GET" })
       .from("user_roles")
       .select("role")
       .eq("user_id", userId);
-    const isTeamMember = (roles ?? []).some((row: any) => row.role === "admin" || row.role === "team");
+    const isTeamMember = (roles ?? []).some(
+      (row: any) => row.role === "admin" || row.role === "team",
+    );
 
     let team = 0;
     if (isTeamMember) {
@@ -125,7 +127,9 @@ export const getMyChatUnread = createServerFn({ method: "GET" })
       .from("category_assignments")
       .select("category_id")
       .eq("user_id", userId);
-    const categoryIds = Array.from(new Set((assignments ?? []).map((row: any) => row.category_id).filter(Boolean)));
+    const categoryIds = Array.from(
+      new Set((assignments ?? []).map((row: any) => row.category_id).filter(Boolean)),
+    );
 
     const categories: { category_id: string; name: string; count: number }[] = [];
     if (categoryIds.length) {
@@ -148,7 +152,12 @@ export const getMyChatUnread = createServerFn({ method: "GET" })
           .eq("category_id", categoryId)
           .neq("user_id", userId)
           .gt("created_at", seenById.get(categoryId) ?? "1970-01-01T00:00:00.000Z");
-        if (count) categories.push({ category_id: categoryId, name: nameById.get(categoryId) ?? "Category", count });
+        if (count)
+          categories.push({
+            category_id: categoryId,
+            name: nameById.get(categoryId) ?? "Category",
+            count,
+          });
       }
       categories.sort((a, b) => a.name.localeCompare(b.name));
     }

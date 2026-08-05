@@ -1,14 +1,46 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, CalendarCog, CheckCircle2, ChevronDown, ChevronUp, Clock, EyeOff, ListChecks, Loader2, MessageCircle, MessageSquare, Pencil, Phone, RefreshCw, Trash2, Upload, UserPlus, Utensils } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarCog,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  EyeOff,
+  ListChecks,
+  Loader2,
+  MessageCircle,
+  MessageSquare,
+  Pencil,
+  Phone,
+  RefreshCw,
+  Trash2,
+  Upload,
+  UserPlus,
+  Utensils,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -26,11 +58,18 @@ import { toast } from "sonner";
 import { NewBadge } from "@/components/new-badge";
 import { markSeen } from "@/lib/whats-new";
 import { getErrorMessage, withTimeout } from "@/lib/async-safety";
-import { getCommitteeWorkspaceGuests, type CommitteeWorkspaceGuest } from "@/lib/rsvp-totals.functions";
+import {
+  getCommitteeWorkspaceGuests,
+  type CommitteeWorkspaceGuest,
+} from "@/lib/rsvp-totals.functions";
 import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
 import { performProtectedDelete } from "@/lib/perform-protected-delete";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 
 type CommitteeGuest = CommitteeWorkspaceGuest;
@@ -52,8 +91,18 @@ const LOAD_TIMEOUT_MS = 12_000;
 
 const pickSingleRsvp = (
   rsvps:
-    | { status: string | null; party_size: number | null; attendance_mode: string | null; responded_at: string | null }[]
-    | { status: string | null; party_size: number | null; attendance_mode: string | null; responded_at: string | null }
+    | {
+        status: string | null;
+        party_size: number | null;
+        attendance_mode: string | null;
+        responded_at: string | null;
+      }[]
+    | {
+        status: string | null;
+        party_size: number | null;
+        attendance_mode: string | null;
+        responded_at: string | null;
+      }
     | null,
 ) => (Array.isArray(rsvps) ? rsvps[0] : rsvps) ?? null;
 
@@ -72,7 +121,6 @@ type CreditedElsewhereRow = {
   source_note: string | null;
 };
 
-
 export function CommitteeWorkspace() {
   const { user } = useAuth();
   const { isAdmin } = useAdminView();
@@ -88,26 +136,34 @@ export function CommitteeWorkspace() {
   const [settingRsvpId, setSettingRsvpId] = useState<string | null>(null);
   const [hideWelcome, setHideWelcome] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>("my");
-  const [myCats, setMyCats] = useState<{ id: string; name: string; description: string | null }[]>([]);
+  const [myCats, setMyCats] = useState<{ id: string; name: string; description: string | null }[]>(
+    [],
+  );
   const [openChatId, setOpenChatId] = useState<string | null>(null);
   const [profileNames, setProfileNames] = useState<Record<string, string>>({});
   const [committeeNames, setCommitteeNames] = useState<Set<string>>(new Set());
   const [committeePhones, setCommitteePhones] = useState<Set<string>>(new Set());
   const [myGuestsFilter, setMyGuestsFilter] = useState<"all" | "committee">("all");
   // "No RSVP yet" opens by default so outstanding contacts are never hidden.
-  const [openMyGroup, setOpenMyGroup] = useState<{ inPerson: boolean; zoom: boolean; declined: boolean; awaiting: boolean }>({ inPerson: false, zoom: false, declined: false, awaiting: true });
+  const [openMyGroup, setOpenMyGroup] = useState<{
+    inPerson: boolean;
+    zoom: boolean;
+    declined: boolean;
+    awaiting: boolean;
+  }>({ inPerson: false, zoom: false, declined: false, awaiting: true });
   const [openTotals, setOpenTotals] = useState(true);
   const [openMyGuestsCard, setOpenMyGuestsCard] = useState(true);
   const [openConfirmed, setOpenConfirmed] = useState(false);
-  const [myGuestsTab, setMyGuestsTab] = useState<"all" | "inPerson" | "zoom" | "declined" | "latest">("all");
-  const [myGuestsSort, setMyGuestsSort] = useState<"grouped" | "alpha" | "newest" | "oldest">("grouped");
+  const [myGuestsTab, setMyGuestsTab] = useState<
+    "all" | "inPerson" | "zoom" | "declined" | "latest"
+  >("all");
+  const [myGuestsSort, setMyGuestsSort] = useState<"grouped" | "alpha" | "newest" | "oldest">(
+    "grouped",
+  );
   const [openFlatGroup, setOpenFlatGroup] = useState(true);
   const [totalsRefreshKey, setTotalsRefreshKey] = useState(0);
   const [creditedElsewhere, setCreditedElsewhere] = useState<CreditedElsewhereRow[]>([]);
   const [openCreditedElsewhere, setOpenCreditedElsewhere] = useState(true);
-
-
-
 
   const [lastSeenYesAt, setLastSeenYesAt] = useState<number | null>(null);
   const [manualRefreshingGuests, setManualRefreshingGuests] = useState(false);
@@ -115,7 +171,9 @@ export function CommitteeWorkspace() {
   const handledChatParamRef = useRef<string | null>(null);
   const loadingGuestsRef = useRef(false);
   const activePendingSort: PendingSortMode =
-    search.pendingSort === "newest" || search.pendingSort === "oldest" || search.pendingSort === "alpha"
+    search.pendingSort === "newest" ||
+    search.pendingSort === "oldest" ||
+    search.pendingSort === "alpha"
       ? search.pendingSort
       : "alpha";
 
@@ -173,7 +231,13 @@ export function CommitteeWorkspace() {
         setTotalsRefreshKey((key) => key + 1);
       } catch (fallbackError) {
         console.error("[committee] browser guest list fallback failed", fallbackError);
-        if (alive()) toast.error(getErrorMessage(fallbackError, getErrorMessage(error, "Guest list refresh timed out. Try again.")));
+        if (alive())
+          toast.error(
+            getErrorMessage(
+              fallbackError,
+              getErrorMessage(error, "Guest list refresh timed out. Try again."),
+            ),
+          );
         if (alive()) setGuests([]);
       }
     } finally {
@@ -210,7 +274,11 @@ export function CommitteeWorkspace() {
       const rowTail = (row.phone ?? "").replace(/\D/g, "").slice(-10);
       const rowName = (row.name ?? "").trim().toLowerCase();
       if (row.id && rowName) inviterNames.set(row.id, (row.name ?? "").trim());
-      if (row.host_id === user?.id || (tail10 && rowTail === tail10) || (myName && rowName === myName)) {
+      if (
+        row.host_id === user?.id ||
+        (tail10 && rowTail === tail10) ||
+        (myName && rowName === myName)
+      ) {
         if (row.host_id) mineSet.add(row.host_id);
         if (row.id) mineInviterSet.add(row.id);
       }
@@ -223,13 +291,18 @@ export function CommitteeWorkspace() {
     if (eventsError) throw eventsError;
     const eventId = events?.[0]?.id;
     if (!eventId)
-      return { guests: [], myHostIds: Array.from(mineSet), myInviterIds: Array.from(mineInviterSet) };
-
+      return {
+        guests: [],
+        myHostIds: Array.from(mineSet),
+        myInviterIds: Array.from(mineInviterSet),
+      };
 
     const { data, error: invitationsError } = await withTimeout(
       supabase
         .from("invitations")
-          .select("id,created_at,invite_sent_at,guest_name,guest_phone,host_id,inviter_id,rsvp_token,rsvps(status,party_size,attendance_mode,responded_at)")
+        .select(
+          "id,created_at,invite_sent_at,guest_name,guest_phone,host_id,inviter_id,rsvp_token,rsvps(status,party_size,attendance_mode,responded_at)",
+        )
         .eq("event_id", eventId)
         .order("created_at", { ascending: false }),
       LOAD_TIMEOUT_MS,
@@ -246,8 +319,18 @@ export function CommitteeWorkspace() {
       inviter_id: string | null;
       rsvp_token: string | null;
       rsvps:
-        | { status: string | null; party_size: number | null; attendance_mode: string | null; responded_at: string | null }[]
-        | { status: string | null; party_size: number | null; attendance_mode: string | null; responded_at: string | null }
+        | {
+            status: string | null;
+            party_size: number | null;
+            attendance_mode: string | null;
+            responded_at: string | null;
+          }[]
+        | {
+            status: string | null;
+            party_size: number | null;
+            attendance_mode: string | null;
+            responded_at: string | null;
+          }
         | null;
     }>;
 
@@ -266,9 +349,7 @@ export function CommitteeWorkspace() {
     }
 
     const ownedRows = rows.filter((row) =>
-      row.inviter_id
-        ? mineInviterSet.has(row.inviter_id)
-        : mineSet.has(row.host_id),
+      row.inviter_id ? mineInviterSet.has(row.inviter_id) : mineSet.has(row.host_id),
     );
 
     return {
@@ -299,7 +380,6 @@ export function CommitteeWorkspace() {
     };
   };
 
-
   useEffect(() => {
     let alive = true;
     void loadGuests(() => alive);
@@ -328,36 +408,40 @@ export function CommitteeWorkspace() {
       );
       const ownerNames = new Map<string, string>();
       if (ownerIds.length) {
-        const { data: owners } = await supabase.from("inviters").select("id,name").in("id", ownerIds);
+        const { data: owners } = await supabase
+          .from("inviters")
+          .select("id,name")
+          .in("id", ownerIds);
         for (const o of owners ?? []) ownerNames.set(o.id, (o.name ?? "").trim());
       }
       if (!alive) return;
       const rows: CreditedElsewhereRow[] = (data ?? []).map((r) => {
-        const inv = (Array.isArray(r.invitations) ? r.invitations[0] : r.invitations) as
-          | { guest_name: string; guest_phone: string | null; created_at: string | null; rsvps: unknown }
-          | null;
-        const rsvp = pickSingleRsvp(
-          (inv?.rsvps ?? null) as Parameters<typeof pickSingleRsvp>[0],
-        );
+        const inv = (Array.isArray(r.invitations) ? r.invitations[0] : r.invitations) as {
+          guest_name: string;
+          guest_phone: string | null;
+          created_at: string | null;
+          rsvps: unknown;
+        } | null;
+        const rsvp = pickSingleRsvp((inv?.rsvps ?? null) as Parameters<typeof pickSingleRsvp>[0]);
         return {
           id: r.id,
           guest_name: inv?.guest_name ?? "Unknown",
           guest_phone: inv?.guest_phone ?? null,
-          owner_name: r.owner_inviter_id ? ownerNames.get(r.owner_inviter_id) ?? null : null,
+          owner_name: r.owner_inviter_id ? (ownerNames.get(r.owner_inviter_id) ?? null) : null,
           first_loaded_at: inv?.created_at ?? null,
           rsvp_status: rsvp?.status ?? null,
           source_note: r.source_note ?? null,
         };
       });
-      rows.sort((a, b) => a.guest_name.localeCompare(b.guest_name, undefined, { sensitivity: "base" }));
+      rows.sort((a, b) =>
+        a.guest_name.localeCompare(b.guest_name, undefined, { sensitivity: "base" }),
+      );
       setCreditedElsewhere(rows);
     })();
     return () => {
       alive = false;
     };
   }, [myInviterIds.join(",")]);
-
-
 
   const refreshGuestsNow = async () => {
     if (manualRefreshingGuests) return;
@@ -392,15 +476,26 @@ export function CommitteeWorkspace() {
         const [inviters, teamInvites, committeeInvs] = await Promise.all([
           supabase.from("inviters").select("name,phone").eq("active", true),
           supabase.from("team_invites").select("name,phone,phone_normalized").eq("role", "team"),
-          supabase.from("invitations").select("guest_name,guest_phone,guest_phone_normalized").eq("is_committee", true),
+          supabase
+            .from("invitations")
+            .select("guest_name,guest_phone,guest_phone_normalized")
+            .eq("is_committee", true),
         ]);
         for (const r of (inviters.data ?? []) as { name: string | null; phone: string | null }[]) {
           push(r.name, r.phone);
         }
-        for (const r of (teamInvites.data ?? []) as { name: string | null; phone: string | null; phone_normalized: string | null }[]) {
+        for (const r of (teamInvites.data ?? []) as {
+          name: string | null;
+          phone: string | null;
+          phone_normalized: string | null;
+        }[]) {
           push(r.name, r.phone_normalized || r.phone);
         }
-        for (const r of (committeeInvs.data ?? []) as { guest_name: string | null; guest_phone: string | null; guest_phone_normalized: string | null }[]) {
+        for (const r of (committeeInvs.data ?? []) as {
+          guest_name: string | null;
+          guest_phone: string | null;
+          guest_phone_normalized: string | null;
+        }[]) {
           push(r.guest_name, r.guest_phone_normalized || r.guest_phone);
         }
       } catch (e) {
@@ -410,7 +505,9 @@ export function CommitteeWorkspace() {
       setCommitteeNames(names);
       setCommitteePhones(phones);
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -425,7 +522,9 @@ export function CommitteeWorkspace() {
         .select("category_id, categories(id, name, description)")
         .eq("user_id", user.id);
       if (error || !alive) return;
-      const rows = (data ?? []) as unknown as { categories: { id: string; name: string; description: string | null } | null }[];
+      const rows = (data ?? []) as unknown as {
+        categories: { id: string; name: string; description: string | null } | null;
+      }[];
       const cats = rows
         .map((r) => r.categories)
         .filter((c): c is { id: string; name: string; description: string | null } => !!c)
@@ -450,7 +549,9 @@ export function CommitteeWorkspace() {
       }
       setProfileNames(map);
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, []);
 
   // Deep-link from notifications: ?chat=<categoryId>
@@ -468,15 +569,14 @@ export function CommitteeWorkspace() {
       setOpenChatId(chatId);
     }
     // Clear the param so refresh/back doesn't keep reopening
-    navigate({ to: ".", search: (prev: Record<string, unknown>) => ({ ...prev, chat: undefined }), replace: true });
+    navigate({
+      to: ".",
+      search: (prev: Record<string, unknown>) => ({ ...prev, chat: undefined }),
+      replace: true,
+    });
   }, [search.chat, myCats, navigate]);
 
-
-
-  const setRsvpFor = async (
-    guest: CommitteeGuest,
-    value: RsvpAction,
-  ) => {
+  const setRsvpFor = async (guest: CommitteeGuest, value: RsvpAction) => {
     setSettingRsvpId(guest.id);
     try {
       if (value === "clear") {
@@ -491,7 +591,8 @@ export function CommitteeWorkspace() {
       } else {
         const status = value === "no" ? "no" : "yes";
         const attendanceMode = value.startsWith("zoom") ? "zoom" : "in_person";
-        const partySize = value === "no" ? 1 : Number(value.replace("inperson", "").replace("zoom", ""));
+        const partySize =
+          value === "no" ? 1 : Number(value.replace("inperson", "").replace("zoom", ""));
         const { error } = await supabase.from("rsvps").upsert(
           {
             invitation_id: guest.id,
@@ -561,7 +662,9 @@ export function CommitteeWorkspace() {
       toast.error("Couldn't update sent text", { description: error.message });
       return;
     }
-    setGuests((prev) => prev.map((row) => (row.id === guest.id ? { ...row, invite_sent_at: sentAt } : row)));
+    setGuests((prev) =>
+      prev.map((row) => (row.id === guest.id ? { ...row, invite_sent_at: sentAt } : row)),
+    );
     toast.success(checked ? "Marked text as sent." : "Marked text as not sent.");
   };
 
@@ -599,16 +702,17 @@ export function CommitteeWorkspace() {
     }
   }
   const duplicateIds = new Set<string>();
-  for (const ids of nameBuckets.values()) if (ids.length > 1) ids.forEach((id) => duplicateIds.add(id));
-  for (const ids of phoneBuckets.values()) if (ids.length > 1) ids.forEach((id) => duplicateIds.add(id));
+  for (const ids of nameBuckets.values())
+    if (ids.length > 1) ids.forEach((id) => duplicateIds.add(id));
+  for (const ids of phoneBuckets.values())
+    if (ids.length > 1) ids.forEach((id) => duplicateIds.add(id));
 
   // Single shared alphabetical comparator — every list on this dashboard uses it.
   const byName = (a: CommitteeGuest, b: CommitteeGuest) =>
-    (a.guest_name ?? "").trim().toLowerCase().localeCompare(
-      (b.guest_name ?? "").trim().toLowerCase(),
-      undefined,
-      { sensitivity: "base" },
-    );
+    (a.guest_name ?? "")
+      .trim()
+      .toLowerCase()
+      .localeCompare((b.guest_name ?? "").trim().toLowerCase(), undefined, { sensitivity: "base" });
   const byPendingSort = (a: CommitteeGuest, b: CommitteeGuest) => {
     if (activePendingSort === "newest" || activePendingSort === "oldest") {
       const at = a.created_at ? Date.parse(a.created_at) : 0;
@@ -627,22 +731,27 @@ export function CommitteeWorkspace() {
   const committeeIds = new Set(myGuestsUnsorted.filter(isCommitteeGuest).map((g) => g.id));
 
   const myGuestsSorted = [...myGuestsUnsorted].sort(byName);
-  const myGuests = myGuestsFilter === "committee"
-    ? myGuestsSorted.filter((g) => committeeIds.has(g.id))
-    : myGuestsSorted;
+  const myGuests =
+    myGuestsFilter === "committee"
+      ? myGuestsSorted.filter((g) => committeeIds.has(g.id))
+      : myGuestsSorted;
 
-  const myGuestGroupIds = buildDuplicateGroupIds(myGuests.map((g) => ({
-    id: g.id,
-    guest_name: g.guest_name,
-    guest_phone: g.guest_phone,
-  })));
-  const myGuestRollup = computeRsvpRollup(myGuests.map((g) => ({
-    id: g.id,
-    groupId: myGuestGroupIds.get(g.id) ?? g.id,
-    status: g.rsvp_status,
-    party_size: g.party_size,
-    attendance_mode: g.attendance_mode,
-  })));
+  const myGuestGroupIds = buildDuplicateGroupIds(
+    myGuests.map((g) => ({
+      id: g.id,
+      guest_name: g.guest_name,
+      guest_phone: g.guest_phone,
+    })),
+  );
+  const myGuestRollup = computeRsvpRollup(
+    myGuests.map((g) => ({
+      id: g.id,
+      groupId: myGuestGroupIds.get(g.id) ?? g.id,
+      status: g.rsvp_status,
+      party_size: g.party_size,
+      attendance_mode: g.attendance_mode,
+    })),
+  );
   const confirmedInPersonPeople = myGuestRollup.people.inPerson;
   const confirmedVirtualPeople = myGuestRollup.people.zoom;
   const declinedPeople = myGuestRollup.people.declined;
@@ -666,9 +775,10 @@ export function CommitteeWorkspace() {
     // Contacts that were never texted come first — they're the ones that need action.
     .sort((a, b) => Number(!!a.invite_sent_at) - Number(!!b.invite_sent_at));
   const myAwaitingNotTexted = myAwaiting.filter((g) => !g.invite_sent_at).length;
-  const myRepliedContacts = myGuests.filter((g) => g.rsvp_status === "yes" || g.rsvp_status === "no").length;
+  const myRepliedContacts = myGuests.filter(
+    (g) => g.rsvp_status === "yes" || g.rsvp_status === "no",
+  ).length;
   const myDeclined = myGuests.filter((g) => g.rsvp_status === "no").sort(byLatestReply);
-
 
   // Build a sms: link for the phone's Messages app. Same wording as the
   // Upload page's Send SMS button so committee members send a consistent
@@ -677,22 +787,27 @@ export function CommitteeWorkspace() {
     typeof window !== "undefined" ? window.location.origin : "https://tasteofconventions.com";
   const senderName =
     (myGuestsUnsorted.find((g) => g.host_id === user?.id)?.linked_inviter_name ?? "").trim() ||
-    (((user?.user_metadata as { full_name?: string; name?: string; display_name?: string } | undefined)?.full_name ??
-      (user?.user_metadata as { name?: string } | undefined)?.name ??
-      (user?.user_metadata as { display_name?: string } | undefined)?.display_name ??
-      "") as string).trim() ||
+    (
+      ((
+        user?.user_metadata as
+          | { full_name?: string; name?: string; display_name?: string }
+          | undefined
+      )?.full_name ??
+        (user?.user_metadata as { name?: string } | undefined)?.name ??
+        (user?.user_metadata as { display_name?: string } | undefined)?.display_name ??
+        "") as string
+    ).trim() ||
     "your friend";
   const rsvpLinkToken = (token: string) =>
     encodeURIComponent(token.trim().replace(/\+/g, "-").replace(/\//g, "_"));
-  const buildSmsInfo = (
-    guest: CommitteeGuest,
-  ): { phone: string; body: string } | null => {
+  const buildSmsInfo = (guest: CommitteeGuest): { phone: string; body: string } | null => {
     if (!guest.guest_phone || !guest.rsvp_token) return null;
     const firstName = (guest.guest_name || "Friend").split(/\s+/)[0];
     const senderFirst = senderName.split(/\s+/)[0];
     const link = `${siteOrigin}/rsvp/${rsvpLinkToken(guest.rsvp_token)}`;
     const alreadyTexted = Boolean(guest.invite_sent_at);
-    const stillWaiting = !guest.rsvp_status || guest.rsvp_status === "waitlist" || guest.rsvp_status === "maybe";
+    const stillWaiting =
+      !guest.rsvp_status || guest.rsvp_status === "waitlist" || guest.rsvp_status === "maybe";
     const body =
       alreadyTexted && stillWaiting
         ? `Hi ${firstName}, it's ${senderFirst} — just a friendly reminder to RSVP for A Taste of Special Conventions on Sunday, August 30, 2026: ${link}`
@@ -706,28 +821,33 @@ export function CommitteeWorkspace() {
     const raw = window.localStorage.getItem(`toc.committee.lastSeenYes:${user.id}`);
     setLastSeenYesAt(raw ? Number(raw) || 0 : 0);
   }, [user]);
-  const newYesGuests = lastSeenYesAt === null
-    ? []
-    : myGuestsUnsorted
-        .filter(
-          (g) =>
-            g.rsvp_status === "yes" &&
-            g.responded_at &&
-            new Date(g.responded_at).getTime() > lastSeenYesAt,
-        )
-        .sort(byName);
-  const newYesGroupIds = buildDuplicateGroupIds(newYesGuests.map((g) => ({
-    id: g.id,
-    guest_name: g.guest_name,
-    guest_phone: g.guest_phone,
-  })));
-  const newYesRollup = computeRsvpRollup(newYesGuests.map((g) => ({
-    id: g.id,
-    groupId: newYesGroupIds.get(g.id) ?? g.id,
-    status: g.rsvp_status,
-    party_size: g.party_size,
-    attendance_mode: g.attendance_mode,
-  })));
+  const newYesGuests =
+    lastSeenYesAt === null
+      ? []
+      : myGuestsUnsorted
+          .filter(
+            (g) =>
+              g.rsvp_status === "yes" &&
+              g.responded_at &&
+              new Date(g.responded_at).getTime() > lastSeenYesAt,
+          )
+          .sort(byName);
+  const newYesGroupIds = buildDuplicateGroupIds(
+    newYesGuests.map((g) => ({
+      id: g.id,
+      guest_name: g.guest_name,
+      guest_phone: g.guest_phone,
+    })),
+  );
+  const newYesRollup = computeRsvpRollup(
+    newYesGuests.map((g) => ({
+      id: g.id,
+      groupId: newYesGroupIds.get(g.id) ?? g.id,
+      status: g.rsvp_status,
+      party_size: g.party_size,
+      attendance_mode: g.attendance_mode,
+    })),
+  );
   const newYesPeople = newYesRollup.people.confirmed;
   const newYesResponses = newYesRollup.responses.confirmed;
   const markYesSeen = () => {
@@ -739,17 +859,16 @@ export function CommitteeWorkspace() {
 
   const toggleSection = (key: string) => setOpenSection((prev) => (prev === key ? null : key));
 
-
-
   return (
     <div className="space-y-6">
-
-      <Button asChild className="sticky top-3 z-20 w-full bg-terracotta text-cream hover:bg-terracotta/90 justify-center h-14 text-base shadow-lg">
+      <Button
+        asChild
+        className="sticky top-3 z-20 w-full bg-terracotta text-cream hover:bg-terracotta/90 justify-center h-14 text-base shadow-lg"
+      >
         <Link to="/admin/upload" search={{ view: "committee" }}>
           <Upload className="w-4 h-4" /> Upload guest list
         </Link>
       </Button>
-
 
       <div className="grid gap-3 sm:grid-cols-2">
         <Button asChild className="bg-ink text-cream hover:bg-ink/90 justify-start h-14">
@@ -757,7 +876,6 @@ export function CommitteeWorkspace() {
             <ListChecks className="w-4 h-4" /> Volunteer
           </Link>
         </Button>
-
 
         <Button asChild variant="outline" className="justify-start h-14">
           <Link to="/admin/chat" search={{ view: "committee" }}>
@@ -787,7 +905,6 @@ export function CommitteeWorkspace() {
           </Link>
         </Button>
       </div>
-
 
       {!hideWelcome && (
         <div className="space-y-2">
@@ -822,7 +939,9 @@ export function CommitteeWorkspace() {
             </div>
           </Card>
           <p className="text-muted-foreground">
-            See the following where you can add your guests, chat with others, choose what to volunteer for, etc. If you have any issues with the platform, please screenshot it and text it to 808.278.7562.
+            See the following where you can add your guests, chat with others, choose what to
+            volunteer for, etc. If you have any issues with the platform, please screenshot it and
+            text it to 808.278.7562.
           </p>
         </div>
       )}
@@ -843,7 +962,9 @@ export function CommitteeWorkspace() {
               <span className="flex items-center gap-2 font-semibold">
                 <ListChecks className="w-5 h-5 text-terracotta" /> RSVP totals
               </span>
-              <ChevronDown className={`w-4 h-4 transition-transform ${openTotals ? "rotate-180" : ""}`} />
+              <ChevronDown
+                className={`w-4 h-4 transition-transform ${openTotals ? "rotate-180" : ""}`}
+              />
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent>
@@ -859,338 +980,429 @@ export function CommitteeWorkspace() {
 
       <Card className="overflow-hidden">
         <Collapsible open={openMyGuestsCard} onOpenChange={() => setOpenMyGuestsCard((v) => !v)}>
-        <div className="p-4 border-b border-border flex items-center justify-between gap-3">
-          <CollapsibleTrigger asChild>
-            <button type="button" className="flex min-w-0 flex-1 items-center gap-2 flex-wrap text-left hover:bg-muted/40 rounded-md">
-              <CheckCircle2 className="w-5 h-5 text-ink shrink-0" />
-              <h2 className="font-semibold truncate">
-                My uploaded contacts ({loadingGuests ? "…" : `${myGuests.length} contacts${myGuestsFilter === "committee" ? ` of ${myGuestsUnsorted.length}` : ""}`})
-              </h2>
-              <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${openMyGuestsCard ? "rotate-180" : ""}`} />
-            </button>
-          </CollapsibleTrigger>
-          <div className="flex items-center gap-2 shrink-0">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={(e) => { e.stopPropagation(); void refreshGuestsNow(); }}
-              disabled={manualRefreshingGuests || loadingGuests}
-              aria-label="Refresh guest list"
-            >
-              {manualRefreshingGuests ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-            </Button>
+          <div className="p-4 border-b border-border flex items-center justify-between gap-3">
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="flex min-w-0 flex-1 items-center gap-2 flex-wrap text-left hover:bg-muted/40 rounded-md"
+              >
+                <CheckCircle2 className="w-5 h-5 text-ink shrink-0" />
+                <h2 className="font-semibold truncate">
+                  My uploaded contacts (
+                  {loadingGuests
+                    ? "…"
+                    : `${myGuests.length} contacts${myGuestsFilter === "committee" ? ` of ${myGuestsUnsorted.length}` : ""}`}
+                  )
+                </h2>
+                <ChevronDown
+                  className={`w-4 h-4 shrink-0 transition-transform ${openMyGuestsCard ? "rotate-180" : ""}`}
+                />
+              </button>
+            </CollapsibleTrigger>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void refreshGuestsNow();
+                }}
+                disabled={manualRefreshingGuests || loadingGuests}
+                aria-label="Refresh guest list"
+              >
+                {manualRefreshingGuests ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
           </div>
-        </div>
-        <CollapsibleContent>
+          <CollapsibleContent>
+            {newYesGuests.length > 0 && (
+              <div className="mx-4 mt-3 rounded-md border border-emerald-300 bg-emerald-50 p-3 text-sm space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <NewBadge target="committee:new-yes-rsvps" />
+                  <span className="font-semibold text-emerald-900">
+                    {newYesPeople} new guest{newYesPeople === 1 ? "" : "s"} RSVP'd:
+                  </span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="ml-auto"
+                    onClick={markYesSeen}
+                  >
+                    Mark seen
+                  </Button>
+                </div>
+                <ul className="text-emerald-900 text-xs space-y-0.5 pl-1">
+                  {newYesGuests.map((g) => {
+                    const mode = g.attendance_mode === "zoom" ? "Zoom" : "in person";
+                    return (
+                      <li key={g.id}>
+                        <span className="font-medium">{g.guest_name}</span> — {g.party_size || 1}{" "}
+                        {mode}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
 
-        {newYesGuests.length > 0 && (
-          <div className="mx-4 mt-3 rounded-md border border-emerald-300 bg-emerald-50 p-3 text-sm space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <NewBadge target="committee:new-yes-rsvps" />
-              <span className="font-semibold text-emerald-900">
-                {newYesPeople} new guest{newYesPeople === 1 ? "" : "s"} RSVP'd:
-              </span>
+            <div className="px-4 pt-3 flex flex-wrap items-center gap-1.5">
               <Button
                 type="button"
                 size="sm"
-                variant="outline"
-                className="ml-auto"
-                onClick={markYesSeen}
+                variant={myGuestsFilter === "all" ? "default" : "outline"}
+                onClick={() => setMyGuestsFilter("all")}
               >
-                Mark seen
+                All ({loadingGuests ? "…" : `${myGuestsUnsorted.length} contacts`})
+              </Button>
+              <NewBadge target="committee:filter-toggle" />
+              <Button
+                type="button"
+                size="sm"
+                variant={myGuestsFilter === "committee" ? "default" : "outline"}
+                onClick={() => setMyGuestsFilter("committee")}
+              >
+                Committee ({loadingGuests ? "…" : `${committeeIds.size} contacts`})
               </Button>
             </div>
-            <ul className="text-emerald-900 text-xs space-y-0.5 pl-1">
-              {newYesGuests.map((g) => {
-                const mode = g.attendance_mode === "zoom" ? "Zoom" : "in person";
-                return (
-                  <li key={g.id}>
-                    <span className="font-medium">{g.guest_name}</span> — {g.party_size || 1} {mode}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        )}
-
-        <div className="px-4 pt-3 flex flex-wrap items-center gap-1.5">
-          <Button
-            type="button"
-            size="sm"
-            variant={myGuestsFilter === "all" ? "default" : "outline"}
-            onClick={() => setMyGuestsFilter("all")}
-          >
-            All ({loadingGuests ? "…" : `${myGuestsUnsorted.length} contacts`})
-          </Button>
-          <NewBadge target="committee:filter-toggle" />
-          <Button
-            type="button"
-            size="sm"
-            variant={myGuestsFilter === "committee" ? "default" : "outline"}
-            onClick={() => setMyGuestsFilter("committee")}
-          >
-            Committee ({loadingGuests ? "…" : `${committeeIds.size} contacts`})
-          </Button>
-        </div>
-        {!loadingGuests && myGuests.length > 0 && (
-          <p className="px-4 pt-3 text-xs font-medium text-ink">
-            {myGuests.length} contacts • {myRepliedContacts} replied • {myAwaiting.length} awaiting reply • {myDeclined.length} declined
-            {myAwaitingNotTexted > 0 && (
-              <span className="text-brand-red"> • {myAwaitingNotTexted} not texted yet</span>
-            )}
-          </p>
-        )}
-        <p className="px-4 pt-3 text-xs text-muted-foreground">
-            Contacts you've uploaded. In-person and Zoom RSVP totals are tracked separately above.
-        </p>
-        <p className="px-4 pt-2 text-xs text-muted-foreground flex items-center gap-1.5">
-          <NewBadge target="committee:row-actions" />
-          <span>Use the pencil to edit or the trash to delete the guest.</span>
-        </p>
-
-        {loadingGuests ? (
-          <div className="p-4 text-sm text-muted-foreground flex items-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin" /> Loading your guests…
-          </div>
-        ) : myGuests.length === 0 ? (
-          <div className="p-4 text-sm text-muted-foreground">
-            You haven't invited anyone yet.
-          </div>
-        ) : (() => {
-          const byAlpha = byName;
-          const byNewest = (a: CommitteeGuest, b: CommitteeGuest) =>
-            (b.created_at ? Date.parse(b.created_at) : 0) - (a.created_at ? Date.parse(a.created_at) : 0);
-          const byOldest = (a: CommitteeGuest, b: CommitteeGuest) =>
-            (a.created_at ? Date.parse(a.created_at) : 0) - (b.created_at ? Date.parse(b.created_at) : 0);
-          const sorterFor = (mode: typeof myGuestsSort) =>
-            mode === "newest" ? byNewest : mode === "oldest" ? byOldest : byAlpha;
-
-          const times = myGuests.map((g) => (g.created_at ? Date.parse(g.created_at) : 0)).filter((n) => Number.isFinite(n) && n > 0);
-          const maxTs = times.length ? Math.max(...times) : 0;
-          const latestBatch = maxTs
-            ? myGuests.filter((g) => g.created_at && maxTs - Date.parse(g.created_at) <= 60 * 60 * 1000).sort(byNewest)
-            : [];
-
-          const confirmedFlat = myGuests.filter((g) => g.rsvp_status === "yes");
-          const awaitingFlat = myGuests.filter((g) => !g.rsvp_status || g.rsvp_status === "waitlist" || g.rsvp_status === "maybe");
-          const declinedFlat = myGuests.filter((g) => g.rsvp_status === "no");
-
-          const rollupFor = (rows: CommitteeGuest[]) => {
-            const groupIds = buildDuplicateGroupIds(rows.map((g) => ({ id: g.id, guest_name: g.guest_name, guest_phone: g.guest_phone })));
-            return computeRsvpRollup(rows.map((g) => ({
-              id: g.id,
-              groupId: groupIds.get(g.id) ?? g.id,
-              status: g.rsvp_status,
-              party_size: g.party_size,
-              attendance_mode: g.attendance_mode,
-            })));
-          };
-
-          const inPersonSeats = (rows: CommitteeGuest[]) => rollupFor(rows).people.inPerson;
-          const zoomSeats = (rows: CommitteeGuest[]) => rollupFor(rows).people.zoom;
-          const declinedSeats = (rows: CommitteeGuest[]) => rollupFor(rows).people.declined;
-          const tabs: { key: typeof myGuestsTab; label: string; count: number }[] = [
-            { key: "all", label: "All contacts", count: myGuests.length },
-            { key: "inPerson", label: "In person", count: inPersonSeats(confirmedFlat) },
-            { key: "zoom", label: "Zoom", count: zoomSeats(confirmedFlat) },
-            { key: "declined", label: "Declined", count: declinedSeats(declinedFlat) },
-            { key: "latest", label: "Latest upload", count: latestBatch.length },
-          ];
-
-
-          const useGrouped = myGuestsTab === "all" && myGuestsSort === "grouped";
-
-          let flatRows: CommitteeGuest[] = [];
-          let flatLabel = "";
-          let flatTone: "emerald" | "muted" | "rose" = "muted";
-          if (!useGrouped) {
-            if (myGuestsTab === "inPerson") { flatRows = myInPerson; flatLabel = "RSVP in person"; flatTone = "emerald"; }
-            else if (myGuestsTab === "zoom") { flatRows = myZoom; flatLabel = "RSVP by Zoom"; flatTone = "muted"; }
-            else if (myGuestsTab === "declined") { flatRows = declinedFlat; flatLabel = "Declined"; flatTone = "rose"; }
-            else if (myGuestsTab === "latest") { flatRows = latestBatch; flatLabel = "Latest upload"; flatTone = "muted"; }
-            else { flatRows = myGuests; flatLabel = "All contacts"; flatTone = "muted"; }
-            const effectiveSort = myGuestsTab === "latest" ? "newest" : (myGuestsSort === "grouped" ? "alpha" : myGuestsSort);
-            flatRows = [...flatRows].sort(sorterFor(effectiveSort));
-          }
-          const flatRollup = useGrouped ? null : rollupFor(flatRows);
-
-          return (
-          <div className="p-4 space-y-3">
-            <div className="flex flex-wrap items-center gap-1.5">
-              {tabs.map((t) => (
-                <button
-                  key={t.key}
-                  type="button"
-                  onClick={() => setMyGuestsTab(t.key)}
-                  className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs border transition ${myGuestsTab === t.key ? "bg-ink text-cream border-ink" : "bg-background hover:bg-muted border-border"}`}
-                >
-                  {t.label} ({t.count} {t.key === "all" || t.key === "latest" ? "contacts" : "people"})
-                </button>
-              ))}
-              {myGuestsTab !== "latest" && (
-                <div className="ml-auto flex items-center gap-1.5">
-                  <span className="text-[11px] text-muted-foreground">Sort</span>
-                  <Select value={myGuestsSort} onValueChange={(v) => setMyGuestsSort(v as typeof myGuestsSort)}>
-                    <SelectTrigger className="h-8 w-[160px] text-xs" aria-label="Sort my guests">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {myGuestsTab === "all" && <SelectItem value="grouped">Grouped by status</SelectItem>}
-                      <SelectItem value="alpha">Alphabetical (A–Z)</SelectItem>
-                      <SelectItem value="newest">Newest first</SelectItem>
-                      <SelectItem value="oldest">Oldest first</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </div>
-
-            {useGrouped ? (
-              <>
-                <Collapsible open={openConfirmed} onOpenChange={() => setOpenConfirmed((v) => !v)}>
-                  <div className="rounded-md border border-emerald-200 bg-emerald-50/30 overflow-hidden">
-                    <CollapsibleTrigger asChild>
-                      <button
-                        type="button"
-                        className="w-full p-3 flex items-center justify-between gap-2 text-left cursor-pointer hover:bg-emerald-100/50 transition-colors"
-                      >
-                        <span className="flex items-center gap-2 font-semibold text-sm">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                          Confirmed in person ({confirmedInPersonPeople} people) · Zoom ({confirmedVirtualPeople})
-                        </span>
-                        <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${openConfirmed ? "rotate-180" : ""}`} />
-                      </button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-2 p-2 pt-0">
-                      <MyGuestsGroup
-                        label="RSVP in person"
-                        tone="emerald"
-                        guests={myInPerson}
-                        peopleCount={confirmedInPersonPeople}
-                        open={openMyGroup.inPerson}
-                        onToggle={() => setOpenMyGroup((p) => ({ ...p, inPerson: !p.inPerson }))}
-                        isCommitteeGuest={isCommitteeGuest}
-                        duplicateIds={duplicateIds}
-                        settingRsvpId={settingRsvpId}
-                        setRsvpFor={setRsvpFor}
-                        saveGuestEdits={saveGuestEdits}
-                        deleteGuest={deleteGuest}
-                        buildSmsInfo={buildSmsInfo}
-                        markingSentId={markingSentId}
-                        toggleSent={toggleSent}
-                      />
-                      <MyGuestsGroup
-                        label="RSVP by Zoom"
-                        tone="muted"
-                        guests={myZoom}
-                        peopleCount={confirmedVirtualPeople}
-                        open={openMyGroup.zoom}
-                        onToggle={() => setOpenMyGroup((p) => ({ ...p, zoom: !p.zoom }))}
-                        isCommitteeGuest={isCommitteeGuest}
-                        duplicateIds={duplicateIds}
-                        settingRsvpId={settingRsvpId}
-                        setRsvpFor={setRsvpFor}
-                        saveGuestEdits={saveGuestEdits}
-                        deleteGuest={deleteGuest}
-                        buildSmsInfo={buildSmsInfo}
-                        markingSentId={markingSentId}
-                        toggleSent={toggleSent}
-                      />
-                    </CollapsibleContent>
-                  </div>
-                </Collapsible>
-                {myAwaiting.length > 1 && (
-                  <div className="flex items-center justify-end gap-2 px-1 pt-2">
-                    <span className="text-xs text-muted-foreground">Sort no RSVP yet</span>
-                    <Select
-                      value={activePendingSort}
-                      onValueChange={(v) =>
-                        navigate({
-                          to: ".",
-                          search: (prev: Record<string, unknown>) => ({ ...prev, pendingSort: v as PendingSortMode }),
-                          replace: true,
-                        })
-                      }
-                    >
-                      <SelectTrigger className="h-8 w-[190px] text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="alpha">A → Z (name)</SelectItem>
-                        <SelectItem value="newest">Newest uploaded first</SelectItem>
-                        <SelectItem value="oldest">Oldest uploaded first</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+            {!loadingGuests && myGuests.length > 0 && (
+              <p className="px-4 pt-3 text-xs font-medium text-ink">
+                {myGuests.length} contacts • {myRepliedContacts} replied • {myAwaiting.length}{" "}
+                awaiting reply • {myDeclined.length} declined
+                {myAwaitingNotTexted > 0 && (
+                  <span className="text-brand-red"> • {myAwaitingNotTexted} not texted yet</span>
                 )}
-                <MyGuestsGroup
-                  label="No RSVP yet"
-                  tone="muted"
-                  guests={myAwaiting}
-                  peopleCount={myAwaiting.length}
-                  countLabel="contacts"
-                  open={openMyGroup.awaiting}
-                  onToggle={() => setOpenMyGroup((p) => ({ ...p, awaiting: !p.awaiting }))}
-                  isCommitteeGuest={isCommitteeGuest}
-                  duplicateIds={duplicateIds}
-                  settingRsvpId={settingRsvpId}
-                  setRsvpFor={setRsvpFor}
-                  saveGuestEdits={saveGuestEdits}
-                  deleteGuest={deleteGuest}
-                  buildSmsInfo={buildSmsInfo}
-                  markingSentId={markingSentId}
-                  toggleSent={toggleSent}
-                />
-
-                <MyGuestsGroup
-                  label="Declined"
-                  tone="rose"
-                  guests={myDeclined}
-                  peopleCount={declinedPeople}
-                  open={openMyGroup.declined}
-                  onToggle={() => setOpenMyGroup((p) => ({ ...p, declined: !p.declined }))}
-                  isCommitteeGuest={isCommitteeGuest}
-                  duplicateIds={duplicateIds}
-                  settingRsvpId={settingRsvpId}
-                  setRsvpFor={setRsvpFor}
-                  saveGuestEdits={saveGuestEdits}
-                  deleteGuest={deleteGuest}
-                  buildSmsInfo={buildSmsInfo}
-                  markingSentId={markingSentId}
-                  toggleSent={toggleSent}
-                />
-              </>
-            ) : flatRollup && (
-              <MyGuestsGroup
-                label={flatLabel}
-                tone={flatTone}
-                guests={flatRows}
-                peopleCount={myGuestsTab === "all" || myGuestsTab === "latest" ? flatRows.length : flatRollup.people.allIfEveryoneShowed}
-                countLabel={myGuestsTab === "all" || myGuestsTab === "latest" ? "contacts" : "people"}
-                open={openFlatGroup}
-                onToggle={() => setOpenFlatGroup((v) => !v)}
-                isCommitteeGuest={isCommitteeGuest}
-                duplicateIds={duplicateIds}
-                settingRsvpId={settingRsvpId}
-                setRsvpFor={setRsvpFor}
-                saveGuestEdits={saveGuestEdits}
-                deleteGuest={deleteGuest}
-                buildSmsInfo={buildSmsInfo}
-                markingSentId={markingSentId}
-                toggleSent={toggleSent}
-              />
+              </p>
             )}
-          </div>
-          );
-        })()}
-        </CollapsibleContent>
+            <p className="px-4 pt-3 text-xs text-muted-foreground">
+              Contacts you've uploaded. In-person and Zoom RSVP totals are tracked separately above.
+            </p>
+            <p className="px-4 pt-2 text-xs text-muted-foreground flex items-center gap-1.5">
+              <NewBadge target="committee:row-actions" />
+              <span>Use the pencil to edit or the trash to delete the guest.</span>
+            </p>
+
+            {loadingGuests ? (
+              <div className="p-4 text-sm text-muted-foreground flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" /> Loading your guests…
+              </div>
+            ) : myGuests.length === 0 ? (
+              <div className="p-4 text-sm text-muted-foreground">
+                You haven't invited anyone yet.
+              </div>
+            ) : (
+              (() => {
+                const byAlpha = byName;
+                const byNewest = (a: CommitteeGuest, b: CommitteeGuest) =>
+                  (b.created_at ? Date.parse(b.created_at) : 0) -
+                  (a.created_at ? Date.parse(a.created_at) : 0);
+                const byOldest = (a: CommitteeGuest, b: CommitteeGuest) =>
+                  (a.created_at ? Date.parse(a.created_at) : 0) -
+                  (b.created_at ? Date.parse(b.created_at) : 0);
+                const sorterFor = (mode: typeof myGuestsSort) =>
+                  mode === "newest" ? byNewest : mode === "oldest" ? byOldest : byAlpha;
+
+                const times = myGuests
+                  .map((g) => (g.created_at ? Date.parse(g.created_at) : 0))
+                  .filter((n) => Number.isFinite(n) && n > 0);
+                const maxTs = times.length ? Math.max(...times) : 0;
+                const latestBatch = maxTs
+                  ? myGuests
+                      .filter(
+                        (g) => g.created_at && maxTs - Date.parse(g.created_at) <= 60 * 60 * 1000,
+                      )
+                      .sort(byNewest)
+                  : [];
+
+                const confirmedFlat = myGuests.filter((g) => g.rsvp_status === "yes");
+                const awaitingFlat = myGuests.filter(
+                  (g) =>
+                    !g.rsvp_status || g.rsvp_status === "waitlist" || g.rsvp_status === "maybe",
+                );
+                const declinedFlat = myGuests.filter((g) => g.rsvp_status === "no");
+
+                const rollupFor = (rows: CommitteeGuest[]) => {
+                  const groupIds = buildDuplicateGroupIds(
+                    rows.map((g) => ({
+                      id: g.id,
+                      guest_name: g.guest_name,
+                      guest_phone: g.guest_phone,
+                    })),
+                  );
+                  return computeRsvpRollup(
+                    rows.map((g) => ({
+                      id: g.id,
+                      groupId: groupIds.get(g.id) ?? g.id,
+                      status: g.rsvp_status,
+                      party_size: g.party_size,
+                      attendance_mode: g.attendance_mode,
+                    })),
+                  );
+                };
+
+                const inPersonSeats = (rows: CommitteeGuest[]) => rollupFor(rows).people.inPerson;
+                const zoomSeats = (rows: CommitteeGuest[]) => rollupFor(rows).people.zoom;
+                const declinedSeats = (rows: CommitteeGuest[]) => rollupFor(rows).people.declined;
+                const tabs: { key: typeof myGuestsTab; label: string; count: number }[] = [
+                  { key: "all", label: "All contacts", count: myGuests.length },
+                  { key: "inPerson", label: "In person", count: inPersonSeats(confirmedFlat) },
+                  { key: "zoom", label: "Zoom", count: zoomSeats(confirmedFlat) },
+                  { key: "declined", label: "Declined", count: declinedSeats(declinedFlat) },
+                  { key: "latest", label: "Latest upload", count: latestBatch.length },
+                ];
+
+                const useGrouped = myGuestsTab === "all" && myGuestsSort === "grouped";
+
+                let flatRows: CommitteeGuest[] = [];
+                let flatLabel = "";
+                let flatTone: "emerald" | "muted" | "rose" = "muted";
+                if (!useGrouped) {
+                  if (myGuestsTab === "inPerson") {
+                    flatRows = myInPerson;
+                    flatLabel = "RSVP in person";
+                    flatTone = "emerald";
+                  } else if (myGuestsTab === "zoom") {
+                    flatRows = myZoom;
+                    flatLabel = "RSVP by Zoom";
+                    flatTone = "muted";
+                  } else if (myGuestsTab === "declined") {
+                    flatRows = declinedFlat;
+                    flatLabel = "Declined";
+                    flatTone = "rose";
+                  } else if (myGuestsTab === "latest") {
+                    flatRows = latestBatch;
+                    flatLabel = "Latest upload";
+                    flatTone = "muted";
+                  } else {
+                    flatRows = myGuests;
+                    flatLabel = "All contacts";
+                    flatTone = "muted";
+                  }
+                  const effectiveSort =
+                    myGuestsTab === "latest"
+                      ? "newest"
+                      : myGuestsSort === "grouped"
+                        ? "alpha"
+                        : myGuestsSort;
+                  flatRows = [...flatRows].sort(sorterFor(effectiveSort));
+                }
+                const flatRollup = useGrouped ? null : rollupFor(flatRows);
+
+                return (
+                  <div className="p-4 space-y-3">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {tabs.map((t) => (
+                        <button
+                          key={t.key}
+                          type="button"
+                          onClick={() => setMyGuestsTab(t.key)}
+                          className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs border transition ${myGuestsTab === t.key ? "bg-ink text-cream border-ink" : "bg-background hover:bg-muted border-border"}`}
+                        >
+                          {t.label} ({t.count}{" "}
+                          {t.key === "all" || t.key === "latest" ? "contacts" : "people"})
+                        </button>
+                      ))}
+                      {myGuestsTab !== "latest" && (
+                        <div className="ml-auto flex items-center gap-1.5">
+                          <span className="text-[11px] text-muted-foreground">Sort</span>
+                          <Select
+                            value={myGuestsSort}
+                            onValueChange={(v) => setMyGuestsSort(v as typeof myGuestsSort)}
+                          >
+                            <SelectTrigger
+                              className="h-8 w-[160px] text-xs"
+                              aria-label="Sort my guests"
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {myGuestsTab === "all" && (
+                                <SelectItem value="grouped">Grouped by status</SelectItem>
+                              )}
+                              <SelectItem value="alpha">Alphabetical (A–Z)</SelectItem>
+                              <SelectItem value="newest">Newest first</SelectItem>
+                              <SelectItem value="oldest">Oldest first</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                    </div>
+
+                    {useGrouped ? (
+                      <>
+                        <Collapsible
+                          open={openConfirmed}
+                          onOpenChange={() => setOpenConfirmed((v) => !v)}
+                        >
+                          <div className="rounded-md border border-emerald-200 bg-emerald-50/30 overflow-hidden">
+                            <CollapsibleTrigger asChild>
+                              <button
+                                type="button"
+                                className="w-full p-3 flex items-center justify-between gap-2 text-left cursor-pointer hover:bg-emerald-100/50 transition-colors"
+                              >
+                                <span className="flex items-center gap-2 font-semibold text-sm">
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                  Confirmed in person ({confirmedInPersonPeople} people) · Zoom (
+                                  {confirmedVirtualPeople})
+                                </span>
+                                <ChevronDown
+                                  className={`w-4 h-4 shrink-0 transition-transform ${openConfirmed ? "rotate-180" : ""}`}
+                                />
+                              </button>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent className="space-y-2 p-2 pt-0">
+                              <MyGuestsGroup
+                                label="RSVP in person"
+                                tone="emerald"
+                                guests={myInPerson}
+                                peopleCount={confirmedInPersonPeople}
+                                open={openMyGroup.inPerson}
+                                onToggle={() =>
+                                  setOpenMyGroup((p) => ({ ...p, inPerson: !p.inPerson }))
+                                }
+                                isCommitteeGuest={isCommitteeGuest}
+                                duplicateIds={duplicateIds}
+                                settingRsvpId={settingRsvpId}
+                                setRsvpFor={setRsvpFor}
+                                saveGuestEdits={saveGuestEdits}
+                                deleteGuest={deleteGuest}
+                                buildSmsInfo={buildSmsInfo}
+                                markingSentId={markingSentId}
+                                toggleSent={toggleSent}
+                              />
+                              <MyGuestsGroup
+                                label="RSVP by Zoom"
+                                tone="muted"
+                                guests={myZoom}
+                                peopleCount={confirmedVirtualPeople}
+                                open={openMyGroup.zoom}
+                                onToggle={() => setOpenMyGroup((p) => ({ ...p, zoom: !p.zoom }))}
+                                isCommitteeGuest={isCommitteeGuest}
+                                duplicateIds={duplicateIds}
+                                settingRsvpId={settingRsvpId}
+                                setRsvpFor={setRsvpFor}
+                                saveGuestEdits={saveGuestEdits}
+                                deleteGuest={deleteGuest}
+                                buildSmsInfo={buildSmsInfo}
+                                markingSentId={markingSentId}
+                                toggleSent={toggleSent}
+                              />
+                            </CollapsibleContent>
+                          </div>
+                        </Collapsible>
+                        {myAwaiting.length > 1 && (
+                          <div className="flex items-center justify-end gap-2 px-1 pt-2">
+                            <span className="text-xs text-muted-foreground">Sort no RSVP yet</span>
+                            <Select
+                              value={activePendingSort}
+                              onValueChange={(v) =>
+                                navigate({
+                                  to: ".",
+                                  search: (prev: Record<string, unknown>) => ({
+                                    ...prev,
+                                    pendingSort: v as PendingSortMode,
+                                  }),
+                                  replace: true,
+                                })
+                              }
+                            >
+                              <SelectTrigger className="h-8 w-[190px] text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="alpha">A → Z (name)</SelectItem>
+                                <SelectItem value="newest">Newest uploaded first</SelectItem>
+                                <SelectItem value="oldest">Oldest uploaded first</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                        <MyGuestsGroup
+                          label="No RSVP yet"
+                          tone="muted"
+                          guests={myAwaiting}
+                          peopleCount={myAwaiting.length}
+                          countLabel="contacts"
+                          open={openMyGroup.awaiting}
+                          onToggle={() => setOpenMyGroup((p) => ({ ...p, awaiting: !p.awaiting }))}
+                          isCommitteeGuest={isCommitteeGuest}
+                          duplicateIds={duplicateIds}
+                          settingRsvpId={settingRsvpId}
+                          setRsvpFor={setRsvpFor}
+                          saveGuestEdits={saveGuestEdits}
+                          deleteGuest={deleteGuest}
+                          buildSmsInfo={buildSmsInfo}
+                          markingSentId={markingSentId}
+                          toggleSent={toggleSent}
+                        />
+
+                        <MyGuestsGroup
+                          label="Declined"
+                          tone="rose"
+                          guests={myDeclined}
+                          peopleCount={declinedPeople}
+                          open={openMyGroup.declined}
+                          onToggle={() => setOpenMyGroup((p) => ({ ...p, declined: !p.declined }))}
+                          isCommitteeGuest={isCommitteeGuest}
+                          duplicateIds={duplicateIds}
+                          settingRsvpId={settingRsvpId}
+                          setRsvpFor={setRsvpFor}
+                          saveGuestEdits={saveGuestEdits}
+                          deleteGuest={deleteGuest}
+                          buildSmsInfo={buildSmsInfo}
+                          markingSentId={markingSentId}
+                          toggleSent={toggleSent}
+                        />
+                      </>
+                    ) : (
+                      flatRollup && (
+                        <MyGuestsGroup
+                          label={flatLabel}
+                          tone={flatTone}
+                          guests={flatRows}
+                          peopleCount={
+                            myGuestsTab === "all" || myGuestsTab === "latest"
+                              ? flatRows.length
+                              : flatRollup.people.allIfEveryoneShowed
+                          }
+                          countLabel={
+                            myGuestsTab === "all" || myGuestsTab === "latest"
+                              ? "contacts"
+                              : "people"
+                          }
+                          open={openFlatGroup}
+                          onToggle={() => setOpenFlatGroup((v) => !v)}
+                          isCommitteeGuest={isCommitteeGuest}
+                          duplicateIds={duplicateIds}
+                          settingRsvpId={settingRsvpId}
+                          setRsvpFor={setRsvpFor}
+                          saveGuestEdits={saveGuestEdits}
+                          deleteGuest={deleteGuest}
+                          buildSmsInfo={buildSmsInfo}
+                          markingSentId={markingSentId}
+                          toggleSent={toggleSent}
+                        />
+                      )
+                    )}
+                  </div>
+                );
+              })()
+            )}
+          </CollapsibleContent>
         </Collapsible>
       </Card>
 
       {creditedElsewhere.length > 0 && (
         <Card className="overflow-hidden border-amber-300">
-          <Collapsible open={openCreditedElsewhere} onOpenChange={() => setOpenCreditedElsewhere((v) => !v)}>
+          <Collapsible
+            open={openCreditedElsewhere}
+            onOpenChange={() => setOpenCreditedElsewhere((v) => !v)}
+          >
             <CollapsibleTrigger asChild>
               <button
                 type="button"
@@ -1200,7 +1412,9 @@ export function CommitteeWorkspace() {
                   <AlertTriangle className="w-4 h-4 text-amber-600" />
                   Duplicates — credited to someone else ({creditedElsewhere.length})
                 </span>
-                <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${openCreditedElsewhere ? "rotate-180" : ""}`} />
+                <ChevronDown
+                  className={`w-4 h-4 shrink-0 transition-transform ${openCreditedElsewhere ? "rotate-180" : ""}`}
+                />
               </button>
             </CollapsibleTrigger>
             <CollapsibleContent>
@@ -1220,7 +1434,11 @@ export function CommitteeWorkspace() {
                       </span>
                       {row.rsvp_status && (
                         <Badge variant="secondary" className="text-[10px] uppercase">
-                          {row.rsvp_status === "yes" ? "Confirmed" : row.rsvp_status === "no" ? "Declined" : row.rsvp_status}
+                          {row.rsvp_status === "yes"
+                            ? "Confirmed"
+                            : row.rsvp_status === "no"
+                              ? "Declined"
+                              : row.rsvp_status}
                         </Badge>
                       )}
                     </div>
@@ -1230,7 +1448,8 @@ export function CommitteeWorkspace() {
                       </span>
                     )}
                     <p className="text-[11px] text-muted-foreground mt-1">
-                      Already credited to <strong>{row.owner_name ?? "another committee member"}</strong>
+                      Already credited to{" "}
+                      <strong>{row.owner_name ?? "another committee member"}</strong>
                       {row.first_loaded_at
                         ? ` — first loaded ${new Date(row.first_loaded_at).toLocaleDateString()}`
                         : ""}
@@ -1243,13 +1462,7 @@ export function CommitteeWorkspace() {
         </Card>
       )}
 
-
-
-
-
-
       <Card ref={chatsCardRef} className="overflow-hidden scroll-mt-20">
-
         <div className="p-4 border-b border-border flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <MessageCircle className="w-5 h-5 text-terracotta" />
@@ -1264,7 +1477,11 @@ export function CommitteeWorkspace() {
         {myCats.length === 0 ? (
           <div className="p-4 text-sm text-muted-foreground">
             You haven't signed up for any volunteer opportunities yet. Tap{" "}
-            <Link to="/admin/categories" search={{ view: "committee" }} className="underline text-terracotta">
+            <Link
+              to="/admin/categories"
+              search={{ view: "committee" }}
+              className="underline text-terracotta"
+            >
               Volunteer
             </Link>{" "}
             to choose one — its chat will appear here.
@@ -1286,7 +1503,9 @@ export function CommitteeWorkspace() {
                       )}
                     </div>
                     {c.description && (
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{c.description}</p>
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                        {c.description}
+                      </p>
                     )}
                   </div>
                   <Button
@@ -1316,7 +1535,6 @@ export function CommitteeWorkspace() {
           nameFor={(uid) => profileNames[uid] ?? "Member"}
         />
       ))}
-
     </div>
   );
 }
@@ -1349,7 +1567,9 @@ function CollapsibleSection({
             >
               {icon}
               <h2 className="font-semibold truncate">{title}</h2>
-              <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+              <ChevronDown
+                className={`w-4 h-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+              />
             </button>
           </CollapsibleTrigger>
           {action && <div className="shrink-0">{action}</div>}
@@ -1415,18 +1635,27 @@ function MyGuestsGroup({
             type="button"
             className="w-full p-3 flex items-center justify-between gap-2 text-left cursor-pointer hover:bg-black/[0.03] transition-colors"
           >
-            <span className="font-semibold text-sm">{label} ({peopleCount} {countLabel})</span>
-            <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+            <span className="font-semibold text-sm">
+              {label} ({peopleCount} {countLabel})
+            </span>
+            <ChevronDown
+              className={`w-4 h-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+            />
           </button>
         </CollapsibleTrigger>
         {action && <div className="border-t border-border/60 px-3 pb-3">{action}</div>}
         <CollapsibleContent>
           {guests.length === 0 ? (
-            <div className="p-3 text-xs text-muted-foreground border-t border-border/60">No guests in this group.</div>
+            <div className="p-3 text-xs text-muted-foreground border-t border-border/60">
+              No guests in this group.
+            </div>
           ) : (
             <div className="divide-y divide-border/60 border-t border-border/60 md:max-h-[360px] md:overflow-auto bg-background">
               {guests.map((guest) => (
-                <div key={guest.id} className="space-y-3 p-3 sm:flex sm:flex-wrap sm:items-center sm:gap-3 sm:space-y-0">
+                <div
+                  key={guest.id}
+                  className="space-y-3 p-3 sm:flex sm:flex-wrap sm:items-center sm:gap-3 sm:space-y-0"
+                >
                   <div className="min-w-0 flex-1 sm:min-w-[160px]">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-medium">{guest.guest_name}</p>
@@ -1459,7 +1688,10 @@ function MyGuestsGroup({
                   </div>
 
                   <div className="flex min-w-0 flex-wrap items-center gap-2 sm:contents">
-                    <RsvpStatusBadge status={guest.rsvp_status} attendanceMode={guest.attendance_mode} />
+                    <RsvpStatusBadge
+                      status={guest.rsvp_status}
+                      attendanceMode={guest.attendance_mode}
+                    />
                     {guest.rsvp_status === "yes" && (
                       <Badge
                         className={
@@ -1468,18 +1700,26 @@ function MyGuestsGroup({
                             : "bg-gold text-ink hover:bg-gold"
                         }
                       >
-                        {guest.party_size || 1} {guest.attendance_mode === "zoom" ? "Zoom" : "in person"}
+                        {guest.party_size || 1}{" "}
+                        {guest.attendance_mode === "zoom" ? "Zoom" : "in person"}
                       </Badge>
                     )}
-                    <RsvpActionSelect guest={guest} settingRsvpId={settingRsvpId} setRsvpFor={setRsvpFor} />
-                    {buildSmsInfo && (() => {
-                      const info = buildSmsInfo(guest);
-                      if (!info) return null;
-                      return (
-                        <SendTextButton guest={guest} info={info} onSent={toggleSent} />
-                      );
-                    })()}
-                    <SentTextControl guest={guest} markingSentId={markingSentId} onToggleSent={toggleSent} />
+                    <RsvpActionSelect
+                      guest={guest}
+                      settingRsvpId={settingRsvpId}
+                      setRsvpFor={setRsvpFor}
+                    />
+                    {buildSmsInfo &&
+                      (() => {
+                        const info = buildSmsInfo(guest);
+                        if (!info) return null;
+                        return <SendTextButton guest={guest} info={info} onSent={toggleSent} />;
+                      })()}
+                    <SentTextControl
+                      guest={guest}
+                      markingSentId={markingSentId}
+                      onToggleSent={toggleSent}
+                    />
                     <EditGuestButton guest={guest} onSave={saveGuestEdits} />
                     <DeleteGuestButton guest={guest} onDelete={deleteGuest} />
                   </div>
@@ -1509,7 +1749,15 @@ function RsvpActionSelect({
       onValueChange={(v) => void setRsvpFor(guest, v as RsvpAction)}
     >
       <SelectTrigger className="h-9 w-full min-w-0 text-xs sm:h-8 sm:w-[160px]">
-        <SelectValue placeholder={settingRsvpId === guest.id ? "Saving…" : (guest.rsvp_status === "yes" || guest.rsvp_status === "no" ? "Change RSVP" : "Record RSVP")} />
+        <SelectValue
+          placeholder={
+            settingRsvpId === guest.id
+              ? "Saving…"
+              : guest.rsvp_status === "yes" || guest.rsvp_status === "no"
+                ? "Change RSVP"
+                : "Record RSVP"
+          }
+        />
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="no">Decline</SelectItem>
@@ -1545,7 +1793,8 @@ function SendTextButton({
       className="inline-flex h-9 items-center gap-1.5 rounded-md bg-sage px-3 text-xs font-medium text-cream hover:bg-sage/90 sm:h-8"
       aria-label={`Send text to ${guest.guest_name || "guest"}`}
     >
-      <MessageSquare className="w-4 h-4" /> {guest.invite_sent_at ? (guest.rsvp_status ? "Resend text" : "Send reminder") : "Send text"}
+      <MessageSquare className="w-4 h-4" />{" "}
+      {guest.invite_sent_at ? (guest.rsvp_status ? "Resend text" : "Send reminder") : "Send text"}
     </a>
   );
 }
@@ -1574,12 +1823,20 @@ function SentTextControl({
   );
 }
 
-
-
-
-function RsvpStatusBadge({ status, attendanceMode }: { status: string | null; attendanceMode?: string | null }) {
+function RsvpStatusBadge({
+  status,
+  attendanceMode,
+}: {
+  status: string | null;
+  attendanceMode?: string | null;
+}) {
   if (status === "yes") {
-    return <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100"><Clock className="w-3 h-3 mr-1" /> {attendanceMode === "zoom" ? "RSVP by Zoom" : "RSVP in person"}</Badge>;
+    return (
+      <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">
+        <Clock className="w-3 h-3 mr-1" />{" "}
+        {attendanceMode === "zoom" ? "RSVP by Zoom" : "RSVP in person"}
+      </Badge>
+    );
   }
   if (status === "no") return <Badge variant="secondary">Decline</Badge>;
   return <Badge variant="outline">Pending</Badge>;
@@ -1682,7 +1939,8 @@ function DeleteGuestButton({
           <AlertDialogTitle>Delete this guest?</AlertDialogTitle>
           <AlertDialogDescription>
             This will permanently delete <strong>{guest.guest_name}</strong>
-            {guest.guest_phone ? ` (${guest.guest_phone})` : ""} and any RSVP they've made. This cannot be undone.
+            {guest.guest_phone ? ` (${guest.guest_phone})` : ""} and any RSVP they've made. This
+            cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

@@ -23,13 +23,9 @@ export function codeMatches(input: string, storedHash: string) {
  * A restaurant signs in with its own phone number on file (digits only,
  * last 10 digits), so formatting differences never block sign-in.
  */
-export function restaurantPhoneMatches(
-  input: string,
-  restaurantPhone: string | null | undefined,
-) {
+export function restaurantPhoneMatches(input: string, restaurantPhone: string | null | undefined) {
   return phoneMatches(input, restaurantPhone);
 }
-
 
 export function normName(s: string | null | undefined) {
   return (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
@@ -44,7 +40,12 @@ export async function findRestaurantByName(name: string) {
     .eq("active", true);
   const want = normName(name);
   if (!want) return null;
-  const list = (data ?? []) as Array<{ id: string; name: string; cuisine: string | null; phone: string | null }>;
+  const list = (data ?? []) as Array<{
+    id: string;
+    name: string;
+    cuisine: string | null;
+    phone: string | null;
+  }>;
   return (
     list.find((r) => normName(r.name) === want) ??
     list.find((r) => normName(r.name).includes(want) || want.includes(normName(r.name))) ??
@@ -74,7 +75,12 @@ export async function loadPortalData(restaurantId: string): Promise<PortalData> 
   ]);
 
   const paidMap = new Map<string, { qty: number; paidAt: string | null }>();
-  for (const p of (payments ?? []) as Array<{ preorder_id: string; cuisine: string; qty_paid: number; paid_at: string }>) {
+  for (const p of (payments ?? []) as Array<{
+    preorder_id: string;
+    cuisine: string;
+    qty_paid: number;
+    paid_at: string;
+  }>) {
     paidMap.set(`${p.preorder_id}|${normalizeCuisine(p.cuisine)}`, {
       qty: Number(p.qty_paid ?? 0),
       paidAt: p.paid_at ?? null,

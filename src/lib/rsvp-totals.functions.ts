@@ -16,7 +16,6 @@ const friendlyDbError = (context: string, err: { message?: string | null } | nul
   return new Error(`Couldn't load ${context}. ${raw || "Please try again."}`.trim());
 };
 
-
 export type RsvpDataQualityIssues = {
   partySizeCoerced: number;
   statusUnknown: number;
@@ -32,7 +31,7 @@ export type RsvpTotalsResult = {
     inPersonResponses: number;
     inPersonAssumed: number; // yes with unknown attendance mode
     inPersonAssumedResponses: number;
-    virtual: number;   // zoom people
+    virtual: number; // zoom people
     virtualResponses: number;
     dataQuality: RsvpDataQualityIssues;
   };
@@ -95,10 +94,7 @@ export const getRsvpEvents = createServerFn({ method: "POST" })
   .inputValidator((input: Record<string, never> | undefined) => input ?? {})
   .handler(async ({ context }): Promise<RsvpEventOption[]> => {
     const { supabase } = context;
-    const { data, error } = await supabase
-      .from("events")
-      .select("id,title")
-      .order("starts_at");
+    const { data, error } = await supabase.from("events").select("id,title").order("starts_at");
     if (error) throw friendlyDbError("the event list", error);
     return (data ?? []).map((event) => ({ id: event.id, title: event.title }));
   });
@@ -126,7 +122,9 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
         .select("id,guest_name,guest_phone,host_id,inviter_id,created_at,invite_sent_at,rsvp_token")
         .eq("event_id", eventId)
         .order("created_at", { ascending: false }),
-      supabase.from("rsvps").select("invitation_id,status,party_size,attendance_mode,responded_at,invited_by"),
+      supabase
+        .from("rsvps")
+        .select("invitation_id,status,party_size,attendance_mode,responded_at,invited_by"),
     ]);
 
     if (invitersRes.error) throw friendlyDbError("the committee list", invitersRes.error);
@@ -134,7 +132,8 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
     if (rsvpsRes.error) throw friendlyDbError("the RSVPs", rsvpsRes.error);
 
     const inviterRows = (invitersRes.data ?? []) as InviterIdentity[];
-    const normName = (s: string | null | undefined) => (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
+    const normName = (s: string | null | undefined) =>
+      (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
     const { data: authUser } = await supabase.auth.getUser();
     const myPhoneTail = phoneTail(authUser?.user?.phone);
     const { data: prof } = await supabase
@@ -159,9 +158,6 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
       if (r.id) mineInviterIds.add(r.id);
     });
 
-
-
-
     const invitationRows = (invitationsRes.data ?? []) as Array<{
       id: string;
       created_at: string | null;
@@ -173,7 +169,16 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
       rsvp_token: string | null;
     }>;
 
-    const rsvpByInvitation = new Map<string, { status: string | null; party_size: number | null; attendance_mode: string | null; responded_at: string | null; invited_by: string | null }>();
+    const rsvpByInvitation = new Map<
+      string,
+      {
+        status: string | null;
+        party_size: number | null;
+        attendance_mode: string | null;
+        responded_at: string | null;
+        invited_by: string | null;
+      }
+    >();
     for (const rsvp of rsvpsRes.data ?? []) {
       if (!rsvp.invitation_id) continue;
       rsvpByInvitation.set(rsvp.invitation_id, {
@@ -191,7 +196,9 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
       if (r.id && name) inviterNames.set(r.id, name);
     });
 
-    const hostIds = Array.from(new Set(invitationRows.map((r) => r.host_id).filter((id): id is string => !!id)));
+    const hostIds = Array.from(
+      new Set(invitationRows.map((r) => r.host_id).filter((id): id is string => !!id)),
+    );
     const hostNames = new Map<string, string>();
     if (hostIds.length) {
       const { data: profiles, error: profilesError } = await supabase
@@ -235,14 +242,15 @@ export const getCommitteeWorkspaceGuests = createServerFn({ method: "POST" })
           inviter_id: row.inviter_id ?? null,
           rsvp_token: row.rsvp_token ?? null,
         };
-
       }),
     };
   });
 
 export const getRsvpTotals = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { includePersonal?: boolean; eventId?: string } | undefined) => input ?? {})
+  .inputValidator(
+    (input: { includePersonal?: boolean; eventId?: string } | undefined) => input ?? {},
+  )
   .handler(async ({ data, context }): Promise<RsvpTotalsResult> => {
     const { supabase, userId } = context;
 
@@ -252,12 +260,8 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
     if (data.eventId) invitationsQuery = invitationsQuery.eq("event_id", data.eventId);
 
     const [invitersRes, rsvpsRes, invitationsRes] = await Promise.all([
-      supabase
-        .from("inviters")
-        .select("id,host_id,quota,active,requested_quota,phone,name"),
-      supabase
-        .from("rsvps")
-        .select("party_size,status,invitation_id,attendance_mode"),
+      supabase.from("inviters").select("id,host_id,quota,active,requested_quota,phone,name"),
+      supabase.from("rsvps").select("party_size,status,invitation_id,attendance_mode"),
       invitationsQuery,
     ]);
     const inviterRows = invitersRes.data ?? [];
@@ -275,15 +279,19 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
       0,
     );
 
-
-    const idToGroup = buildDuplicateGroupIds(invitationRows.map((inv) => ({
-      id: inv.id,
-      guest_name: inv.guest_name,
-      guest_phone_normalized: inv.guest_phone_normalized,
-    })));
+    const idToGroup = buildDuplicateGroupIds(
+      invitationRows.map((inv) => ({
+        id: inv.id,
+        guest_name: inv.guest_name,
+        guest_phone_normalized: inv.guest_phone_normalized,
+      })),
+    );
 
     // Index RSVPs by invitation id (one row per invitation in practice).
-    const rsvpByInvitation = new Map<string, { status: string | null; party_size: number; attendance_mode: string | null }>();
+    const rsvpByInvitation = new Map<
+      string,
+      { status: string | null; party_size: number; attendance_mode: string | null }
+    >();
     for (const r of rsvpRows) {
       if (!r.invitation_id) continue;
       rsvpByInvitation.set(r.invitation_id, {
@@ -293,21 +301,23 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
       });
     }
 
-    const rollup = computeRsvpRollup(invitationRows.map((inv) => {
-      const rsvp = rsvpByInvitation.get(inv.id);
-      return {
-        id: inv.id,
-        groupId: idToGroup.get(inv.id) ?? inv.id,
-        status: rsvp?.status ?? null,
-        party_size: rsvp?.party_size ?? 1,
-        attendance_mode: rsvp?.attendance_mode ?? null,
-      };
-    }));
-
+    const rollup = computeRsvpRollup(
+      invitationRows.map((inv) => {
+        const rsvp = rsvpByInvitation.get(inv.id);
+        return {
+          id: inv.id,
+          groupId: idToGroup.get(inv.id) ?? inv.id,
+          status: rsvp?.status ?? null,
+          party_size: rsvp?.party_size ?? 1,
+          attendance_mode: rsvp?.attendance_mode ?? null,
+        };
+      }),
+    );
 
     let mine: RsvpTotalsResult["mine"] = null;
     if (data.includePersonal) {
-      const normName = (s: string | null | undefined) => (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
+      const normName = (s: string | null | undefined) =>
+        (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
       const { data: authUser } = await supabase.auth.getUser();
       const myPhoneTail = phoneTail(authUser?.user?.phone);
       const { data: prof } = await supabase
@@ -336,18 +346,20 @@ export const getRsvpTotals = createServerFn({ method: "POST" })
         invitationRows.filter(isMine).map((inv) => idToGroup.get(inv.id) ?? inv.id),
       );
       const uploaded = invitationRows.filter(isMine).length;
-      const myRollup = computeRsvpRollup(invitationRows
-        .filter((inv) => myGroupIds.has(idToGroup.get(inv.id) ?? inv.id))
-        .map((inv) => {
-          const rsvp = rsvpByInvitation.get(inv.id);
-          return {
-            id: inv.id,
-            groupId: idToGroup.get(inv.id) ?? inv.id,
-            status: rsvp?.status ?? null,
-            party_size: rsvp?.party_size ?? 1,
-            attendance_mode: rsvp?.attendance_mode ?? null,
-          };
-        }));
+      const myRollup = computeRsvpRollup(
+        invitationRows
+          .filter((inv) => myGroupIds.has(idToGroup.get(inv.id) ?? inv.id))
+          .map((inv) => {
+            const rsvp = rsvpByInvitation.get(inv.id);
+            return {
+              id: inv.id,
+              groupId: idToGroup.get(inv.id) ?? inv.id,
+              status: rsvp?.status ?? null,
+              party_size: rsvp?.party_size ?? 1,
+              attendance_mode: rsvp?.attendance_mode ?? null,
+            };
+          }),
+      );
 
       // Quota = sum of approved inviter quotas that map to me. Pending
       // requested_quota values are surfaced separately as pendingRequest.
