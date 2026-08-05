@@ -128,14 +128,22 @@ export const getMyInvitation = createServerFn({ method: "GET" })
       findCuisinePreorder(inv.id, inv.guest_phone ?? rawPhone),
     ]);
     let mealPayments: Array<{ cuisine: string; qty_paid: number; paid_at: string | null }> = [];
+    let mealStatuses: Array<{ cuisine: string; confirmed: boolean; confirmed_at: string | null }> = [];
     if (preorder?.id) {
-      const { data: paidRows } = await supabaseAdmin
-        .from("meal_payments")
-        .select("cuisine,qty_paid,paid_at")
-        .eq("preorder_id", preorder.id);
+      const [{ data: paidRows }, { data: statusRows }] = await Promise.all([
+        supabaseAdmin
+          .from("meal_payments")
+          .select("cuisine,qty_paid,paid_at")
+          .eq("preorder_id", preorder.id),
+        supabaseAdmin
+          .from("meal_order_status")
+          .select("cuisine,confirmed,confirmed_at")
+          .eq("preorder_id", preorder.id),
+      ]);
       mealPayments = (paidRows ?? []) as typeof mealPayments;
+      mealStatuses = (statusRows ?? []) as typeof mealStatuses;
     }
-    return { invitation: inv, rsvp, order, preorder, mealPayments };
+    return { invitation: inv, rsvp, order, preorder, mealPayments, mealStatuses };
   });
 
 const BUILDING_IN_PERSON_CAPACITY = 550;
@@ -220,14 +228,22 @@ export const getInvitationByToken = createServerFn({ method: "GET" })
       findCuisinePreorder(inv.id, inv.guest_phone),
     ]);
     let mealPayments: Array<{ cuisine: string; qty_paid: number; paid_at: string | null }> = [];
+    let mealStatuses: Array<{ cuisine: string; confirmed: boolean; confirmed_at: string | null }> = [];
     if (preorder?.id) {
-      const { data: paidRows } = await supabaseAdmin
-        .from("meal_payments")
-        .select("cuisine,qty_paid,paid_at")
-        .eq("preorder_id", preorder.id);
+      const [{ data: paidRows }, { data: statusRows }] = await Promise.all([
+        supabaseAdmin
+          .from("meal_payments")
+          .select("cuisine,qty_paid,paid_at")
+          .eq("preorder_id", preorder.id),
+        supabaseAdmin
+          .from("meal_order_status")
+          .select("cuisine,confirmed,confirmed_at")
+          .eq("preorder_id", preorder.id),
+      ]);
       mealPayments = (paidRows ?? []) as typeof mealPayments;
+      mealStatuses = (statusRows ?? []) as typeof mealStatuses;
     }
-    return { invitation: inv, rsvp, order, preorder, mealPayments, expired: false };
+    return { invitation: inv, rsvp, order, preorder, mealPayments, mealStatuses, expired: false };
   });
 
 const RsvpInput = z.object({

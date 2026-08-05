@@ -2,15 +2,17 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Check, LogOut, Printer, RefreshCw, Search, Utensils } from "lucide-react";
+import { Check, LogOut, Minus, Plus, Printer, RefreshCw, Search, Utensils } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   getRestaurantPortalData,
+  restaurantConfirmOrder,
   restaurantMarkPaid,
   restaurantPortalLogin,
+  restaurantSetQty,
   restaurantPortalLogout,
 } from "@/lib/restaurant-portal.functions";
 import type { PortalData } from "@/lib/restaurant-portal-types";
@@ -43,6 +45,8 @@ function RestaurantPortalPage() {
   const logout = useServerFn(restaurantPortalLogout);
   const fetchData = useServerFn(getRestaurantPortalData);
   const markPaid = useServerFn(restaurantMarkPaid);
+  const confirmOrder = useServerFn(restaurantConfirmOrder);
+  const setQty = useServerFn(restaurantSetQty);
 
   const [booting, setBooting] = useState(true);
   const [data, setData] = useState<PortalData | null>(null);
@@ -117,6 +121,43 @@ function RestaurantPortalPage() {
     }
   };
 
+  const toggleConfirmed = async (preorderId: string, confirmed: boolean) => {
+    setBusy(true);
+    try {
+      const res = await confirmOrder({ data: { preorderId, confirmed } });
+      if (!res.signedIn) {
+        setData(null);
+        toast.error("Your session expired — please sign in again.");
+        return;
+      }
+      if (res.data) setData(res.data);
+      toast.success(confirmed ? "Order confirmed — the guest can see it" : "Confirmation removed");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const changeQty = async (preorderId: string, qty: number) => {
+    if (qty < 0 || qty > 50) return;
+    setBusy(true);
+    try {
+      const res = await setQty({ data: { preorderId, qty } });
+      if (!res.signedIn) {
+        setData(null);
+        toast.error("Your session expired — please sign in again.");
+        return;
+      }
+      if (res.data) setData(res.data);
+      toast.success(qty === 0 ? "Order removed from your list" : `Updated to ${qty} meal${qty === 1 ? "" : "s"}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const rows = useMemo(() => {
     const list = data?.rows ?? [];
     const q = query.trim().toLowerCase();
@@ -129,9 +170,9 @@ function RestaurantPortalPage() {
 
   const exportList = () => {
     if (!data) return;
-    const header = "Guest,Phone,Meals,Status\n";
+    const header = "Guest,Phone,Meals,Confirmed,Status\n";
     const body = data.rows
-      .map((r) => `${JSON.stringify(r.guestName)},${r.phone},${r.qty},${r.paid ? "Paid" : "Unpaid"}`)
+      .map((r) => `${JSON.stringify(r.guestName)},${r.phone},${r.qty},${r.confirmed ? "Confirmed" : "Not confirmed"},${r.paid ? "Paid" : "Unpaid"}`)
       .join("\n");
     downloadTextFile(`${data.restaurant.name.replace(/\W+/g, "-").toLowerCase()}-orders.csv`, header + body);
   };
@@ -214,7 +255,7 @@ function RestaurantPortalPage() {
           </Button>
         </header>
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <Card className="p-3 text-center">
             <div className="text-2xl font-bold text-ink">{data.totals.mealsUnpaid}</div>
             <div className="text-xs text-muted-foreground">Meals unpaid</div>
@@ -222,6 +263,10 @@ function RestaurantPortalPage() {
           <Card className="p-3 text-center">
             <div className="text-2xl font-bold text-ink">{data.totals.mealsPaid}</div>
             <div className="text-xs text-muted-foreground">Meals paid</div>
+          </Card>
+          <Card className="p-3 text-center">
+            <div className="text-2xl font-bold text-ink">{data.totals.mealsConfirmed}</div>
+            <div className="text-xs text-muted-foreground">Meals confirmed</div>
           </Card>
           <Card className="p-3 text-center">
             <div className="text-2xl font-bold text-ink">{data.totals.meals}</div>
@@ -255,30 +300,75 @@ function RestaurantPortalPage() {
             <Card className="p-6 text-center text-muted-foreground">No orders to show.</Card>
           )}
           {rows.map((r) => (
-            <Card key={r.preorderId} className="p-3 flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <div className="font-medium text-ink truncate">{r.guestName}</div>
-                <div className="text-sm text-muted-foreground">
-                  {r.phone || "no phone"} · {r.qty} meal{r.qty === 1 ? "" : "s"}
-                </div>
-                {r.paid && r.paidAt && (
-                  <div className="text-xs text-muted-foreground">
-                    Paid {new Date(r.paidAt).toLocaleDateString()}
+            <Card key={r.preorderId} className="p-3 space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="font-medium text-ink truncate">{r.guestName}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {r.phone ? (
+                      <a href={`tel:${r.phone.replace(/\D/g, "")}`} className="underline">
+                        {r.phone}
+                      </a>
+                    ) : (
+                      "no phone"
+                    )}
                   </div>
+                  {r.paid && r.paidAt && (
+                    <div className="text-xs text-muted-foreground">
+                      Paid {new Date(r.paidAt).toLocaleDateString()}
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  {r.confirmed && <Badge className="bg-terracotta text-cream">Confirmed</Badge>}
+                  {r.paid && <Badge className="bg-emerald-600 text-white">Paid</Badge>}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Meals</span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9"
+                  aria-label={`Decrease meals for ${r.guestName}`}
+                  disabled={busy || r.qty <= 0}
+                  onClick={() => changeQty(r.preorderId, r.qty - 1)}
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <span className="w-8 text-center font-display text-xl text-ink">{r.qty}</span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9"
+                  aria-label={`Increase meals for ${r.guestName}`}
+                  disabled={busy || r.qty >= 50}
+                  onClick={() => changeQty(r.preorderId, r.qty + 1)}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant={r.confirmed ? "ghost" : "outline"}
+                  size="sm"
+                  disabled={busy}
+                  onClick={() => toggleConfirmed(r.preorderId, !r.confirmed)}
+                >
+                  {r.confirmed ? "Undo confirm" : "Confirm order"}
+                </Button>
+                {r.paid ? (
+                  <Button variant="ghost" size="sm" disabled={busy} onClick={() => toggle(r.preorderId, false)}>
+                    Undo paid
+                  </Button>
+                ) : (
+                  <Button size="sm" disabled={busy} onClick={() => toggle(r.preorderId, true)}>
+                    <Check className="h-4 w-4 mr-1" /> Mark paid
+                  </Button>
                 )}
               </div>
-              {r.paid ? (
-                <div className="flex items-center gap-2 shrink-0">
-                  <Badge className="bg-emerald-600 text-white">Paid</Badge>
-                  <Button variant="ghost" size="sm" disabled={busy} onClick={() => toggle(r.preorderId, false)}>
-                    Undo
-                  </Button>
-                </div>
-              ) : (
-                <Button size="sm" className="shrink-0" disabled={busy} onClick={() => toggle(r.preorderId, true)}>
-                  <Check className="h-4 w-4 mr-1" /> Mark paid
-                </Button>
-              )}
             </Card>
           ))}
         </div>

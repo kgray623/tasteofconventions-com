@@ -45,6 +45,7 @@ type MyRsvpData = {
   order?: { items?: unknown; total?: number | string | null; notes?: string | null } | null;
   preorder?: { selections?: unknown; updated_at?: string | null } | null;
   mealPayments?: Array<{ cuisine: string; qty_paid: number; paid_at: string | null }> | null;
+  mealStatuses?: Array<{ cuisine: string; confirmed: boolean; confirmed_at: string | null }> | null;
 };
 
 function isCuisineSelection(value: unknown): value is CuisineSelection {
@@ -267,6 +268,33 @@ export function MyRsvpContent() {
                 Note: {order.notes}
               </p>
             )}
+          </Card>
+        )}
+
+        {(data.mealStatuses ?? []).some((s) => s.confirmed) && (
+          <Card className="p-7 space-y-3 border-2 border-terracotta">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-terracotta text-white text-lg">
+                ✓
+              </span>
+              <h2 className="font-display text-2xl">Order confirmed by the restaurant</h2>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              The restaurant has accepted your meal order for the event.
+            </p>
+            <ul className="divide-y divide-border">
+              {(data.mealStatuses ?? [])
+                .filter((s) => s.confirmed)
+                .map((s) => (
+                  <li key={s.cuisine} className="py-2 flex items-center gap-3 text-sm">
+                    <span className="flex-1 text-ink">{s.cuisine}</span>
+                    <span className="text-terracotta font-medium">
+                      Confirmed
+                      {s.confirmed_at ? ` · ${new Date(s.confirmed_at).toLocaleDateString()}` : ""}
+                    </span>
+                  </li>
+                ))}
+            </ul>
           </Card>
         )}
 
