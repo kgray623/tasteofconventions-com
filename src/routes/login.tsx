@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { getErrorMessage, withTimeout } from "@/lib/async-safety";
 import { signInWithPhoneOnly } from "@/lib/auth-phone.functions";
-import { rememberLoginName, rememberLoginPhone, getRememberedLoginName, getRememberedLoginPhone } from "@/lib/session-recovery";
+import { rememberLoginName, rememberLoginPhone, getRememberedLoginName, getRememberedLoginPhone, markSessionAuthoritative } from "@/lib/session-recovery";
 import { NewBadge } from "@/components/new-badge";
 import { markSeen } from "@/lib/whats-new";
 import { ensureMyTeamRole } from "@/lib/account.functions";
@@ -121,24 +121,47 @@ function HelperLogin() {
   }, [user?.id, loading]);
 
   useEffect(() => {
-    setName((current) => current || getRememberedLoginName() || "");
-    setPhone((current) => current || getRememberedLoginPhone() || "");
+    // A tap on "Sign in" before the page finished loading its JavaScript used
+    // to submit the form the plain-HTML way: the page reloaded, the typed name
+    // and number were wiped, and nothing signed in. The fields now carry form
+    // names, so that early submit comes back as ?name=…&phone=… — pick those
+    // up, clean them out of the address bar, and finish the sign-in for real.
+    const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+    const carriedName = (params.get("name") || "").trim();
+    const carriedPhone = (params.get("phone") || "").trim();
+    if (carriedName || carriedPhone) {
+      params.delete("name");
+      params.delete("phone");
+      const query = params.toString();
+      window.history.replaceState({}, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
+    }
+    const nextName = carriedName || getRememberedLoginName() || "";
+    const nextPhone = carriedPhone || getRememberedLoginPhone() || "";
+    setName((current) => current || nextName);
+    setPhone((current) => current || nextPhone);
+    if (carriedName && carriedPhone && normalizeMobilePhone(carriedPhone) && carriedName.length >= 2) {
+      void signIn(undefined, { phone: carriedPhone, name: carriedName });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const signIn = async (event?: FormEvent) => {
+  const signIn = async (event?: FormEvent, override?: { phone: string; name: string }) => {
     event?.preventDefault();
-    if (!normalizeMobilePhone(phone)) return toast.error("Enter a valid mobile phone number");
-    if (name.trim().length < 2) return toast.error("Enter the last name on your invitation");
+    const phoneValue = override?.phone ?? phone;
+    const nameValue = override?.name ?? name;
+    if (!normalizeMobilePhone(phoneValue)) return toast.error("Enter a valid mobile phone number");
+    if (nameValue.trim().length < 2) return toast.error("Enter the last name on your invitation");
     setBusy(true);
     try {
-      const session = await withTimeout(phoneLogin({ data: { phone, name: name.trim() } }), 15000);
+      const session = await withTimeout(phoneLogin({ data: { phone: phoneValue, name: nameValue.trim() } }), 15000);
       if ("error" in session) {
+
         // Restaurant partners use the same name + phone pattern, so if the
         // guest list doesn't recognize them, try the restaurant portal before
         // telling them they're not on the list.
         try {
           const res = await withTimeout(
-            restaurantLogin({ data: { restaurant: name.trim(), code: phone.trim() } }),
+            restaurantLogin({ data: { restaurant: nameValue.trim(), code: phoneValue.trim() } }),
             15000,
           );
           if (res.ok) {
@@ -160,8 +183,12 @@ function HelperLogin() {
         setBusy(false);
         return toast.error(setErr.message);
       }
-      rememberLoginPhone(phone);
-      rememberLoginName(name.trim());
+      // This session is the freshest one that exists — protect it from being
+      // replaced by a background recovery login.
+      markSessionAuthoritative();
+      rememberLoginPhone(phoneValue);
+      rememberLoginName(nameValue.trim());
+
       toast.success("Signed in.");
       // Navigate using the user_id from the server response directly — don't
       // wait on getUser() (which has hung for some users) or rely solely on
@@ -196,7 +223,9 @@ function HelperLogin() {
               Enter your mobile number and the last name on your invitation. Both must match.
             </p>
           </div>
-          <form onSubmit={signIn} className="space-y-4">
+          <form onSubmit={(e) => void signIn(e)} method="get" className="space-y-4">
+            {search.redirect ? <input type="hidden" name="redirect" value={search.redirect} /> : null}
+
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
                 <NewBadge target="login:last-name" />
@@ -204,6 +233,7 @@ function HelperLogin() {
               </div>
               <Input
                 type="text"
+                name="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 onFocus={() => markSeen("login:last-name")}
@@ -217,6 +247,7 @@ function HelperLogin() {
               <Label>Mobile phone number</Label>
               <Input
                 type="tel"
+                name="phone"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 required

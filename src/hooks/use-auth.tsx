@@ -5,15 +5,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { recoverPhoneLoginFromCookie, signInWithPhoneOnly } from "@/lib/auth-phone.functions";
 import {
   beginRecoveryServerLogin,
+  clearSessionAuthoritative,
   endRecoveryServerLogin,
   forgetRememberedLoginPhone,
   getRememberedLoginName,
   getRememberedLoginPhone,
+  hasStoredSupabaseSession,
+  isSessionAuthoritative,
+  markSessionAuthoritative,
   publishSessionRecovery,
   rememberLoginName,
   rememberLoginPhone,
   rememberLoginPhoneFromStoredSession,
 } from "@/lib/session-recovery";
+
 
 type AuthCtx = { session: Session | null; user: User | null; loading: boolean };
 const Ctx = createContext<AuthCtx>({ session: null, user: null, loading: true });
@@ -22,8 +27,10 @@ let explicitSignOutRequested = false;
 
 export function markExplicitSignOut() {
   explicitSignOutRequested = true;
+  clearSessionAuthoritative();
   forgetRememberedLoginPhone();
 }
+
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const phoneLogin = useServerFn(signInWithPhoneOnly);
@@ -72,7 +79,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const finish = (nextSession: Session | null) => {
       if (!alive) return;
       settled = true;
-      if (nextSession) recoveryAttemptedRef.current = false;
+      if (nextSession) {
+        recoveryAttemptedRef.current = false;
+        markSessionAuthoritative();
+      }
       const phone = nextSession?.user.phone || (nextSession?.user.user_metadata?.phone as string | undefined);
       if (phone) rememberLoginPhone(phone);
       const displayName = nextSession?.user.user_metadata?.display_name || nextSession?.user.user_metadata?.name;
@@ -89,14 +99,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // the initial event, and cutting it short would flip the user to a
     // signed-out state and bounce them to /login.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
-      if (!s && !explicitSignOutRequested) {
+      if (!s) {
+        if (explicitSignOutRequested) {
+          if (event === "SIGNED_OUT") explicitSignOutRequested = false;
+          finish(null);
+          return;
+        }
+        // A failed token refresh (commonly a stale refresh token left behind by
+        // another tab) is NOT a sign-out. Supabase keeps the live session it
+        // already handed us; minting a brand-new server session here is what
+        // used to knock the user straight back out after signing in.
+        if (event === "TOKEN_REFRESHED") return;
+        if (sessionRef.current && isSessionAuthoritative()) return;
         setLoading(true);
-        void recoverRememberedSession().then((recovered) => finish(recovered));
+        void (async () => {
+          const { data } = await supabase.auth
+            .getSession()
+            .catch(() => ({ data: { session: null } as { session: null } }));
+          if (data.session) {
+            finish(data.session);
+            return;
+          }
+          if (hasStoredSupabaseSession() && sessionRef.current) {
+            // Storage still holds a session; let Supabase settle rather than
+            // racing it with another login.
+            setLoading(false);
+            return;
+          }
+          finish(await recoverRememberedSession());
+        })();
         return;
       }
       if (event === "SIGNED_OUT") explicitSignOutRequested = false;
       finish(s);
     });
+
 
     // Best-effort eager read as a fallback in case onAuthStateChange is slow
     // to fire. Only applies if nothing has settled yet.
