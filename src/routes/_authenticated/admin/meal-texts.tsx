@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { getErrorMessage } from "@/lib/async-safety";
-import { smsHref, smsNumber } from "@/lib/meal-text-message";
+import { openSms, smsNumber } from "@/lib/meal-text-message";
 
 import {
   DEFAULT_MEAL_TEXT_TEMPLATE,
