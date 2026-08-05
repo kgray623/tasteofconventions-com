@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Check, Copy, Globe, Loader2, MessageSquare, Phone, RotateCcw, Send, Utensils } from "lucide-react";
+import { Check, Copy, Globe, Loader2, MessageSquare, Phone, RotateCcw, Utensils } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
