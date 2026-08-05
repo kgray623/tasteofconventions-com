@@ -13,6 +13,7 @@ import { rememberLoginName, rememberLoginPhone, getRememberedLoginName, getRemem
 import { NewBadge } from "@/components/new-badge";
 import { markSeen } from "@/lib/whats-new";
 import { ensureMyTeamRole } from "@/lib/account.functions";
+import { restaurantPortalLogin } from "@/lib/restaurant-portal.functions";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
