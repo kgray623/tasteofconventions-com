@@ -23,11 +23,19 @@ export const restaurantPortalLogin = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
     z.object({ restaurant: z.string().min(2).max(120), code: z.string().min(4).max(80) }).parse(d),
   )
-  .handler(async ({ data }): Promise<{ ok: boolean; data?: PortalData }> => {
-    const { findRestaurantByName, codeMatches, restaurantPhoneMatches, loadPortalData } =
-      await import("@/lib/restaurant-portal.server");
-    const restaurant = await findRestaurantByName(data.restaurant);
-    if (!restaurant) return { ok: false };
+  .handler(async ({ data }): Promise<{ ok: boolean; reason?: "name" | "code"; data?: PortalData }> => {
+    const {
+      findRestaurantByName,
+      findRestaurantByPhone,
+      codeMatches,
+      restaurantPhoneMatches,
+      loadPortalData,
+    } = await import("@/lib/restaurant-portal.server");
+
+    // Name first; if the typed name is off, the phone number alone identifies it.
+    const restaurant =
+      (await findRestaurantByName(data.restaurant)) ?? (await findRestaurantByPhone(data.code));
+    if (!restaurant) return { ok: false, reason: "name" };
 
     // Primary credential: the restaurant's own phone number.
     let ok = restaurantPhoneMatches(data.code, restaurant.phone);
@@ -44,7 +52,7 @@ export const restaurantPortalLogin = createServerFn({ method: "POST" })
         ok = codeMatches(data.code, access.code_hash as string);
       }
     }
-    if (!ok) return { ok: false };
+    if (!ok) return { ok: false, reason: "code" };
 
     const session = await portalSession();
     await session.update({ restaurantId: restaurant.id, restaurantName: restaurant.name });

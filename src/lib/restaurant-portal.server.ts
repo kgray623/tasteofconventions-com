@@ -56,6 +56,25 @@ export async function findRestaurantByName(name: string) {
 
 }
 
+/**
+ * Fallback resolver: if the typed restaurant name doesn't match, the phone
+ * number alone still identifies the restaurant (digits-only, last 10).
+ */
+export async function findRestaurantByPhone(phone: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin
+    .from("restaurants")
+    .select("id,name,cuisine,phone,active")
+    .eq("active", true);
+  const list = (data ?? []) as Array<{
+    id: string;
+    name: string;
+    cuisine: string | null;
+    phone: string | null;
+  }>;
+  return list.find((r) => phoneMatches(phone, r.phone)) ?? null;
+}
+
 export async function loadPortalData(restaurantId: string): Promise<PortalData> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: restaurant, error: rErr } = await supabaseAdmin
