@@ -161,7 +161,7 @@ function HelperLogin() {
         // telling them they're not on the list.
         try {
           const res = await withTimeout(
-            restaurantLogin({ data: { restaurant: name.trim(), code: phone.trim() } }),
+            restaurantLogin({ data: { restaurant: nameValue.trim(), code: phoneValue.trim() } }),
             15000,
           );
           if (res.ok) {
@@ -186,8 +186,8 @@ function HelperLogin() {
       // This session is the freshest one that exists — protect it from being
       // replaced by a background recovery login.
       markSessionAuthoritative();
-      rememberLoginPhone(phone);
-      rememberLoginName(name.trim());
+      rememberLoginPhone(phoneValue);
+      rememberLoginName(nameValue.trim());
 
       toast.success("Signed in.");
       // Navigate using the user_id from the server response directly — don't
@@ -231,6 +231,7 @@ function HelperLogin() {
               </div>
               <Input
                 type="text"
+                name="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 onFocus={() => markSeen("login:last-name")}
@@ -244,6 +245,7 @@ function HelperLogin() {
               <Label>Mobile phone number</Label>
               <Input
                 type="tel"
+                name="phone"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 required
