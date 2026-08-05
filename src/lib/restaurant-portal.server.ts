@@ -48,10 +48,12 @@ export async function findRestaurantByName(name: string) {
   }>;
   return (
     list.find((r) => normName(r.name) === want) ??
-    list.find((r) => normName(r.name).includes(want) || want.includes(normName(r.name))) ??
     list.find((r) => normName(r.cuisine) === want) ??
+    list.find((r) => normName(r.name).includes(want) || want.includes(normName(r.name))) ??
+    list.find((r) => normName(r.cuisine).includes(want) || want.includes(normName(r.cuisine))) ??
     null
   );
+
 }
 
 export async function loadPortalData(restaurantId: string): Promise<PortalData> {
