@@ -72,7 +72,7 @@ function RestaurantPortalPage() {
     try {
       const res = await login({ data: { restaurant: restaurant.trim(), code: code.trim() } });
       if (!res.ok || !res.data) {
-        toast.error("That restaurant name or access code isn't right.");
+        toast.error("That restaurant name or phone number isn't right.");
         return;
       }
       setData(res.data);
@@ -160,16 +160,22 @@ function RestaurantPortalPage() {
               </div>
               <div>
                 <label className="text-sm font-medium" htmlFor="code">
-                  Access code
+                  Phone number
                 </label>
                 <Input
                   id="code"
-                  type="password"
+                  type="tel"
+                  inputMode="tel"
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
-                  autoComplete="current-password"
+                  placeholder="(402) 991-5662"
+                  autoComplete="tel"
                 />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Your restaurant&rsquo;s own phone number on file is your password.
+                </p>
               </div>
+
               <Button type="submit" className="w-full" disabled={busy}>
                 Sign in
               </Button>

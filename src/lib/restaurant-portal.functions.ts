@@ -21,29 +21,36 @@ function sessionConfig() {
 
 export const restaurantPortalLogin = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
-    z.object({ restaurant: z.string().min(2).max(120), code: z.string().min(3).max(80) }).parse(d),
+    z.object({ restaurant: z.string().min(2).max(120), code: z.string().min(4).max(80) }).parse(d),
   )
   .handler(async ({ data }): Promise<{ ok: boolean; data?: PortalData }> => {
-    const { findRestaurantByName, codeMatches, loadPortalData } = await import(
-      "@/lib/restaurant-portal.server"
-    );
+    const { findRestaurantByName, codeMatches, restaurantPhoneMatches, loadPortalData } =
+      await import("@/lib/restaurant-portal.server");
     const restaurant = await findRestaurantByName(data.restaurant);
     if (!restaurant) return { ok: false };
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: access } = await supabaseAdmin
-      .from("restaurant_portal_access")
-      .select("code_hash,active")
-      .eq("restaurant_id", restaurant.id)
-      .maybeSingle();
-    if (!access || access.active === false) return { ok: false };
-    const ok = codeMatches(data.code, access.code_hash as string);
+    // Primary credential: the restaurant's own phone number.
+    let ok = restaurantPhoneMatches(data.code, restaurant.phone);
+
+    // Fallback: an admin-set access code (kept working for anything already issued).
+    if (!ok) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: access } = await supabaseAdmin
+        .from("restaurant_portal_access")
+        .select("code_hash,active")
+        .eq("restaurant_id", restaurant.id)
+        .maybeSingle();
+      if (access && access.active !== false) {
+        ok = codeMatches(data.code, access.code_hash as string);
+      }
+    }
     if (!ok) return { ok: false };
 
     const session = await portalSession();
     await session.update({ restaurantId: restaurant.id, restaurantName: restaurant.name });
     return { ok: true, data: await loadPortalData(restaurant.id) };
   });
+
 
 export const restaurantPortalLogout = createServerFn({ method: "POST" }).handler(async () => {
   const session = await portalSession();
@@ -111,18 +118,20 @@ export const listRestaurantAccess = createServerFn({ method: "POST" })
       ),
     );
     return {
-      restaurants: ((restaurants ?? []) as Array<{ id: string; name: string; cuisine: string | null; active: boolean }>)
+      restaurants: ((restaurants ?? []) as Array<{ id: string; name: string; cuisine: string | null; phone: string | null; active: boolean }>)
         .filter((r) => r.active !== false)
         .map((r) => ({
           id: r.id,
           name: r.name,
           cuisine: r.cuisine,
+          phone: r.phone ?? null,
           hasCode: accessMap.has(r.id),
           codeActive: accessMap.get(r.id)?.active ?? false,
           rotatedAt: accessMap.get(r.id)?.rotated_at ?? null,
           mealsPaid: paidByRestaurant.get(r.id) ?? 0,
         })),
     };
+
   });
 
 export const setRestaurantAccessCode = createServerFn({ method: "POST" })

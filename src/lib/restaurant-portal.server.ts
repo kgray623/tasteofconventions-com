@@ -1,6 +1,7 @@
 // Server-only helpers for the restaurant payment portal.
 import { createHash, timingSafeEqual } from "node:crypto";
 import { normalizeCuisine, parseSelections } from "@/lib/preorder-math";
+import { phoneMatches } from "@/lib/phone";
 
 import type { PortalData, PortalOrderRow } from "@/lib/restaurant-portal-types";
 
@@ -16,6 +17,19 @@ export function codeMatches(input: string, storedHash: string) {
   if (a.length !== b.length) return false;
   return timingSafeEqual(a, b);
 }
+
+/**
+ * Password rule for this project: the password is the phone number.
+ * A restaurant signs in with its own phone number on file (digits only,
+ * last 10 digits), so formatting differences never block sign-in.
+ */
+export function restaurantPhoneMatches(
+  input: string,
+  restaurantPhone: string | null | undefined,
+) {
+  return phoneMatches(input, restaurantPhone);
+}
+
 
 export function normName(s: string | null | undefined) {
   return (s ?? "").toLowerCase().replace(/[^a-z]/g, "");

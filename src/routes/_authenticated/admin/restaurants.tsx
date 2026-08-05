@@ -297,12 +297,14 @@ function PortalAccessCard() {
       id: string;
       name: string;
       cuisine: string | null;
+      phone: string | null;
       hasCode: boolean;
       codeActive: boolean;
       rotatedAt: string | null;
       mealsPaid: number;
     }>
   >([]);
+
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
@@ -339,11 +341,11 @@ function PortalAccessCard() {
     <Card className="p-5 space-y-4">
       <div>
         <p className="text-xs uppercase tracking-[0.3em] text-terracotta">Restaurant portal</p>
-        <h2 className="font-display text-xl mt-1">Access codes &amp; payments</h2>
+        <h2 className="font-display text-xl mt-1">Portal sign-in &amp; payments</h2>
         <p className="text-sm text-muted-foreground mt-1">
           Each restaurant signs in at <span className="font-medium">/restaurant</span> with its name
-          and the code you set here. They see only their own pre-orders and tap “Mark paid” as guests
-          pre-pay.
+          and its own phone number as the password. They see only their own pre-orders and tap “Mark
+          paid” as guests pre-pay. An optional access code below also works as an alternate password.
         </p>
       </div>
       <div className="space-y-3">
@@ -364,9 +366,13 @@ function PortalAccessCard() {
                 {r.mealsPaid} meal{r.mealsPaid === 1 ? "" : "s"} paid
               </Badge>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Password (phone on file):{" "}
+              <span className="font-medium text-ink">{r.phone || "no phone on file"}</span>
+            </p>
             <div className="flex gap-2">
               <Input
-                placeholder={r.hasCode ? "New code (replaces old)" : "Set access code"}
+                placeholder={r.hasCode ? "New code (replaces old)" : "Optional access code"}
                 value={drafts[r.id] ?? ""}
                 onChange={(e) => setDrafts({ ...drafts, [r.id]: e.target.value })}
               />
@@ -378,5 +384,6 @@ function PortalAccessCard() {
         ))}
       </div>
     </Card>
+
   );
 }
