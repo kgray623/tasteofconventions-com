@@ -38,6 +38,27 @@ export const phoneMatches = (
   return phoneTail(aDigits) === phoneTail(bDigits);
 };
 
+/**
+ * True only when one phone has exactly one extra digit and removing that digit
+ * produces the other phone. This is intentionally narrower than fuzzy matching:
+ * callers must still require a unique name/owner match before linking records.
+ */
+export const isSingleExtraDigitPhoneVariant = (
+  a: string | null | undefined,
+  b: string | null | undefined,
+): boolean => {
+  const aDigits = digitsOnly(a);
+  const bDigits = digitsOnly(b);
+  if (Math.abs(aDigits.length - bDigits.length) !== 1) return false;
+  const longer = aDigits.length > bDigits.length ? aDigits : bDigits;
+  const shorter = aDigits.length > bDigits.length ? bDigits : aDigits;
+  if (shorter.length < 10) return false;
+  for (let index = 0; index < longer.length; index += 1) {
+    if (`${longer.slice(0, index)}${longer.slice(index + 1)}` === shorter) return true;
+  }
+  return false;
+};
+
 /** Human-readable US format: (555) 555-1234. Falls back to raw input if it doesn't parse. */
 export const formatPhoneUS = (value: string | null | undefined): string => {
   const d = digitsOnly(value);
