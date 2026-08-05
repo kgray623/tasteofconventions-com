@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { isSingleExtraDigitPhoneVariant } from "@/lib/phone";
 
 function publicDbError(error: { message?: string } | null | undefined, fallback = "Something went wrong. Please try again."): Error {
   if (error?.message) console.error("[invitations] db error:", error.message);
@@ -780,18 +781,69 @@ async function submitPublicRsvpInner(data: z.infer<typeof PublicRsvpInput>) {
       }
     }
 
-    // Reuse existing invitation if a matching guest already RSVP'd by phone.
+    // Reuse an existing invitation when the submitted phone is an exact match.
+    // If someone accidentally typed one extra digit, link only when there is
+    // exactly one same-referrer record with the same first name. Ambiguous near
+    // matches remain separate and are logged for review; submitted data is never
+    // discarded or silently moved between committee members.
     let invitationId: string | null = null;
     if (phone) {
       const phoneNorm = phone.replace(/\D/g, "");
       if (phoneNorm.length >= 7) {
-        const { data: existing } = await supabaseAdmin
+        const { data: exactRows, error: exactError } = await supabaseAdmin
           .from("invitations")
           .select("id")
           .eq("event_id", ev.id)
           .in("guest_phone_normalized", phoneCandidates(phoneNorm))
-          .maybeSingle();
-        if (existing) invitationId = existing.id;
+          .limit(2);
+        if (exactError) throw publicDbError(exactError);
+        if (exactRows?.length === 1) invitationId = exactRows[0].id;
+
+        if (!invitationId && invitedBy.inviterId) {
+          const submittedFirstName = data.guest_name.trim().toLowerCase().split(/\s+/)[0] ?? "";
+          const { data: ownerRows, error: ownerRowsError } = await supabaseAdmin
+            .from("invitations")
+            .select("id,guest_name,guest_phone")
+            .eq("event_id", ev.id)
+            .eq("inviter_id", invitedBy.inviterId)
+            .not("guest_phone", "is", null)
+            .limit(500);
+          if (ownerRowsError) throw publicDbError(ownerRowsError);
+          const nearMatches = (ownerRows ?? []).filter((row) => {
+            const existingFirstName = (row.guest_name ?? "").trim().toLowerCase().split(/\s+/)[0] ?? "";
+            return (
+              submittedFirstName.length >= 2 &&
+              submittedFirstName === existingFirstName &&
+              isSingleExtraDigitPhoneVariant(phoneNorm, row.guest_phone)
+            );
+          });
+          if (nearMatches.length === 1) {
+            invitationId = nearMatches[0].id;
+            await logRsvpEvent(
+              "RSVP LINKED PHONE TYPO",
+              {
+                source: "public",
+                guest_name_submitted: data.guest_name,
+                guest_phone_submitted: phone,
+                matched_guest_name: nearMatches[0].guest_name,
+                invitation_id: invitationId,
+              },
+              true,
+              invitationId,
+            );
+          } else if (nearMatches.length > 1) {
+            await logRsvpEvent(
+              "RSVP PHONE TYPO NEEDS REVIEW",
+              {
+                source: "public",
+                guest_name: data.guest_name,
+                guest_phone: phone,
+                candidate_invitation_ids: nearMatches.map((row) => row.id),
+              },
+              true,
+            );
+          }
+        }
       }
     }
 

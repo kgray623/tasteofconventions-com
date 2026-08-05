@@ -1420,8 +1420,8 @@ function MyGuestsGroup({
           ) : (
             <div className="divide-y divide-border/60 border-t border-border/60 md:max-h-[360px] md:overflow-auto bg-background">
               {guests.map((guest) => (
-                <div key={guest.id} className="p-3 flex flex-wrap items-center gap-3">
-                  <div className="flex-1 min-w-[160px]">
+                <div key={guest.id} className="space-y-3 p-3 sm:flex sm:flex-wrap sm:items-center sm:gap-3 sm:space-y-0">
+                  <div className="min-w-0 flex-1 sm:min-w-[160px]">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-medium">{guest.guest_name}</p>
                       {isCommitteeGuest(guest) && (
@@ -1452,29 +1452,31 @@ function MyGuestsGroup({
                     )}
                   </div>
 
-                  <RsvpStatusBadge status={guest.rsvp_status} attendanceMode={guest.attendance_mode} />
-                  {guest.rsvp_status === "yes" && (
-                    <Badge
-                      className={
-                        guest.attendance_mode === "zoom"
-                          ? "bg-ink/10 text-ink hover:bg-ink/10"
-                          : "bg-gold text-ink hover:bg-gold"
-                      }
-                    >
-                      {guest.party_size || 1} {guest.attendance_mode === "zoom" ? "Zoom" : "in person"}
-                    </Badge>
-                  )}
-                  <RsvpActionSelect guest={guest} settingRsvpId={settingRsvpId} setRsvpFor={setRsvpFor} />
-                  {buildSmsInfo && (() => {
-                    const info = buildSmsInfo(guest);
-                    if (!info) return null;
-                    return (
-                      <SendTextButton guest={guest} info={info} onSent={toggleSent} />
-                    );
-                  })()}
-                  <SentTextControl guest={guest} markingSentId={markingSentId} onToggleSent={toggleSent} />
-                  <EditGuestButton guest={guest} onSave={saveGuestEdits} />
-                  <DeleteGuestButton guest={guest} onDelete={deleteGuest} />
+                  <div className="flex min-w-0 flex-wrap items-center gap-2 sm:contents">
+                    <RsvpStatusBadge status={guest.rsvp_status} attendanceMode={guest.attendance_mode} />
+                    {guest.rsvp_status === "yes" && (
+                      <Badge
+                        className={
+                          guest.attendance_mode === "zoom"
+                            ? "bg-ink/10 text-ink hover:bg-ink/10"
+                            : "bg-gold text-ink hover:bg-gold"
+                        }
+                      >
+                        {guest.party_size || 1} {guest.attendance_mode === "zoom" ? "Zoom" : "in person"}
+                      </Badge>
+                    )}
+                    <RsvpActionSelect guest={guest} settingRsvpId={settingRsvpId} setRsvpFor={setRsvpFor} />
+                    {buildSmsInfo && (() => {
+                      const info = buildSmsInfo(guest);
+                      if (!info) return null;
+                      return (
+                        <SendTextButton guest={guest} info={info} onSent={toggleSent} />
+                      );
+                    })()}
+                    <SentTextControl guest={guest} markingSentId={markingSentId} onToggleSent={toggleSent} />
+                    <EditGuestButton guest={guest} onSave={saveGuestEdits} />
+                    <DeleteGuestButton guest={guest} onDelete={deleteGuest} />
+                  </div>
                 </div>
               ))}
             </div>
@@ -1500,7 +1502,7 @@ function RsvpActionSelect({
       disabled={settingRsvpId === guest.id}
       onValueChange={(v) => void setRsvpFor(guest, v as RsvpAction)}
     >
-      <SelectTrigger className="h-8 w-[160px] text-xs">
+      <SelectTrigger className="h-9 w-full min-w-0 text-xs sm:h-8 sm:w-[160px]">
         <SelectValue placeholder={settingRsvpId === guest.id ? "Saving…" : (guest.rsvp_status === "yes" || guest.rsvp_status === "no" ? "Change RSVP" : "Record RSVP")} />
       </SelectTrigger>
       <SelectContent>
@@ -1534,7 +1536,7 @@ function SendTextButton({
       onClick={() => {
         if (!guest.invite_sent_at) void onSent(guest, true);
       }}
-      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-sage text-cream text-xs font-medium hover:bg-sage/90"
+      className="inline-flex h-9 items-center gap-1.5 rounded-md bg-sage px-3 text-xs font-medium text-cream hover:bg-sage/90 sm:h-8"
       aria-label={`Send text to ${guest.guest_name || "guest"}`}
     >
       <MessageSquare className="w-4 h-4" /> {guest.invite_sent_at ? (guest.rsvp_status ? "Resend text" : "Send reminder") : "Send text"}
@@ -1555,7 +1557,7 @@ function SentTextControl({
     ? `Text sent ${new Date(guest.invite_sent_at).toLocaleDateString()}`
     : "I sent the text";
   return (
-    <label className="inline-flex items-center gap-2 min-h-8 px-2 rounded-md border border-input text-xs cursor-pointer hover:bg-accent">
+    <label className="inline-flex min-h-9 min-w-0 items-center gap-2 rounded-md border border-input px-2 text-xs cursor-pointer hover:bg-accent sm:min-h-8">
       <Checkbox
         checked={!!guest.invite_sent_at}
         disabled={markingSentId === guest.id}
