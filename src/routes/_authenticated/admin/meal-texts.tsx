@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { getErrorMessage } from "@/lib/async-safety";
-import { openSms, smsNumber } from "@/lib/meal-text-message";
+import { smsNumber } from "@/lib/meal-text-message";
+import { SmsTextButton } from "@/components/sms-text-button";
 
 import {
   DEFAULT_MEAL_TEXT_TEMPLATE,
@@ -373,19 +374,11 @@ function MealTextsPage() {
                     <p className="text-xs text-muted-foreground">{row.phone || "No phone on file"}</p>
                     <div className="flex flex-wrap gap-2">
                       {num && !onHold && (
-                        <Button
-                          size="sm"
-                          className="bg-pink-500 text-white hover:bg-pink-600"
-                          onClick={() => {
-                            const result = openSms([num], body);
-                            if (!result.ok) {
-                              void copy(body);
-                              toast.error(`${result.reason} Message copied — paste it into Messages.`);
-                            }
-                          }}
-                        >
-                          <Send className="w-3.5 h-3.5 mr-1.5" /> Text {row.name.split(/\s+/)[0]}
-                        </Button>
+                        <SmsTextButton
+                          numbers={[num]}
+                          body={body}
+                          label={`Text ${row.name.split(/\s+/)[0]}`}
+                        />
                       )}
                       {!num && (
                         <span className="text-xs font-medium text-brand-red">No usable phone number</span>
