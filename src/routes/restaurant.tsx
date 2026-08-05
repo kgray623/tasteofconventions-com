@@ -72,7 +72,11 @@ function RestaurantPortalPage() {
     try {
       const res = await login({ data: { restaurant: restaurant.trim(), code: code.trim() } });
       if (!res.ok || !res.data) {
-        toast.error("That restaurant name or phone number isn't right.");
+        toast.error(
+          res.reason === "code"
+            ? "That phone number doesn't match the number we have on file for this restaurant."
+            : "We couldn't find that restaurant. Try the cuisine (African, Indonesian, Myanmar) or your phone number.",
+        );
         return;
       }
       setData(res.data);
