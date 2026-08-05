@@ -66,7 +66,10 @@ export async function loadPortalData(restaurantId: string): Promise<PortalData> 
   const cuisine = normalizeCuisine(String(restaurant.cuisine ?? restaurant.name ?? ""));
 
   const [{ data: preorders }, { data: payments }] = await Promise.all([
-    supabaseAdmin.from("cuisine_preorders").select("id,name,phone,selections").order("name"),
+    supabaseAdmin
+      .from("cuisine_preorders")
+      .select("id,name,phone,selections,invitation_id,invitations(rsvps(status))")
+      .order("name"),
     supabaseAdmin.from("meal_payments").select("preorder_id,cuisine,qty_paid,paid_at"),
   ]);
 
@@ -79,7 +82,28 @@ export async function loadPortalData(restaurantId: string): Promise<PortalData> 
   }
 
   const rows: PortalOrderRow[] = [];
-  for (const p of (preorders ?? []) as Array<{ id: string; name: string | null; phone: string | null; selections: unknown }>) {
+  for (const p of (preorders ?? []) as Array<{
+    id: string;
+    name: string | null;
+    phone: string | null;
+    selections: unknown;
+    invitation_id: string | null;
+    invitations:
+      | { rsvps: { status: string | null } | Array<{ status: string | null }> | null }
+      | Array<{ rsvps: { status: string | null } | Array<{ status: string | null }> | null }>
+      | null;
+  }>) {
+    const invitation = Array.isArray(p.invitations) ? p.invitations[0] : p.invitations;
+    const rsvps = invitation
+      ? Array.isArray(invitation.rsvps)
+        ? invitation.rsvps
+        : invitation.rsvps
+          ? [invitation.rsvps]
+          : []
+      : [];
+    // Preserve the preorder in the database and admin integrity review, but do
+    // not send a declined/pending guest's meal to a restaurant as an active order.
+    if (!p.invitation_id || !rsvps.some((r) => r.status === "yes")) continue;
     for (const sel of parseSelections(p.selections)) {
       if (sel.cuisine !== cuisine) continue;
       const paidEntry = paidMap.get(`${p.id}|${sel.cuisine}`);
@@ -89,7 +113,7 @@ export async function loadPortalData(restaurantId: string): Promise<PortalData> 
         phone: (p.phone ?? "").trim(),
         cuisine: sel.cuisine,
         qty: sel.qty,
-        paid: !!paidEntry && paidEntry.qty > 0,
+        paid: !!paidEntry && paidEntry.qty >= sel.qty,
         paidAt: paidEntry?.paidAt ?? null,
         qtyPaid: paidEntry?.qty ?? 0,
       });

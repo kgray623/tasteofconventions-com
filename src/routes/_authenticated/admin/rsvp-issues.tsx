@@ -54,8 +54,8 @@ function RsvpIssuesPage() {
       setNeedsReferrer(res.needsReferrer);
       setInviters(res.inviters);
       setIntegrity(res.integrity);
-    } catch (e: any) {
-      toast.error(e?.message ?? "Couldn't load the list");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Couldn't load the list");
     } finally {
       setLoading(false);
     }
@@ -77,8 +77,8 @@ function RsvpIssuesPage() {
       } else {
         toast.error("That assignment did not save — try again");
       }
-    } catch (e: any) {
-      toast.error(e?.message ?? "Couldn't save that");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Couldn't save that");
     } finally {
       setBusy(null);
     }

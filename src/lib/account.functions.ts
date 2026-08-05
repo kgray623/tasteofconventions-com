@@ -33,7 +33,7 @@ async function syncCommitteeRoleForUser(userId: string) {
       .is("accepted_at", null),
     supabaseAdmin
       .from("inviters")
-      .select("id,phone,active")
+      .select("id,phone,active,host_id")
       .eq("active", true),
   ]);
 
@@ -58,7 +58,20 @@ async function syncCommitteeRoleForUser(userId: string) {
       .in("id", matchingInviteIds);
   }
 
-  shouldGrantTeam ||= (inviters ?? []).some((row: any) => phoneMatches(row.phone, phoneDigits));
+  const matchingInviters = (inviters ?? []).filter((row: any) =>
+    phoneMatches(row.phone, phoneDigits),
+  );
+  shouldGrantTeam ||= matchingInviters.length > 0;
+
+  // Login identity and referral ownership must remain one chain. A committee
+  // member matched by phone is linked to their inviter record immediately so
+  // future guest uploads and dashboard reads cannot drift apart.
+  const unlinkedInviterIds = matchingInviters
+    .filter((row: any) => !row.host_id)
+    .map((row: any) => row.id as string);
+  if (unlinkedInviterIds.length) {
+    await supabaseAdmin.from("inviters").update({ host_id: userId }).in("id", unlinkedInviterIds);
+  }
 
   if (shouldGrantTeam) {
     await supabaseAdmin

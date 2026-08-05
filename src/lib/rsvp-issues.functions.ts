@@ -1,8 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-async function assertStaff(supabase: any, userId: string) {
+async function assertStaff(supabase: SupabaseClient<Database>, userId: string) {
   const { data } = await supabase
     .from("user_roles")
     .select("role")
@@ -58,18 +60,20 @@ export const listRsvpIssues = createServerFn({ method: "POST" })
     const failures: RsvpFailure[] = (logs ?? [])
       .filter((r) => r.action === "RSVP SUBMIT FAILED")
       .map((r) => {
-        const m = (r.metadata ?? {}) as Record<string, any>;
+        const m = (r.metadata ?? {}) as Record<string, unknown>;
         return {
           id: r.id,
           created_at: r.created_at,
-          guest_name: m['guest_name'] ?? null,
-          guest_phone: m['guest_phone'] ?? null,
-          invited_by_raw: m['invited_by_raw'] ?? null,
-          status: m['status'] ?? null,
-          party_size: m['party_size'] ?? null,
-          attendance_mode: m['attendance_mode'] ?? null,
-          reason: m['reason'] ?? null,
-          source: m['source'] ?? null,
+          guest_name: typeof m["guest_name"] === "string" ? m["guest_name"] : null,
+          guest_phone: typeof m["guest_phone"] === "string" ? m["guest_phone"] : null,
+          invited_by_raw:
+            typeof m["invited_by_raw"] === "string" ? m["invited_by_raw"] : null,
+          status: typeof m["status"] === "string" ? m["status"] : null,
+          party_size: typeof m["party_size"] === "number" ? m["party_size"] : null,
+          attendance_mode:
+            typeof m["attendance_mode"] === "string" ? m["attendance_mode"] : null,
+          reason: typeof m["reason"] === "string" ? m["reason"] : null,
+          source: typeof m["source"] === "string" ? m["source"] : null,
         };
       });
 
@@ -93,7 +97,7 @@ export const listRsvpIssues = createServerFn({ method: "POST" })
           .from("invitations")
           .select("id,guest_name,guest_phone,inviter_id")
           .in("id", invitationIds)
-      : { data: [] as any[] };
+      : { data: [] as Array<{ id: string; guest_name: string; guest_phone: string | null; inviter_id: string | null }> };
 
     const invMap = new Map((invRows ?? []).map((i) => [i.id, i]));
 
@@ -207,7 +211,9 @@ export const assignRsvpReferrer = createServerFn({ method: "POST" })
 
     return {
       ok: readBack?.inviter_id === data.inviterId,
-      owner: (readBack as any)?.inviters?.name ?? null,
+      owner: Array.isArray(readBack?.inviters)
+        ? readBack.inviters[0]?.name ?? null
+        : readBack?.inviters?.name ?? null,
     };
   });
 
