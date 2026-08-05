@@ -167,3 +167,41 @@ export async function waitForSessionRecovery(timeoutMs = 4000) {
     new Promise((resolve) => setTimeout(resolve, timeoutMs)),
   ]);
 }
+// --- Authoritative session tracking -----------------------------------------
+// A session that was just established (fresh login, or a live session handed to
+// us by Supabase) is authoritative for a short window. While it is, a stray
+// null-session event (e.g. a stale refresh token from another tab getting
+// rejected) must NOT trigger a brand-new server login — that churn is what made
+// a successful sign-in look like it never happened.
+let authoritativeSessionAt = 0;
+
+export function markSessionAuthoritative() {
+  authoritativeSessionAt = Date.now();
+}
+
+export function clearSessionAuthoritative() {
+  authoritativeSessionAt = 0;
+}
+
+export function isSessionAuthoritative(withinMs = 60_000) {
+  return authoritativeSessionAt > 0 && Date.now() - authoritativeSessionAt < withinMs;
+}
+
+/** True when Supabase still has a usable session persisted in this browser. */
+export function hasStoredSupabaseSession() {
+  if (!hasBrowserStorage()) return false;
+  try {
+    for (let i = 0; i < window.localStorage.length; i += 1) {
+      const key = window.localStorage.key(i);
+      if (!key || !key.startsWith("sb-") || !key.includes("auth-token")) continue;
+      const raw = window.localStorage.getItem(key);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw);
+      const session = parsed?.currentSession ?? parsed;
+      if (session?.access_token && session?.refresh_token) return true;
+    }
+  } catch {
+    // Unreadable storage — treat as no stored session.
+  }
+  return false;
+}
