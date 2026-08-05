@@ -201,7 +201,15 @@ export const getInvitationByToken = createServerFn({ method: "GET" })
       supabaseAdmin.from("orders").select("*").eq("invitation_id", inv.id).maybeSingle(),
       findCuisinePreorder(inv.id, inv.guest_phone),
     ]);
-    return { invitation: inv, rsvp, order, preorder, expired: false };
+    let mealPayments: Array<{ cuisine: string; qty_paid: number; paid_at: string | null }> = [];
+    if (preorder?.id) {
+      const { data: paidRows } = await supabaseAdmin
+        .from("meal_payments")
+        .select("cuisine,qty_paid,paid_at")
+        .eq("preorder_id", preorder.id);
+      mealPayments = (paidRows ?? []) as typeof mealPayments;
+    }
+    return { invitation: inv, rsvp, order, preorder, mealPayments, expired: false };
   });
 
 const RsvpInput = z.object({
