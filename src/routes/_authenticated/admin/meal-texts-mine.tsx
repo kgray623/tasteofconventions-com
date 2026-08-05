@@ -10,14 +10,15 @@ import { Switch } from "@/components/ui/switch";
 import { getErrorMessage } from "@/lib/async-safety";
 import { downloadTextFile } from "@/lib/download-file";
 import { ExportFallbackDialog } from "@/components/export-fallback-dialog";
+import { SmsTextButton } from "@/components/sms-text-button";
 import {
   cuisineLabel,
   matchRestaurant,
   mealOrderText,
   renderMealTemplate,
-  openSms,
   smsNumber,
 } from "@/lib/meal-text-message";
+
 
 import { DEFAULT_MEAL_TEXT_TEMPLATE, type MealRestaurant } from "@/lib/meal-text-defaults";
 import {
