@@ -140,6 +140,8 @@ function RestaurantsPage() {
 
   return (
     <div className="space-y-6">
+      <PortalAccessCard />
+
       <Card className="p-5 space-y-3">
         <div>
           <p className="text-xs uppercase tracking-[0.3em] text-terracotta">Add restaurant</p>
