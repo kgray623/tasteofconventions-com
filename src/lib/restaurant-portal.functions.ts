@@ -94,6 +94,42 @@ export const restaurantMarkPaid = createServerFn({ method: "POST" })
     return { signedIn: true, data: updated };
   });
 
+export const restaurantConfirmOrder = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({ preorderId: z.string().uuid(), confirmed: z.boolean() }).parse(d),
+  )
+  .handler(async ({ data }): Promise<{ signedIn: boolean; data?: PortalData }> => {
+    const session = await portalSession();
+    const restaurantId = session.data.restaurantId;
+    if (!restaurantId) return { signedIn: false };
+    const { setConfirmed } = await import("@/lib/restaurant-portal.server");
+    const updated = await setConfirmed({
+      restaurantId,
+      preorderId: data.preorderId,
+      confirmed: data.confirmed,
+      markedByLabel: `restaurant:${session.data.restaurantName ?? restaurantId}`,
+    });
+    return { signedIn: true, data: updated };
+  });
+
+export const restaurantSetQty = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({ preorderId: z.string().uuid(), qty: z.number().int().min(0).max(50) }).parse(d),
+  )
+  .handler(async ({ data }): Promise<{ signedIn: boolean; data?: PortalData }> => {
+    const session = await portalSession();
+    const restaurantId = session.data.restaurantId;
+    if (!restaurantId) return { signedIn: false };
+    const { setQty } = await import("@/lib/restaurant-portal.server");
+    const updated = await setQty({
+      restaurantId,
+      preorderId: data.preorderId,
+      qty: data.qty,
+      markedByLabel: `restaurant:${session.data.restaurantName ?? restaurantId}`,
+    });
+    return { signedIn: true, data: updated };
+  });
+
 /* ---------- Admin: manage access codes + see payment status ---------- */
 
 async function assertAdminOrTeam(supabase: any, userId: string) {

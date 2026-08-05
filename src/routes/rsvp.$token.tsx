@@ -75,6 +75,7 @@ type RsvpTokenData = {
   } | null;
   order?: { items?: unknown; total?: number | string | null; notes?: string | null } | null;
   preorder?: { selections?: unknown } | null;
+  mealStatuses?: Array<{ cuisine: string; confirmed: boolean; confirmed_at: string | null }> | null;
 };
 
 function isCuisineSelection(value: unknown): value is CuisineSelection {
@@ -124,6 +125,9 @@ function RsvpPage() {
   }, [invitedBy]);
   const [lightbox, setLightbox] = useState<string | null>(null);
 
+  const [mealStatuses, setMealStatuses] = useState<
+    Array<{ cuisine: string; confirmed: boolean; confirmed_at: string | null }>
+  >([]);
   const [cuisineCounts, setCuisineCounts] = useDraftState<Record<string, number>>(
     orderDraftScope,
     "cuisineCounts",
@@ -176,6 +180,9 @@ function RsvpPage() {
           );
           setInvitedBy(r.rsvp.invited_by ?? "");
         }
+        setMealStatuses(
+          (r.mealStatuses ?? []).filter((m) => m.confirmed),
+        );
         const selections: unknown = r.preorder?.selections;
         if (Array.isArray(selections)) {
           const restoredCounts = selections
@@ -564,6 +571,23 @@ function RsvpPage() {
               <h2 className="font-display text-2xl">
                 Pre-order your catered cultural meal
               </h2>
+              {mealStatuses.length > 0 && (
+                <div className="mt-3 rounded-lg border-2 border-terracotta bg-terracotta/10 p-3">
+                  <p className="font-medium text-ink text-sm">
+                    Confirmed by the restaurant
+                  </p>
+                  <ul className="mt-1 space-y-0.5 text-sm text-terracotta">
+                    {mealStatuses.map((m) => (
+                      <li key={m.cuisine}>
+                        {m.cuisine} — confirmed
+                        {m.confirmed_at
+                          ? ` · ${new Date(m.confirmed_at).toLocaleDateString()}`
+                          : ""}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <p className="text-sm text-muted-foreground mt-1">
                 Cultural meals are $20.00–$30.00 per plate, paid directly to the restaurant. When you place your pre-order, you'll be provided the restaurant's contact information to pay for your order separately. Each cuisine offers a beef or chicken option, and all meals are gluten-free.
               </p>

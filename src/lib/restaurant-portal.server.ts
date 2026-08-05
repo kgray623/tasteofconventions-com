@@ -87,13 +87,27 @@ export async function loadPortalData(restaurantId: string): Promise<PortalData> 
 
   const cuisine = normalizeCuisine(String(restaurant.cuisine ?? restaurant.name ?? ""));
 
-  const [{ data: preorders }, { data: payments }] = await Promise.all([
+  const [{ data: preorders }, { data: payments }, { data: statuses }] = await Promise.all([
     supabaseAdmin
       .from("cuisine_preorders")
       .select("id,name,phone,selections,invitation_id,invitations(rsvps(status))")
       .order("name"),
     supabaseAdmin.from("meal_payments").select("preorder_id,cuisine,qty_paid,paid_at"),
+    supabaseAdmin.from("meal_order_status").select("preorder_id,cuisine,confirmed,confirmed_at"),
   ]);
+
+  const confirmedMap = new Map<string, { confirmed: boolean; confirmedAt: string | null }>();
+  for (const s of (statuses ?? []) as Array<{
+    preorder_id: string;
+    cuisine: string;
+    confirmed: boolean;
+    confirmed_at: string | null;
+  }>) {
+    confirmedMap.set(`${s.preorder_id}|${normalizeCuisine(s.cuisine)}`, {
+      confirmed: !!s.confirmed,
+      confirmedAt: s.confirmed_at ?? null,
+    });
+  }
 
   const paidMap = new Map<string, { qty: number; paidAt: string | null }>();
   for (const p of (payments ?? []) as Array<{
@@ -134,6 +148,7 @@ export async function loadPortalData(restaurantId: string): Promise<PortalData> 
     for (const sel of parseSelections(p.selections)) {
       if (sel.cuisine !== cuisine) continue;
       const paidEntry = paidMap.get(`${p.id}|${sel.cuisine}`);
+      const statusEntry = confirmedMap.get(`${p.id}|${sel.cuisine}`);
       rows.push({
         preorderId: p.id,
         guestName: (p.name ?? "").trim() || "Guest",
@@ -143,6 +158,8 @@ export async function loadPortalData(restaurantId: string): Promise<PortalData> 
         paid: !!paidEntry && paidEntry.qty >= sel.qty,
         paidAt: paidEntry?.paidAt ?? null,
         qtyPaid: paidEntry?.qty ?? 0,
+        confirmed: statusEntry?.confirmed ?? false,
+        confirmedAt: statusEntry?.confirmedAt ?? null,
       });
     }
   }
@@ -163,10 +180,120 @@ export async function loadPortalData(restaurantId: string): Promise<PortalData> 
       meals,
       mealsPaid,
       mealsUnpaid: meals - mealsPaid,
+      mealsConfirmed: rows.reduce((n, r) => n + (r.confirmed ? r.qty : 0), 0),
       households: rows.length,
       householdsPaid: rows.filter((r) => r.paid).length,
     },
   };
+}
+
+/** Restaurant accepts (or un-accepts) an order line into their kitchen queue. */
+export async function setConfirmed(opts: {
+  restaurantId: string;
+  preorderId: string;
+  confirmed: boolean;
+  markedByLabel: string;
+}) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const data = await loadPortalData(opts.restaurantId);
+  const row = data.rows.find((r) => r.preorderId === opts.preorderId);
+  if (!row) throw new Error("That order is not on your list");
+
+  const { error } = await supabaseAdmin.from("meal_order_status").upsert(
+    {
+      preorder_id: opts.preorderId,
+      restaurant_id: opts.restaurantId,
+      cuisine: row.cuisine,
+      confirmed: opts.confirmed,
+      confirmed_at: opts.confirmed ? new Date().toISOString() : null,
+      confirmed_by_label: opts.markedByLabel,
+      qty_confirmed: opts.confirmed ? row.qty : null,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "preorder_id,cuisine" },
+  );
+  if (error) throw new Error(error.message);
+  return loadPortalData(opts.restaurantId);
+}
+
+/**
+ * Restaurant adjusts the meal count for their own cuisine only.
+ * Every other cuisine in the household's pre-order is preserved untouched,
+ * and the change is captured by the audit trigger on cuisine_preorders.
+ */
+export async function setQty(opts: {
+  restaurantId: string;
+  preorderId: string;
+  qty: number;
+  markedByLabel: string;
+}) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const data = await loadPortalData(opts.restaurantId);
+  const row = data.rows.find((r) => r.preorderId === opts.preorderId);
+  if (!row) throw new Error("That order is not on your list");
+
+  const qty = Math.max(0, Math.min(50, Math.round(opts.qty)));
+
+  const { data: existing, error: readErr } = await supabaseAdmin
+    .from("cuisine_preorders")
+    .select("selections")
+    .eq("id", opts.preorderId)
+    .maybeSingle();
+  if (readErr) throw new Error(readErr.message);
+  if (!existing) throw new Error("Pre-order not found");
+
+  const raw = Array.isArray(existing.selections) ? (existing.selections as unknown[]) : [];
+  const next: Record<string, unknown>[] = [];
+  let replaced = false;
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const obj = item as Record<string, unknown>;
+    const itemCuisine = normalizeCuisine(String(obj["cuisine"] ?? obj["country"] ?? ""));
+    if (itemCuisine !== row.cuisine) {
+      next.push(obj);
+      continue;
+    }
+    replaced = true;
+    if (qty > 0) next.push({ ...obj, qty });
+  }
+  if (!replaced && qty > 0) next.push({ cuisine: row.cuisine, qty });
+
+  const { error: updErr } = await supabaseAdmin
+    .from("cuisine_preorders")
+    .update({ selections: next as never, updated_at: new Date().toISOString() })
+    .eq("id", opts.preorderId);
+  if (updErr) throw new Error(updErr.message);
+
+  // Keep the payment/confirmation records consistent with the new count.
+  if (qty === 0) {
+    await supabaseAdmin
+      .from("meal_payments")
+      .delete()
+      .eq("preorder_id", opts.preorderId)
+      .eq("cuisine", row.cuisine);
+    await supabaseAdmin
+      .from("meal_order_status")
+      .delete()
+      .eq("preorder_id", opts.preorderId)
+      .eq("cuisine", row.cuisine);
+  } else {
+    if (row.paid) {
+      await supabaseAdmin
+        .from("meal_payments")
+        .update({ qty_paid: qty, updated_at: new Date().toISOString() })
+        .eq("preorder_id", opts.preorderId)
+        .eq("cuisine", row.cuisine);
+    }
+    if (row.confirmed) {
+      await supabaseAdmin
+        .from("meal_order_status")
+        .update({ qty_confirmed: qty, updated_at: new Date().toISOString() })
+        .eq("preorder_id", opts.preorderId)
+        .eq("cuisine", row.cuisine);
+    }
+  }
+
+  return loadPortalData(opts.restaurantId);
 }
 
 export async function setPaid(opts: {

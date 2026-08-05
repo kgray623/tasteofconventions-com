@@ -696,6 +696,60 @@ export type Database = {
         }
         Relationships: []
       }
+      meal_order_status: {
+        Row: {
+          confirmed: boolean
+          confirmed_at: string | null
+          confirmed_by_label: string | null
+          created_at: string
+          cuisine: string
+          id: string
+          preorder_id: string
+          qty_confirmed: number | null
+          restaurant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          confirmed?: boolean
+          confirmed_at?: string | null
+          confirmed_by_label?: string | null
+          created_at?: string
+          cuisine: string
+          id?: string
+          preorder_id: string
+          qty_confirmed?: number | null
+          restaurant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          confirmed?: boolean
+          confirmed_at?: string | null
+          confirmed_by_label?: string | null
+          created_at?: string
+          cuisine?: string
+          id?: string
+          preorder_id?: string
+          qty_confirmed?: number | null
+          restaurant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_order_status_preorder_id_fkey"
+            columns: ["preorder_id"]
+            isOneToOne: false
+            referencedRelation: "cuisine_preorders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_order_status_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meal_payments: {
         Row: {
           created_at: string

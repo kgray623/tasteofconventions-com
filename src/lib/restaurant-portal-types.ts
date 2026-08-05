@@ -7,6 +7,9 @@ export type PortalOrderRow = {
   paid: boolean;
   paidAt: string | null;
   qtyPaid: number;
+  /** Restaurant has accepted this order into their kitchen queue. */
+  confirmed: boolean;
+  confirmedAt: string | null;
 };
 
 export type PortalData = {
@@ -16,6 +19,7 @@ export type PortalData = {
     meals: number;
     mealsPaid: number;
     mealsUnpaid: number;
+    mealsConfirmed: number;
     households: number;
     householdsPaid: number;
   };
