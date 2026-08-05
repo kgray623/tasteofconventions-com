@@ -20,15 +20,18 @@ Use one authoritative chain everywhere:
 signed-in identity
   -> active inviter record
   -> invitation.inviter_id (First-Loaded referral credit)
-  -> one RSVP by invitation_id
-  -> one retained meal preorder by invitation_id
+  -> current RSVP state by invitation_id
+  -> current meal choices by invitation_id
   -> restaurant payment by preorder_id + cuisine
+  -> append-only activity history for every attempt and change
 ```
 
 - Keep `inviter_id` as referral ownership and dashboard membership; keep `host_id` aligned for account/RLS compatibility only.
 - Never infer ownership from a caller-supplied user ID. Resolve the signed-in user on the server and map by verified account, exact phone, and unambiguous roster identity.
-- Preserve all invitations, RSVP replies, meal selections, duplicate claims, payment history, and audit history. Ambiguous rows remain visible in an admin review queue until explicitly resolved.
-- Keep the existing building-cap rule: an in-person Accept remains `yes` below 550 and becomes `waitlist` only when accepting the party would exceed 550. Zoom accepts remain `yes`; Decline always stores `no`.
+- Preserve every identity, invitation, RSVP response, RSVP change, meal response, meal change, referrer claim, duplicate claim, payment action, message/texting action, admin correction, and failed submission attempt. Ambiguous rows remain visible in an admin review queue until explicitly resolved.
+- Separate **current state** from **history**: the current RSVP and meal rows may change, but every prior value and every change event remains permanently recorded with time, actor/identity, route/source, old value, new value, and success/failure.
+- A person may change freely between Accept in person, Accept on Zoom, Decline, and—when capacity applies—Waitlist. Decline is not permanent; Accept is not permanent. The newest successful response becomes the visible current state while all earlier responses remain in history.
+- Keep the existing building-cap rule: an in-person Accept remains `yes` below 550 and becomes `waitlist` only when accepting the party would exceed 550. Zoom accepts remain `yes`; Decline always stores `no`. A later response recalculates and replaces only the current state, never the history.
 
 ## 2. Correct current ownership gaps safely
 
@@ -42,8 +45,11 @@ signed-in identity
 
 - Centralize committee identity resolution and phone normalization so login, add-guest, public RSVP, committee dashboard, totals, notifications, and meal-text lists use the same rules.
 - Make all invitation creation paths write `inviter_id` and the inviter's linked `host_id` together when the inviter is resolved. Unresolved public submissions still save the RSVP and typed referrer, then appear in review.
-- Keep RSVP writes as a single upsert per invitation and read the stored row back before returning success. Verify the stored status, attendance mode, party size, referrer text, and meal flag exactly match the submitted choice or the documented 550-cap result.
-- Add database-level invariants for one RSVP and one preorder per invitation where they are not already enforced, plus an integrity audit that surfaces—not deletes—violations.
+- For every platform mutation, write an append-only activity event in the same database transaction as the current-state change. If either write fails, do not report success; retain a separate failed-attempt event whenever the request reached the server.
+- Keep one current RSVP row per invitation and read it back before returning success. Verify the stored status, attendance mode, party size, referrer text, and meal flag exactly match the newest submitted choice or documented 550-cap result, while the activity history retains every earlier response.
+- Keep one current preorder per invitation, but record every add, quantity change, cuisine change, removal, and restoration in the activity history. Removing a current meal choice must not erase the fact that it was previously submitted.
+- Record all other meaningful activity with the same guarantees, including guest additions/edits, committee/referrer assignments, invitation sent/undo actions, volunteer changes, messages, restaurant paid/unpaid changes, and admin corrections.
+- Add database-level invariants for one current RSVP and one current preorder per invitation where they are not already enforced, plus append-only history protections and an integrity audit that surfaces—not deletes—violations.
 - Split runtime helpers out of all affected `createServerFn` wrapper files and move privileged client loading inside authorized handlers. Preserve the current phone-number password / last-name username authentication architecture.
 
 ## 4. Make every dashboard use the same canonical data
@@ -52,6 +58,7 @@ signed-in identity
 - Use one canonical dataset for each member's list, totals, newest replies, pending/declined/confirmed sections, reminder links, notifications, and meal-text list.
 - Keep First-Loaded duplicate claims in a separate visible “Duplicates — credited to someone else” section with the real credited owner.
 - Add an admin integrity view that continuously lists uncredited invitations, inviters without working identities, ownership mismatches, unresolved referrers, duplicate-phone claims, failed RSVP attempts, and meal/RSVP conflicts.
+- Add an authorized activity timeline so staff can trace exactly what each person submitted and changed, while each guest and committee member can see the history relevant to their own records.
 
 ## 5. Audit and harden all restaurant orders
 
@@ -64,11 +71,12 @@ signed-in identity
 
 - **Tina, committee, 384 × 681:** sign in using last name + phone-number password; verify all 37 currently credited households plus duplicates, statuses, counts, newest replies, SMS links, and meal rows against database read-back. Recalculate the count after reconciliation.
 - **Every active inviter:** run an automated identity/ownership/status ledger, then manually test every distinct identity condition (linked, unlinked, phone-format variant, and duplicate claim). Do not claim an untested member is verified.
-- **Guest:** on the real public RSVP route, test Accept in person, Accept Zoom, Decline, and an update from one status to another. Read back the single RSVP row after each action and confirm the rendered page/dashboard updates.
+- **Guest:** on the real public RSVP route, test Accept in person → Decline → Accept Zoom → Accept in person, plus meal add → meal quantity/cuisine change → meal removal → meal restoration. After every action, read back both the current row and the append-only history, then confirm the guest, committee, admin, notification, meal-text, and restaurant surfaces show the correct current state without losing prior activity.
 - **Admin:** verify global totals and every integrity exception; confirm no submission disappeared from authorized views.
-- **Restaurants:** sign into each of the three real portals with restaurant name + phone-number password, compare every row and quantity to the database, mark a test order paid/unpaid, and verify the guest receipt changes accordingly.
+- **Restaurants:** sign into each of the three real portals with restaurant name + phone-number password, compare every row and quantity to the database, mark a test order paid → unpaid → paid, verify each activity event is retained, and verify the guest receipt reflects the newest state.
+- **Failure paths:** intentionally exercise rejected/invalid RSVP, meal, ownership, and payment requests; confirm the user sees an error, current state is unchanged, and the failed attempt is retained for authorized review without exposing private information.
 - Run selective tests, database integrity queries, security linting, and responsive Playwright checks. Report authenticated, guest, admin, and restaurant verification separately; any unavailable real session remains explicitly `UNVERIFIED`.
 
 ## Permanent project rule
 
-Never delete, hide, overwrite, or silently reassign a submitted guest, RSVP, referrer claim, meal selection, or payment. Preserve the original submission and audit history; show it to the submitting user and authorized staff. Apply First-Loaded Wins to referral credit, expose later claims as duplicates with the real owner, and verify every database write by read-back before reporting success.
+Every meaningful activity on the platform must be recorded and retained: successful and failed RSVP responses, later RSVP changes, meal responses and changes, guest/referrer associations, committee activity, messages, invitation/texting actions, volunteer changes, restaurant payment changes, and admin corrections. Current state is editable; history is append-only. Never delete, hide, overwrite, miss, or silently reassign a submitted identity or activity. Preserve the original submission and every later change; show it to the submitting user and authorized staff according to role. Apply First-Loaded Wins to referral credit, expose later claims as duplicates with the real owner, and verify every database write and its history event by read-back before reporting success.
