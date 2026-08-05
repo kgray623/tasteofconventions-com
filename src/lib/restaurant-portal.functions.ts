@@ -24,6 +24,7 @@ export const restaurantPortalLogin = createServerFn({ method: "POST" })
       "@/lib/restaurant-portal.server"
     );
     const restaurant = await findRestaurantByName(data.restaurant);
+    console.log("[portal-dbg] restaurant", restaurant?.id, restaurant?.name);
     if (!restaurant) return { ok: false };
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -32,8 +33,11 @@ export const restaurantPortalLogin = createServerFn({ method: "POST" })
       .select("code_hash,active")
       .eq("restaurant_id", restaurant.id)
       .maybeSingle();
+    console.log("[portal-dbg] access", JSON.stringify(access));
     if (!access || access.active === false) return { ok: false };
-    if (!codeMatches(data.code, access.code_hash as string)) return { ok: false };
+    const ok = codeMatches(data.code, access.code_hash as string);
+    console.log("[portal-dbg] codeMatches", ok);
+    if (!ok) return { ok: false };
 
     const session = await useSession<PortalSession>(sessionConfig());
     await session.update({ restaurantId: restaurant.id, restaurantName: restaurant.name });
