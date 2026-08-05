@@ -49,7 +49,7 @@ function normalizePreorder(row: PreorderRecord | null) {
         return qty > 0 && cuisine ? [{ cuisine, qty }] : [];
       })
     : [];
-  return { selections, updated_at: row.updated_at ?? null };
+  return { id: row.id as string | undefined, selections, updated_at: row.updated_at ?? null };
 }
 
 async function findCuisinePreorder(invitationId: string, phone?: string | null) {
