@@ -295,17 +295,17 @@ function MyMealTextsPage() {
                         <Button
                           size="sm"
                           className="bg-pink-500 text-white hover:bg-pink-600"
-                          asChild
+                          onClick={() => {
+                            const result = openSms([num], body);
+                            if (!result.ok) {
+                              void copy(body);
+                              toast.error(`${result.reason} Message copied — paste it into Messages.`);
+                            }
+                          }}
                         >
-                          <a
-                            href={smsHref([num], body)}
-                            target="_top"
-                          >
-                            <Send className="w-3.5 h-3.5 mr-1.5" /> Text{" "}
-                            {row.name.split(/\s+/)[0]}
-                          </a>
+                          <Send className="w-3.5 h-3.5 mr-1.5" /> Text{" "}
+                          {row.name.split(/\s+/)[0]}
                         </Button>
-
                       )}
                       {!num && (
                         <span className="text-xs font-medium text-brand-red">No usable phone number</span>
