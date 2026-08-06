@@ -124,12 +124,16 @@ function MealTextsPage() {
   }, [rows]);
 
   const inviterOptions = useMemo(() => {
-    const counts = new Map<string, number>();
+    // Count households (one per pre-order), not per-cuisine lines, so this
+    // matches the pending numbers on the tracker card exactly.
+    const seen = new Map<string, Set<string>>();
     for (const r of rows) {
       if (r.sent_at) continue;
-      counts.set(r.inviter, (counts.get(r.inviter) ?? 0) + 1);
+      (seen.get(r.inviter) ?? seen.set(r.inviter, new Set()).get(r.inviter)!).add(r.id);
     }
-    return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    return [...seen.entries()]
+      .map(([name, ids]) => [name, ids.size] as [string, number])
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   }, [rows]);
 
   const downloadPending = () => {
