@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { getErrorMessage } from "@/lib/async-safety";
 import { smsNumber } from "@/lib/meal-text-message";
 import { SmsTextButton } from "@/components/sms-text-button";
+import { OpenOnSiteBanner } from "@/components/open-on-site-banner";
 
 import {
   DEFAULT_MEAL_TEXT_TEMPLATE,
@@ -183,6 +184,7 @@ function MealTextsPage() {
 
   return (
     <div className="space-y-6">
+      <OpenOnSiteBanner />
       <Card className="p-5 space-y-2">
         <div className="flex items-center gap-2">
           <MessageSquare className="w-5 h-5 text-terracotta" />

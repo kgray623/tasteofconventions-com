@@ -11,6 +11,7 @@ import { getErrorMessage } from "@/lib/async-safety";
 import { downloadTextFile } from "@/lib/download-file";
 import { ExportFallbackDialog } from "@/components/export-fallback-dialog";
 import { SmsTextButton } from "@/components/sms-text-button";
+import { OpenOnSiteBanner } from "@/components/open-on-site-banner";
 import {
   cuisineLabel,
   matchRestaurant,
@@ -166,6 +167,7 @@ function MyMealTextsPage() {
 
   return (
     <div className="space-y-5">
+      <OpenOnSiteBanner />
       <Card className="p-5 space-y-2">
         <div className="flex items-center gap-2">
           <MessageSquare className="w-5 h-5 text-terracotta" />
