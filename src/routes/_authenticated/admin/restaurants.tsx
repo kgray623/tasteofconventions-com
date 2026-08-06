@@ -366,10 +366,59 @@ function PortalAccessCard() {
                 {r.mealsPaid} meal{r.mealsPaid === 1 ? "" : "s"} paid
               </Badge>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Password (phone on file):{" "}
-              <span className="font-medium text-ink">{r.phone || "no phone on file"}</span>
-            </p>
+            {(() => {
+              const pw = phoneTail(r.phone);
+              const url = `${PUBLIC_SITE_ORIGIN.replace(/^https?:\/\//, "")}/restaurant`;
+              const msg = pw
+                ? `Sign in at ${PUBLIC_SITE_ORIGIN}/restaurant — Username: ${r.name} — Password: ${pw}`
+                : "";
+              return (
+                <div className="rounded-md bg-secondary/50 p-3 space-y-1.5">
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-terracotta">Portal login</p>
+                  <p className="text-xs text-muted-foreground">
+                    Sign-in page: <span className="font-medium text-ink">{url}</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Username: <span className="font-medium text-ink">{r.name}</span>
+                  </p>
+                  {pw ? (
+                    <>
+                      <p className="text-xs text-muted-foreground">
+                        Password: <span className="font-medium text-ink">{pw}</span>{" "}
+                        <span className="text-muted-foreground">({formatPhoneUS(r.phone)})</span>
+                      </p>
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(msg);
+                              toast.success("Login copied — paste it to the restaurant.");
+                            } catch {
+                              toast.error("Copy blocked — select the text and copy it manually.");
+                            }
+                          }}
+                        >
+                          <Copy className="w-4 h-4 mr-1" /> Copy login
+                        </Button>
+                        <SmsTextButton
+                          numbers={[`+1${pw}`]}
+                          body={msg}
+                          label="Text it to them"
+                          className="h-9 px-3 text-sm"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Add a phone number to enable their login.
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
+
             <div className="flex gap-2">
               <Input
                 placeholder={r.hasCode ? "New code (replaces old)" : "Optional access code"}
