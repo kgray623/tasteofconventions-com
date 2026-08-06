@@ -289,6 +289,8 @@ function AdminOverview() {
 
       <RsvpTotalsCard />
 
+      <MealNotifyTracker />
+
       {isAdmin && !previewCommittee && <SiteTrafficCard />}
 
 
