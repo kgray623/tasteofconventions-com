@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 import { useAdminView } from "@/hooks/use-admin-view";
 import { Card } from "@/components/ui/card";
+import { MealNotifyTracker } from "@/components/meal-notify-tracker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
