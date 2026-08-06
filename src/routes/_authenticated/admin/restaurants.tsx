@@ -9,7 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, X, Pencil, Check, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, X, Pencil, Check, ChevronDown, ChevronRight, Copy } from "lucide-react";
+import { SmsTextButton } from "@/components/sms-text-button";
+import { PUBLIC_SITE_ORIGIN } from "@/lib/meal-text-message";
+import { phoneTail, formatPhoneUS } from "@/lib/phone";
+
 
 export const Route = createFileRoute("/_authenticated/admin/restaurants")({
   head: () => ({ meta: [{ title: "Restaurants — Admin" }] }),
