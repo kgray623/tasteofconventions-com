@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Check, Copy, Globe, Loader2, MessageSquare, Phone, RotateCcw, Utensils } from "lucide-react";
+import { Check, Copy, Download, Globe, Loader2, MessageSquare, Phone, RotateCcw, Utensils } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { getErrorMessage } from "@/lib/async-safety";
+import { downloadTextFile, openTextInNewTab } from "@/lib/download-file";
 import { smsNumber } from "@/lib/meal-text-message";
 import { SmsTextButton } from "@/components/sms-text-button";
 import { OpenOnSiteBanner } from "@/components/open-on-site-banner";
@@ -81,6 +82,7 @@ function MealTextsPage() {
   const [template, setTemplate] = useState(DEFAULT_MEAL_TEXT_TEMPLATE);
   const [savingTpl, setSavingTpl] = useState(false);
   const [onlyUnsent, setOnlyUnsent] = useState(false);
+  const [inviterFilter, setInviterFilter] = useState("all");
   const [busy, setBusy] = useState<string | null>(null);
 
   const refresh = async () => {
@@ -120,6 +122,42 @@ function MealTextsPage() {
     }
     return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
   }, [rows]);
+
+  const inviterOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of rows) {
+      if (r.sent_at) continue;
+      counts.set(r.inviter, (counts.get(r.inviter) ?? 0) + 1);
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  }, [rows]);
+
+  const downloadPending = () => {
+    const pending = rows.filter((r) => !r.sent_at);
+    if (pending.length === 0) {
+      toast.error("Everyone in this list has been texted");
+      return;
+    }
+    const esc = (v: unknown) => {
+      const t = String(v ?? "");
+      return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+    };
+    const csv = [
+      ["Guest", "Phone", "Cuisine", "Meals", "Committee member", "Notified"].join(","),
+      ...pending.map((r) =>
+        [r.name, r.phone, r.cuisine, r.qty, r.inviter, "Not yet"].map(esc).join(","),
+      ),
+    ].join("\n");
+    const name = `pre-pay-pending-${new Date().toISOString().slice(0, 10)}.csv`;
+    const res = downloadTextFile(name, csv);
+    if (res.ok) {
+      toast.success("Pending list downloaded");
+      return;
+    }
+    const tab = openTextInNewTab(csv);
+    if (tab.ok) toast.success("Opened the pending list in a new tab");
+    else toast.error("Couldn't download", { description: tab.reason });
+  };
 
   const bodyFor = (row: MealTextRow) => {
     const r = restaurantFor(row.cuisine);
@@ -199,6 +237,11 @@ function MealTextsPage() {
           <Badge variant="outline">{totalMeals} meals</Badge>
           <Badge variant="outline">{sentCount} texted</Badge>
           <Badge variant="outline">{totalPeople - sentCount} still to text</Badge>
+        </div>
+        <div className="pt-1">
+          <Button size="sm" variant="outline" onClick={downloadPending}>
+            <Download className="w-3.5 h-3.5 mr-1.5" /> Download pending list (CSV)
+          </Button>
         </div>
       </Card>
 
@@ -306,11 +349,31 @@ function MealTextsPage() {
 
       </Card>
 
-      <div className="flex items-center gap-2">
-        <Switch checked={onlyUnsent} onCheckedChange={setOnlyUnsent} id="only-unsent" />
-        <label htmlFor="only-unsent" className="text-sm">
-          Show only people I haven't texted yet
-        </label>
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Switch checked={onlyUnsent} onCheckedChange={setOnlyUnsent} id="only-unsent" />
+          <label htmlFor="only-unsent" className="text-sm">
+            Show only people I haven't texted yet
+          </label>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <label htmlFor="inviter-filter" className="text-sm text-muted-foreground">
+            Committee member
+          </label>
+          <select
+            id="inviter-filter"
+            value={inviterFilter}
+            onChange={(e) => setInviterFilter(e.target.value)}
+            className="h-9 rounded-md border border-border bg-background px-2 text-sm"
+          >
+            <option value="all">Everyone</option>
+            {inviterOptions.map(([name, count]) => (
+              <option key={name} value={name}>
+                {name} ({count} pending)
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {loading && (
@@ -328,7 +391,9 @@ function MealTextsPage() {
       {groups.map(([cuisine, list]) => {
         const r = restaurantFor(cuisine);
         const onHold = r ? !r.order_ready : false;
-        const visible = onlyUnsent ? list.filter((x) => !x.sent_at) : list;
+        const visible = list
+          .filter((x) => (onlyUnsent ? !x.sent_at : true))
+          .filter((x) => (inviterFilter === "all" ? true : x.inviter === inviterFilter));
         return (
           <Card key={cuisine} className="overflow-hidden">
             <div className="p-4 border-b border-border space-y-2">
@@ -373,7 +438,9 @@ function MealTextsPage() {
                         </Badge>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground">{row.phone || "No phone on file"}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {row.phone || "No phone on file"} · {row.inviter}
+                    </p>
                     <div className="flex flex-wrap gap-2">
                       {num && !onHold && (
                         <SmsTextButton
