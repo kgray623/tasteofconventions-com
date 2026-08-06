@@ -25,14 +25,23 @@ export const getMealTextData = createServerFn({ method: "POST" })
     await assertStaff(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const [{ data: restaurants }, { data: preorders }, { data: setting }] = await Promise.all([
+    const [{ data: restaurants }, { data: preorders }, { data: setting }, { data: invitationRows }, { data: inviterRows }] = await Promise.all([
       supabaseAdmin.from("restaurants").select("id,name,cuisine,phone,website,order_ready,active").order("name"),
       supabaseAdmin
         .from("cuisine_preorders")
-        .select("id,name,phone,selections,meal_text_sent_at")
+        .select("id,name,phone,selections,meal_text_sent_at,invitation_id")
         .order("name"),
       supabaseAdmin.from("app_settings").select("value").eq("key", "meal_text_template").maybeSingle(),
+      supabaseAdmin.from("invitations").select("id,inviter_id"),
+      supabaseAdmin.from("inviters").select("id,name"),
     ]);
+
+    const inviterNameById = new Map<string, string>(
+      ((inviterRows ?? []) as any[]).map((r) => [r.id as string, (r.name as string) ?? "Committee"]),
+    );
+    const inviterIdByInvitation = new Map<string, string | null>(
+      ((invitationRows ?? []) as any[]).map((r) => [r.id as string, (r.inviter_id as string) ?? null]),
+    );
 
     const rows: MealTextRow[] = [];
     for (const p of (preorders ?? []) as any[]) {
@@ -53,8 +62,13 @@ export const getMealTextData = createServerFn({ method: "POST" })
               : raw;
         byCuisine.set(cuisine, (byCuisine.get(cuisine) ?? 0) + Math.round(qty));
       }
+      const inviterId = p.invitation_id ? (inviterIdByInvitation.get(p.invitation_id) ?? null) : null;
+      const inviterName = inviterId
+        ? (inviterNameById.get(inviterId) ?? "Committee")
+        : "Not linked to a committee member";
       for (const [cuisine, qty] of byCuisine) {
         rows.push({
+          inviter: inviterName,
           id: p.id,
           name: (p.name ?? "").trim() || "Guest",
           phone: (p.phone ?? "").trim(),
