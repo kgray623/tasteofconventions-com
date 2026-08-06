@@ -184,6 +184,7 @@ function MealTextsPage() {
 
   return (
     <div className="space-y-6">
+      <OpenOnSiteBanner />
       <Card className="p-5 space-y-2">
         <div className="flex items-center gap-2">
           <MessageSquare className="w-5 h-5 text-terracotta" />
