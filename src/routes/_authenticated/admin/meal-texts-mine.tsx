@@ -11,6 +11,7 @@ import { getErrorMessage } from "@/lib/async-safety";
 import { downloadTextFile } from "@/lib/download-file";
 import { ExportFallbackDialog } from "@/components/export-fallback-dialog";
 import { SmsTextButton } from "@/components/sms-text-button";
+import { OpenOnSiteBanner } from "@/components/open-on-site-banner";
 import {
   cuisineLabel,
   matchRestaurant,
