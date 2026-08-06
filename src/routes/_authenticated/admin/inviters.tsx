@@ -394,6 +394,8 @@ function InvitersPage() {
 
   return (
     <div className="space-y-8">
+      <MealNotifyTracker compact />
+
 
       {(() => {
         const pending = inviters.filter(
