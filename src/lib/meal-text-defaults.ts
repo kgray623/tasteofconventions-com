@@ -31,4 +31,5 @@ export type MealTextRow = {
   cuisine: string;
   qty: number;
   sent_at: string | null;
+  inviter: string;
 };
