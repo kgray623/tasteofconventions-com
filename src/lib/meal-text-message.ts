@@ -20,6 +20,33 @@ export function smsHref(numbers: string[], body: string) {
 
 export type OpenSmsResult = { ok: true } | { ok: false; reason: string };
 
+export const PUBLIC_SITE_ORIGIN = "https://tasteofconventions.com";
+
+/** True when the page is running inside a frame / embedded webview (e.g. the Lovable preview). */
+export function isEmbedded() {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.top !== window.self;
+  } catch {
+    return true;
+  }
+}
+
+/** The same page on the real published site, so Messages can actually be opened. */
+export function publicSiteUrl(path?: string) {
+  const p =
+    path ?? (typeof window !== "undefined" ? window.location.pathname + window.location.search : "/");
+  return `${PUBLIC_SITE_ORIGIN}${p.startsWith("/") ? p : `/${p}`}`;
+}
+
+/** Android's own handoff scheme — accepted by webviews that swallow plain sms:. */
+function androidIntentUrl(numbers: string[], body: string) {
+  const to = numbers.filter(Boolean).join(",");
+  return `intent://${to}#Intent;scheme=smsto;action=android.intent.action.SENDTO;S.sms_body=${encodeURIComponent(
+    body,
+  )};end`;
+}
+
 // Opens the phone's Messages app. Inside a framed preview (and some mobile
 // browsers) a plain <a href="sms:..."> click is swallowed, so hand the URL to
 // the top-level document when we're allowed to reach it.
@@ -31,39 +58,44 @@ export function openSms(numbers: string[], body: string): OpenSmsResult {
   if (to.length === 0) return { ok: false, reason: "No phone number on file." };
 
   const url = smsHref(to, body);
+  const isAndroid = /android/i.test(navigator.userAgent);
+  const candidates = isAndroid ? [url, androidIntentUrl(to, body)] : [url];
 
-  // 1. Anchor click inside the top-level document (works in framed previews).
-  try {
-    const topDoc = window.top?.document ?? document;
-    const a = topDoc.createElement("a");
-    a.href = url;
-    a.style.display = "none";
-    topDoc.body.appendChild(a);
-    a.click();
-    setTimeout(() => a.remove(), 2000);
-    return { ok: true };
-  } catch {
-    /* cross-origin frame — fall through */
-  }
+  for (const candidate of candidates) {
+    // 1. Anchor click inside the top-level document (works in framed previews).
+    try {
+      const topDoc = window.top?.document ?? document;
+      const a = topDoc.createElement("a");
+      a.href = candidate;
+      a.style.display = "none";
+      topDoc.body.appendChild(a);
+      a.click();
+      setTimeout(() => a.remove(), 2000);
+      return { ok: true };
+    } catch {
+      /* cross-origin frame — fall through */
+    }
 
-  // 2. Same-document navigation.
-  try {
-    window.location.assign(url);
-    return { ok: true };
-  } catch {
-    /* fall through */
-  }
+    // 2. Same-document navigation.
+    try {
+      window.location.assign(candidate);
+      return { ok: true };
+    } catch {
+      /* fall through */
+    }
 
-  // 3. New window as a last resort.
-  try {
-    const w = window.open(url, "_blank");
-    if (w) return { ok: true };
-  } catch {
-    /* ignore */
+    // 3. New window as a last resort.
+    try {
+      const w = window.open(candidate, "_blank");
+      if (w) return { ok: true };
+    } catch {
+      /* ignore */
+    }
   }
 
   return { ok: false, reason: "Your browser blocked opening Messages." };
 }
+
 
 
 export type MealTextContext = {
