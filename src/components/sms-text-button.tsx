@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { Copy, Send } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Copy, ExternalLink, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { smsHref } from "@/lib/meal-text-message";
+import { isEmbedded, openSms, publicSiteUrl, smsHref } from "@/lib/meal-text-message";
 
 type Props = {
   /** Normalized phone number(s), e.g. +14025551234 */
@@ -25,14 +25,21 @@ type Props = {
  * Real <a href="sms:..."> so the phone's own Messages app handles the tap — no
  * JavaScript interception, which is the only thing that reliably works on iOS
  * and Android. If nothing opens within ~1.4s (framed preview, desktop browser,
- * blocked scheme) we show the message so it can be copied and pasted instead of
- * leaving a dead button.
+ * blocked scheme) we offer the real site plus copy/paste instead of leaving a
+ * dead button.
  */
 export function SmsTextButton({ numbers, body, label, className }: Props) {
   const to = numbers.filter(Boolean);
   const href = smsHref(to, body);
   const [showFallback, setShowFallback] = useState(false);
+  const [framed, setFramed] = useState(false);
+  const [siteHref, setSiteHref] = useState(publicSiteUrl("/"));
   const timer = useRef<number | null>(null);
+
+  useEffect(() => {
+    setFramed(isEmbedded());
+    setSiteHref(publicSiteUrl());
+  }, []);
 
   const copy = async () => {
     try {
@@ -54,7 +61,13 @@ export function SmsTextButton({ numbers, body, label, className }: Props) {
     document.addEventListener("visibilitychange", clear, { once: true });
     timer.current = window.setTimeout(() => {
       timer.current = null;
-      if (document.visibilityState === "visible") setShowFallback(true);
+      if (document.visibilityState === "visible") {
+        // One scripted retry (adds the Android intent:// handoff) before giving up.
+        openSms(to, body);
+        window.setTimeout(() => {
+          if (document.visibilityState === "visible") setShowFallback(true);
+        }, 900);
+      }
     }, 1400);
   };
 
@@ -79,15 +92,29 @@ export function SmsTextButton({ numbers, body, label, className }: Props) {
       <Dialog open={showFallback} onOpenChange={setShowFallback}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Messages didn't open</DialogTitle>
+            <DialogTitle>
+              {framed
+                ? "You're in the Lovable preview — Messages can't open here"
+                : "This browser wouldn't open Messages"}
+            </DialogTitle>
             <DialogDescription>
-              This browser blocked the text link. Copy the message below, open Messages yourself and
-              send it to {to.join(", ")}.
+              Open this page on tasteofconventions.com in your phone's browser and the Text button
+              works. Or copy the message below and send it yourself to {to.join(", ")}.
             </DialogDescription>
           </DialogHeader>
-          <Textarea readOnly value={body} rows={12} className="text-xs" />
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" onClick={() => void copy()}>
+            <a
+              href={siteHref}
+              target="_top"
+              rel="noopener"
+              className={cn(
+                buttonVariants({ size: "sm" }),
+                "bg-terracotta text-cream hover:bg-terracotta/90",
+              )}
+            >
+              <ExternalLink className="w-3.5 h-3.5 mr-1.5" /> Open on tasteofconventions.com
+            </a>
+            <Button size="sm" variant="outline" onClick={() => void copy()}>
               <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy message
             </Button>
             <a
@@ -99,6 +126,7 @@ export function SmsTextButton({ numbers, body, label, className }: Props) {
               <Send className="w-3.5 h-3.5 mr-1.5" /> Try Messages again
             </a>
           </div>
+          <Textarea readOnly value={body} rows={12} className="text-xs" />
         </DialogContent>
       </Dialog>
     </>
