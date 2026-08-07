@@ -9,13 +9,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ArrowLeft, UtensilsCrossed } from "lucide-react";
+import { MEAL_INTRO_COPY } from "@/lib/meal-pricing";
+import { MealPriceNote, MealRestaurantContact, useMealRestaurants } from "@/components/meal-restaurant-contact";
 
 export const Route = createFileRoute("/preorder")({
   head: () => ({
     meta: [
-      { title: "Pre-order cuisine · A Taste of Special Conventions" },
+      { title: "Order your catered meal · A Taste of Special Conventions" },
       { name: "description", content: "Tell us how many meals you'd like from each cultural cuisine so we can plan with the restaurants for August 30, 2026." },
-      { property: "og:title", content: "Pre-order cuisine · A Taste of Special Conventions" },
+      { property: "og:title", content: "Order your catered meal · A Taste of Special Conventions" },
       { property: "og:description", content: "Reserve meals from each cultural cuisine for the August 30, 2026 evening at Eagle's Landing." },
     ],
   }),
@@ -77,7 +79,7 @@ function PreorderPage() {
       return;
     }
     if (total === 0) {
-      toast.error("Add at least one meal to pre-order.");
+      toast.error("Add at least one meal to order.");
       return;
     }
     setSubmitting(true);
@@ -113,11 +115,11 @@ function PreorderPage() {
 
         <div className="text-center mb-8">
           <p className="text-xs uppercase tracking-[0.4em] text-magenta mb-3 inline-flex items-center gap-2 justify-center">
-            <UtensilsCrossed className="w-4 h-4" /> Pre-order interest
+            <UtensilsCrossed className="w-4 h-4" /> Catered meal order
           </p>
-          <h1 className="font-display text-4xl sm:text-5xl text-ink">Cuisine pre-order</h1>
+          <h1 className="font-display text-4xl sm:text-5xl text-ink">Order your catered meal</h1>
           <p className="mt-4 text-muted-foreground">
-            Catered meals will be in the $20–$30 range per meal (beef or chicken, gluten-free options available). You'll pay the restaurant directly when you confirm. Enter the same mobile number used on your attending RSVP so your meal choices stay connected to your RSVP.
+            {MEAL_INTRO_COPY} Enter the same mobile number used on your attending RSVP so your meal choices stay connected to your RSVP.
           </p>
         </div>
 
@@ -214,7 +216,7 @@ function PreorderPage() {
               disabled={submitting}
               className="bg-gradient-sunset text-white hover:opacity-90 border-0 shadow-glow"
             >
-              {submitting ? "Submitting…" : "Submit pre-order"}
+              {submitting ? "Submitting…" : "Submit meal order"}
             </Button>
           </div>
         </form>
