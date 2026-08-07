@@ -30,6 +30,9 @@ type Restaurant = {
   venmo_handle?: string | null;
   zelle_name?: string | null;
   zelle_phone?: string | null;
+  chicken_price?: number | string | null;
+  beef_price?: number | string | null;
+  price_note?: string | null;
 };
 
 type MenuItem = {
@@ -105,7 +108,17 @@ function RestaurantsPage() {
       venmo_handle: r.venmo_handle ?? null,
       zelle_name: r.zelle_name ?? null,
       zelle_phone: r.zelle_phone ?? null,
+      chicken_price: r.chicken_price === null || r.chicken_price === undefined ? "" : String(r.chicken_price),
+      beef_price: r.beef_price === null || r.beef_price === undefined ? "" : String(r.beef_price),
+      price_note: r.price_note ?? null,
     });
+  };
+
+  const priceOrNull = (v: unknown) => {
+    const t = (v ?? "").toString().trim().replace(/^\$/, "");
+    if (!t) return null;
+    const n = Number(t);
+    return Number.isFinite(n) && n >= 0 ? n : null;
   };
 
   const saveEdit = async (id: string) => {
@@ -119,6 +132,9 @@ function RestaurantsPage() {
         venmo_handle: (edit.venmo_handle ?? "")?.toString().trim().replace(/^@/, "") || null,
         zelle_name: (edit.zelle_name ?? "")?.toString().trim() || null,
         zelle_phone: (edit.zelle_phone ?? "")?.toString().trim() || null,
+        chicken_price: priceOrNull(edit.chicken_price),
+        beef_price: priceOrNull(edit.beef_price),
+        price_note: (edit.price_note ?? "")?.toString().trim() || null,
       })
       .eq("id", id);
     if (error) return toast.error(error.message);
@@ -220,6 +236,29 @@ function RestaurantsPage() {
                         placeholder="Zelle phone number"
                       />
                     </div>
+                    <p className="text-xs text-muted-foreground pt-1">
+                      Online (Zelle / Venmo) prices — these include tax and fees and are only used in
+                      the Zelle update text.
+                    </p>
+                    <div className="grid sm:grid-cols-2 gap-2">
+                      <Input
+                        value={(edit.chicken_price as string) ?? ""}
+                        onChange={(e) => setEdit({ ...edit, chicken_price: e.target.value })}
+                        placeholder="Chicken price online (e.g. 24)"
+                        inputMode="decimal"
+                      />
+                      <Input
+                        value={(edit.beef_price as string) ?? ""}
+                        onChange={(e) => setEdit({ ...edit, beef_price: e.target.value })}
+                        placeholder="Beef price online (e.g. 29)"
+                        inputMode="decimal"
+                      />
+                    </div>
+                    <Input
+                      value={(edit.price_note as string) ?? ""}
+                      onChange={(e) => setEdit({ ...edit, price_note: e.target.value })}
+                      placeholder="Price note (e.g. includes tax and delivery)"
+                    />
                   </div>
                   <div className="flex gap-2">
                     <Button size="sm" onClick={() => saveEdit(r.id)} className="bg-ink text-cream hover:bg-ink/90">

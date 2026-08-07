@@ -15,16 +15,22 @@ import { OpenOnSiteBanner } from "@/components/open-on-site-banner";
 import {
   cuisineLabel,
   matchRestaurant,
+  paymentLines,
   mealOrderText,
   renderMealTemplate,
   smsNumber,
 } from "@/lib/meal-text-message";
 
 
-import { DEFAULT_MEAL_TEXT_TEMPLATE, type MealRestaurant } from "@/lib/meal-text-defaults";
+import {
+  DEFAULT_MEAL_TEXT_TEMPLATE,
+  DEFAULT_ZELLE_UPDATE_TEMPLATE,
+  type MealRestaurant,
+} from "@/lib/meal-text-defaults";
 import {
   getMyMealTexts,
   markMyMealTextSent,
+  markMyZelleTextSent,
   type CommitteeMealTextRow,
 } from "@/lib/committee-meal-texts.functions";
 
@@ -57,11 +63,15 @@ function escapeCsv(value: string | number | null | undefined) {
 function MyMealTextsPage() {
   const load = useServerFn(getMyMealTexts);
   const markSent = useServerFn(markMyMealTextSent);
+  const markZelle = useServerFn(markMyZelleTextSent);
 
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<CommitteeMealTextRow[]>([]);
   const [restaurants, setRestaurants] = useState<MealRestaurant[]>([]);
   const [template, setTemplate] = useState(DEFAULT_MEAL_TEXT_TEMPLATE);
+  const [zelleTemplate, setZelleTemplate] = useState(DEFAULT_ZELLE_UPDATE_TEMPLATE);
+  // "zelle" = the follow-up Zelle/Venmo text for guests already texted once.
+  const [mode, setMode] = useState<"meal" | "zelle">("meal");
   const [isAdmin, setIsAdmin] = useState(false);
   const [committee, setCommittee] = useState<Array<{ id: string; name: string }>>([]);
   const [actingFor, setActingFor] = useState<string | null>(null);
@@ -77,6 +87,7 @@ function MyMealTextsPage() {
       setRows(res.rows);
       setRestaurants(res.restaurants);
       setTemplate(res.template);
+      setZelleTemplate(res.zelleTemplate);
       setIsAdmin(res.isAdmin);
       setCommittee(res.committee);
     } catch (e) {
@@ -90,20 +101,28 @@ function MyMealTextsPage() {
     void refresh(actingFor);
   }, [actingFor]);
 
+  const isZelle = mode === "zelle";
+  const modeRows = useMemo(
+    () => (isZelle ? rows.filter((r) => r.sent_at) : rows),
+    [rows, isZelle],
+  );
+
   const groups = useMemo(() => {
     const map = new Map<string, CommitteeMealTextRow[]>();
-    for (const r of rows) {
+    for (const r of modeRows) {
       if (!map.has(r.cuisine)) map.set(r.cuisine, []);
       map.get(r.cuisine)!.push(r);
     }
     return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  }, [rows]);
+  }, [modeRows]);
 
   const restaurantFor = (cuisine: string) => matchRestaurant(restaurants, cuisine);
 
   const bodyFor = (row: CommitteeMealTextRow) => {
     const r = restaurantFor(row.cuisine);
-    return renderMealTemplate(template, {
+    const pay = paymentLines(r);
+    return renderMealTemplate(isZelle ? zelleTemplate : template, {
+      ...pay,
       firstName: row.name.split(/\s+/)[0] ?? row.name,
       restaurantName: r?.name ?? row.cuisine,
       restaurantCuisine: cuisineLabel(r?.cuisine?.trim() || row.cuisine),
@@ -117,16 +136,19 @@ function MyMealTextsPage() {
     const key = `${row.id}::${row.cuisine}`;
     setBusy(key);
     try {
-      const res = await markSent({
-        data: {
-          marks: [{ preorderId: row.id, cuisine: row.cuisine }],
-          sent,
-          actingForInviterId: actingFor,
-        },
-      });
+      const data = {
+        marks: [{ preorderId: row.id, cuisine: row.cuisine }],
+        sent,
+        actingForInviterId: actingFor,
+      };
+      const res = isZelle ? await markZelle({ data }) : await markSent({ data });
       setRows((prev) =>
         prev.map((r) =>
-          r.id === row.id && r.cuisine === row.cuisine ? { ...r, sent_at: res.sentAt } : r,
+          r.id === row.id && r.cuisine === row.cuisine
+            ? isZelle
+              ? { ...r, zelle_sent_at: res.sentAt }
+              : { ...r, sent_at: res.sentAt }
+            : r,
         ),
       );
     } catch (e) {
@@ -172,10 +194,10 @@ function MyMealTextsPage() {
     }
   };
 
-  const totalOrders = rows.length;
-  const totalPeople = new Set(rows.map((r) => r.id)).size;
-  const totalMeals = rows.reduce((s, r) => s + r.qty, 0);
-  const sentCount = rows.filter((r) => r.sent_at).length;
+  const totalOrders = modeRows.length;
+  const totalPeople = new Set(modeRows.map((r) => r.id)).size;
+  const totalMeals = modeRows.reduce((s, r) => s + r.qty, 0);
+  const sentCount = modeRows.filter((r) => (isZelle ? r.zelle_sent_at : r.sent_at)).length;
 
   return (
     <div className="space-y-5">
@@ -196,10 +218,26 @@ function MyMealTextsPage() {
           they appear once per restaurant and each one is checked off separately.
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
+          <Button size="sm" variant={isZelle ? "outline" : "default"} onClick={() => setMode("meal")}>
+            Meal texts
+          </Button>
+          <Button size="sm" variant={isZelle ? "default" : "outline"} onClick={() => setMode("zelle")}>
+            Zelle update
+          </Button>
+        </div>
+        {isZelle && (
+          <p className="text-sm text-muted-foreground">
+            Only guests you already texted appear here. Send them the Zelle / Venmo option and check
+            it off — this mark is kept separate from the first meal text.
+          </p>
+        )}
+        <div className="flex flex-wrap gap-2 pt-1">
           <Badge variant="outline">{totalPeople} guests</Badge>
           <Badge variant="outline">{totalOrders} restaurant texts</Badge>
           <Badge variant="outline">{totalMeals} meals</Badge>
-          <Badge variant="outline">{sentCount} texted</Badge>
+          <Badge variant="outline">
+            {sentCount} {isZelle ? "sent the Zelle update" : "texted"}
+          </Badge>
           <Badge variant="outline">{totalOrders - sentCount} to go</Badge>
         </div>
       </Card>
@@ -232,7 +270,9 @@ function MyMealTextsPage() {
       <div className="flex items-center gap-2">
         <Switch checked={onlyUnsent} onCheckedChange={setOnlyUnsent} id="only-unsent-mine" />
         <label htmlFor="only-unsent-mine" className="text-sm">
-          Show only the guests I haven't texted yet
+          {isZelle
+            ? "Show only the guests who haven't had the Zelle update"
+            : "Show only the guests I haven't texted yet"}
         </label>
       </div>
 
@@ -251,7 +291,9 @@ function MyMealTextsPage() {
       {groups.map(([cuisine, list]) => {
         const r = restaurantFor(cuisine);
         const onHold = r ? !r.order_ready : false;
-        const visible = onlyUnsent ? list.filter((x) => !x.sent_at) : list;
+        const visible = onlyUnsent
+          ? list.filter((x) => !(isZelle ? x.zelle_sent_at : x.sent_at))
+          : list;
         return (
           <Card key={cuisine} className="overflow-hidden">
             <div className="p-4 border-b border-border space-y-2">
@@ -288,24 +330,26 @@ function MyMealTextsPage() {
                 return (
                   <div
                     key={`${row.id}-${row.cuisine}`}
-                    className={`p-4 space-y-2 ${row.sent_at ? "bg-emerald-50/60" : ""}`}
+                    className={`p-4 space-y-2 ${(isZelle ? row.zelle_sent_at : row.sent_at) ? "bg-emerald-50/60" : ""}`}
                   >
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-medium">{row.name}</span>
                       <Badge variant="outline" className="text-[10px]">
                         {mealOrderText(row.qty, row.cuisine)}
                       </Badge>
-                      {row.sent_at ? (
+                      {(isZelle ? row.zelle_sent_at : row.sent_at) ? (
                         <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 text-[10px]">
-                          Texted {new Date(row.sent_at).toLocaleDateString()} ·{" "}
-                          {cuisineLabel(row.cuisine)}
+                          {isZelle ? "Zelle update sent" : "Texted"}{" "}
+                          {new Date((isZelle ? row.zelle_sent_at : row.sent_at)!).toLocaleDateString()}{" "}
+                          · {cuisineLabel(row.cuisine)}
                         </Badge>
                       ) : (
                         <Badge
                           variant="outline"
                           className="border-amber-400 text-amber-700 text-[10px]"
                         >
-                          Not texted about {cuisineLabel(row.cuisine)}
+                          {isZelle ? "No Zelle update yet for" : "Not texted about"}{" "}
+                          {cuisineLabel(row.cuisine)}
                         </Badge>
                       )}
                     </div>
@@ -327,7 +371,7 @@ function MyMealTextsPage() {
                       <Button size="sm" variant="outline" onClick={() => void copy(body)}>
                         <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy message
                       </Button>
-                      {row.sent_at ? (
+                      {(isZelle ? row.zelle_sent_at : row.sent_at) ? (
                         <Button
                           size="sm"
                           variant="ghost"
@@ -335,7 +379,7 @@ function MyMealTextsPage() {
                           onClick={() => void setSent(row, false)}
                         >
                           <Check className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
-                          Texted · Undo
+                          {isZelle ? "Zelle update sent · Undo" : "Texted · Undo"}
                         </Button>
                       ) : (
                         <Button

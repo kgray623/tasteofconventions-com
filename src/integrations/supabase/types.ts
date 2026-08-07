@@ -842,6 +842,47 @@ export type Database = {
           },
         ]
       }
+      meal_zelle_text_sends: {
+        Row: {
+          created_at: string
+          cuisine: string
+          id: string
+          marked_by: string | null
+          marked_by_label: string | null
+          preorder_id: string
+          sent_at: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cuisine: string
+          id?: string
+          marked_by?: string | null
+          marked_by_label?: string | null
+          preorder_id: string
+          sent_at?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cuisine?: string
+          id?: string
+          marked_by?: string | null
+          marked_by_label?: string | null
+          preorder_id?: string
+          sent_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_zelle_text_sends_preorder_id_fkey"
+            columns: ["preorder_id"]
+            isOneToOne: false
+            referencedRelation: "cuisine_preorders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_items: {
         Row: {
           available: boolean
@@ -1084,6 +1125,8 @@ export type Database = {
       restaurants: {
         Row: {
           active: boolean
+          beef_price: number | null
+          chicken_price: number | null
           created_at: string
           cuisine: string | null
           description: string | null
@@ -1092,6 +1135,7 @@ export type Database = {
           name: string
           order_ready: boolean
           phone: string | null
+          price_note: string | null
           venmo_handle: string | null
           website: string | null
           zelle_name: string | null
@@ -1100,6 +1144,8 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          beef_price?: number | null
+          chicken_price?: number | null
           created_at?: string
           cuisine?: string | null
           description?: string | null
@@ -1108,6 +1154,7 @@ export type Database = {
           name: string
           order_ready?: boolean
           phone?: string | null
+          price_note?: string | null
           venmo_handle?: string | null
           website?: string | null
           zelle_name?: string | null
@@ -1116,6 +1163,8 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          beef_price?: number | null
+          chicken_price?: number | null
           created_at?: string
           cuisine?: string | null
           description?: string | null
@@ -1124,6 +1173,7 @@ export type Database = {
           name?: string
           order_ready?: boolean
           phone?: string | null
+          price_note?: string | null
           venmo_handle?: string | null
           website?: string | null
           zelle_name?: string | null

@@ -11,14 +11,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { getErrorMessage } from "@/lib/async-safety";
 import { downloadTextFile, openTextInNewTab } from "@/lib/download-file";
-import { smsNumber, cuisineLabel } from "@/lib/meal-text-message";
+import { smsNumber, cuisineLabel, paymentLines, renderMealTemplate } from "@/lib/meal-text-message";
 import { SmsTextButton } from "@/components/sms-text-button";
 import { OpenOnSiteBanner } from "@/components/open-on-site-banner";
 
 import {
   DEFAULT_MEAL_TEXT_TEMPLATE,
+  DEFAULT_ZELLE_UPDATE_TEMPLATE,
   getMealTextData,
   markMealTextSent,
+  markZelleTextSent,
   saveMealTextTemplate,
   saveRestaurantContact,
   type MealRestaurant,
@@ -46,27 +48,6 @@ export const Route = createFileRoute("/_authenticated/admin/meal-texts")({
   component: MealTextsPage,
 });
 
-function renderTemplate(
-  tpl: string,
-  ctx: {
-    firstName: string;
-    restaurantName: string;
-    restaurantCuisine: string;
-    restaurantPhone: string;
-    restaurantWebsite: string;
-    order: string;
-  },
-) {
-  return tpl
-    .replaceAll("{first_name}", ctx.firstName)
-    .replaceAll("{restaurant_name}", ctx.restaurantName)
-    .replaceAll("{restaurant_cuisine}", ctx.restaurantCuisine)
-    .replaceAll("{restaurant_phone}", ctx.restaurantPhone)
-    .replaceAll("{restaurant_website}", ctx.restaurantWebsite)
-    .replaceAll("{order}", ctx.order)
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}
 
 
 const orderText = (qty: number, cuisine: string) =>
@@ -77,11 +58,16 @@ function MealTextsPage() {
   const saveContact = useServerFn(saveRestaurantContact);
   const saveTemplate = useServerFn(saveMealTextTemplate);
   const markSent = useServerFn(markMealTextSent);
+  const markZelle = useServerFn(markZelleTextSent);
 
   const [loading, setLoading] = useState(true);
   const [restaurants, setRestaurants] = useState<MealRestaurant[]>([]);
   const [rows, setRows] = useState<MealTextRow[]>([]);
   const [template, setTemplate] = useState(DEFAULT_MEAL_TEXT_TEMPLATE);
+  const [zelleTemplate, setZelleTemplate] = useState(DEFAULT_ZELLE_UPDATE_TEMPLATE);
+  // "meal" = the original restaurant text. "zelle" = the Zelle/Venmo follow-up
+  // for guests already texted. The two marks are tracked separately.
+  const [mode, setMode] = useState<"meal" | "zelle">("meal");
   const [savingTpl, setSavingTpl] = useState(false);
   const [onlyUnsent, setOnlyUnsent] = useState(false);
   const [inviterFilter, setInviterFilter] = useState("all");
@@ -94,6 +80,7 @@ function MealTextsPage() {
       setRestaurants(res.restaurants);
       setRows(res.rows);
       setTemplate(res.template);
+      setZelleTemplate(res.zelleTemplate);
     } catch (e) {
       toast.error("Couldn't load the meal orders", { description: getErrorMessage(e) });
     } finally {
@@ -113,9 +100,15 @@ function MealTextsPage() {
         (cuisine === "Myanmar" && r.name.toLowerCase().includes("burmese")),
     );
 
+  // In Zelle-update mode only guests who were already texted appear.
+  const modeRows = useMemo(
+    () => (mode === "zelle" ? rows.filter((r) => r.sent_at) : rows),
+    [rows, mode],
+  );
+
   const groups = useMemo(() => {
     const map = new Map<string, MealTextRow[]>();
-    for (const r of rows) {
+    for (const r of modeRows) {
       if (!map.has(r.cuisine)) map.set(r.cuisine, []);
       map.get(r.cuisine)!.push(r);
     }
@@ -123,22 +116,22 @@ function MealTextsPage() {
       list.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
     }
     return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  }, [rows]);
+  }, [modeRows]);
 
   const inviterOptions = useMemo(() => {
     // Count outstanding restaurant texts (one per guest per cuisine), so this
     // matches the pending numbers on the tracker card exactly.
     const seen = new Map<string, number>();
-    for (const r of rows) {
-      if (r.sent_at) continue;
+    for (const r of modeRows) {
+      if (mode === "zelle" ? r.zelle_sent_at : r.sent_at) continue;
       seen.set(r.inviter, (seen.get(r.inviter) ?? 0) + 1);
     }
     return [...seen.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-  }, [rows]);
+  }, [modeRows, mode]);
 
 
   const downloadPending = () => {
-    const pending = rows.filter((r) => !r.sent_at);
+    const pending = modeRows.filter((r) => (mode === "zelle" ? !r.zelle_sent_at : !r.sent_at));
     if (pending.length === 0) {
       toast.error("Everyone in this list has been texted");
       return;
@@ -153,7 +146,9 @@ function MealTextsPage() {
         [r.name, r.phone, r.cuisine, r.qty, r.inviter, "Not yet"].map(esc).join(","),
       ),
     ].join("\n");
-    const name = `pre-pay-pending-${new Date().toISOString().slice(0, 10)}.csv`;
+    const name = `${mode === "zelle" ? "zelle-update-pending" : "pre-pay-pending"}-${new Date()
+      .toISOString()
+      .slice(0, 10)}.csv`;
     const res = downloadTextFile(name, csv);
     if (res.ok) {
       toast.success("Pending list downloaded");
@@ -166,7 +161,9 @@ function MealTextsPage() {
 
   const bodyFor = (row: MealTextRow) => {
     const r = restaurantFor(row.cuisine);
-    return renderTemplate(template, {
+    const pay = paymentLines(r);
+    return renderMealTemplate(mode === "zelle" ? zelleTemplate : template, {
+      ...pay,
       firstName: row.name.split(/\s+/)[0] ?? row.name,
       restaurantName: r?.name ?? row.cuisine,
       restaurantCuisine: cuisineLabel(r?.cuisine?.trim() || row.cuisine),
@@ -180,12 +177,15 @@ function MealTextsPage() {
     const key = `${row.id}::${row.cuisine}`;
     setBusy(key);
     try {
-      const res = await markSent({
-        data: { marks: [{ preorderId: row.id, cuisine: row.cuisine }], sent },
-      });
+      const data = { marks: [{ preorderId: row.id, cuisine: row.cuisine }], sent };
+      const res = mode === "zelle" ? await markZelle({ data }) : await markSent({ data });
       setRows((prev) =>
         prev.map((r) =>
-          r.id === row.id && r.cuisine === row.cuisine ? { ...r, sent_at: res.sentAt } : r,
+          r.id === row.id && r.cuisine === row.cuisine
+            ? mode === "zelle"
+              ? { ...r, zelle_sent_at: res.sentAt }
+              : { ...r, sent_at: res.sentAt }
+            : r,
         ),
       );
     } catch (e) {
@@ -227,10 +227,11 @@ function MealTextsPage() {
     }
   };
 
-  const totalOrders = rows.length;
-  const totalHouseholds = new Set(rows.map((r) => r.id)).size;
-  const totalMeals = rows.reduce((s, r) => s + r.qty, 0);
-  const sentCount = rows.filter((r) => r.sent_at).length;
+  const totalOrders = modeRows.length;
+  const totalHouseholds = new Set(modeRows.map((r) => r.id)).size;
+  const totalMeals = modeRows.reduce((s, r) => s + r.qty, 0);
+  const sentCount = modeRows.filter((r) => (mode === "zelle" ? r.zelle_sent_at : r.sent_at)).length;
+  const isZelle = mode === "zelle";
 
   return (
     <div className="space-y-6">
@@ -240,16 +241,34 @@ function MealTextsPage() {
           <MessageSquare className="w-5 h-5 text-terracotta" />
           <h2 className="font-display text-2xl">Meal texts</h2>
         </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant={isZelle ? "outline" : "default"}
+            onClick={() => setMode("meal")}
+          >
+            Meal texts
+          </Button>
+          <Button
+            size="sm"
+            variant={isZelle ? "default" : "outline"}
+            onClick={() => setMode("zelle")}
+          >
+            Zelle update
+          </Button>
+        </div>
         <p className="text-sm text-muted-foreground">
-          Every text opens in your own Messages app with the wording already written — you just press
-          send. Nothing is sent automatically. Each restaurant is texted and checked off separately,
-          so a guest who ordered from two restaurants needs two texts.
+          {isZelle
+            ? "Only guests you have already texted appear here. Send them the Zelle / Venmo payment option, then check them off. This mark is kept completely separate from the original meal text."
+            : "Every text opens in your own Messages app with the wording already written — you just press send. Nothing is sent automatically. Each restaurant is texted and checked off separately, so a guest who ordered from two restaurants needs two texts."}
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
           <Badge variant="outline">{totalHouseholds} households</Badge>
           <Badge variant="outline">{totalOrders} restaurant texts</Badge>
           <Badge variant="outline">{totalMeals} meals</Badge>
-          <Badge variant="outline">{sentCount} texted</Badge>
+          <Badge variant="outline">
+            {sentCount} {isZelle ? "sent the Zelle update" : "texted"}
+          </Badge>
           <Badge variant="outline">{totalOrders - sentCount} still to text</Badge>
         </div>
 
@@ -321,13 +340,17 @@ function MealTextsPage() {
 
       <Card className="p-5 space-y-3">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <p className="font-medium">Message wording</p>
+          <p className="font-medium">{isZelle ? "Zelle update wording" : "Message wording"}</p>
           <div className="flex gap-2">
             <Button
               variant="ghost"
               size="sm"
               className="text-xs"
-              onClick={() => setTemplate(DEFAULT_MEAL_TEXT_TEMPLATE)}
+              onClick={() =>
+                isZelle
+                  ? setZelleTemplate(DEFAULT_ZELLE_UPDATE_TEMPLATE)
+                  : setTemplate(DEFAULT_MEAL_TEXT_TEMPLATE)
+              }
             >
               <RotateCcw className="w-3 h-3 mr-1" /> Reset
             </Button>
@@ -337,7 +360,11 @@ function MealTextsPage() {
               onClick={async () => {
                 setSavingTpl(true);
                 try {
-                  await saveTemplate({ data: { template } });
+                  await saveTemplate({
+                    data: isZelle
+                      ? { template: zelleTemplate, kind: "zelle" as const }
+                      : { template, kind: "meal" as const },
+                  });
                   toast.success("Wording saved");
                 } catch (e) {
                   toast.error("Couldn't save", { description: getErrorMessage(e) });
@@ -351,15 +378,17 @@ function MealTextsPage() {
           </div>
         </div>
         <Textarea
-          value={template}
-          onChange={(e) => setTemplate(e.target.value)}
+          value={isZelle ? zelleTemplate : template}
+          onChange={(e) => (isZelle ? setZelleTemplate(e.target.value) : setTemplate(e.target.value))}
           rows={9}
           className="font-mono text-sm"
         />
         <p className="text-xs text-muted-foreground">
           Placeholders: <code>{"{first_name}"}</code>, <code>{"{restaurant_name}"}</code>,{" "}
           <code>{"{restaurant_cuisine}"}</code>, <code>{"{restaurant_phone}"}</code>,{" "}
-          <code>{"{restaurant_website}"}</code>, <code>{"{order}"}</code>.
+          <code>{"{restaurant_website}"}</code>, <code>{"{order}"}</code>,{" "}
+          <code>{"{payment_options}"}</code>, <code>{"{zelle_line}"}</code>,{" "}
+          <code>{"{venmo_line}"}</code>, <code>{"{online_prices}"}</code>.
         </p>
 
       </Card>
@@ -368,7 +397,9 @@ function MealTextsPage() {
         <div className="flex items-center gap-2">
           <Switch checked={onlyUnsent} onCheckedChange={setOnlyUnsent} id="only-unsent" />
           <label htmlFor="only-unsent" className="text-sm">
-            Show only people I haven't texted yet
+            {isZelle
+              ? "Show only people who haven't had the Zelle update"
+              : "Show only people I haven't texted yet"}
           </label>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -407,7 +438,7 @@ function MealTextsPage() {
         const r = restaurantFor(cuisine);
         const onHold = r ? !r.order_ready : false;
         const visible = list
-          .filter((x) => (onlyUnsent ? !x.sent_at : true))
+          .filter((x) => (onlyUnsent ? !(isZelle ? x.zelle_sent_at : x.sent_at) : true))
           .filter((x) => (inviterFilter === "all" ? true : x.inviter === inviterFilter));
         return (
           <Card key={cuisine} className="overflow-hidden">
@@ -443,14 +474,16 @@ function MealTextsPage() {
                       <Badge variant="outline" className="text-[10px]">
                         {orderText(row.qty, row.cuisine)}
                       </Badge>
-                      {row.sent_at ? (
+                      {(isZelle ? row.zelle_sent_at : row.sent_at) ? (
                         <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 text-[10px]">
-                          Texted {new Date(row.sent_at).toLocaleDateString()} ·{" "}
-                          {cuisineLabel(row.cuisine)}
+                          {isZelle ? "Zelle update sent" : "Texted"}{" "}
+                          {new Date((isZelle ? row.zelle_sent_at : row.sent_at)!).toLocaleDateString()}{" "}
+                          · {cuisineLabel(row.cuisine)}
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="border-amber-400 text-amber-700 text-[10px]">
-                          Not texted about {cuisineLabel(row.cuisine)}
+                          {isZelle ? "No Zelle update yet for" : "Not texted about"}{" "}
+                          {cuisineLabel(row.cuisine)}
                         </Badge>
                       )}
                     </div>
@@ -471,7 +504,7 @@ function MealTextsPage() {
                       <Button size="sm" variant="outline" onClick={() => void copy(body)}>
                         <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy
                       </Button>
-                      {row.sent_at ? (
+                      {(isZelle ? row.zelle_sent_at : row.sent_at) ? (
                         <Button
                           size="sm"
                           variant="ghost"
@@ -479,7 +512,7 @@ function MealTextsPage() {
                           onClick={() => void setSent(row, false)}
                         >
                           <Check className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
-                          Texted · Undo
+                          {isZelle ? "Zelle update sent · Undo" : "Texted · Undo"}
                         </Button>
                       ) : (
                         <Button
