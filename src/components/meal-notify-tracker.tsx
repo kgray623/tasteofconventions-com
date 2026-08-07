@@ -129,9 +129,10 @@ export function MealNotifyTracker({ compact = false }: { compact?: boolean }) {
                 <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <th className="py-2 pr-3">Committee member</th>
                   <th className="py-2 pr-3 text-right">Invites</th>
-                  <th className="py-2 pr-3 text-right">Pre-orders</th>
-                  <th className="py-2 pr-3 text-right">Notified</th>
+                  <th className="py-2 pr-3 text-right">Meal orders</th>
+                  <th className="py-2 pr-3 text-right">Texted</th>
                   <th className="py-2 text-right">Still pending</th>
+
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
