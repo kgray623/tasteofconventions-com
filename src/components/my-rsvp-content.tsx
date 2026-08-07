@@ -14,6 +14,7 @@ import { MEAL_INTRO_COPY } from "@/lib/meal-pricing";
 import {
   MealPriceNote,
   MealRestaurantContact,
+  findRestaurantForCuisine,
   useMealRestaurants,
 } from "@/components/meal-restaurant-contact";
 import africanMeal1 from "@/assets/african-meal-1.jpg.asset.json";
