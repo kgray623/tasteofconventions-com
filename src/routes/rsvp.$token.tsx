@@ -426,7 +426,7 @@ function RsvpPage() {
               {orderDone && (
                 <Card className="p-7 space-y-3">
                   <div className="flex items-center justify-between">
-                    <h2 className="font-display text-2xl">What you pre-ordered</h2>
+                    <h2 className="font-display text-2xl">What you ordered</h2>
                     <span className="font-display text-xl text-terracotta">
                       ${Number(data.order?.total ?? 0).toFixed(2)}
                     </span>
