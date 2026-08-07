@@ -106,6 +106,7 @@ function MyMealTextsPage() {
     return renderMealTemplate(template, {
       firstName: row.name.split(/\s+/)[0] ?? row.name,
       restaurantName: r?.name ?? row.cuisine,
+      restaurantCuisine: cuisineLabel(r?.cuisine?.trim() || row.cuisine),
       restaurantPhone: r?.phone?.trim() || "[ask the admin for the restaurant's phone number]",
       restaurantWebsite: r?.website?.trim() || "",
       order: mealOrderText(row.qty, row.cuisine),

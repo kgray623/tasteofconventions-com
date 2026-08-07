@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { getErrorMessage } from "@/lib/async-safety";
 import { downloadTextFile, openTextInNewTab } from "@/lib/download-file";
-import { smsNumber } from "@/lib/meal-text-message";
+import { smsNumber, cuisineLabel } from "@/lib/meal-text-message";
 import { SmsTextButton } from "@/components/sms-text-button";
 import { OpenOnSiteBanner } from "@/components/open-on-site-banner";
 
@@ -51,6 +51,7 @@ function renderTemplate(
   ctx: {
     firstName: string;
     restaurantName: string;
+    restaurantCuisine: string;
     restaurantPhone: string;
     restaurantWebsite: string;
     order: string;
@@ -59,6 +60,7 @@ function renderTemplate(
   return tpl
     .replaceAll("{first_name}", ctx.firstName)
     .replaceAll("{restaurant_name}", ctx.restaurantName)
+    .replaceAll("{restaurant_cuisine}", ctx.restaurantCuisine)
     .replaceAll("{restaurant_phone}", ctx.restaurantPhone)
     .replaceAll("{restaurant_website}", ctx.restaurantWebsite)
     .replaceAll("{order}", ctx.order)
@@ -168,6 +170,7 @@ function MealTextsPage() {
     return renderTemplate(template, {
       firstName: row.name.split(/\s+/)[0] ?? row.name,
       restaurantName: r?.name ?? row.cuisine,
+      restaurantCuisine: cuisineLabel(r?.cuisine?.trim() || row.cuisine),
       restaurantPhone: r?.phone?.trim() || "[add the restaurant's phone number]",
       restaurantWebsite: r?.website?.trim() || "",
       order: orderText(row.qty, row.cuisine),
@@ -347,8 +350,8 @@ function MealTextsPage() {
         />
         <p className="text-xs text-muted-foreground">
           Placeholders: <code>{"{first_name}"}</code>, <code>{"{restaurant_name}"}</code>,{" "}
-          <code>{"{restaurant_phone}"}</code>, <code>{"{restaurant_website}"}</code>,{" "}
-          <code>{"{order}"}</code>.
+          <code>{"{restaurant_cuisine}"}</code>, <code>{"{restaurant_phone}"}</code>,{" "}
+          <code>{"{restaurant_website}"}</code>, <code>{"{order}"}</code>.
         </p>
 
       </Card>
