@@ -130,6 +130,7 @@ function RsvpPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invitedBy]);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const { data: restaurants } = useMealRestaurants();
 
   const [mealStatuses, setMealStatuses] = useState<
     Array<{ cuisine: string; confirmed: boolean; confirmed_at: string | null }>
