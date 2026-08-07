@@ -98,6 +98,7 @@ function PreviewPage() {
     { key: "Indonesian", label: "Indonesian", photos: indonesianPhotos },
   ];
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const { data: restaurants } = useMealRestaurants();
   const phoneDigits = phone.replace(/\D/g, "");
   const canChooseMeals = name.trim().length > 0 && phoneDigits.length >= 7;
 
