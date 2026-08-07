@@ -3,10 +3,11 @@ export const DEFAULT_MEAL_TEXT_TEMPLATE = `Hi {first_name} —
 
 Because you RSVP'd for A Taste of Special Conventions and pre ordered a catered meal, the following is the contact information for the restaurant to pre-pay your catered meal direct.
 
-{restaurant_name} — {restaurant_phone}
+{restaurant_name} — {restaurant_cuisine} the phone number is {restaurant_phone}
+
 {restaurant_website}
 
-Your order is for {order}
+Your order is for {order}.
 
 The restaurant has been notified you will call to pre pay your meal, so please do so promptly.
 
