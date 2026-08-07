@@ -32,6 +32,12 @@ import { withTimeout } from "@/lib/async-safety";
 import { clearDraftScope, useDraftState } from "@/hooks/use-draft-state";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { MEAL_INTRO_COPY } from "@/lib/meal-pricing";
+import {
+  MealPriceNote,
+  MealRestaurantContact,
+  useMealRestaurants,
+} from "@/components/meal-restaurant-contact";
 import africanMeal1 from "@/assets/african-meal-1.jpg.asset.json";
 import africanMeal2 from "@/assets/african-meal-2.jpg.asset.json";
 import africanMeal3 from "@/assets/african-meal-3.jpg.asset.json";
