@@ -314,7 +314,7 @@ export function MyRsvpContent() {
               <h2 className="font-display text-2xl">Meal payment received</h2>
             </div>
             <p className="text-sm text-muted-foreground">
-              The restaurant has confirmed your pre-payment. Show this screen (or your receipt) at
+              The restaurant has confirmed your payment. Show this screen (or your receipt) at
               the event to pick up your meal.
             </p>
             <ul className="divide-y divide-border">
