@@ -1,7 +1,11 @@
 // Server-only helpers for committee-scoped meal texts. Kept out of the
 // *.functions.ts module scope so nothing server-only reaches client bundles.
 import { phoneTail } from "@/lib/phone";
-import { DEFAULT_MEAL_TEXT_TEMPLATE, type MealRestaurant } from "@/lib/meal-text-defaults";
+import {
+  DEFAULT_MEAL_TEXT_TEMPLATE,
+  DEFAULT_ZELLE_UPDATE_TEMPLATE,
+  type MealRestaurant,
+} from "@/lib/meal-text-defaults";
 
 export const normName = (s: string | null | undefined) =>
   (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
@@ -22,12 +26,14 @@ export type CommitteeMealTextRow = {
   cuisine: string;
   qty: number;
   sent_at: string | null;
+  zelle_sent_at: string | null;
 };
 
 export type CommitteeMealTextsResult = {
   restaurants: MealRestaurant[];
   rows: CommitteeMealTextRow[];
   template: string;
+  zelleTemplate: string;
   isAdmin: boolean;
   actingFor: { id: string; name: string } | null;
   committee: Array<{ id: string; name: string }>;
@@ -101,12 +107,19 @@ export async function loadCommitteeMealTexts(
         .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
     : [];
 
-  const [{ data: restaurants }, { data: setting }] = await Promise.all([
+  const [{ data: restaurants }, { data: setting }, { data: zelleSetting }] = await Promise.all([
     supabaseAdmin
       .from("restaurants")
-      .select("id,name,cuisine,phone,website,order_ready,active")
+      .select(
+        "id,name,cuisine,phone,website,order_ready,active,venmo_handle,zelle_name,zelle_phone,chicken_price,beef_price,price_note",
+      )
       .order("name"),
     supabaseAdmin.from("app_settings").select("value").eq("key", "meal_text_template").maybeSingle(),
+    supabaseAdmin
+      .from("app_settings")
+      .select("value")
+      .eq("key", "meal_zelle_text_template")
+      .maybeSingle(),
   ]);
 
   const restaurantList = ((restaurants ?? []) as any[])
@@ -117,11 +130,19 @@ export async function loadCommitteeMealTexts(
       cuisine: (r.cuisine ?? null) as string | null,
       phone: (r.phone ?? null) as string | null,
       website: (r.website ?? null) as string | null,
+      venmo_handle: (r.venmo_handle ?? null) as string | null,
+      zelle_name: (r.zelle_name ?? null) as string | null,
+      zelle_phone: (r.zelle_phone ?? null) as string | null,
+      chicken_price:
+        r.chicken_price === null || r.chicken_price === undefined ? null : Number(r.chicken_price),
+      beef_price: r.beef_price === null || r.beef_price === undefined ? null : Number(r.beef_price),
+      price_note: (r.price_note ?? null) as string | null,
       order_ready: r.order_ready !== false,
     })) as MealRestaurant[];
 
   const template = (setting?.value as string | undefined) ?? DEFAULT_MEAL_TEXT_TEMPLATE;
-  const base = { template, restaurants: restaurantList, isAdmin: identity.isAdmin, actingFor, committee };
+  const zelleTemplate = (zelleSetting?.value as string | undefined) ?? DEFAULT_ZELLE_UPDATE_TEMPLATE;
+  const base = { template, zelleTemplate, restaurants: restaurantList, isAdmin: identity.isAdmin, actingFor, committee };
 
   const eventId = events?.[0]?.id as string | undefined;
   if (!eventId || targetInviterIds.length === 0) return { ...base, rows: [] };
@@ -159,6 +180,14 @@ export async function loadCommitteeMealTexts(
     sentByMeal.set(`${s.preorder_id}::${normalizeCuisine(String(s.cuisine ?? ""))}`, s.sent_at);
   }
 
+  const { data: zelleSends } = await supabaseAdmin
+    .from("meal_zelle_text_sends")
+    .select("preorder_id,cuisine,sent_at");
+  const zelleByMeal = new Map<string, string>();
+  for (const s of (zelleSends ?? []) as any[]) {
+    zelleByMeal.set(`${s.preorder_id}::${normalizeCuisine(String(s.cuisine ?? ""))}`, s.sent_at);
+  }
+
 
 
   const rows: CommitteeMealTextRow[] = [];
@@ -187,6 +216,7 @@ export async function loadCommitteeMealTexts(
         cuisine,
         qty,
         sent_at: sentByMeal.get(`${p.id}::${cuisine}`) ?? null,
+        zelle_sent_at: zelleByMeal.get(`${p.id}::${cuisine}`) ?? null,
       });
     }
   }

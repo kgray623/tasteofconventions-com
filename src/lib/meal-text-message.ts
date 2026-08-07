@@ -105,7 +105,61 @@ export type MealTextContext = {
   restaurantPhone: string;
   restaurantWebsite: string;
   order: string;
+  paymentOptions?: string;
+  zelleLine?: string;
+  venmoLine?: string;
+  onlinePrices?: string;
 };
+
+type PaymentSource = {
+  phone?: string | null;
+  venmo_handle?: string | null;
+  zelle_name?: string | null;
+  zelle_phone?: string | null;
+  chicken_price?: number | string | null;
+  beef_price?: number | string | null;
+  price_note?: string | null;
+};
+
+const money = (v: number | string | null | undefined) => {
+  const n = typeof v === "string" ? Number(v) : v;
+  if (n === null || n === undefined || !Number.isFinite(n)) return null;
+  return Number.isInteger(n) ? `$${n}` : `$${n.toFixed(2)}`;
+};
+
+/** Payment lines for one restaurant — only the options that restaurant actually accepts. */
+export function paymentLines(r: PaymentSource | undefined | null) {
+  const phone = r?.phone?.trim() ?? "";
+  const venmo = r?.venmo_handle?.trim() ?? "";
+  const zellePhone = r?.zelle_phone?.trim() ?? "";
+  const zelleName = r?.zelle_name?.trim() ?? "";
+
+  const venmoLine = venmo ? `Venmo: @${venmo.replace(/^@/, "")}` : "";
+  const zelleLine = zellePhone
+    ? `Zelle: ${zellePhone}${zelleName ? ` (${zelleName})` : ""}`
+    : zelleName
+      ? `Zelle: ${zelleName}`
+      : "";
+
+  const chicken = money(r?.chicken_price ?? null);
+  const beef = money(r?.beef_price ?? null);
+  const note = r?.price_note?.trim() ?? "";
+  const priceParts = [chicken ? `chicken ${chicken}` : "", beef ? `beef ${beef}` : ""].filter(Boolean);
+  const onlinePrices =
+    priceParts.length > 0 && (venmoLine || zelleLine)
+      ? `If you pay by ${venmoLine && zelleLine ? "Zelle or Venmo" : venmoLine ? "Venmo" : "Zelle"}: ${priceParts.join(", ")}${note ? ` — ${note}` : ""}.`
+      : "";
+
+  const paymentOptions = [
+    phone ? `Pay by phone: ${phone}` : "",
+    venmoLine,
+    zelleLine,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return { paymentOptions, venmoLine, zelleLine, onlinePrices };
+}
 
 export function renderMealTemplate(tpl: string, ctx: MealTextContext) {
   return tpl
@@ -115,6 +169,10 @@ export function renderMealTemplate(tpl: string, ctx: MealTextContext) {
     .replaceAll("{restaurant_phone}", ctx.restaurantPhone)
     .replaceAll("{restaurant_website}", ctx.restaurantWebsite)
     .replaceAll("{order}", ctx.order)
+    .replaceAll("{payment_options}", ctx.paymentOptions ?? "")
+    .replaceAll("{zelle_line}", ctx.zelleLine ?? "")
+    .replaceAll("{venmo_line}", ctx.venmoLine ?? "")
+    .replaceAll("{online_prices}", ctx.onlinePrices ?? "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
