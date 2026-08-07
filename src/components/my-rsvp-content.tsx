@@ -10,6 +10,13 @@ import { Calendar, MapPin, Users, Check, X, UtensilsCrossed, Minus, Plus } from 
 import { withTimeout } from "@/lib/async-safety";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { MEAL_INTRO_COPY } from "@/lib/meal-pricing";
+import {
+  MealPriceNote,
+  MealRestaurantContact,
+  findRestaurantForCuisine,
+  useMealRestaurants,
+} from "@/components/meal-restaurant-contact";
 import africanMeal1 from "@/assets/african-meal-1.jpg.asset.json";
 import africanMeal2 from "@/assets/african-meal-2.jpg.asset.json";
 import africanMeal3 from "@/assets/african-meal-3.jpg.asset.json";
@@ -73,6 +80,7 @@ export function MyRsvpContent() {
   const [cuisineCounts, setCuisineCounts] = useState<Record<string, number>>({});
   const [savingMeals, setSavingMeals] = useState(false);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const { data: restaurants } = useMealRestaurants();
 
   useEffect(() => {
     if (loading) return;
@@ -224,7 +232,7 @@ export function MyRsvpContent() {
               <UtensilsCrossed className="w-6 h-6" strokeWidth={2.5} />
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-[0.3em] opacity-80">Pre-order</p>
+              <p className="text-[10px] uppercase tracking-[0.3em] opacity-80">Meal order</p>
               <p className="font-display text-2xl leading-tight">
                 {orderDone ? "ORDERED" : "No order yet"}
               </p>
@@ -245,7 +253,7 @@ export function MyRsvpContent() {
         {menuOrderDone && (
           <Card className="p-7 space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="font-display text-2xl">What you pre-ordered</h2>
+              <h2 className="font-display text-2xl">What you ordered</h2>
               <span className="font-display text-xl text-terracotta">
                 ${Number(order?.total ?? 0).toFixed(2)}
               </span>
@@ -307,7 +315,7 @@ export function MyRsvpContent() {
               <h2 className="font-display text-2xl">Meal payment received</h2>
             </div>
             <p className="text-sm text-muted-foreground">
-              The restaurant has confirmed your pre-payment. Show this screen (or your receipt) at
+              The restaurant has confirmed your payment. Show this screen (or your receipt) at
               the event to pick up your meal.
             </p>
             <ul className="divide-y divide-border">
@@ -318,7 +326,12 @@ export function MyRsvpContent() {
                     <span className="font-display text-lg w-8 text-emerald-700">
                       {p.qty_paid}×
                     </span>
-                    <span className="flex-1 text-ink">{p.cuisine}</span>
+                    <span className="flex-1 text-ink">
+                      {p.cuisine}
+                      {findRestaurantForCuisine(restaurants, p.cuisine)
+                        ? ` — confirmed by ${findRestaurantForCuisine(restaurants, p.cuisine)!.name}`
+                        : ""}
+                    </span>
                     <span className="text-emerald-700 font-medium">
                       Paid{p.paid_at ? ` · ${new Date(p.paid_at).toLocaleDateString()}` : ""}
                     </span>
@@ -332,11 +345,9 @@ export function MyRsvpContent() {
           <Card className="p-7 space-y-5">
             <div>
               <h2 className="font-display text-2xl">
-                Pre-order your catered cultural meal
+                Order your catered cultural meal
               </h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Cultural meals are in the twenty to thirty dollar range per meal. Each cuisine offers a beef or a chicken meal, and all meals are gluten-free. When you click below to make a pre-order, we will soon provide the menu option and the restaurant that you will contact direct to pay for your meal in advance.
-              </p>
+              <p className="text-sm text-muted-foreground mt-1">{MEAL_INTRO_COPY}</p>
             </div>
             <div className="space-y-3">
               {cuisines.map((cuisine) => {
@@ -348,6 +359,7 @@ export function MyRsvpContent() {
                     className="rounded-md border border-border bg-card p-4 space-y-3"
                   >
                     <h3 className="font-display text-2xl text-ink font-bold">{cuisine.label}</h3>
+                    <MealPriceNote />
                     {cuisine.photos && cuisine.photos.length > 0 && (
                       <div className="grid grid-cols-3 gap-2">
                         {cuisine.photos.map((src, i) => (
@@ -371,6 +383,7 @@ export function MyRsvpContent() {
                     {cuisine.note && (
                       <p className="text-sm italic text-muted-foreground">{cuisine.note}</p>
                     )}
+                    <MealRestaurantContact cuisineKey={cuisine.key} rows={restaurants} />
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-sm text-muted-foreground">Include this cuisine?</span>
                       <div className="grid grid-cols-2 gap-2 w-36">
@@ -485,7 +498,7 @@ export function MyRsvpContent() {
           </div>
           <Link to="/rsvp/$token" params={{ token: invitation.rsvp_token }}>
             <Button className="bg-ink text-cream hover:bg-ink/90 w-full">
-              {orderDone ? "Update RSVP or order" : "Update RSVP or place a pre-order"}
+              {orderDone ? "Update RSVP or order" : "Update RSVP or place a meal order"}
             </Button>
           </Link>
         </Card>

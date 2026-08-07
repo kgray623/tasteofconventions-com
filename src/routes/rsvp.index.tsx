@@ -16,6 +16,12 @@ import { useDraftState } from "@/hooks/use-draft-state";
 import { Check, X, Minus, Plus, ArrowLeft, Users, Video } from "lucide-react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { MEAL_INTRO_COPY } from "@/lib/meal-pricing";
+import {
+  MealPriceNote,
+  MealRestaurantContact,
+  useMealRestaurants,
+} from "@/components/meal-restaurant-contact";
 import africanMeal1 from "@/assets/african-meal-1.jpg.asset.json";
 import africanMeal2 from "@/assets/african-meal-2.jpg.asset.json";
 import africanMeal3 from "@/assets/african-meal-3.jpg.asset.json";
@@ -92,6 +98,7 @@ function PreviewPage() {
     { key: "Indonesian", label: "Indonesian", photos: indonesianPhotos },
   ];
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const { data: restaurants } = useMealRestaurants();
   const phoneDigits = phone.replace(/\D/g, "");
   const canChooseMeals = name.trim().length > 0 && phoneDigits.length >= 7;
 
@@ -324,11 +331,9 @@ function PreviewPage() {
           <Card className="p-7 space-y-5">
             <div>
               <h2 className="font-display text-2xl">
-                Pre-order your catered cultural meal
+                Order your catered cultural meal
               </h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Cultural meals are in the twenty to thirty dollar range per meal. Each cuisine offers a beef or a chicken meal, and all meals are gluten-free. When you click below to make a pre-order, we will soon provide the menu option and the restaurant that you will contact direct to pay for your meal in advance.
-              </p>
+              <p className="text-sm text-muted-foreground mt-1">{MEAL_INTRO_COPY}</p>
             </div>
             {!canChooseMeals && (
               <p className="text-sm text-terracotta">
@@ -350,6 +355,8 @@ function PreviewPage() {
                     className="rounded-md border border-border bg-card p-4 space-y-3"
                   >
                     <h3 className="font-display text-2xl text-ink font-bold">{cuisine.label}</h3>
+                    <MealPriceNote />
+                    <MealRestaurantContact cuisineKey={cuisine.key} rows={restaurants} />
                     {cuisine.photos && (
                       <div className="grid grid-cols-3 gap-2">
                         {cuisine.photos.map((src, i) => (
