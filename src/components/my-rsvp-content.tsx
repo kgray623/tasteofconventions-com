@@ -325,7 +325,12 @@ export function MyRsvpContent() {
                     <span className="font-display text-lg w-8 text-emerald-700">
                       {p.qty_paid}×
                     </span>
-                    <span className="flex-1 text-ink">{p.cuisine}</span>
+                    <span className="flex-1 text-ink">
+                      {p.cuisine}
+                      {findRestaurantForCuisine(restaurants, p.cuisine)
+                        ? ` — confirmed by ${findRestaurantForCuisine(restaurants, p.cuisine)!.name}`
+                        : ""}
+                    </span>
                     <span className="text-emerald-700 font-medium">
                       Paid{p.paid_at ? ` · ${new Date(p.paid_at).toLocaleDateString()}` : ""}
                     </span>
