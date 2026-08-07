@@ -86,6 +86,47 @@ export function MealRestaurantContact({
           <span className="text-muted-foreground">phone number coming soon</span>
         )}
       </p>
+      {(restaurant.venmo_handle || restaurant.zelle_phone) && (
+        <div className="rounded-md bg-background/70 p-2.5 space-y-1.5">
+          <p className="text-sm font-semibold text-ink">Or pay online</p>
+          {restaurant.venmo_handle && (
+            <p className="text-sm text-ink">
+              Venmo:{" "}
+              <a
+                href={`https://venmo.com/u/${restaurant.venmo_handle}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-terracotta underline underline-offset-4"
+              >
+                @{restaurant.venmo_handle}
+              </a>
+            </p>
+          )}
+          {restaurant.zelle_phone && (
+            <p className="text-sm text-ink">
+              Zelle: look up{" "}
+              <a
+                href={`tel:${restaurant.zelle_phone.replace(/[^\d+]/g, "")}`}
+                className="font-semibold text-terracotta underline underline-offset-4"
+              >
+                {restaurant.zelle_phone}
+              </a>
+              {restaurant.zelle_name ? ` — ${restaurant.zelle_name}` : ""}
+            </p>
+          )}
+          {restaurant.zelle_qr_url && (
+            <a href={restaurant.zelle_qr_url} target="_blank" rel="noopener noreferrer" className="block">
+              <img
+                src={restaurant.zelle_qr_url}
+                alt={`Zelle QR code to pay ${restaurant.zelle_name ?? restaurant.name}`}
+                loading="lazy"
+                className="h-32 w-32 rounded border border-border bg-white object-contain p-1"
+              />
+              <span className="text-xs text-muted-foreground">Tap to enlarge, then scan in your banking app</span>
+            </a>
+          )}
+        </div>
+      )}
       {restaurant.website && (
         <p className="text-sm">
           <a
