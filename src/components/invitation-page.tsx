@@ -232,15 +232,15 @@ export function InvitationPage() {
 
         <div className="mt-8 rounded-3xl border border-border bg-card shadow-elegant p-6 sm:p-8 text-center">
           <p className="text-xs uppercase tracking-[0.35em] text-magenta mb-3 flex items-center justify-center gap-2">
-            <UtensilsCrossed className="w-4 h-4" /> A cultural catered meal · Pre-order
+            <UtensilsCrossed className="w-4 h-4" /> A cultural catered meal · Order
           </p>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Pre-ordering a cultural catered meal is not required to attend this special event, but it is available to those who RSVP in person. You may choose to pre-order a catered meal, which are in the $20 to $30 per meal range. They include beef or chicken options, and all meals are gluten-free. Pre-ordering a meal lets the restaurants know how much food to prepare. You will be updated with the menu and the ability to pay the restaurant directly in the coming weeks before the event.
+            Ordering a cultural catered meal is not required to attend this special event, but it is available to those who RSVP in person. Each cuisine offers a chicken meal at $20 per plate or a beef meal at $25 per plate (*prices do not include sales tax or tip), and all meals are gluten-free. When you order, your RSVP page shows the restaurant&apos;s name and phone number so you can call and pay them directly. All catered meals must be paid for by Sunday, August 23.
           </p>
           <Link to="/rsvp" className="inline-block mt-5">
             <Button size="lg" className="bg-gradient-sunset text-white hover:opacity-90 px-8 shadow-glow border-0">
               <UtensilsCrossed className="mr-2 w-4 h-4" />
-              RSVP and choose meals
+              RSVP and order meals
             </Button>
           </Link>
         </div>

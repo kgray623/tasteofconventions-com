@@ -64,6 +64,7 @@ function PreorderPage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [counts, setCounts] = useState<Record<string, number>>({});
+  const { data: restaurants } = useMealRestaurants();
   const [submitting, setSubmitting] = useState(false);
 
   const setCount = (country: string, value: number) => {
@@ -164,12 +165,11 @@ function PreorderPage() {
                   const qty = counts[stop.country] ?? 0;
                   const qtyId = `qty-${stop.country.replace(/\s+/g, "-").toLowerCase()}`;
                   return (
-                    <div key={stop.country} className="flex items-center justify-between gap-4 p-4">
-                      <div className="min-w-0">
-                        <Label htmlFor={qtyId} className="font-display text-lg text-ink truncate block">{cuisineLabel(stop.country)}</Label>
-                        {stop.restaurant ? (
-                          <p className="text-xs text-muted-foreground truncate">{stop.restaurant}</p>
-                        ) : null}
+                    <div key={stop.country} className="p-4 space-y-3">
+                      <div className="min-w-0 space-y-2">
+                        <Label htmlFor={qtyId} className="font-display text-lg text-ink block">{cuisineLabel(stop.country)}</Label>
+                        <MealPriceNote />
+                        <MealRestaurantContact cuisineKey={stop.country} rows={restaurants} />
                       </div>
                       <div className="flex items-center gap-2">
                         <Button
