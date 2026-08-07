@@ -27,6 +27,9 @@ type Restaurant = {
   description: string | null;
   image_url: string | null;
   active: boolean;
+  venmo_handle?: string | null;
+  zelle_name?: string | null;
+  zelle_phone?: string | null;
 };
 
 type MenuItem = {
@@ -94,7 +97,15 @@ function RestaurantsPage() {
 
   const startEdit = (r: Restaurant) => {
     setEditingId(r.id);
-    setEdit({ name: r.name, cuisine: r.cuisine, description: r.description, image_url: r.image_url });
+    setEdit({
+      name: r.name,
+      cuisine: r.cuisine,
+      description: r.description,
+      image_url: r.image_url,
+      venmo_handle: r.venmo_handle ?? null,
+      zelle_name: r.zelle_name ?? null,
+      zelle_phone: r.zelle_phone ?? null,
+    });
   };
 
   const saveEdit = async (id: string) => {
@@ -105,6 +116,9 @@ function RestaurantsPage() {
         cuisine: (edit.cuisine ?? "")?.toString().trim() || null,
         description: (edit.description ?? "")?.toString().trim() || null,
         image_url: (edit.image_url ?? "")?.toString().trim() || null,
+        venmo_handle: (edit.venmo_handle ?? "")?.toString().trim().replace(/^@/, "") || null,
+        zelle_name: (edit.zelle_name ?? "")?.toString().trim() || null,
+        zelle_phone: (edit.zelle_phone ?? "")?.toString().trim() || null,
       })
       .eq("id", id);
     if (error) return toast.error(error.message);
@@ -185,6 +199,28 @@ function RestaurantsPage() {
                   </div>
                   <Input value={(edit.image_url as string) ?? ""} onChange={(e) => setEdit({ ...edit, image_url: e.target.value })} placeholder="Image URL" />
                   <Textarea value={(edit.description as string) ?? ""} onChange={(e) => setEdit({ ...edit, description: e.target.value })} placeholder="Description" rows={3} />
+                  <div className="rounded-md border border-border p-3 space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Digital payment options guests see with their meal (leave blank to hide)
+                    </p>
+                    <Input
+                      value={(edit.venmo_handle as string) ?? ""}
+                      onChange={(e) => setEdit({ ...edit, venmo_handle: e.target.value })}
+                      placeholder="Venmo username (without @)"
+                    />
+                    <div className="grid sm:grid-cols-2 gap-2">
+                      <Input
+                        value={(edit.zelle_name as string) ?? ""}
+                        onChange={(e) => setEdit({ ...edit, zelle_name: e.target.value })}
+                        placeholder="Zelle name"
+                      />
+                      <Input
+                        value={(edit.zelle_phone as string) ?? ""}
+                        onChange={(e) => setEdit({ ...edit, zelle_phone: e.target.value })}
+                        placeholder="Zelle phone number"
+                      />
+                    </div>
+                  </div>
                   <div className="flex gap-2">
                     <Button size="sm" onClick={() => saveEdit(r.id)} className="bg-ink text-cream hover:bg-ink/90">
                       <Check className="w-4 h-4 mr-1" /> Save

@@ -1092,7 +1092,11 @@ export type Database = {
           name: string
           order_ready: boolean
           phone: string | null
+          venmo_handle: string | null
           website: string | null
+          zelle_name: string | null
+          zelle_phone: string | null
+          zelle_qr_url: string | null
         }
         Insert: {
           active?: boolean
@@ -1104,7 +1108,11 @@ export type Database = {
           name: string
           order_ready?: boolean
           phone?: string | null
+          venmo_handle?: string | null
           website?: string | null
+          zelle_name?: string | null
+          zelle_phone?: string | null
+          zelle_qr_url?: string | null
         }
         Update: {
           active?: boolean
@@ -1116,7 +1124,11 @@ export type Database = {
           name?: string
           order_ready?: boolean
           phone?: string | null
+          venmo_handle?: string | null
           website?: string | null
+          zelle_name?: string | null
+          zelle_phone?: string | null
+          zelle_qr_url?: string | null
         }
         Relationships: []
       }
