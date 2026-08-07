@@ -113,9 +113,10 @@ export function MealNotifyTracker({ compact = false }: { compact?: boolean }) {
               {data.totals.pending}
               <span className="text-base text-muted-foreground font-sans">
                 {" "}
-                of {data.totals.preorders} still need a pre-pay text
+                of {data.totals.preorders} restaurant meals still need a pre-pay text
               </span>
             </p>
+
             <div className="flex flex-wrap gap-2 pt-2">
               <Badge variant="outline">{data.totals.notified} notified</Badge>
               <Badge variant="outline">{data.totals.meals} meals ordered</Badge>
