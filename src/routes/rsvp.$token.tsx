@@ -569,7 +569,7 @@ function RsvpPage() {
           <Card className="p-7 space-y-5">
             <div>
               <h2 className="font-display text-2xl">
-                Pre-order your catered cultural meal
+                Order your catered cultural meal
               </h2>
               {mealStatuses.length > 0 && (
                 <div className="mt-3 rounded-lg border-2 border-terracotta bg-terracotta/10 p-3">
@@ -588,9 +588,7 @@ function RsvpPage() {
                   </ul>
                 </div>
               )}
-              <p className="text-sm text-muted-foreground mt-1">
-                Cultural meals are $20.00–$30.00 per plate, paid directly to the restaurant. When you place your pre-order, you'll be provided the restaurant's contact information to pay for your order separately. Each cuisine offers a beef or chicken option, and all meals are gluten-free.
-              </p>
+              <p className="text-sm text-muted-foreground mt-1">{MEAL_INTRO_COPY}</p>
 
             </div>
             <div className="space-y-3">
@@ -605,6 +603,7 @@ function RsvpPage() {
                     className="rounded-md border border-border bg-card p-4 space-y-3"
                   >
                     <h3 className="font-display text-2xl text-ink font-bold">{cuisine.label}</h3>
+                    <MealPriceNote />
                     {cuisine.photos && (
                       <div className="grid grid-cols-3 gap-2">
                         {cuisine.photos.map((src, i) => (
@@ -623,6 +622,7 @@ function RsvpPage() {
                     {cuisine.note && (
                       <p className="text-sm italic text-muted-foreground">{cuisine.note}</p>
                     )}
+                    <MealRestaurantContact cuisineKey={cuisine.key} rows={restaurants} />
                     <div className="flex items-center justify-between gap-3">
                       <Label className="text-base font-display text-ink">{cuisine.label}</Label>
                       <div className="grid grid-cols-2 gap-2 w-36">
