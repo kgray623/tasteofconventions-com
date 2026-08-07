@@ -152,15 +152,43 @@ export const saveMealTextTemplate = createServerFn({ method: "POST" })
 export const markMealTextSent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ ids: z.array(z.string().uuid()).min(1).max(500), sent: z.boolean() }).parse(d),
+    z
+      .object({
+        marks: z
+          .array(z.object({ preorderId: z.string().uuid(), cuisine: z.string().min(1).max(80) }))
+          .min(1)
+          .max(500),
+        sent: z.boolean(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertStaff(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
-      .from("cuisine_preorders")
-      .update({ meal_text_sent_at: data.sent ? new Date().toISOString() : null })
-      .in("id", data.ids);
-    if (error) throw new Error(error.message);
-    return { ok: true, sentAt: data.sent ? new Date().toISOString() : null };
+    const sentAt = new Date().toISOString();
+
+    if (data.sent) {
+      const { error } = await supabaseAdmin.from("meal_text_sends").upsert(
+        data.marks.map((m) => ({
+          preorder_id: m.preorderId,
+          cuisine: m.cuisine,
+          sent_at: sentAt,
+          marked_by: context.userId,
+        })),
+        { onConflict: "preorder_id,cuisine" },
+      );
+      if (error) throw new Error(error.message);
+      return { ok: true, sentAt };
+    }
+
+    for (const m of data.marks) {
+      const { error } = await supabaseAdmin
+        .from("meal_text_sends")
+        .delete()
+        .eq("preorder_id", m.preorderId)
+        .eq("cuisine", m.cuisine);
+      if (error) throw new Error(error.message);
+    }
+    return { ok: true, sentAt: null };
   });
+
