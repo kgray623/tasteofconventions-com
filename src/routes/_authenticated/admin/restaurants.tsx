@@ -199,6 +199,28 @@ function RestaurantsPage() {
                   </div>
                   <Input value={(edit.image_url as string) ?? ""} onChange={(e) => setEdit({ ...edit, image_url: e.target.value })} placeholder="Image URL" />
                   <Textarea value={(edit.description as string) ?? ""} onChange={(e) => setEdit({ ...edit, description: e.target.value })} placeholder="Description" rows={3} />
+                  <div className="rounded-md border border-border p-3 space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Digital payment options guests see with their meal (leave blank to hide)
+                    </p>
+                    <Input
+                      value={(edit.venmo_handle as string) ?? ""}
+                      onChange={(e) => setEdit({ ...edit, venmo_handle: e.target.value })}
+                      placeholder="Venmo username (without @)"
+                    />
+                    <div className="grid sm:grid-cols-2 gap-2">
+                      <Input
+                        value={(edit.zelle_name as string) ?? ""}
+                        onChange={(e) => setEdit({ ...edit, zelle_name: e.target.value })}
+                        placeholder="Zelle name"
+                      />
+                      <Input
+                        value={(edit.zelle_phone as string) ?? ""}
+                        onChange={(e) => setEdit({ ...edit, zelle_phone: e.target.value })}
+                        placeholder="Zelle phone number"
+                      />
+                    </div>
+                  </div>
                   <div className="flex gap-2">
                     <Button size="sm" onClick={() => saveEdit(r.id)} className="bg-ink text-cream hover:bg-ink/90">
                       <Check className="w-4 h-4 mr-1" /> Save
