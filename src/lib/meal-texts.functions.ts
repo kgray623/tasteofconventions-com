@@ -81,7 +81,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
           phone: (p.phone ?? "").trim(),
           cuisine,
           qty,
-          sent_at: p.meal_text_sent_at ?? null,
+          sent_at: sentByMeal.get(`${p.id}::${cuisine}`) ?? null,
         });
       }
     }
