@@ -186,7 +186,7 @@ export async function loadCommitteeMealTexts(
         phone: ((p.phone ?? "") as string).trim() || (linked.guest_phone ?? ""),
         cuisine,
         qty,
-        sent_at: p.meal_text_sent_at ?? null,
+        sent_at: sentByMeal.get(`${p.id}::${cuisine}`) ?? null,
       });
     }
   }
