@@ -324,11 +324,9 @@ function PreviewPage() {
           <Card className="p-7 space-y-5">
             <div>
               <h2 className="font-display text-2xl">
-                Pre-order your catered cultural meal
+                Order your catered cultural meal
               </h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Cultural meals are in the twenty to thirty dollar range per meal. Each cuisine offers a beef or a chicken meal, and all meals are gluten-free. When you click below to make a pre-order, we will soon provide the menu option and the restaurant that you will contact direct to pay for your meal in advance.
-              </p>
+              <p className="text-sm text-muted-foreground mt-1">{MEAL_INTRO_COPY}</p>
             </div>
             {!canChooseMeals && (
               <p className="text-sm text-terracotta">
