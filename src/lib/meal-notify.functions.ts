@@ -58,14 +58,22 @@ export const getMealNotifyRollup = createServerFn({ method: "POST" })
     await assertStaff(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const [{ data: preorders }, { data: invitations }, { data: inviters }] = await Promise.all([
-      supabaseAdmin
-        .from("cuisine_preorders")
-        .select("id,name,phone,selections,meal_text_sent_at,invitation_id")
-        .order("name"),
-      supabaseAdmin.from("invitations").select("id,inviter_id"),
-      supabaseAdmin.from("inviters").select("id,name"),
-    ]);
+    const [{ data: preorders }, { data: invitations }, { data: inviters }, { data: sends }] =
+      await Promise.all([
+        supabaseAdmin
+          .from("cuisine_preorders")
+          .select("id,name,phone,selections,invitation_id")
+          .order("name"),
+        supabaseAdmin.from("invitations").select("id,inviter_id"),
+        supabaseAdmin.from("inviters").select("id,name"),
+        supabaseAdmin.from("meal_text_sends").select("preorder_id,cuisine,sent_at"),
+      ]);
+
+    const sentByMeal = new Map<string, string>();
+    for (const s of (sends ?? []) as any[]) {
+      sentByMeal.set(`${s.preorder_id}::${normalizeCuisine(String(s.cuisine ?? ""))}`, s.sent_at);
+    }
+
 
     const inviterNameById = new Map<string, string>(
       ((inviters ?? []) as any[]).map((r) => [r.id as string, (r.name as string) ?? "Committee"]),
@@ -115,21 +123,22 @@ export const getMealNotifyRollup = createServerFn({ method: "POST" })
         } satisfies MealNotifyInviter);
       byInviter.set(key, bucket);
 
-      const meals = [...byCuisine.values()].reduce((s, q) => s + q, 0);
-      const notified = !!p.meal_text_sent_at;
+      // Each restaurant meal is tracked on its own: a guest with three
+      // cuisines needs three separate texts and counts as three here.
+      for (const [cuisine, qty] of byCuisine) {
+        const sentAt = sentByMeal.get(`${p.id}::${cuisine}`) ?? null;
 
-      bucket.preorders += 1;
-      bucket.meals += meals;
-      if (notified) bucket.notified += 1;
-      else bucket.pending += 1;
+        bucket.preorders += 1;
+        bucket.meals += qty;
+        totals.preorders += 1;
+        totals.meals += qty;
 
-      totals.preorders += 1;
-      totals.meals += meals;
-      if (notified) totals.notified += 1;
-      else totals.pending += 1;
-
-      if (!notified) {
-        for (const [cuisine, qty] of byCuisine) {
+        if (sentAt) {
+          bucket.notified += 1;
+          totals.notified += 1;
+        } else {
+          bucket.pending += 1;
+          totals.pending += 1;
           pending.push({
             id: p.id as string,
             name: (p.name ?? "").trim() || "Guest",
@@ -142,6 +151,7 @@ export const getMealNotifyRollup = createServerFn({ method: "POST" })
         }
       }
     }
+
 
     const list = [...byInviter.values()].sort(
       (a, b) => b.pending - a.pending || a.name.localeCompare(b.name),

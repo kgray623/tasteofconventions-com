@@ -113,19 +113,29 @@ function MyMealTextsPage() {
     });
   };
 
-  const setSent = async (ids: string[], sent: boolean) => {
-    const unique = [...new Set(ids)];
-    if (unique.length === 0) return;
-    setBusy(unique.join(","));
+  const setSent = async (row: CommitteeMealTextRow, sent: boolean) => {
+    const key = `${row.id}::${row.cuisine}`;
+    setBusy(key);
     try {
-      const res = await markSent({ data: { ids: unique, sent, actingForInviterId: actingFor } });
-      setRows((prev) => prev.map((r) => (unique.includes(r.id) ? { ...r, sent_at: res.sentAt } : r)));
+      const res = await markSent({
+        data: {
+          marks: [{ preorderId: row.id, cuisine: row.cuisine }],
+          sent,
+          actingForInviterId: actingFor,
+        },
+      });
+      setRows((prev) =>
+        prev.map((r) =>
+          r.id === row.id && r.cuisine === row.cuisine ? { ...r, sent_at: res.sentAt } : r,
+        ),
+      );
     } catch (e) {
       toast.error("Couldn't update the texted mark", { description: getErrorMessage(e) });
     } finally {
       setBusy(null);
     }
   };
+
 
   const copy = async (text: string) => {
     try {
@@ -162,7 +172,8 @@ function MyMealTextsPage() {
     }
   };
 
-  const totalPeople = rows.length;
+  const totalOrders = rows.length;
+  const totalPeople = new Set(rows.map((r) => r.id)).size;
   const totalMeals = rows.reduce((s, r) => s + r.qty, 0);
   const sentCount = rows.filter((r) => r.sent_at).length;
 
@@ -180,13 +191,19 @@ function MyMealTextsPage() {
           number and their order already written — you just press send. Nothing is sent
           automatically.
         </p>
+        <p className="text-sm text-muted-foreground">
+          Each restaurant needs its own text. If a guest ordered from two or three restaurants,
+          they appear once per restaurant and each one is checked off separately.
+        </p>
         <div className="flex flex-wrap gap-2 pt-1">
           <Badge variant="outline">{totalPeople} guests</Badge>
+          <Badge variant="outline">{totalOrders} restaurant texts</Badge>
           <Badge variant="outline">{totalMeals} meals</Badge>
           <Badge variant="outline">{sentCount} texted</Badge>
-          <Badge variant="outline">{totalPeople - sentCount} to go</Badge>
+          <Badge variant="outline">{totalOrders - sentCount} to go</Badge>
         </div>
       </Card>
+
 
       {isAdmin && committee.length > 0 && (
         <Card className="p-4 space-y-2">
@@ -280,14 +297,15 @@ function MyMealTextsPage() {
                       </Badge>
                       {row.sent_at ? (
                         <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 text-[10px]">
-                          Texted {new Date(row.sent_at).toLocaleDateString()} (all their meals)
+                          Texted {new Date(row.sent_at).toLocaleDateString()} ·{" "}
+                          {cuisineLabel(row.cuisine)}
                         </Badge>
                       ) : (
                         <Badge
                           variant="outline"
                           className="border-amber-400 text-amber-700 text-[10px]"
                         >
-                          Not texted
+                          Not texted about {cuisineLabel(row.cuisine)}
                         </Badge>
                       )}
                     </div>
@@ -313,8 +331,8 @@ function MyMealTextsPage() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          disabled={busy?.includes(row.id)}
-                          onClick={() => void setSent([row.id], false)}
+                          disabled={busy === `${row.id}::${row.cuisine}`}
+                          onClick={() => void setSent(row, false)}
                         >
                           <Check className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
                           Texted · Undo
@@ -323,13 +341,14 @@ function MyMealTextsPage() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          disabled={busy?.includes(row.id)}
-                          onClick={() => void setSent([row.id], true)}
+                          disabled={busy === `${row.id}::${row.cuisine}`}
+                          onClick={() => void setSent(row, true)}
                         >
                           <Check className="w-3.5 h-3.5 mr-1.5" />
                           Check here after you text
                         </Button>
                       )}
+
                     </div>
                   </div>
                 );

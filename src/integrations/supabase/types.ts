@@ -801,6 +801,47 @@ export type Database = {
           },
         ]
       }
+      meal_text_sends: {
+        Row: {
+          created_at: string
+          cuisine: string
+          id: string
+          marked_by: string | null
+          marked_by_label: string | null
+          preorder_id: string
+          sent_at: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cuisine: string
+          id?: string
+          marked_by?: string | null
+          marked_by_label?: string | null
+          preorder_id: string
+          sent_at?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cuisine?: string
+          id?: string
+          marked_by?: string | null
+          marked_by_label?: string | null
+          preorder_id?: string
+          sent_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_text_sends_preorder_id_fkey"
+            columns: ["preorder_id"]
+            isOneToOne: false
+            referencedRelation: "cuisine_preorders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_items: {
         Row: {
           available: boolean

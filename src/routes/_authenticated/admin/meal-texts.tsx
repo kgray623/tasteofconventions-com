@@ -126,17 +126,16 @@ function MealTextsPage() {
   }, [rows]);
 
   const inviterOptions = useMemo(() => {
-    // Count households (one per pre-order), not per-cuisine lines, so this
+    // Count outstanding restaurant texts (one per guest per cuisine), so this
     // matches the pending numbers on the tracker card exactly.
-    const seen = new Map<string, Set<string>>();
+    const seen = new Map<string, number>();
     for (const r of rows) {
       if (r.sent_at) continue;
-      (seen.get(r.inviter) ?? seen.set(r.inviter, new Set()).get(r.inviter)!).add(r.id);
+      seen.set(r.inviter, (seen.get(r.inviter) ?? 0) + 1);
     }
-    return [...seen.entries()]
-      .map(([name, ids]) => [name, ids.size] as [string, number])
-      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    return [...seen.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   }, [rows]);
+
 
   const downloadPending = () => {
     const pending = rows.filter((r) => !r.sent_at);
@@ -177,13 +176,17 @@ function MealTextsPage() {
     });
   };
 
-  const setSent = async (ids: string[], sent: boolean) => {
-    const unique = [...new Set(ids)];
-    setBusy(unique.join(","));
+  const setSent = async (row: MealTextRow, sent: boolean) => {
+    const key = `${row.id}::${row.cuisine}`;
+    setBusy(key);
     try {
-      const res = await markSent({ data: { ids: unique, sent } });
+      const res = await markSent({
+        data: { marks: [{ preorderId: row.id, cuisine: row.cuisine }], sent },
+      });
       setRows((prev) =>
-        prev.map((r) => (unique.includes(r.id) ? { ...r, sent_at: res.sentAt } : r)),
+        prev.map((r) =>
+          r.id === row.id && r.cuisine === row.cuisine ? { ...r, sent_at: res.sentAt } : r,
+        ),
       );
     } catch (e) {
       toast.error("Couldn't update the sent mark", { description: getErrorMessage(e) });
@@ -191,6 +194,7 @@ function MealTextsPage() {
       setBusy(null);
     }
   };
+
 
   const updateContact = async (
     r: MealRestaurant,
@@ -223,7 +227,8 @@ function MealTextsPage() {
     }
   };
 
-  const totalPeople = rows.length;
+  const totalOrders = rows.length;
+  const totalHouseholds = new Set(rows.map((r) => r.id)).size;
   const totalMeals = rows.reduce((s, r) => s + r.qty, 0);
   const sentCount = rows.filter((r) => r.sent_at).length;
 
@@ -237,14 +242,17 @@ function MealTextsPage() {
         </div>
         <p className="text-sm text-muted-foreground">
           Every text opens in your own Messages app with the wording already written — you just press
-          send. Nothing is sent automatically.
+          send. Nothing is sent automatically. Each restaurant is texted and checked off separately,
+          so a guest who ordered from two restaurants needs two texts.
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
-          <Badge variant="outline">{totalPeople} households</Badge>
+          <Badge variant="outline">{totalHouseholds} households</Badge>
+          <Badge variant="outline">{totalOrders} restaurant texts</Badge>
           <Badge variant="outline">{totalMeals} meals</Badge>
           <Badge variant="outline">{sentCount} texted</Badge>
-          <Badge variant="outline">{totalPeople - sentCount} still to text</Badge>
+          <Badge variant="outline">{totalOrders - sentCount} still to text</Badge>
         </div>
+
         <div className="pt-1">
           <Button size="sm" variant="outline" onClick={downloadPending}>
             <Download className="w-3.5 h-3.5 mr-1.5" /> Download pending list (CSV)
@@ -437,11 +445,12 @@ function MealTextsPage() {
                       </Badge>
                       {row.sent_at ? (
                         <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 text-[10px]">
-                          Texted {new Date(row.sent_at).toLocaleDateString()} (all their meals)
+                          Texted {new Date(row.sent_at).toLocaleDateString()} ·{" "}
+                          {cuisineLabel(row.cuisine)}
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="border-amber-400 text-amber-700 text-[10px]">
-                          Not texted
+                          Not texted about {cuisineLabel(row.cuisine)}
                         </Badge>
                       )}
                     </div>
@@ -466,8 +475,8 @@ function MealTextsPage() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          disabled={busy?.includes(row.id)}
-                          onClick={() => void setSent([row.id], false)}
+                          disabled={busy === `${row.id}::${row.cuisine}`}
+                          onClick={() => void setSent(row, false)}
                         >
                           <Check className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
                           Texted · Undo
@@ -476,13 +485,14 @@ function MealTextsPage() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          disabled={busy?.includes(row.id)}
-                          onClick={() => void setSent([row.id], true)}
+                          disabled={busy === `${row.id}::${row.cuisine}`}
+                          onClick={() => void setSent(row, true)}
                         >
                           <Check className="w-3.5 h-3.5 mr-1.5" />
                           Check here after you text
                         </Button>
                       )}
+
                     </div>
                   </div>
                 );

@@ -25,16 +25,22 @@ export const getMealTextData = createServerFn({ method: "POST" })
     await assertStaff(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const [{ data: restaurants }, { data: preorders }, { data: setting }, { data: invitationRows }, { data: inviterRows }] = await Promise.all([
+    const [{ data: restaurants }, { data: preorders }, { data: setting }, { data: invitationRows }, { data: inviterRows }, { data: sends }] = await Promise.all([
       supabaseAdmin.from("restaurants").select("id,name,cuisine,phone,website,order_ready,active").order("name"),
       supabaseAdmin
         .from("cuisine_preorders")
-        .select("id,name,phone,selections,meal_text_sent_at,invitation_id")
+        .select("id,name,phone,selections,invitation_id")
         .order("name"),
       supabaseAdmin.from("app_settings").select("value").eq("key", "meal_text_template").maybeSingle(),
       supabaseAdmin.from("invitations").select("id,inviter_id"),
       supabaseAdmin.from("inviters").select("id,name"),
+      supabaseAdmin.from("meal_text_sends").select("preorder_id,cuisine,sent_at"),
     ]);
+
+    const sentByMeal = new Map<string, string>();
+    for (const s of ((sends ?? []) as any[])) {
+      sentByMeal.set(`${s.preorder_id}::${String(s.cuisine ?? "")}`, s.sent_at);
+    }
 
     const inviterNameById = new Map<string, string>(
       ((inviterRows ?? []) as any[]).map((r) => [r.id as string, (r.name as string) ?? "Committee"]),
@@ -42,6 +48,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
     const inviterIdByInvitation = new Map<string, string | null>(
       ((invitationRows ?? []) as any[]).map((r) => [r.id as string, (r.inviter_id as string) ?? null]),
     );
+
 
     const rows: MealTextRow[] = [];
     for (const p of (preorders ?? []) as any[]) {
@@ -74,7 +81,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
           phone: (p.phone ?? "").trim(),
           cuisine,
           qty,
-          sent_at: p.meal_text_sent_at ?? null,
+          sent_at: sentByMeal.get(`${p.id}::${cuisine}`) ?? null,
         });
       }
     }
@@ -145,15 +152,43 @@ export const saveMealTextTemplate = createServerFn({ method: "POST" })
 export const markMealTextSent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ ids: z.array(z.string().uuid()).min(1).max(500), sent: z.boolean() }).parse(d),
+    z
+      .object({
+        marks: z
+          .array(z.object({ preorderId: z.string().uuid(), cuisine: z.string().min(1).max(80) }))
+          .min(1)
+          .max(500),
+        sent: z.boolean(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertStaff(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
-      .from("cuisine_preorders")
-      .update({ meal_text_sent_at: data.sent ? new Date().toISOString() : null })
-      .in("id", data.ids);
-    if (error) throw new Error(error.message);
-    return { ok: true, sentAt: data.sent ? new Date().toISOString() : null };
+    const sentAt = new Date().toISOString();
+
+    if (data.sent) {
+      const { error } = await supabaseAdmin.from("meal_text_sends").upsert(
+        data.marks.map((m) => ({
+          preorder_id: m.preorderId,
+          cuisine: m.cuisine,
+          sent_at: sentAt,
+          marked_by: context.userId,
+        })),
+        { onConflict: "preorder_id,cuisine" },
+      );
+      if (error) throw new Error(error.message);
+      return { ok: true, sentAt };
+    }
+
+    for (const m of data.marks) {
+      const { error } = await supabaseAdmin
+        .from("meal_text_sends")
+        .delete()
+        .eq("preorder_id", m.preorderId)
+        .eq("cuisine", m.cuisine);
+      if (error) throw new Error(error.message);
+    }
+    return { ok: true, sentAt: null };
   });
+

@@ -28,7 +28,10 @@ export const markMyMealTextSent = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
     z
       .object({
-        ids: z.array(z.string().uuid()).min(1).max(500),
+        marks: z
+          .array(z.object({ preorderId: z.string().uuid(), cuisine: z.string().min(1).max(80) }))
+          .min(1)
+          .max(500),
         sent: z.boolean(),
         actingForInviterId: z.string().uuid().nullable().optional(),
       })
@@ -41,18 +44,38 @@ export const markMyMealTextSent = createServerFn({ method: "POST" })
     const identity = await resolveIdentity(context.supabase, context.userId);
 
     if (!identity.isStaff) {
-      // Committee members may only mark their own guests' pre-orders.
+      // Committee members may only mark their own guests' meals.
       const allowed = await loadCommitteeMealTexts(context.supabase, context.userId, null);
-      const mineIds = new Set(allowed.rows.map((r) => r.id));
-      if (data.ids.some((id) => !mineIds.has(id))) throw new Error("Forbidden");
+      const mine = new Set(allowed.rows.map((r) => `${r.id}::${r.cuisine}`));
+      if (data.marks.some((m) => !mine.has(`${m.preorderId}::${m.cuisine}`)))
+        throw new Error("Forbidden");
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const sentAt = data.sent ? new Date().toISOString() : null;
-    const { error } = await supabaseAdmin
-      .from("cuisine_preorders")
-      .update({ meal_text_sent_at: sentAt })
-      .in("id", data.ids);
-    if (error) throw new Error(error.message);
-    return { ok: true, sentAt };
+    const sentAt = new Date().toISOString();
+
+    if (data.sent) {
+      const { error } = await supabaseAdmin.from("meal_text_sends").upsert(
+        data.marks.map((m) => ({
+          preorder_id: m.preorderId,
+          cuisine: m.cuisine,
+          sent_at: sentAt,
+          marked_by: context.userId,
+        })),
+        { onConflict: "preorder_id,cuisine" },
+      );
+      if (error) throw new Error(error.message);
+      return { ok: true, sentAt };
+    }
+
+    for (const m of data.marks) {
+      const { error } = await supabaseAdmin
+        .from("meal_text_sends")
+        .delete()
+        .eq("preorder_id", m.preorderId)
+        .eq("cuisine", m.cuisine);
+      if (error) throw new Error(error.message);
+    }
+    return { ok: true, sentAt: null };
   });
+
