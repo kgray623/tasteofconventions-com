@@ -31,12 +31,19 @@ export const markMyMealTextSent = createServerFn({ method: "POST" })
         marks: z
           .array(z.object({ preorderId: z.string().uuid(), cuisine: z.string().min(1).max(80) }))
           .min(1)
-          .max(500),
+          .max(500)
+          // Each restaurant meal must be checked on its own: one action may never
+          // mark two cuisines for the same guest, so a mark can't leak across meals.
+          .refine(
+            (marks) => new Set(marks.map((m) => m.preorderId)).size === marks.length,
+            "Each guest's meals must be marked one at a time",
+          ),
         sent: z.boolean(),
         actingForInviterId: z.string().uuid().nullable().optional(),
       })
       .parse(d),
   )
+
   .handler(async ({ data, context }) => {
     const { loadCommitteeMealTexts, resolveIdentity } = await import(
       "@/lib/committee-meal-texts.server"
