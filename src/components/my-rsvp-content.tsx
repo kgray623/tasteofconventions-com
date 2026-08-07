@@ -162,7 +162,7 @@ export function MyRsvpContent() {
           .map(([cuisine, qty]) => ({ cuisine, qty }));
         await saveCuisinePreorder({ data: { token: invitation.rsvp_token, selections } });
         setData((current) => (current ? { ...current, preorder: { selections } } : current));
-        toast.success("Meal order saved.");
+        toast.success(selections.length === 0 ? "Meal order cancelled." : "Meal order saved.");
       } catch (e: unknown) {
         toast.error(e instanceof Error ? e.message : "Could not save meal order");
       } finally {

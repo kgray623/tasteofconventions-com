@@ -393,26 +393,22 @@ export const submitCuisinePreorder = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!inv) throw new Error("Invitation not found");
 
-    if (data.selections.length > 0) {
-      const { error } = await supabaseAdmin.from("cuisine_preorders").upsert(
-        {
-          invitation_id: inv.id,
-          name: inv.guest_name.slice(0, 120),
-          phone: (inv.guest_phone ?? "").slice(0, 40) || "—",
-          selections: data.selections,
-        },
-        { onConflict: "invitation_id" },
-      );
-      if (error) throw publicDbError(error);
-    } else {
-      const { error } = await supabaseAdmin
-        .from("cuisine_preorders")
-        .delete()
-        .eq("invitation_id", inv.id);
-      if (error) throw publicDbError(error);
-    }
+    // Never delete the record — an empty selections array means "cancelled".
+    // The row (person, phone, history) is retained and the audit ledger keeps
+    // the change. Deletes are blocked by the protected-delete guard anyway.
+    const { error } = await supabaseAdmin.from("cuisine_preorders").upsert(
+      {
+        invitation_id: inv.id,
+        name: inv.guest_name.slice(0, 120),
+        phone: (inv.guest_phone ?? "").slice(0, 40) || "—",
+        selections: data.selections,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "invitation_id" },
+    );
+    if (error) throw publicDbError(error);
 
-    return { ok: true };
+    return { ok: true, cancelled: data.selections.length === 0 };
   });
 
 export const submitStandaloneCuisinePreorder = createServerFn({ method: "POST" })
@@ -452,12 +448,16 @@ export const submitStandaloneCuisinePreorder = createServerFn({ method: "POST" }
       throw new Error("Meal choices are only saved after an attending RSVP is on file.");
     }
 
-    const { error } = await supabaseAdmin.from("cuisine_preorders").insert({
-      invitation_id: invitation.id,
-      name: (invitation.guest_name || data.name).slice(0, 120),
-      phone: (invitation.guest_phone || data.phone).slice(0, 40),
-      selections: data.selections,
-    });
+    const { error } = await supabaseAdmin.from("cuisine_preorders").upsert(
+      {
+        invitation_id: invitation.id,
+        name: (invitation.guest_name || data.name).slice(0, 120),
+        phone: (invitation.guest_phone || data.phone).slice(0, 40),
+        selections: data.selections,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "invitation_id" },
+    );
     if (error) throw publicDbError(error);
 
     return { ok: true };

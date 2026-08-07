@@ -262,7 +262,7 @@ function RsvpPage() {
       setSavingMeals(true);
       await saveCuisinePreorder({ data: { token, selections } });
       clearDraftScope(orderDraftScope);
-      toast.success("Meal order saved");
+      toast.success(selections.length === 0 ? "Meal order cancelled" : "Meal order saved");
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Could not save meal order");
     } finally {
