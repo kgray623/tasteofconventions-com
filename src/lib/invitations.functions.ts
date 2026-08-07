@@ -448,12 +448,16 @@ export const submitStandaloneCuisinePreorder = createServerFn({ method: "POST" }
       throw new Error("Meal choices are only saved after an attending RSVP is on file.");
     }
 
-    const { error } = await supabaseAdmin.from("cuisine_preorders").insert({
-      invitation_id: invitation.id,
-      name: (invitation.guest_name || data.name).slice(0, 120),
-      phone: (invitation.guest_phone || data.phone).slice(0, 40),
-      selections: data.selections,
-    });
+    const { error } = await supabaseAdmin.from("cuisine_preorders").upsert(
+      {
+        invitation_id: invitation.id,
+        name: (invitation.guest_name || data.name).slice(0, 120),
+        phone: (invitation.guest_phone || data.phone).slice(0, 40),
+        selections: data.selections,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "invitation_id" },
+    );
     if (error) throw publicDbError(error);
 
     return { ok: true };
