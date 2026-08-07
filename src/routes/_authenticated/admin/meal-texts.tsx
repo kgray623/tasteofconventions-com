@@ -350,8 +350,8 @@ function MealTextsPage() {
         />
         <p className="text-xs text-muted-foreground">
           Placeholders: <code>{"{first_name}"}</code>, <code>{"{restaurant_name}"}</code>,{" "}
-          <code>{"{restaurant_phone}"}</code>, <code>{"{restaurant_website}"}</code>,{" "}
-          <code>{"{order}"}</code>.
+          <code>{"{restaurant_cuisine}"}</code>, <code>{"{restaurant_phone}"}</code>,{" "}
+          <code>{"{restaurant_website}"}</code>, <code>{"{order}"}</code>.
         </p>
 
       </Card>
