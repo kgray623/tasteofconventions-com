@@ -10,6 +10,10 @@ type RestaurantRow = {
   cuisine: string | null;
   phone: string | null;
   website: string | null;
+  venmo_handle?: string | null;
+  zelle_name?: string | null;
+  zelle_phone?: string | null;
+  zelle_qr_url?: string | null;
 };
 
 export function useMealRestaurants() {
@@ -19,7 +23,7 @@ export function useMealRestaurants() {
     queryFn: async (): Promise<RestaurantRow[]> => {
       const { data, error } = await supabase
         .from("restaurants")
-        .select("id,name,cuisine,phone,website")
+        .select("id,name,cuisine,phone,website,venmo_handle,zelle_name,zelle_phone,zelle_qr_url")
         .eq("active", true)
         .order("name");
       if (error) throw error;
