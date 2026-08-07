@@ -97,7 +97,15 @@ function RestaurantsPage() {
 
   const startEdit = (r: Restaurant) => {
     setEditingId(r.id);
-    setEdit({ name: r.name, cuisine: r.cuisine, description: r.description, image_url: r.image_url });
+    setEdit({
+      name: r.name,
+      cuisine: r.cuisine,
+      description: r.description,
+      image_url: r.image_url,
+      venmo_handle: r.venmo_handle ?? null,
+      zelle_name: r.zelle_name ?? null,
+      zelle_phone: r.zelle_phone ?? null,
+    });
   };
 
   const saveEdit = async (id: string) => {
@@ -108,6 +116,9 @@ function RestaurantsPage() {
         cuisine: (edit.cuisine ?? "")?.toString().trim() || null,
         description: (edit.description ?? "")?.toString().trim() || null,
         image_url: (edit.image_url ?? "")?.toString().trim() || null,
+        venmo_handle: (edit.venmo_handle ?? "")?.toString().trim().replace(/^@/, "") || null,
+        zelle_name: (edit.zelle_name ?? "")?.toString().trim() || null,
+        zelle_phone: (edit.zelle_phone ?? "")?.toString().trim() || null,
       })
       .eq("id", id);
     if (error) return toast.error(error.message);
