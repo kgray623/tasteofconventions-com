@@ -148,8 +148,18 @@ export async function loadCommitteeMealTexts(
 
   const { data: preorders } = await supabaseAdmin
     .from("cuisine_preorders")
-    .select("id,name,phone,selections,meal_text_sent_at,invitation_id")
+    .select("id,name,phone,selections,invitation_id")
     .order("name");
+
+  const { data: sends } = await supabaseAdmin
+    .from("meal_text_sends")
+    .select("preorder_id,cuisine,sent_at");
+  const sentByMeal = new Map<string, string>();
+  for (const s of (sends ?? []) as any[]) {
+    sentByMeal.set(`${s.preorder_id}::${normalizeCuisine(String(s.cuisine ?? ""))}`, s.sent_at);
+  }
+
+
 
   const rows: CommitteeMealTextRow[] = [];
   for (const p of (preorders ?? []) as any[]) {
