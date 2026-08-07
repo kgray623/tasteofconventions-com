@@ -409,7 +409,7 @@ function RsvpPage() {
                     <UtensilsCrossed className="w-6 h-6" strokeWidth={2.5} />
                   </div>
                   <div>
-                    <p className="text-[10px] uppercase tracking-[0.3em] opacity-80">Pre-order</p>
+                    <p className="text-[10px] uppercase tracking-[0.3em] opacity-80">Meal order</p>
                     <p className="font-display text-2xl leading-tight">
                       {orderDone ? "ORDERED" : "No order yet"}
                     </p>
