@@ -411,10 +411,6 @@ export const submitCuisinePreorder = createServerFn({ method: "POST" })
     return { ok: true, cancelled: data.selections.length === 0 };
   });
 
-
-    return { ok: true };
-  });
-
 export const submitStandaloneCuisinePreorder = createServerFn({ method: "POST" })
   .inputValidator((d) => StandaloneCuisinePreorderInput.parse(d))
   .handler(async ({ data }) => {
