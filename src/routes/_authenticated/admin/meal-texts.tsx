@@ -177,13 +177,17 @@ function MealTextsPage() {
     });
   };
 
-  const setSent = async (ids: string[], sent: boolean) => {
-    const unique = [...new Set(ids)];
-    setBusy(unique.join(","));
+  const setSent = async (row: MealTextRow, sent: boolean) => {
+    const key = `${row.id}::${row.cuisine}`;
+    setBusy(key);
     try {
-      const res = await markSent({ data: { ids: unique, sent } });
+      const res = await markSent({
+        data: { marks: [{ preorderId: row.id, cuisine: row.cuisine }], sent },
+      });
       setRows((prev) =>
-        prev.map((r) => (unique.includes(r.id) ? { ...r, sent_at: res.sentAt } : r)),
+        prev.map((r) =>
+          r.id === row.id && r.cuisine === row.cuisine ? { ...r, sent_at: res.sentAt } : r,
+        ),
       );
     } catch (e) {
       toast.error("Couldn't update the sent mark", { description: getErrorMessage(e) });
@@ -191,6 +195,7 @@ function MealTextsPage() {
       setBusy(null);
     }
   };
+
 
   const updateContact = async (
     r: MealRestaurant,
