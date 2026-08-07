@@ -51,6 +51,7 @@ function renderTemplate(
   ctx: {
     firstName: string;
     restaurantName: string;
+    restaurantCuisine: string;
     restaurantPhone: string;
     restaurantWebsite: string;
     order: string;
@@ -59,6 +60,7 @@ function renderTemplate(
   return tpl
     .replaceAll("{first_name}", ctx.firstName)
     .replaceAll("{restaurant_name}", ctx.restaurantName)
+    .replaceAll("{restaurant_cuisine}", ctx.restaurantCuisine)
     .replaceAll("{restaurant_phone}", ctx.restaurantPhone)
     .replaceAll("{restaurant_website}", ctx.restaurantWebsite)
     .replaceAll("{order}", ctx.order)
