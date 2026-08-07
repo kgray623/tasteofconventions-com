@@ -113,19 +113,29 @@ function MyMealTextsPage() {
     });
   };
 
-  const setSent = async (ids: string[], sent: boolean) => {
-    const unique = [...new Set(ids)];
-    if (unique.length === 0) return;
-    setBusy(unique.join(","));
+  const setSent = async (row: CommitteeMealTextRow, sent: boolean) => {
+    const key = `${row.id}::${row.cuisine}`;
+    setBusy(key);
     try {
-      const res = await markSent({ data: { ids: unique, sent, actingForInviterId: actingFor } });
-      setRows((prev) => prev.map((r) => (unique.includes(r.id) ? { ...r, sent_at: res.sentAt } : r)));
+      const res = await markSent({
+        data: {
+          marks: [{ preorderId: row.id, cuisine: row.cuisine }],
+          sent,
+          actingForInviterId: actingFor,
+        },
+      });
+      setRows((prev) =>
+        prev.map((r) =>
+          r.id === row.id && r.cuisine === row.cuisine ? { ...r, sent_at: res.sentAt } : r,
+        ),
+      );
     } catch (e) {
       toast.error("Couldn't update the texted mark", { description: getErrorMessage(e) });
     } finally {
       setBusy(null);
     }
   };
+
 
   const copy = async (text: string) => {
     try {
