@@ -172,7 +172,8 @@ function MyMealTextsPage() {
     }
   };
 
-  const totalPeople = rows.length;
+  const totalOrders = rows.length;
+  const totalPeople = new Set(rows.map((r) => r.id)).size;
   const totalMeals = rows.reduce((s, r) => s + r.qty, 0);
   const sentCount = rows.filter((r) => r.sent_at).length;
 
@@ -190,13 +191,19 @@ function MyMealTextsPage() {
           number and their order already written — you just press send. Nothing is sent
           automatically.
         </p>
+        <p className="text-sm text-muted-foreground">
+          Each restaurant needs its own text. If a guest ordered from two or three restaurants,
+          they appear once per restaurant and each one is checked off separately.
+        </p>
         <div className="flex flex-wrap gap-2 pt-1">
           <Badge variant="outline">{totalPeople} guests</Badge>
+          <Badge variant="outline">{totalOrders} restaurant texts</Badge>
           <Badge variant="outline">{totalMeals} meals</Badge>
           <Badge variant="outline">{sentCount} texted</Badge>
-          <Badge variant="outline">{totalPeople - sentCount} to go</Badge>
+          <Badge variant="outline">{totalOrders - sentCount} to go</Badge>
         </div>
       </Card>
+
 
       {isAdmin && committee.length > 0 && (
         <Card className="p-4 space-y-2">
