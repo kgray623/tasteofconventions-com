@@ -227,7 +227,8 @@ function MealTextsPage() {
     }
   };
 
-  const totalPeople = rows.length;
+  const totalOrders = rows.length;
+  const totalHouseholds = new Set(rows.map((r) => r.id)).size;
   const totalMeals = rows.reduce((s, r) => s + r.qty, 0);
   const sentCount = rows.filter((r) => r.sent_at).length;
 
@@ -241,14 +242,17 @@ function MealTextsPage() {
         </div>
         <p className="text-sm text-muted-foreground">
           Every text opens in your own Messages app with the wording already written — you just press
-          send. Nothing is sent automatically.
+          send. Nothing is sent automatically. Each restaurant is texted and checked off separately,
+          so a guest who ordered from two restaurants needs two texts.
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
-          <Badge variant="outline">{totalPeople} households</Badge>
+          <Badge variant="outline">{totalHouseholds} households</Badge>
+          <Badge variant="outline">{totalOrders} restaurant texts</Badge>
           <Badge variant="outline">{totalMeals} meals</Badge>
           <Badge variant="outline">{sentCount} texted</Badge>
-          <Badge variant="outline">{totalPeople - sentCount} still to text</Badge>
+          <Badge variant="outline">{totalOrders - sentCount} still to text</Badge>
         </div>
+
         <div className="pt-1">
           <Button size="sm" variant="outline" onClick={downloadPending}>
             <Download className="w-3.5 h-3.5 mr-1.5" /> Download pending list (CSV)
