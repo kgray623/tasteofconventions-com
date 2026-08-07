@@ -492,7 +492,7 @@ export function MyRsvpContent() {
           </div>
           <Link to="/rsvp/$token" params={{ token: invitation.rsvp_token }}>
             <Button className="bg-ink text-cream hover:bg-ink/90 w-full">
-              {orderDone ? "Update RSVP or order" : "Update RSVP or place a pre-order"}
+              {orderDone ? "Update RSVP or order" : "Update RSVP or place a meal order"}
             </Button>
           </Link>
         </Card>
