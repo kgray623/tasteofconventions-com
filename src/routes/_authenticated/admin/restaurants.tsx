@@ -27,6 +27,9 @@ type Restaurant = {
   description: string | null;
   image_url: string | null;
   active: boolean;
+  venmo_handle?: string | null;
+  zelle_name?: string | null;
+  zelle_phone?: string | null;
 };
 
 type MenuItem = {
