@@ -79,6 +79,7 @@ export function MyRsvpContent() {
   const [cuisineCounts, setCuisineCounts] = useState<Record<string, number>>({});
   const [savingMeals, setSavingMeals] = useState(false);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const { data: restaurants } = useMealRestaurants();
 
   useEffect(() => {
     if (loading) return;
