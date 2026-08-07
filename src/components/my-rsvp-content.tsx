@@ -332,11 +332,9 @@ export function MyRsvpContent() {
           <Card className="p-7 space-y-5">
             <div>
               <h2 className="font-display text-2xl">
-                Pre-order your catered cultural meal
+                Order your catered cultural meal
               </h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Cultural meals are in the twenty to thirty dollar range per meal. Each cuisine offers a beef or a chicken meal, and all meals are gluten-free. When you click below to make a pre-order, we will soon provide the menu option and the restaurant that you will contact direct to pay for your meal in advance.
-              </p>
+              <p className="text-sm text-muted-foreground mt-1">{MEAL_INTRO_COPY}</p>
             </div>
             <div className="space-y-3">
               {cuisines.map((cuisine) => {
@@ -348,6 +346,7 @@ export function MyRsvpContent() {
                     className="rounded-md border border-border bg-card p-4 space-y-3"
                   >
                     <h3 className="font-display text-2xl text-ink font-bold">{cuisine.label}</h3>
+                    <MealPriceNote />
                     {cuisine.photos && cuisine.photos.length > 0 && (
                       <div className="grid grid-cols-3 gap-2">
                         {cuisine.photos.map((src, i) => (
@@ -371,6 +370,7 @@ export function MyRsvpContent() {
                     {cuisine.note && (
                       <p className="text-sm italic text-muted-foreground">{cuisine.note}</p>
                     )}
+                    <MealRestaurantContact cuisineKey={cuisine.key} rows={restaurants} />
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-sm text-muted-foreground">Include this cuisine?</span>
                       <div className="grid grid-cols-2 gap-2 w-36">
