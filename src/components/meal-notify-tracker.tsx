@@ -118,10 +118,11 @@ export function MealNotifyTracker({ compact = false }: { compact?: boolean }) {
             </p>
 
             <div className="flex flex-wrap gap-2 pt-2">
-              <Badge variant="outline">{data.totals.notified} notified</Badge>
-              <Badge variant="outline">{data.totals.meals} meals ordered</Badge>
+              <Badge variant="outline">{data.totals.notified} texted</Badge>
+              <Badge variant="outline">{data.totals.meals} meals ordered (quantities)</Badge>
             </div>
           </div>
+
 
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
