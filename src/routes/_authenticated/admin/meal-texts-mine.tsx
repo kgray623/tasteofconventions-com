@@ -290,14 +290,15 @@ function MyMealTextsPage() {
                       </Badge>
                       {row.sent_at ? (
                         <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 text-[10px]">
-                          Texted {new Date(row.sent_at).toLocaleDateString()} (all their meals)
+                          Texted {new Date(row.sent_at).toLocaleDateString()} ·{" "}
+                          {cuisineLabel(row.cuisine)}
                         </Badge>
                       ) : (
                         <Badge
                           variant="outline"
                           className="border-amber-400 text-amber-700 text-[10px]"
                         >
-                          Not texted
+                          Not texted about {cuisineLabel(row.cuisine)}
                         </Badge>
                       )}
                     </div>
@@ -323,8 +324,8 @@ function MyMealTextsPage() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          disabled={busy?.includes(row.id)}
-                          onClick={() => void setSent([row.id], false)}
+                          disabled={busy === `${row.id}::${row.cuisine}`}
+                          onClick={() => void setSent(row, false)}
                         >
                           <Check className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
                           Texted · Undo
@@ -333,13 +334,14 @@ function MyMealTextsPage() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          disabled={busy?.includes(row.id)}
-                          onClick={() => void setSent([row.id], true)}
+                          disabled={busy === `${row.id}::${row.cuisine}`}
+                          onClick={() => void setSent(row, true)}
                         >
                           <Check className="w-3.5 h-3.5 mr-1.5" />
                           Check here after you text
                         </Button>
                       )}
+
                     </div>
                   </div>
                 );
