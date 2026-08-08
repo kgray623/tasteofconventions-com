@@ -112,6 +112,8 @@ export type MealTextContext = {
   zelleLine?: string;
   venmoLine?: string;
   onlinePrices?: string;
+  mealChoices?: string;
+  paySentence?: string;
   mealPhotos?: string;
 };
 
@@ -137,8 +139,9 @@ export function paymentLines(r: PaymentSource | undefined | null) {
   const venmo = r?.venmo_handle?.trim() ?? "";
   const zellePhone = r?.zelle_phone?.trim() ?? "";
   const zelleName = r?.zelle_name?.trim() ?? "";
+  const venmoHandle = venmo ? `@${venmo.replace(/^@/, "")}` : "";
 
-  const venmoLine = venmo ? `Venmo: @${venmo.replace(/^@/, "")}` : "";
+  const venmoLine = venmo ? `Venmo: ${venmoHandle}` : "";
   const zelleLine = zellePhone
     ? `Zelle: ${zellePhone}${zelleName ? ` (${zelleName})` : ""}`
     : zelleName
@@ -160,6 +163,26 @@ export function paymentLines(r: PaymentSource | undefined | null) {
     .filter(Boolean)
     .join("\n");
 
+  // "Chicken Meal $24" / "Beef Meal $29", spaced one per paragraph.
+  const mealChoices = [
+    chicken ? `Chicken Meal ${chicken}` : "",
+    beef ? `Beef Meal ${beef}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+
+  // One sentence naming the secure ways to pay this restaurant directly.
+  const zelleTarget = zellePhone || zelleName;
+  const paySentence = zelleTarget
+    ? `To use Zelle: search ${zelleTarget}${zellePhone && zelleName ? ` (${zelleName})` : ""}${
+        venmoHandle ? ` or to Venmo: ${venmoHandle}` : ""
+      }`
+    : venmoHandle
+      ? `To use Venmo: ${venmoHandle}`
+      : phone
+        ? `To pay by phone, call the restaurant: ${phone}`
+        : "";
+
   const paymentOptions = [
     zelleLine,
     venmoLine,
@@ -168,7 +191,15 @@ export function paymentLines(r: PaymentSource | undefined | null) {
     .filter(Boolean)
     .join("\n");
 
-  return { paymentOptions, restaurantZelle, venmoLine, zelleLine, onlinePrices };
+  return {
+    paymentOptions,
+    restaurantZelle,
+    venmoLine,
+    zelleLine,
+    onlinePrices,
+    mealChoices,
+    paySentence,
+  };
 }
 
 export function renderMealTemplate(tpl: string, ctx: MealTextContext) {
@@ -184,17 +215,20 @@ export function renderMealTemplate(tpl: string, ctx: MealTextContext) {
     .replaceAll("{zelle_line}", ctx.zelleLine ?? "")
     .replaceAll("{venmo_line}", ctx.venmoLine ?? "")
     .replaceAll("{online_prices}", ctx.onlinePrices ?? "")
+    .replaceAll("{meal_choices}", ctx.mealChoices ?? "")
+    .replaceAll("{pay_sentence}", ctx.paySentence ?? "")
     .replaceAll("{meal_photos}", ctx.mealPhotos ?? "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
 
-/** "See the food: https://.../meals/african" — empty when the cuisine has no photos. */
+/** "See the food images at: https://.../meals/african" — empty when the cuisine has no photos. */
 export function mealPhotosLine(cuisine: string | null | undefined) {
   const set = mealPhotoSetFor(cuisine);
   if (!set) return "";
-  return `See the food: ${PUBLIC_SITE_ORIGIN}/meals/${set.slug}`;
+  return `See the food images at: ${PUBLIC_SITE_ORIGIN}/meals/${set.slug}`;
 }
+
 
 export const mealOrderText = (qty: number, cuisine: string) =>
   `${qty} ${cuisine} meal${qty === 1 ? "" : "s"}`;
