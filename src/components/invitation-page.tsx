@@ -418,7 +418,13 @@ export function InvitationPage() {
             </AccordionTrigger>
             <AccordionContent className="pb-6 text-muted-foreground space-y-3">
               <p>
-                Food choices include either bringing a covered dish to share with brothers and sisters, or ordering a catered meal from the restaurants available through this cultural experience.
+                Food options are bringing a dish to share with others or ordering a catered meal paid directly to the restaurant for the authentic Taste of Special Conventions experience.
+              </p>
+              <p>
+                If you have special dietary needs for medical conditions, we invite you to bring your meal to the event.
+              </p>
+              <p>
+                All meals are gluten-free, msg free, and seed oil free using only butter or tallow.
               </p>
             </AccordionContent>
           </AccordionItem>
