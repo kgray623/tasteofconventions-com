@@ -154,9 +154,9 @@ export function paymentLines(r: PaymentSource | undefined | null) {
       : "";
 
   const paymentOptions = [
-    phone ? `Pay by phone: ${phone}` : "",
-    venmoLine,
     zelleLine,
+    venmoLine,
+    phone ? `Or call to pay by phone: ${phone}` : "",
   ]
     .filter(Boolean)
     .join("\n");

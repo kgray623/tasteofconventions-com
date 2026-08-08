@@ -14,6 +14,9 @@ type RestaurantRow = {
   zelle_name?: string | null;
   zelle_phone?: string | null;
   zelle_qr_url?: string | null;
+  chicken_price?: number | string | null;
+  beef_price?: number | string | null;
+  price_note?: string | null;
 };
 
 export function useMealRestaurants() {
@@ -23,7 +26,9 @@ export function useMealRestaurants() {
     queryFn: async (): Promise<RestaurantRow[]> => {
       const { data, error } = await supabase
         .from("restaurants")
-        .select("id,name,cuisine,phone,website,venmo_handle,zelle_name,zelle_phone,zelle_qr_url")
+        .select(
+          "id,name,cuisine,phone,website,venmo_handle,zelle_name,zelle_phone,zelle_qr_url,chicken_price,beef_price,price_note",
+        )
         .eq("active", true)
         .order("name");
       if (error) throw error;
@@ -31,6 +36,12 @@ export function useMealRestaurants() {
     },
   });
 }
+
+const fmtMoney = (v: number | string | null | undefined) => {
+  const n = typeof v === "string" ? Number(v) : v;
+  if (n === null || n === undefined || !Number.isFinite(n)) return null;
+  return Number.isInteger(n) ? `$${n}` : `$${(n as number).toFixed(2)}`;
+};
 
 export function findRestaurantForCuisine(
   rows: RestaurantRow[] | undefined,
@@ -68,40 +79,16 @@ export function MealRestaurantContact({
   const restaurant = findRestaurantForCuisine(rows, cuisineKey);
   if (!restaurant) return null;
   const telHref = restaurant.phone ? `tel:${restaurant.phone.replace(/[^\d+]/g, "")}` : null;
+  const chicken = fmtMoney(restaurant.chicken_price);
+  const beef = fmtMoney(restaurant.beef_price);
+  const hasZelle = !!(restaurant.zelle_phone || restaurant.zelle_name);
 
   return (
     <div className="rounded-md border border-terracotta/40 bg-cream/50 p-3 space-y-1.5">
       <p className="font-display text-lg text-ink">{restaurant.name}</p>
-      <p className="text-sm text-ink">
-        Call to pay for this meal directly:{" "}
-        {telHref ? (
-          <a
-            href={telHref}
-            className="inline-flex items-center gap-1 font-semibold text-terracotta underline underline-offset-4"
-          >
-            <Phone className="h-3.5 w-3.5" />
-            {restaurant.phone}
-          </a>
-        ) : (
-          <span className="text-muted-foreground">phone number coming soon</span>
-        )}
-      </p>
-      {(restaurant.venmo_handle || restaurant.zelle_phone) && (
+      {hasZelle && (
         <div className="rounded-md bg-background/70 p-2.5 space-y-1.5">
-          <p className="text-sm font-semibold text-ink">Or pay online</p>
-          {restaurant.venmo_handle && (
-            <p className="text-sm text-ink">
-              Venmo:{" "}
-              <a
-                href={`https://venmo.com/u/${restaurant.venmo_handle}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-semibold text-terracotta underline underline-offset-4"
-              >
-                @{restaurant.venmo_handle}
-              </a>
-            </p>
-          )}
+          <p className="text-sm font-semibold text-ink">Pay by Zelle (fastest)</p>
           {restaurant.zelle_phone && (
             <p className="text-sm text-ink">
               Zelle: look up{" "}
@@ -112,6 +99,36 @@ export function MealRestaurantContact({
                 {restaurant.zelle_phone}
               </a>
               {restaurant.zelle_name ? ` — ${restaurant.zelle_name}` : ""}
+            </p>
+          )}
+          {!restaurant.zelle_phone && restaurant.zelle_name && (
+            <p className="text-sm text-ink">Zelle: {restaurant.zelle_name}</p>
+          )}
+          {(chicken || beef) && (
+            <p className="text-sm text-ink">
+              Send the amount for your choice:{" "}
+              <span className="font-semibold">
+                {[chicken ? `Chicken ${chicken}` : "", beef ? `Beef ${beef}` : ""]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </span>
+              {restaurant.price_note ? ` (${restaurant.price_note})` : ""}
+            </p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Put your name in the Zelle memo so the restaurant can match your payment.
+          </p>
+          {restaurant.venmo_handle && (
+            <p className="text-sm text-ink">
+              Venmo also works:{" "}
+              <a
+                href={`https://venmo.com/u/${restaurant.venmo_handle}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-terracotta underline underline-offset-4"
+              >
+                @{restaurant.venmo_handle}
+              </a>
             </p>
           )}
           {restaurant.zelle_qr_url && (
@@ -127,6 +144,20 @@ export function MealRestaurantContact({
           )}
         </div>
       )}
+      <p className="text-sm text-ink">
+        {hasZelle ? "Or call to pay by phone:" : "Call to pay for this meal directly:"}{" "}
+        {telHref ? (
+          <a
+            href={telHref}
+            className="inline-flex items-center gap-1 font-semibold text-terracotta underline underline-offset-4"
+          >
+            <Phone className="h-3.5 w-3.5" />
+            {restaurant.phone}
+          </a>
+        ) : (
+          <span className="text-muted-foreground">phone number coming soon</span>
+        )}
+      </p>
       {restaurant.website && (
         <p className="text-sm">
           <a
