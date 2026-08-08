@@ -1,5 +1,13 @@
 // Shared, client-safe meal-text defaults and types.
-export const DEFAULT_MEAL_TEXT_TEMPLATE = `Hi {first_name} —
+
+/** Opening paragraph both catered-meal texts lead with. */
+export const MEAL_TEXT_UPDATE_INTRO = `UPDATE REGARDING Your Catered Meal. The restaurants have given us a virtual pre-pay option for our catered meals through the secure option of Zelle. One offers Venmo too.
+
+Thank you for your understanding as this is a first for all of us.`;
+
+export const DEFAULT_MEAL_TEXT_TEMPLATE = `${MEAL_TEXT_UPDATE_INTRO}
+
+Hi {first_name} —
 
 Because you RSVP'd for A Taste of Special Conventions and pre ordered a catered meal, the following is the contact information for the restaurant to pre-pay your catered meal direct.
 
@@ -22,7 +30,9 @@ Save your receipt to present at the event in order to verify your purchase and o
 Thank you! 😊`;
 
 /** Follow-up text for guests who were already texted before Zelle/Venmo existed. */
-export const DEFAULT_ZELLE_UPDATE_TEMPLATE = `Hi {first_name} — quick update on your {restaurant_cuisine} meal ({order}).
+export const DEFAULT_ZELLE_UPDATE_TEMPLATE = `${MEAL_TEXT_UPDATE_INTRO}
+
+Hi {first_name} — quick update on your {restaurant_cuisine} meal ({order}).
 
 You can now pay online instead of calling — here are all the ways to pay:
 {payment_options}
