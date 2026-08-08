@@ -30,7 +30,9 @@ Save your receipt to present at the event in order to verify your purchase and o
 Thank you! 😊`;
 
 /** Follow-up text for guests who were already texted before Zelle/Venmo existed. */
-export const DEFAULT_ZELLE_UPDATE_TEMPLATE = `Hi {first_name} — quick update on your {restaurant_cuisine} meal ({order}).
+export const DEFAULT_ZELLE_UPDATE_TEMPLATE = `${MEAL_TEXT_UPDATE_INTRO}
+
+Hi {first_name} — quick update on your {restaurant_cuisine} meal ({order}).
 
 You can now pay online instead of calling — here are all the ways to pay:
 {payment_options}
