@@ -37,6 +37,12 @@ export function useMealRestaurants() {
   });
 }
 
+const fmtMoney = (v: number | string | null | undefined) => {
+  const n = typeof v === "string" ? Number(v) : v;
+  if (n === null || n === undefined || !Number.isFinite(n)) return null;
+  return Number.isInteger(n) ? `$${n}` : `$${(n as number).toFixed(2)}`;
+};
+
 export function findRestaurantForCuisine(
   rows: RestaurantRow[] | undefined,
   cuisineKey: string,
