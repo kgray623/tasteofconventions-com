@@ -11,7 +11,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { getErrorMessage } from "@/lib/async-safety";
 import { downloadTextFile, openTextInNewTab } from "@/lib/download-file";
-import { smsNumber, cuisineLabel, paymentLines, renderMealTemplate } from "@/lib/meal-text-message";
+import {
+  smsNumber,
+  cuisineLabel,
+  paymentLines,
+  renderMealTemplate,
+  mealPhotosLine,
+} from "@/lib/meal-text-message";
 import { SmsTextButton } from "@/components/sms-text-button";
 import { OpenOnSiteBanner } from "@/components/open-on-site-banner";
 
@@ -170,6 +176,7 @@ function MealTextsPage() {
       restaurantPhone: r?.phone?.trim() || "[add the restaurant's phone number]",
       restaurantWebsite: r?.website?.trim() || "",
       order: orderText(row.qty, row.cuisine),
+      mealPhotos: mealPhotosLine(row.cuisine),
     });
   };
 
@@ -388,7 +395,7 @@ function MealTextsPage() {
           <code>{"{restaurant_cuisine}"}</code>, <code>{"{restaurant_phone}"}</code>,{" "}
           <code>{"{restaurant_website}"}</code>, <code>{"{order}"}</code>,{" "}
           <code>{"{payment_options}"}</code>, <code>{"{zelle_line}"}</code>,{" "}
-          <code>{"{venmo_line}"}</code>, <code>{"{online_prices}"}</code>.
+          <code>{"{venmo_line}"}</code>, <code>{"{online_prices}"}</code>, <code>{"{meal_photos}"}</code>.
         </p>
 
       </Card>

@@ -18,6 +18,7 @@ import {
   paymentLines,
   mealOrderText,
   renderMealTemplate,
+  mealPhotosLine,
   smsNumber,
 } from "@/lib/meal-text-message";
 
@@ -129,6 +130,7 @@ function MyMealTextsPage() {
       restaurantPhone: r?.phone?.trim() || "[ask the admin for the restaurant's phone number]",
       restaurantWebsite: r?.website?.trim() || "",
       order: mealOrderText(row.qty, row.cuisine),
+      mealPhotos: mealPhotosLine(row.cuisine),
     });
   };
 
