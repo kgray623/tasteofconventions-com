@@ -108,6 +108,7 @@ export type MealTextContext = {
   restaurantWebsite: string;
   order: string;
   paymentOptions?: string;
+  restaurantZelle?: string;
   zelleLine?: string;
   venmoLine?: string;
   onlinePrices?: string;
@@ -144,14 +145,20 @@ export function paymentLines(r: PaymentSource | undefined | null) {
       ? `Zelle: ${zelleName}`
       : "";
 
+  // The restaurant's own pay-online identity block (Zelle first, Venmo when offered).
+  const restaurantZelle = [zelleLine, venmoLine].filter(Boolean).join("\n");
+
   const chicken = money(r?.chicken_price ?? null);
   const beef = money(r?.beef_price ?? null);
   const note = r?.price_note?.trim() ?? "";
-  const priceParts = [chicken ? `chicken ${chicken}` : "", beef ? `beef ${beef}` : ""].filter(Boolean);
-  const onlinePrices =
-    priceParts.length > 0 && (venmoLine || zelleLine)
-      ? `If you pay by ${venmoLine && zelleLine ? "Zelle or Venmo" : venmoLine ? "Venmo" : "Zelle"}: ${priceParts.join(", ")}${note ? ` — ${note}` : ""}.`
-      : "";
+  // Both choices always visible, one per line, with the price note underneath.
+  const onlinePrices = [
+    chicken ? `Chicken ${chicken}` : "",
+    beef ? `Beef ${beef}` : "",
+    (chicken || beef) && note ? `(${note})` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   const paymentOptions = [
     zelleLine,
@@ -161,7 +168,7 @@ export function paymentLines(r: PaymentSource | undefined | null) {
     .filter(Boolean)
     .join("\n");
 
-  return { paymentOptions, venmoLine, zelleLine, onlinePrices };
+  return { paymentOptions, restaurantZelle, venmoLine, zelleLine, onlinePrices };
 }
 
 export function renderMealTemplate(tpl: string, ctx: MealTextContext) {
@@ -173,6 +180,7 @@ export function renderMealTemplate(tpl: string, ctx: MealTextContext) {
     .replaceAll("{restaurant_website}", ctx.restaurantWebsite)
     .replaceAll("{order}", ctx.order)
     .replaceAll("{payment_options}", ctx.paymentOptions ?? "")
+    .replaceAll("{restaurant_zelle}", ctx.restaurantZelle ?? "")
     .replaceAll("{zelle_line}", ctx.zelleLine ?? "")
     .replaceAll("{venmo_line}", ctx.venmoLine ?? "")
     .replaceAll("{online_prices}", ctx.onlinePrices ?? "")
