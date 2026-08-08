@@ -1,61 +1,43 @@
 // Shared, client-safe meal-text defaults and types.
 
 /** Opening lines both catered-meal texts lead with. */
-export const MEAL_TEXT_UPDATE_INTRO = `UPDATE!
-
-REGARDING Your Catered Meal.`;
+export const MEAL_TEXT_UPDATE_INTRO = `UPDATE REGARDING Your Catered Meal!`;
 
 export const DEFAULT_MEAL_TEXT_TEMPLATE = `${MEAL_TEXT_UPDATE_INTRO}
 
 Hi {first_name} —
 
-Because you RSVP'd for A Taste of Special Conventions and ordered a catered meal, the following information is how to pre-pay for your catered meal online instead of calling the restaurant and paying over the phone.
+This is an update regarding your Taste of Conventions catered meal.
 
-The restaurants have provided a virtual pre-pay alternative Zelle. One offers Venmo too.
+The following information is how to pre-pay using a secure method. Each of the restaurants have provided a Zelle option which is secured.
 
-Thank you for your patience and understanding as this is a first for all of us.
+Thank you for your understanding in this matter.
 
-{restaurant_name} — {restaurant_cuisine}
+For {restaurant_cuisine} your choices are:
 
-{restaurant_zelle}
+{meal_choices}
+
+{pay_sentence}
 
 Your order is for {order}.
 
-How to pay:
-
-{payment_options}
-
-{online_prices}
-
 {meal_photos}
 
-The restaurant will verify your prepaid meal(s). If you don't see confirmation in your RSVP within 48 hrs, please text 808.278.7562. These meals are exclusively for our event.
+The restaurant will verify your payment. You will have a receipt from your bank and your RSVP will be updated.
 
-August 23rd is the cut off for payment for your Taste of Conventions event meal
+August 23rd is the last day to prepay.
 
-Your receipt will be both in your bank account and will be in your RSVP at tasteofconventions.com.
-Please present at the event your purchase receipt to obtain your meal.
+Please present your RSVP receipt at the event when obtaining your meal.
 
-Thank you for your support in making this an encouraging and exciting experience for all! 😊
+Thank you dear friend for your support in making this an encouraging and exciting experience for all! 😊
 
 Christian ❤️ love,
 
 Taste of Conventions Food Committee`;
 
 /** Follow-up text for guests who were already texted before Zelle/Venmo existed. */
-export const DEFAULT_ZELLE_UPDATE_TEMPLATE = `${MEAL_TEXT_UPDATE_INTRO}
+export const DEFAULT_ZELLE_UPDATE_TEMPLATE = DEFAULT_MEAL_TEXT_TEMPLATE;
 
-Hi {first_name} — quick update on your {restaurant_cuisine} meal ({order}).
-
-You can now pay online instead of calling — here are all the ways to pay:
-{payment_options}
-{online_prices}
-
-{meal_photos}
-
-All catered meals must be paid for by Sunday, August 23. Please save your confirmation to show at the event.
-
-Thank you! 😊`;
 
 export type MealRestaurant = {
   id: string;
