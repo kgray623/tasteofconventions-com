@@ -25,6 +25,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RsvpIndexRouteImport } from './routes/rsvp.index'
 import { Route as RsvpTokenRouteImport } from './routes/rsvp.$token'
+import { Route as MealsCuisineRouteImport } from './routes/meals.$cuisine'
 import { Route as ExportsFilenameRouteImport } from './routes/exports.$filename'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as AuthenticatedVolunteerRouteImport } from './routes/_authenticated/volunteer'
@@ -142,6 +143,11 @@ const RsvpIndexRoute = RsvpIndexRouteImport.update({
 const RsvpTokenRoute = RsvpTokenRouteImport.update({
   id: '/rsvp/$token',
   path: '/rsvp/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MealsCuisineRoute = MealsCuisineRouteImport.update({
+  id: '/meals/$cuisine',
+  path: '/meals/$cuisine',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExportsFilenameRoute = ExportsFilenameRouteImport.update({
@@ -387,6 +393,7 @@ export interface FileRoutesByFullPath {
   '/volunteer': typeof AuthenticatedVolunteerRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/exports/$filename': typeof ExportsFilenameRoute
+  '/meals/$cuisine': typeof MealsCuisineRoute
   '/rsvp/$token': typeof RsvpTokenRoute
   '/rsvp/': typeof RsvpIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -442,6 +449,7 @@ export interface FileRoutesByTo {
   '/volunteer': typeof AuthenticatedVolunteerRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/exports/$filename': typeof ExportsFilenameRoute
+  '/meals/$cuisine': typeof MealsCuisineRoute
   '/rsvp/$token': typeof RsvpTokenRoute
   '/rsvp': typeof RsvpIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -500,6 +508,7 @@ export interface FileRoutesById {
   '/_authenticated/volunteer': typeof AuthenticatedVolunteerRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/exports/$filename': typeof ExportsFilenameRoute
+  '/meals/$cuisine': typeof MealsCuisineRoute
   '/rsvp/$token': typeof RsvpTokenRoute
   '/rsvp/': typeof RsvpIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -558,6 +567,7 @@ export interface FileRouteTypes {
     | '/volunteer'
     | '/email/unsubscribe'
     | '/exports/$filename'
+    | '/meals/$cuisine'
     | '/rsvp/$token'
     | '/rsvp/'
     | '/.lovable/oauth/consent'
@@ -613,6 +623,7 @@ export interface FileRouteTypes {
     | '/volunteer'
     | '/email/unsubscribe'
     | '/exports/$filename'
+    | '/meals/$cuisine'
     | '/rsvp/$token'
     | '/rsvp'
     | '/.lovable/oauth/consent'
@@ -670,6 +681,7 @@ export interface FileRouteTypes {
     | '/_authenticated/volunteer'
     | '/email/unsubscribe'
     | '/exports/$filename'
+    | '/meals/$cuisine'
     | '/rsvp/$token'
     | '/rsvp/'
     | '/.lovable/oauth/consent'
@@ -725,6 +737,7 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   ExportsFilenameRoute: typeof ExportsFilenameRoute
+  MealsCuisineRoute: typeof MealsCuisineRoute
   RsvpTokenRoute: typeof RsvpTokenRoute
   RsvpIndexRoute: typeof RsvpIndexRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
@@ -849,6 +862,13 @@ declare module '@tanstack/react-router' {
       path: '/rsvp/$token'
       fullPath: '/rsvp/$token'
       preLoaderRoute: typeof RsvpTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/meals/$cuisine': {
+      id: '/meals/$cuisine'
+      path: '/meals/$cuisine'
+      fullPath: '/meals/$cuisine'
+      preLoaderRoute: typeof MealsCuisineRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/exports/$filename': {
@@ -1223,6 +1243,7 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   ExportsFilenameRoute: ExportsFilenameRoute,
+  MealsCuisineRoute: MealsCuisineRoute,
   RsvpTokenRoute: RsvpTokenRoute,
   RsvpIndexRoute: RsvpIndexRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
