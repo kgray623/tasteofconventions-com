@@ -13,6 +13,8 @@ How to pay:
 {payment_options}
 {online_prices}
 
+{meal_photos}
+
 The restaurant has been notified you will call to pre pay your meal, so please do so promptly.
 
 Save your receipt to present at the event in order to verify your purchase and obtain your meal.
@@ -25,6 +27,8 @@ export const DEFAULT_ZELLE_UPDATE_TEMPLATE = `Hi {first_name} — quick update o
 You can now pay online instead of calling — here are all the ways to pay:
 {payment_options}
 {online_prices}
+
+{meal_photos}
 
 All catered meals must be paid for by Sunday, August 23. Please save your confirmation to show at the event.
 

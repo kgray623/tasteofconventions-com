@@ -2,6 +2,8 @@
 // admin-wide meal texts page and the per-committee-member page so the wording,
 // phone formatting and recipient chunking can never drift apart.
 
+import { mealPhotoSetFor } from "@/lib/meal-photos";
+
 export const SMS_CHUNK = 20;
 
 export const smsDigits = (value: string | null | undefined) => (value ?? "").replace(/\D/g, "");
@@ -109,6 +111,7 @@ export type MealTextContext = {
   zelleLine?: string;
   venmoLine?: string;
   onlinePrices?: string;
+  mealPhotos?: string;
 };
 
 type PaymentSource = {
@@ -173,8 +176,16 @@ export function renderMealTemplate(tpl: string, ctx: MealTextContext) {
     .replaceAll("{zelle_line}", ctx.zelleLine ?? "")
     .replaceAll("{venmo_line}", ctx.venmoLine ?? "")
     .replaceAll("{online_prices}", ctx.onlinePrices ?? "")
+    .replaceAll("{meal_photos}", ctx.mealPhotos ?? "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+}
+
+/** "See the food: https://.../meals/african" — empty when the cuisine has no photos. */
+export function mealPhotosLine(cuisine: string | null | undefined) {
+  const set = mealPhotoSetFor(cuisine);
+  if (!set) return "";
+  return `See the food: ${PUBLIC_SITE_ORIGIN}/meals/${set.slug}`;
 }
 
 export const mealOrderText = (qty: number, cuisine: string) =>
