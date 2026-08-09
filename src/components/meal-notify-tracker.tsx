@@ -33,11 +33,12 @@ export function MealNotifyTracker({ compact = false }: { compact?: boolean }) {
   const [data, setData] = useState<MealNotifyRollup | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [campaign, setCampaign] = useState<"original" | "update">("update");
 
   const refresh = async () => {
     setLoading(true);
     try {
-      const res = await load({ data: {} as never });
+      const res = await load({ data: { campaign } });
       setData(res);
       setError(null);
     } catch (e) {
@@ -49,7 +50,7 @@ export function MealNotifyTracker({ compact = false }: { compact?: boolean }) {
 
   useEffect(() => {
     void refresh();
-  }, []);
+  }, [campaign]);
 
   const download = () => {
     if (!data || data.pending.length === 0) {
@@ -57,7 +58,7 @@ export function MealNotifyTracker({ compact = false }: { compact?: boolean }) {
       return;
     }
     const csv = pendingCsv(data);
-    const name = `pre-pay-pending-${new Date().toISOString().slice(0, 10)}.csv`;
+    const name = `${campaign === "update" ? "payment-update" : "original-meal-message"}-pending-${new Date().toISOString().slice(0, 10)}.csv`;
     const res = downloadTextFile(name, csv);
     if (res.ok) {
       toast.success("Pending list downloaded");
@@ -77,7 +78,7 @@ export function MealNotifyTracker({ compact = false }: { compact?: boolean }) {
             <h3 className="font-display text-xl">Pre-pay notifications</h3>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Who has been told to pre-pay their catered meal — and who is still waiting.
+            One database ledger at a time. New payment updates start at zero and only change after an explicit check.
           </p>
         </div>
         <div className="flex gap-2">
@@ -92,6 +93,15 @@ export function MealNotifyTracker({ compact = false }: { compact?: boolean }) {
             <Download className="w-3.5 h-3.5 mr-1.5" /> Pending list
           </Button>
         </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2" aria-label="Message campaign">
+        <Button size="sm" variant={campaign === "original" ? "default" : "outline"} onClick={() => setCampaign("original")}>
+          Original meal message
+        </Button>
+        <Button size="sm" variant={campaign === "update" ? "default" : "outline"} onClick={() => setCampaign("update")}>
+          New payment update
+        </Button>
       </div>
 
       {error && (
@@ -113,12 +123,12 @@ export function MealNotifyTracker({ compact = false }: { compact?: boolean }) {
               {data.totals.pending}
               <span className="text-base text-muted-foreground font-sans">
                 {" "}
-                of {data.totals.preorders} restaurant meals still need a pre-pay text
+                of {data.totals.preorders} restaurant-order messages still need the {campaign === "update" ? "new payment update" : "original meal message"}
               </span>
             </p>
 
             <div className="flex flex-wrap gap-2 pt-2">
-              <Badge variant="outline">{data.totals.notified} texted</Badge>
+              <Badge variant="outline">{data.totals.notified} explicitly marked sent</Badge>
               <Badge variant="outline">{data.totals.meals} meals ordered (quantities)</Badge>
             </div>
           </div>
@@ -180,8 +190,7 @@ export function MealNotifyTracker({ compact = false }: { compact?: boolean }) {
             </div>
           )}
           <p className="text-xs text-muted-foreground">
-            Nobody is ever marked notified automatically — the count only moves when someone checks
-            “Check here after you text”.
+            Read from the database {new Date(data.generated_at).toLocaleString()}. Opening, copying, or tapping Text never changes this count; only “Check here after you text” does.
           </p>
         </>
       )}

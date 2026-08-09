@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type MealNotifyInviter = {
@@ -22,6 +23,7 @@ export type MealNotifyPendingRow = {
 };
 
 export type MealNotifyRollup = {
+  campaign: "original" | "update";
   totals: { preorders: number; meals: number; notified: number; pending: number };
   inviters: MealNotifyInviter[];
   pending: MealNotifyPendingRow[];
@@ -54,7 +56,10 @@ async function assertStaff(supabase: any, userId: string) {
  */
 export const getMealNotifyRollup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<MealNotifyRollup> => {
+  .inputValidator((value: unknown) =>
+    z.object({ campaign: z.enum(["original", "update"]).default("update") }).parse(value ?? {}),
+  )
+  .handler(async ({ data, context }): Promise<MealNotifyRollup> => {
     await assertStaff(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -66,7 +71,9 @@ export const getMealNotifyRollup = createServerFn({ method: "POST" })
           .order("name"),
         supabaseAdmin.from("invitations").select("id,inviter_id"),
         supabaseAdmin.from("inviters").select("id,name"),
-        supabaseAdmin.from("meal_text_sends").select("preorder_id,cuisine,sent_at"),
+        supabaseAdmin
+          .from(data.campaign === "update" ? "meal_zelle_text_sends" : "meal_text_sends")
+          .select("preorder_id,cuisine,sent_at"),
       ]);
 
     const sentByMeal = new Map<string, string>();
@@ -160,5 +167,5 @@ export const getMealNotifyRollup = createServerFn({ method: "POST" })
       (a, b) => a.inviter.localeCompare(b.inviter) || a.name.localeCompare(b.name),
     );
 
-    return { totals, inviters: list, pending, generated_at: new Date().toISOString() };
+    return { campaign: data.campaign, totals, inviters: list, pending, generated_at: new Date().toISOString() };
   });

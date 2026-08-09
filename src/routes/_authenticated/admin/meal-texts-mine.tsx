@@ -72,7 +72,7 @@ function MyMealTextsPage() {
   const [template, setTemplate] = useState(DEFAULT_MEAL_TEXT_TEMPLATE);
   const [zelleTemplate, setZelleTemplate] = useState(DEFAULT_ZELLE_UPDATE_TEMPLATE);
   // "zelle" = the follow-up Zelle/Venmo text for guests already texted once.
-  const [mode, setMode] = useState<"meal" | "zelle">("meal");
+  const [mode, setMode] = useState<"meal" | "zelle">("zelle");
   const [isAdmin, setIsAdmin] = useState(false);
   const [committee, setCommittee] = useState<Array<{ id: string; name: string }>>([]);
   const [actingFor, setActingFor] = useState<string | null>(null);
@@ -221,16 +221,16 @@ function MyMealTextsPage() {
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
           <Button size="sm" variant={isZelle ? "outline" : "default"} onClick={() => setMode("meal")}>
-            Meal texts
+            Original meal message
           </Button>
           <Button size="sm" variant={isZelle ? "default" : "outline"} onClick={() => setMode("zelle")}>
-            Zelle update
+            New payment update
           </Button>
         </div>
         {isZelle && (
           <p className="text-sm text-muted-foreground">
-            Only guests you already texted appear here. Send them the Zelle / Venmo option and check
-            it off — this mark is kept separate from the first meal text.
+            This new payment-update list starts at zero sent. Send the update, then explicitly check
+            it off; opening or copying a message never marks it sent.
           </p>
         )}
         <div className="flex flex-wrap gap-2 pt-1">
@@ -238,7 +238,7 @@ function MyMealTextsPage() {
           <Badge variant="outline">{totalOrders} restaurant texts</Badge>
           <Badge variant="outline">{totalMeals} meals</Badge>
           <Badge variant="outline">
-            {sentCount} {isZelle ? "sent the Zelle update" : "texted"}
+            {sentCount} {isZelle ? "sent the new payment update" : "sent the original meal message"}
           </Badge>
           <Badge variant="outline">{totalOrders - sentCount} to go</Badge>
         </div>
@@ -273,7 +273,7 @@ function MyMealTextsPage() {
         <Switch checked={onlyUnsent} onCheckedChange={setOnlyUnsent} id="only-unsent-mine" />
         <label htmlFor="only-unsent-mine" className="text-sm">
           {isZelle
-            ? "Show only the guests who haven't had the Zelle update"
+            ? "Show only the guests who haven't had the new payment update"
             : "Show only the guests I haven't texted yet"}
         </label>
       </div>
@@ -341,7 +341,7 @@ function MyMealTextsPage() {
                       </Badge>
                       {(isZelle ? row.zelle_sent_at : row.sent_at) ? (
                         <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 text-[10px]">
-                          {isZelle ? "Zelle update sent" : "Texted"}{" "}
+                          {isZelle ? "New payment update sent" : "Original meal message sent"}{" "}
                           {new Date((isZelle ? row.zelle_sent_at : row.sent_at)!).toLocaleDateString()}{" "}
                           · {cuisineLabel(row.cuisine)}
                         </Badge>
@@ -350,7 +350,7 @@ function MyMealTextsPage() {
                           variant="outline"
                           className="border-amber-400 text-amber-700 text-[10px]"
                         >
-                          {isZelle ? "No Zelle update yet for" : "Not texted about"}{" "}
+                           {isZelle ? "No new payment update yet for" : "No original meal message yet for"}{" "}
                           {cuisineLabel(row.cuisine)}
                         </Badge>
                       )}
@@ -381,7 +381,7 @@ function MyMealTextsPage() {
                           onClick={() => void setSent(row, false)}
                         >
                           <Check className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
-                          {isZelle ? "Zelle update sent · Undo" : "Texted · Undo"}
+                           {isZelle ? "Payment update sent · Undo" : "Original message sent · Undo"}
                         </Button>
                       ) : (
                         <Button
