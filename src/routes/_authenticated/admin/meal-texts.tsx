@@ -284,8 +284,8 @@ function MealTextsPage() {
         </div>
         <p className="text-sm text-muted-foreground">
           {isZelle
-              ? "This queue contains only guests who received the original message and still need the payment update, plus guests explicitly marked current."
-            : "This queue contains guests who have received nothing. Every text opens in your own Messages app; nothing is recorded until you explicitly check it after sending."}
+              ? "Everyone who ordered a meal is in this queue except guests the restaurant has recorded as paid. Every text opens in your own Messages app; nothing is recorded until you explicitly check it after sending."
+            : "Full history of the original meal message for every order. Reference only — the payment update queue is not filtered by it."}
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
           <Badge variant="outline">{totalHouseholds} households</Badge>
@@ -297,10 +297,11 @@ function MealTextsPage() {
           <Badge variant="outline">{totalOrders - sentCount} still to text</Badge>
           {reconciliation && (
             <Badge variant={reconciliation.totals.reconciles ? "outline" : "destructive"}>
-              {reconciliation.totals.message_units} = {reconciliation.totals.received_nothing} nothing + {reconciliation.totals.needs_update} update + {reconciliation.totals.current} current + {reconciliation.totals.exceptions} exceptions
+              {reconciliation.totals.message_units} orders = {reconciliation.totals.needs_update} still to text + {reconciliation.totals.update_sent} texted + {reconciliation.totals.paid} paid + {reconciliation.totals.exceptions} exceptions
             </Badge>
           )}
         </div>
+
         {reconciliation && (
           <p className="text-xs text-muted-foreground">
             Reconciled from the database {new Date(reconciliation.generated_at).toLocaleString()}.
