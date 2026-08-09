@@ -33,6 +33,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     await assertStaff(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { loadMealCommunicationLedger } = await import("@/lib/meal-communication.server");
 
     const [
       { data: restaurants },
@@ -43,6 +44,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
       { data: sends },
       { data: zelleSends },
       { data: zelleSetting },
+      ledger,
     ] = await Promise.all([
       supabaseAdmin.from("restaurants").select(RESTAURANT_COLUMNS).order("name"),
       supabaseAdmin
@@ -59,6 +61,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
         .select("value")
         .eq("key", "meal_zelle_text_template")
         .maybeSingle(),
+      loadMealCommunicationLedger(supabaseAdmin),
     ]);
 
     const zelleByMeal = new Map<string, string>();
@@ -79,6 +82,9 @@ export const getMealTextData = createServerFn({ method: "POST" })
     );
 
 
+    const ledgerByKey = new Map(
+      ledger.rows.map((row) => [`${row.id}::${row.cuisine}`, row] as const),
+    );
     const rows: MealTextRow[] = [];
     for (const p of (preorders ?? []) as any[]) {
       const sel = Array.isArray(p.selections) ? p.selections : [];
@@ -112,6 +118,8 @@ export const getMealTextData = createServerFn({ method: "POST" })
           qty,
           sent_at: sentByMeal.get(`${p.id}::${cuisine}`) ?? null,
           zelle_sent_at: zelleByMeal.get(`${p.id}::${cuisine}`) ?? null,
+          state: ledgerByKey.get(`${p.id}::${cuisine}`)?.state,
+          exception: ledgerByKey.get(`${p.id}::${cuisine}`)?.exception ?? null,
         });
       }
     }
@@ -136,6 +144,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
       rows,
       template: (setting?.value as string | undefined) ?? DEFAULT_MEAL_TEXT_TEMPLATE,
       zelleTemplate: (zelleSetting?.value as string | undefined) ?? DEFAULT_ZELLE_UPDATE_TEMPLATE,
+      reconciliation: { totals: ledger.totals, generated_at: ledger.generated_at },
     };
   });
 

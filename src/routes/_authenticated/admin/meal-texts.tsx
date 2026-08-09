@@ -78,6 +78,18 @@ function MealTextsPage() {
   const [onlyUnsent, setOnlyUnsent] = useState(false);
   const [inviterFilter, setInviterFilter] = useState("all");
   const [busy, setBusy] = useState<string | null>(null);
+  const [reconciliation, setReconciliation] = useState<{
+    totals: {
+      message_units: number;
+      meal_quantity: number;
+      received_nothing: number;
+      needs_update: number;
+      current: number;
+      exceptions: number;
+      reconciles: boolean;
+    };
+    generated_at: string;
+  } | null>(null);
 
   const refresh = async () => {
     setLoading(true);
@@ -87,6 +99,7 @@ function MealTextsPage() {
       setRows(res.rows);
       setTemplate(res.template);
       setZelleTemplate(res.zelleTemplate);
+      setReconciliation(res.reconciliation);
     } catch (e) {
       toast.error("Couldn't load the meal orders", { description: getErrorMessage(e) });
     } finally {
@@ -106,9 +119,13 @@ function MealTextsPage() {
         (cuisine === "Myanmar" && r.name.toLowerCase().includes("burmese")),
     );
 
-  // In Zelle-update mode only guests who were already texted appear.
+  // The payment-update queue is an explicit canonical state, not a derived
+  // subtraction. Guests who received nothing stay visible in the original queue.
   const modeRows = useMemo(
-    () => (mode === "zelle" ? rows.filter((r) => r.sent_at) : rows),
+    () =>
+      mode === "zelle"
+        ? rows.filter((r) => r.state === "needs_update" || r.state === "current")
+        : rows.filter((r) => r.state === "received_nothing" || r.state === "exception"),
     [rows, mode],
   );
 
@@ -266,8 +283,8 @@ function MealTextsPage() {
         </div>
         <p className="text-sm text-muted-foreground">
           {isZelle
-              ? "This is the new payment-update campaign. It starts at zero sent and changes only when you explicitly check a person after sending. Only guests recorded as receiving the original message appear here."
-            : "Every text opens in your own Messages app with the wording already written — you just press send. Nothing is sent automatically. Each restaurant is texted and checked off separately, so a guest who ordered from two restaurants needs two texts."}
+              ? "This queue contains only guests who received the original message and still need the payment update, plus guests explicitly marked current."
+            : "This queue contains guests who have received nothing. Every text opens in your own Messages app; nothing is recorded until you explicitly check it after sending."}
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
           <Badge variant="outline">{totalHouseholds} households</Badge>
@@ -277,7 +294,17 @@ function MealTextsPage() {
             {sentCount} {isZelle ? "sent the new payment update" : "sent the original meal message"}
           </Badge>
           <Badge variant="outline">{totalOrders - sentCount} still to text</Badge>
+          {reconciliation && (
+            <Badge variant={reconciliation.totals.reconciles ? "outline" : "destructive"}>
+              {reconciliation.totals.message_units} = {reconciliation.totals.received_nothing} nothing + {reconciliation.totals.needs_update} update + {reconciliation.totals.current} current + {reconciliation.totals.exceptions} exceptions
+            </Badge>
+          )}
         </div>
+        {reconciliation && (
+          <p className="text-xs text-muted-foreground">
+            Reconciled from the database {new Date(reconciliation.generated_at).toLocaleString()}.
+          </p>
+        )}
 
         <div className="pt-1">
           <Button size="sm" variant="outline" onClick={downloadPending}>
