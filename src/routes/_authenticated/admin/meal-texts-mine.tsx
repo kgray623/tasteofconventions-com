@@ -103,11 +103,10 @@ function MyMealTextsPage() {
   }, [actingFor]);
 
   const isZelle = mode === "zelle";
+  // Everyone who ordered needs the payment text except guests already recorded
+  // as paid by the restaurant.
   const modeRows = useMemo(
-    () =>
-      isZelle
-        ? rows.filter((r) => r.state === "needs_update" || r.state === "current")
-        : rows.filter((r) => r.state === "received_nothing" || r.state === "exception"),
+    () => (isZelle ? rows.filter((r) => r.state !== "paid") : rows),
     [rows, isZelle],
   );
 

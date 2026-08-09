@@ -18,12 +18,22 @@ function escapeCsv(value: unknown) {
 function pendingCsv(data: MealNotifyRollup) {
   const header = ["Guest", "Phone", "Cuisine", "Meals", "Committee member", "Status"];
   const lines = data.rows
-    .filter((row) => row.state === "received_nothing" || row.state === "needs_update")
+    .filter((row) => row.state === "needs_update" || row.state === "exception")
     .map((row) =>
-    [row.name, row.phone, row.cuisine, row.qty, row.inviter, row.state === "needs_update" ? "Needs payment update" : "Has received nothing"].map(escapeCsv).join(","),
-  );
+      [
+        row.name,
+        row.phone,
+        row.cuisine,
+        row.qty,
+        row.inviter,
+        row.state === "exception" ? `Exception: ${row.exception ?? "needs review"}` : "Needs the payment text",
+      ]
+        .map(escapeCsv)
+        .join(","),
+    );
   return [header.join(","), ...lines].join("\n");
 }
+
 
 /**
  * Live "who still needs a pre-pay text" tracker, grouped by committee member.
@@ -54,7 +64,7 @@ export function MealNotifyTracker({ compact = false }: { compact?: boolean }) {
   }, []);
 
   const download = () => {
-    if (!data || data.totals.needs_update + data.totals.received_nothing === 0) {
+    if (!data || data.totals.needs_update + data.totals.exceptions === 0) {
       toast.error("Nothing pending to download");
       return;
     }
@@ -115,13 +125,15 @@ export function MealNotifyTracker({ compact = false }: { compact?: boolean }) {
               {data.totals.needs_update}
               <span className="text-base text-muted-foreground font-sans">
                 {" "}
-                 need the payment update
+                still need the payment text
               </span>
             </p>
 
             <div className="flex flex-wrap gap-2 pt-2">
-              <Badge variant="outline">{data.totals.received_nothing} have received nothing</Badge>
-              <Badge variant="outline">{data.totals.current} current</Badge>
+              <Badge variant="outline">{data.totals.message_units} meal orders in total</Badge>
+              <Badge variant="outline">{data.totals.paid} already paid</Badge>
+              <Badge variant="outline">{data.totals.update_sent} payment text sent</Badge>
+              <Badge variant="outline">{data.totals.exceptions} exceptions</Badge>
               <Badge variant="outline">{data.totals.meal_quantity} meals ordered (quantities)</Badge>
               <Badge variant={data.totals.reconciles ? "outline" : "destructive"}>
                 {data.totals.reconciles ? "Counts reconcile" : "Accounting mismatch"}
@@ -135,9 +147,9 @@ export function MealNotifyTracker({ compact = false }: { compact?: boolean }) {
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <th className="py-2 pr-3">Committee member</th>
-                  <th className="py-2 pr-3 text-right">Nothing received</th>
-                  <th className="py-2 pr-3 text-right">Needs update</th>
-                  <th className="py-2 pr-3 text-right">Current</th>
+                  <th className="py-2 pr-3 text-right">Still to text</th>
+                  <th className="py-2 pr-3 text-right">Text sent</th>
+                  <th className="py-2 pr-3 text-right">Paid</th>
                   <th className="py-2 text-right">Exceptions</th>
 
                 </tr>
@@ -146,22 +158,23 @@ export function MealNotifyTracker({ compact = false }: { compact?: boolean }) {
                 {data.inviters.length === 0 && (
                   <tr>
                     <td colSpan={5} className="py-4 text-muted-foreground">
-                      No cultural meal pre-orders yet.
+                      No cultural meal orders yet.
                     </td>
                   </tr>
                 )}
                 {data.inviters.map((row) => (
                   <tr key={row.inviter_id ?? "unlinked"}>
                     <td className="py-2 pr-3 font-medium">{row.name}</td>
-                    <td className="py-2 pr-3 text-right">{row.received_nothing}</td>
                     <td className="py-2 pr-3 text-right">{row.needs_update}</td>
-                    <td className="py-2 pr-3 text-right">{row.current}</td>
+                    <td className="py-2 pr-3 text-right">{row.update_sent}</td>
+                    <td className="py-2 pr-3 text-right">{row.paid}</td>
                     <td className="py-2 text-right">{row.exceptions}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+
 
           {!compact && (
             <div className="flex flex-wrap gap-2">

@@ -82,9 +82,9 @@ function MealTextsPage() {
     totals: {
       message_units: number;
       meal_quantity: number;
-      received_nothing: number;
+      paid: number;
       needs_update: number;
-      current: number;
+      update_sent: number;
       exceptions: number;
       reconciles: boolean;
     };
@@ -119,13 +119,14 @@ function MealTextsPage() {
         (cuisine === "Myanmar" && r.name.toLowerCase().includes("burmese")),
     );
 
-  // The payment-update queue is an explicit canonical state, not a derived
-  // subtraction. Guests who received nothing stay visible in the original queue.
+  // Everyone who ordered a meal needs the payment update text, except the
+  // guests the restaurant has recorded as paid. The original-message history is
+  // reference only and never filters this queue.
   const modeRows = useMemo(
     () =>
       mode === "zelle"
-        ? rows.filter((r) => r.state === "needs_update" || r.state === "current")
-        : rows.filter((r) => r.state === "received_nothing" || r.state === "exception"),
+        ? rows.filter((r) => r.state !== "paid")
+        : rows,
     [rows, mode],
   );
 
@@ -283,8 +284,8 @@ function MealTextsPage() {
         </div>
         <p className="text-sm text-muted-foreground">
           {isZelle
-              ? "This queue contains only guests who received the original message and still need the payment update, plus guests explicitly marked current."
-            : "This queue contains guests who have received nothing. Every text opens in your own Messages app; nothing is recorded until you explicitly check it after sending."}
+              ? "Everyone who ordered a meal is in this queue except guests the restaurant has recorded as paid. Every text opens in your own Messages app; nothing is recorded until you explicitly check it after sending."
+            : "Full history of the original meal message for every order. Reference only — the payment update queue is not filtered by it."}
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
           <Badge variant="outline">{totalHouseholds} households</Badge>
@@ -296,10 +297,11 @@ function MealTextsPage() {
           <Badge variant="outline">{totalOrders - sentCount} still to text</Badge>
           {reconciliation && (
             <Badge variant={reconciliation.totals.reconciles ? "outline" : "destructive"}>
-              {reconciliation.totals.message_units} = {reconciliation.totals.received_nothing} nothing + {reconciliation.totals.needs_update} update + {reconciliation.totals.current} current + {reconciliation.totals.exceptions} exceptions
+              {reconciliation.totals.message_units} orders = {reconciliation.totals.needs_update} still to text + {reconciliation.totals.update_sent} texted + {reconciliation.totals.paid} paid + {reconciliation.totals.exceptions} exceptions
             </Badge>
           )}
         </div>
+
         {reconciliation && (
           <p className="text-xs text-muted-foreground">
             Reconciled from the database {new Date(reconciliation.generated_at).toLocaleString()}.

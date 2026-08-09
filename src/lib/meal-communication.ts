@@ -1,10 +1,14 @@
 import { parseSelections } from "@/lib/preorder-math";
 
-export type MealCommunicationState =
-  | "received_nothing"
-  | "needs_update"
-  | "current"
-  | "exception";
+/**
+ * Canonical communication state for one restaurant-order unit
+ * (one guest + one cuisine).
+ *
+ * Rule: EVERY guest who ordered a meal needs the payment update text, unless
+ * the restaurant has recorded them as paid. The original-message history is
+ * reference only and never gates the queue.
+ */
+export type MealCommunicationState = "paid" | "needs_update" | "update_sent" | "exception";
 
 export type MealCommunicationRow = {
   id: string;
@@ -17,6 +21,7 @@ export type MealCommunicationRow = {
   inviter: string;
   original_sent_at: string | null;
   update_sent_at: string | null;
+  paid_at: string | null;
   state: MealCommunicationState;
   exception: string | null;
 };
@@ -25,9 +30,9 @@ export type MealCommunicationTotals = {
   households: number;
   message_units: number;
   meal_quantity: number;
-  received_nothing: number;
+  paid: number;
   needs_update: number;
-  current: number;
+  update_sent: number;
   exceptions: number;
   reconciles: boolean;
 };
@@ -41,10 +46,18 @@ type SourcePreorder = {
 };
 
 type SourceSend = { preorder_id: string; cuisine: string; sent_at: string };
+type SourcePayment = { preorder_id: string; cuisine: string; paid_at: string | null };
+type SourceConfirmation = {
+  preorder_id: string;
+  cuisine: string;
+  confirmed: boolean | null;
+  confirmed_at: string | null;
+};
 type SourceInvitation = { id: string; inviter_id: string | null };
 type SourceInviter = { id: string; name: string | null };
 
 const keyFor = (preorderId: string, cuisine: string) => `${preorderId}::${cuisine}`;
+const normalizeCuisine = (raw: string) => parseSelections([{ cuisine: raw, qty: 1 }])[0]?.cuisine;
 
 export function buildMealCommunicationLedger(input: {
   preorders: SourcePreorder[];
@@ -52,19 +65,33 @@ export function buildMealCommunicationLedger(input: {
   inviters: SourceInviter[];
   originalSends: SourceSend[];
   updateSends: SourceSend[];
+  payments?: SourcePayment[];
+  confirmations?: SourceConfirmation[];
 }) {
   const inviterByInvitation = new Map(input.invitations.map((row) => [row.id, row.inviter_id]));
   const inviterNameById = new Map(input.inviters.map((row) => [row.id, row.name?.trim() || "Committee"]));
   const originalByKey = new Map<string, string>();
   const updateByKey = new Map<string, string>();
+  const paidByKey = new Map<string, string>();
 
   for (const row of input.originalSends) {
-    const cuisine = parseSelections([{ cuisine: row.cuisine, qty: 1 }])[0]?.cuisine;
+    const cuisine = normalizeCuisine(row.cuisine);
     if (cuisine) originalByKey.set(keyFor(row.preorder_id, cuisine), row.sent_at);
   }
   for (const row of input.updateSends) {
-    const cuisine = parseSelections([{ cuisine: row.cuisine, qty: 1 }])[0]?.cuisine;
+    const cuisine = normalizeCuisine(row.cuisine);
     if (cuisine) updateByKey.set(keyFor(row.preorder_id, cuisine), row.sent_at);
+  }
+  for (const row of input.payments ?? []) {
+    const cuisine = normalizeCuisine(row.cuisine);
+    if (cuisine) paidByKey.set(keyFor(row.preorder_id, cuisine), row.paid_at ?? "recorded");
+  }
+  for (const row of input.confirmations ?? []) {
+    if (!row.confirmed) continue;
+    const cuisine = normalizeCuisine(row.cuisine);
+    if (!cuisine) continue;
+    const key = keyFor(row.preorder_id, cuisine);
+    if (!paidByKey.has(key)) paidByKey.set(key, row.confirmed_at ?? "recorded");
   }
 
   const rows: MealCommunicationRow[] = [];
@@ -75,23 +102,30 @@ export function buildMealCommunicationLedger(input: {
     }
 
     for (const [cuisine, qty] of quantities) {
-      const originalSentAt = originalByKey.get(keyFor(preorder.id, cuisine)) ?? null;
-      const updateSentAt = updateByKey.get(keyFor(preorder.id, cuisine)) ?? null;
+      const key = keyFor(preorder.id, cuisine);
+      const originalSentAt = originalByKey.get(key) ?? null;
+      const updateSentAt = updateByKey.get(key) ?? null;
+      const paidAtRaw = paidByKey.get(key) ?? null;
+      const paidAt = paidAtRaw === "recorded" ? null : paidAtRaw;
+      const isPaid = paidAtRaw !== null;
       const inviterId = preorder.invitation_id
         ? (inviterByInvitation.get(preorder.invitation_id) ?? null)
         : null;
-      let exception: string | null = null;
-      if (!preorder.invitation_id) exception = "Order is not linked to an invitation";
-      else if (!preorder.phone?.trim()) exception = "Guest has no phone number";
-      else if (updateSentAt && !originalSentAt) exception = "Update recorded without an original message";
 
-      const state: MealCommunicationState = exception
-        ? "exception"
-        : updateSentAt
-          ? "current"
-          : originalSentAt
-            ? "needs_update"
-            : "received_nothing";
+      // Paid wins over everything: a guest who already paid is never chased.
+      let exception: string | null = null;
+      if (!isPaid) {
+        if (!preorder.invitation_id) exception = "Order is not linked to an invitation";
+        else if (!preorder.phone?.trim()) exception = "Guest has no phone number";
+      }
+
+      const state: MealCommunicationState = isPaid
+        ? "paid"
+        : exception
+          ? "exception"
+          : updateSentAt
+            ? "update_sent"
+            : "needs_update";
 
       rows.push({
         id: preorder.id,
@@ -106,6 +140,7 @@ export function buildMealCommunicationLedger(input: {
           : "Not linked to a committee member",
         original_sent_at: originalSentAt,
         update_sent_at: updateSentAt,
+        paid_at: paidAt,
         state,
         exception,
       });
@@ -117,15 +152,15 @@ export function buildMealCommunicationLedger(input: {
     households: new Set(rows.map((row) => row.id)).size,
     message_units: rows.length,
     meal_quantity: rows.reduce((sum, row) => sum + row.qty, 0),
-    received_nothing: rows.filter((row) => row.state === "received_nothing").length,
+    paid: rows.filter((row) => row.state === "paid").length,
     needs_update: rows.filter((row) => row.state === "needs_update").length,
-    current: rows.filter((row) => row.state === "current").length,
+    update_sent: rows.filter((row) => row.state === "update_sent").length,
     exceptions: rows.filter((row) => row.state === "exception").length,
     reconciles: false,
   };
   totals.reconciles =
     totals.message_units ===
-    totals.received_nothing + totals.needs_update + totals.current + totals.exceptions;
+    totals.paid + totals.needs_update + totals.update_sent + totals.exceptions;
 
   return { rows, totals, generated_at: new Date().toISOString() };
 }
