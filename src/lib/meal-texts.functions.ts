@@ -119,6 +119,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
           sent_at: sentByMeal.get(`${p.id}::${cuisine}`) ?? null,
           zelle_sent_at: zelleByMeal.get(`${p.id}::${cuisine}`) ?? null,
           state: ledgerByKey.get(`${p.id}::${cuisine}`)?.state,
+          paid_at: ledgerByKey.get(`${p.id}::${cuisine}`)?.paid_at ?? null,
           exception: ledgerByKey.get(`${p.id}::${cuisine}`)?.exception ?? null,
         });
       }
