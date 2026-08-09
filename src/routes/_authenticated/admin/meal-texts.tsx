@@ -119,13 +119,14 @@ function MealTextsPage() {
         (cuisine === "Myanmar" && r.name.toLowerCase().includes("burmese")),
     );
 
-  // The payment-update queue is an explicit canonical state, not a derived
-  // subtraction. Guests who received nothing stay visible in the original queue.
+  // Everyone who ordered a meal needs the payment update text, except the
+  // guests the restaurant has recorded as paid. The original-message history is
+  // reference only and never filters this queue.
   const modeRows = useMemo(
     () =>
       mode === "zelle"
-        ? rows.filter((r) => r.state === "needs_update" || r.state === "current")
-        : rows.filter((r) => r.state === "received_nothing" || r.state === "exception"),
+        ? rows.filter((r) => r.state !== "paid")
+        : rows,
     [rows, mode],
   );
 
