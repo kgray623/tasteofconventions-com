@@ -82,9 +82,9 @@ function MealTextsPage() {
     totals: {
       message_units: number;
       meal_quantity: number;
-      received_nothing: number;
+      paid: number;
       needs_update: number;
-      current: number;
+      update_sent: number;
       exceptions: number;
       reconciles: boolean;
     };
