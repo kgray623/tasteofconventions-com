@@ -104,7 +104,10 @@ function MyMealTextsPage() {
 
   const isZelle = mode === "zelle";
   const modeRows = useMemo(
-    () => (isZelle ? rows.filter((r) => r.sent_at) : rows),
+    () =>
+      isZelle
+        ? rows.filter((r) => r.state === "needs_update" || r.state === "current")
+        : rows.filter((r) => r.state === "received_nothing" || r.state === "exception"),
     [rows, isZelle],
   );
 

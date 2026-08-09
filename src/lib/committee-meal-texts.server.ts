@@ -27,6 +27,8 @@ export type CommitteeMealTextRow = {
   qty: number;
   sent_at: string | null;
   zelle_sent_at: string | null;
+  state: "received_nothing" | "needs_update" | "current" | "exception";
+  exception: string | null;
 };
 
 export type CommitteeMealTextsResult = {
@@ -107,7 +109,7 @@ export async function loadCommitteeMealTexts(
         .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
     : [];
 
-  const [{ data: restaurants }, { data: setting }, { data: zelleSetting }] = await Promise.all([
+  const [{ data: restaurants }, { data: setting }, { data: zelleSetting }, ledger] = await Promise.all([
     supabaseAdmin
       .from("restaurants")
       .select(
@@ -120,6 +122,9 @@ export async function loadCommitteeMealTexts(
       .select("value")
       .eq("key", "meal_zelle_text_template")
       .maybeSingle(),
+    import("@/lib/meal-communication.server").then(({ loadMealCommunicationLedger }) =>
+      loadMealCommunicationLedger(supabaseAdmin),
+    ),
   ]);
 
   const restaurantList = ((restaurants ?? []) as any[])
@@ -191,6 +196,7 @@ export async function loadCommitteeMealTexts(
 
 
   const rows: CommitteeMealTextRow[] = [];
+  const ledgerByKey = new Map(ledger.rows.map((row) => [`${row.id}::${row.cuisine}`, row] as const));
   for (const p of (preorders ?? []) as any[]) {
     const linked =
       (p.invitation_id ? byInvitationId.get(p.invitation_id) : undefined) ??
@@ -208,6 +214,8 @@ export async function loadCommitteeMealTexts(
       byCuisine.set(cuisine, (byCuisine.get(cuisine) ?? 0) + Math.round(qty));
     }
     for (const [cuisine, qty] of byCuisine) {
+      const communication = ledgerByKey.get(`${p.id}::${cuisine}`);
+      if (!communication) continue;
       rows.push({
         id: p.id as string,
         name: (p.name ?? "").trim() || linked.guest_name || "Guest",
@@ -217,6 +225,8 @@ export async function loadCommitteeMealTexts(
         qty,
         sent_at: sentByMeal.get(`${p.id}::${cuisine}`) ?? null,
         zelle_sent_at: zelleByMeal.get(`${p.id}::${cuisine}`) ?? null,
+        state: communication.state,
+        exception: communication.exception,
       });
     }
   }
