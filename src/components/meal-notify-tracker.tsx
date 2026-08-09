@@ -18,12 +18,22 @@ function escapeCsv(value: unknown) {
 function pendingCsv(data: MealNotifyRollup) {
   const header = ["Guest", "Phone", "Cuisine", "Meals", "Committee member", "Status"];
   const lines = data.rows
-    .filter((row) => row.state === "received_nothing" || row.state === "needs_update")
+    .filter((row) => row.state === "needs_update" || row.state === "exception")
     .map((row) =>
-    [row.name, row.phone, row.cuisine, row.qty, row.inviter, row.state === "needs_update" ? "Needs payment update" : "Has received nothing"].map(escapeCsv).join(","),
-  );
+      [
+        row.name,
+        row.phone,
+        row.cuisine,
+        row.qty,
+        row.inviter,
+        row.state === "exception" ? `Exception: ${row.exception ?? "needs review"}` : "Needs the payment text",
+      ]
+        .map(escapeCsv)
+        .join(","),
+    );
   return [header.join(","), ...lines].join("\n");
 }
+
 
 /**
  * Live "who still needs a pre-pay text" tracker, grouped by committee member.
