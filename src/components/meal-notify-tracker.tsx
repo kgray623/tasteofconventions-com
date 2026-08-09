@@ -64,7 +64,7 @@ export function MealNotifyTracker({ compact = false }: { compact?: boolean }) {
   }, []);
 
   const download = () => {
-    if (!data || data.totals.needs_update + data.totals.received_nothing === 0) {
+    if (!data || data.totals.needs_update + data.totals.exceptions === 0) {
       toast.error("Nothing pending to download");
       return;
     }
