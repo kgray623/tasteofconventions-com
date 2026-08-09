@@ -73,7 +73,7 @@ function MealTextsPage() {
   const [zelleTemplate, setZelleTemplate] = useState(DEFAULT_ZELLE_UPDATE_TEMPLATE);
   // "meal" = the original restaurant text. "zelle" = the Zelle/Venmo follow-up
   // for guests already texted. The two marks are tracked separately.
-  const [mode, setMode] = useState<"meal" | "zelle">("meal");
+  const [mode, setMode] = useState<"meal" | "zelle">("zelle");
   const [savingTpl, setSavingTpl] = useState(false);
   const [onlyUnsent, setOnlyUnsent] = useState(false);
   const [inviterFilter, setInviterFilter] = useState("all");
@@ -254,19 +254,19 @@ function MealTextsPage() {
             variant={isZelle ? "outline" : "default"}
             onClick={() => setMode("meal")}
           >
-            Meal texts
+            Original meal message
           </Button>
           <Button
             size="sm"
             variant={isZelle ? "default" : "outline"}
             onClick={() => setMode("zelle")}
           >
-            Zelle update
+            New payment update
           </Button>
         </div>
         <p className="text-sm text-muted-foreground">
           {isZelle
-            ? "Only guests you have already texted appear here. Send them the Zelle / Venmo payment option, then check them off. This mark is kept completely separate from the original meal text."
+              ? "This is the new payment-update campaign. It starts at zero sent and changes only when you explicitly check a person after sending. Only guests recorded as receiving the original message appear here."
             : "Every text opens in your own Messages app with the wording already written — you just press send. Nothing is sent automatically. Each restaurant is texted and checked off separately, so a guest who ordered from two restaurants needs two texts."}
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
@@ -274,7 +274,7 @@ function MealTextsPage() {
           <Badge variant="outline">{totalOrders} restaurant texts</Badge>
           <Badge variant="outline">{totalMeals} meals</Badge>
           <Badge variant="outline">
-            {sentCount} {isZelle ? "sent the Zelle update" : "texted"}
+            {sentCount} {isZelle ? "sent the new payment update" : "sent the original meal message"}
           </Badge>
           <Badge variant="outline">{totalOrders - sentCount} still to text</Badge>
         </div>
@@ -408,7 +408,7 @@ function MealTextsPage() {
           <Switch checked={onlyUnsent} onCheckedChange={setOnlyUnsent} id="only-unsent" />
           <label htmlFor="only-unsent" className="text-sm">
             {isZelle
-              ? "Show only people who haven't had the Zelle update"
+              ? "Show only people who haven't had the new payment update"
               : "Show only people I haven't texted yet"}
           </label>
         </div>

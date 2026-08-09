@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -10,6 +11,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { MessageSquare, Copy, Users, Loader2, RotateCcw } from "lucide-react";
 import { getErrorMessage } from "@/lib/async-safety";
+import {
+  getCanonicalCommitteeRoster,
+  type CanonicalCommitteeMember,
+} from "@/lib/committee-roster.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/committee-message")({
   head: () => ({ meta: [{ title: "Committee message — A Taste of Special Conventions" }] }),
@@ -35,28 +40,17 @@ function renderTemplate(
 
 type RsvpStatus = "yes" | "waitlist" | "no" | null;
 
-type RosterMember = {
-  name: string;
-  phoneKey: string;
-  nameKey: string;
-  key: string;
-  rsvpStatus: RsvpStatus;
-};
-
-const normNameKey = (s: string | null | undefined) =>
-  (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
-const normPhoneKey = (s: string | null | undefined) => {
-  const d = (s ?? "").replace(/\D/g, "");
-  return d.length >= 7 ? d.slice(-10) : "";
-};
+type RosterMember = CanonicalCommitteeMember;
 
 function CommitteeMessagePage() {
   const { user } = useAuth();
   const { isTeam, loading: rolesLoading } = useRoles();
+  const fetchRoster = useServerFn(getCanonicalCommitteeRoster);
   const [roster, setRoster] = useState<RosterMember[]>([]);
   const [loading, setLoading] = useState(false);
   const [template, setTemplate] = useState<string>(DEFAULT_TEMPLATE);
   const [senderName, setSenderName] = useState<string>("your friend");
+  const [generatedAt, setGeneratedAt] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user?.id || typeof window === "undefined") return;
@@ -92,89 +86,9 @@ function CommitteeMessagePage() {
   const loadRoster = async () => {
     setLoading(true);
     try {
-      const [inviters, teamInvites, committeeInvs, allInvs] = await Promise.all([
-        supabase.from("inviters").select("name,phone").eq("active", true),
-        supabase
-          .from("team_invites")
-          .select("name,phone,phone_normalized")
-          .eq("role", "team"),
-        supabase
-          .from("invitations")
-          .select("guest_name,guest_phone,guest_phone_normalized")
-          .eq("is_committee", true),
-        supabase
-          .from("invitations")
-          .select("guest_name,guest_phone,guest_phone_normalized,rsvps(status)"),
-      ]);
-
-      const sources: Array<{ name: string | null; phone: string | null }> = [];
-      for (const r of (inviters.data ?? []) as Array<{ name: string | null; phone: string | null }>) {
-        sources.push({ name: r.name, phone: r.phone });
-      }
-      for (const r of (teamInvites.data ?? []) as Array<{ name: string | null; phone: string | null; phone_normalized: string | null }>) {
-        sources.push({ name: r.name, phone: r.phone_normalized || r.phone });
-      }
-      for (const r of (committeeInvs.data ?? []) as Array<{ guest_name: string | null; guest_phone: string | null; guest_phone_normalized: string | null }>) {
-        sources.push({ name: r.guest_name, phone: r.guest_phone_normalized || r.guest_phone });
-      }
-
-      const seen = new Set<string>();
-      const dedup: RosterMember[] = [];
-      for (const s of sources) {
-        const phoneKey = normPhoneKey(s.phone);
-        const nameKey = normNameKey(s.name);
-        const key = phoneKey ? `p:${phoneKey}` : nameKey ? `n:${nameKey}` : "";
-        if (!key || seen.has(key)) continue;
-        seen.add(key);
-        dedup.push({
-          name: (s.name ?? "").trim() || "Committee member",
-          phoneKey,
-          nameKey,
-          key,
-          rsvpStatus: null,
-        });
-      }
-
-      // Build RSVP status map by matching invitations against the roster
-      const rosterPhones = new Map<string, string>(); // phoneKey -> memberKey
-      const rosterNames = new Map<string, string>(); // nameKey -> memberKey
-      for (const m of dedup) {
-        if (m.phoneKey) rosterPhones.set(m.phoneKey, m.key);
-        if (m.nameKey) rosterNames.set(m.nameKey, m.key);
-      }
-      const statusByKey = new Map<string, RsvpStatus>();
-      type InvRow = {
-        guest_name: string | null;
-        guest_phone: string | null;
-        guest_phone_normalized: string | null;
-        rsvps: { status: string }[] | { status: string } | null;
-      };
-      const rank = (s: RsvpStatus): number =>
-        s === "yes" ? 3 : s === "waitlist" ? 2 : s === "no" ? 1 : 0;
-      for (const r of ((allInvs.data ?? []) as unknown) as InvRow[]) {
-        const rsvp = Array.isArray(r.rsvps) ? r.rsvps[0] : r.rsvps;
-        const raw = rsvp?.status ?? null;
-        const status: RsvpStatus =
-          raw === "yes" || raw === "waitlist" || raw === "no" ? raw : null;
-        if (!status) continue;
-        const phoneKey = normPhoneKey(r.guest_phone_normalized || r.guest_phone);
-        const nameKey = normNameKey(r.guest_name);
-        const memberKey =
-          (phoneKey && rosterPhones.get(phoneKey)) ||
-          (nameKey && rosterNames.get(nameKey)) ||
-          "";
-        if (!memberKey) continue;
-        const prev = statusByKey.get(memberKey) ?? null;
-        if (rank(status) > rank(prev)) statusByKey.set(memberKey, status);
-      }
-
-      for (const m of dedup) {
-        m.rsvpStatus = statusByKey.get(m.key) ?? null;
-      }
-      dedup.sort((a, b) =>
-        a.name.toLowerCase().localeCompare(b.name.toLowerCase(), undefined, { sensitivity: "base" }),
-      );
-      setRoster(dedup);
+      const result = await fetchRoster();
+      setRoster(result.roster);
+      setGeneratedAt(result.generatedAt);
     } catch (e) {
       console.error("[committee-message] roster load failed", e);
       toast.error("Couldn't load committee roster", { description: getErrorMessage(e) });
@@ -295,6 +209,11 @@ function CommitteeMessagePage() {
           </div>
           {loading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
         </div>
+        {generatedAt && (
+          <p className="px-4 py-2 border-b border-border text-xs text-muted-foreground">
+            Active admin/team roles read from the database {new Date(generatedAt).toLocaleString()}.
+          </p>
+        )}
         {roster.length === 0 ? (
           <div className="p-6 text-sm text-muted-foreground text-center">
             {loading ? "Loading…" : "No committee members yet."}
@@ -304,7 +223,7 @@ function CommitteeMessagePage() {
             {roster.map((m) => {
               const body = messageFor(m);
               return (
-                <div key={m.key} className="p-4 space-y-2">
+                <div key={m.userId} className="p-4 space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium">{m.name}</span>
                     {statusBadge(m.rsvpStatus)}

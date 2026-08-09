@@ -68,6 +68,7 @@ function TeamPage() {
     const inv = await supabase
       .from("team_invites")
       .select("id,name,phone,role,accepted_at,created_at")
+      .in("role", ["team", "admin"])
       .order("created_at", { ascending: false });
     setInvites((inv.data ?? []) as Invite[]);
     const g = await supabase
