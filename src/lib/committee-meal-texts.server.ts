@@ -227,7 +227,9 @@ export async function loadCommitteeMealTexts(
         sent_at: sentByMeal.get(`${p.id}::${cuisine}`) ?? null,
         zelle_sent_at: zelleByMeal.get(`${p.id}::${cuisine}`) ?? null,
         state: communication.state,
+        paid_at: communication.paid_at,
         exception: communication.exception,
+
       });
     }
   }
