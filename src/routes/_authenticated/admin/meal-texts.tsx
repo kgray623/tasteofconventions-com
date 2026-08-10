@@ -77,6 +77,11 @@ function MealTextsPage() {
   // One queue only: the payment update. The original meal message history is
   // reference only and never gates this list.
   const [savingTpl, setSavingTpl] = useState(false);
+  // Wording edits must never be lost silently: dirty until a save is read back.
+  const [tplDirty, setTplDirty] = useState(false);
+  const [tplSavedAt, setTplSavedAt] = useState<string | null>(null);
+  const [tplError, setTplError] = useState<string | null>(null);
+
   const [onlyUnsent, setOnlyUnsent] = useState(false);
   const [inviterFilter, setInviterFilter] = useState("all");
   const [busy, setBusy] = useState<string | null>(null);
