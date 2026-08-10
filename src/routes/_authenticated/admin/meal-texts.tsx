@@ -131,6 +131,9 @@ function MealTextsPage() {
     [rows, mode],
   );
 
+  // Paid orders never disappear: they are listed per cuisine as "already paid".
+  const paidRows = useMemo(() => rows.filter((r) => isPaidState(r.state)), [rows]);
+
   const groups = useMemo(() => {
     const map = new Map<string, MealTextRow[]>();
     for (const r of modeRows) {
