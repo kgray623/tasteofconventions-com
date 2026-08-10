@@ -131,6 +131,9 @@ function MealTextsPage() {
     [rows, mode],
   );
 
+  // Paid orders never disappear: they are listed per cuisine as "already paid".
+  const paidRows = useMemo(() => rows.filter((r) => isPaidState(r.state)), [rows]);
+
   const groups = useMemo(() => {
     const map = new Map<string, MealTextRow[]>();
     for (const r of modeRows) {
@@ -438,7 +441,7 @@ function MealTextsPage() {
           <Switch checked={onlyUnsent} onCheckedChange={setOnlyUnsent} id="only-unsent" />
           <label htmlFor="only-unsent" className="text-sm">
             {isZelle
-              ? "Show only people who haven't had the new payment update"
+              ? "Show only people who still need the payment text"
               : "Show only people I haven't texted yet"}
           </label>
         </div>
@@ -477,6 +480,7 @@ function MealTextsPage() {
       {groups.map(([cuisine, list]) => {
         const r = restaurantFor(cuisine);
         const onHold = r ? !r.order_ready : false;
+        const paidHere = paidRows.filter((x) => x.cuisine === cuisine);
         const visible = list
           .filter((x) => (onlyUnsent ? !(isZelle ? x.zelle_sent_at : x.sent_at) : true))
           .filter((x) => (inviterFilter === "all" ? true : x.inviter === inviterFilter));
@@ -498,7 +502,14 @@ function MealTextsPage() {
                   Turn on “Ready to text” above when this restaurant is taking orders.
                 </p>
               )}
+              {isZelle && paidHere.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Already paid — no text needed ({paidHere.length}):{" "}
+                  {paidHere.map((x) => x.name).join(", ")}
+                </p>
+              )}
             </div>
+
 
             <div className="divide-y divide-border">
               {visible.length === 0 && (
@@ -514,15 +525,21 @@ function MealTextsPage() {
                       <Badge variant="outline" className="text-[10px]">
                         {orderText(row.qty, row.cuisine)}
                       </Badge>
-                      {(isZelle ? row.zelle_sent_at : row.sent_at) ? (
+                      {isPaidState(row.state) ? (
                         <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 text-[10px]">
-                          {isZelle ? "Zelle update sent" : "Texted"}{" "}
+                          {row.state === "paid_confirmed"
+                            ? "Paid — restaurant confirmed"
+                            : "Paid — reported, awaiting confirmation"}
+                        </Badge>
+                      ) : (isZelle ? row.zelle_sent_at : row.sent_at) ? (
+                        <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 text-[10px]">
+                          {isZelle ? "Payment update sent" : "Texted"}{" "}
                           {new Date((isZelle ? row.zelle_sent_at : row.sent_at)!).toLocaleDateString()}{" "}
                           · {cuisineLabel(row.cuisine)}
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="border-amber-400 text-amber-700 text-[10px]">
-                          {isZelle ? "No Zelle update yet for" : "Not texted about"}{" "}
+                          {isZelle ? "Payment update not sent yet ·" : "Not texted about"}{" "}
                           {cuisineLabel(row.cuisine)}
                         </Badge>
                       )}
@@ -530,6 +547,11 @@ function MealTextsPage() {
                     <p className="text-xs text-muted-foreground">
                       {row.phone || "No phone on file"} · {row.inviter}
                     </p>
+                    {isZelle && row.sent_at && (
+                      <p className="text-xs text-muted-foreground">
+                        Earlier meal message sent {new Date(row.sent_at).toLocaleDateString()} — reference only.
+                      </p>
+                    )}
                     <div className="flex flex-wrap gap-2">
                       {num && !onHold && (
                         <SmsTextButton
@@ -552,7 +574,7 @@ function MealTextsPage() {
                           onClick={() => void setSent(row, false)}
                         >
                           <Check className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
-                          {isZelle ? "Zelle update sent · Undo" : "Texted · Undo"}
+                          {isZelle ? "Payment update sent · Undo" : "Texted · Undo"}
                         </Button>
                       ) : (
                         <Button
