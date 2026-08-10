@@ -77,6 +77,11 @@ function MealTextsPage() {
   // One queue only: the payment update. The original meal message history is
   // reference only and never gates this list.
   const [savingTpl, setSavingTpl] = useState(false);
+  // Wording edits must never be lost silently: dirty until a save is read back.
+  const [tplDirty, setTplDirty] = useState(false);
+  const [tplSavedAt, setTplSavedAt] = useState<string | null>(null);
+  const [tplError, setTplError] = useState<string | null>(null);
+
   const [onlyUnsent, setOnlyUnsent] = useState(false);
   const [inviterFilter, setInviterFilter] = useState("all");
   const [busy, setBusy] = useState<string | null>(null);
@@ -95,14 +100,18 @@ function MealTextsPage() {
     generated_at: string;
   } | null>(null);
 
-  const refresh = async () => {
+  const refresh = async (opts?: { keepWording?: boolean }) => {
     setLoading(true);
     try {
       const res = await load({ data: {} as never });
       setRestaurants(res.restaurants);
       setRows(res.rows);
       setTemplate(res.template);
-      setZelleTemplate(res.zelleTemplate);
+      // Never overwrite wording the user is still editing.
+      if (!opts?.keepWording) {
+        setZelleTemplate(res.zelleTemplate);
+        setTplDirty(false);
+      }
       setReconciliation(res.reconciliation);
     } catch (e) {
       toast.error("Couldn't load the meal orders", { description: getErrorMessage(e) });
@@ -110,6 +119,7 @@ function MealTextsPage() {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     void refresh();
@@ -354,13 +364,33 @@ function MealTextsPage() {
 
       <Card className="p-5 space-y-3">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <p className="font-medium">Payment update wording</p>
+          <div>
+            <p className="font-medium">Payment update wording</p>
+            <p className="text-xs" aria-live="polite">
+              {tplDirty ? (
+                <span className="text-brand-red font-medium">
+                  Unsaved changes — tap “Save wording”
+                </span>
+              ) : tplSavedAt ? (
+                <span className="text-muted-foreground">
+                  Saved {new Date(tplSavedAt).toISOString().slice(11, 16)} UTC
+                </span>
+              ) : (
+                <span className="text-muted-foreground">
+                  This is the exact message the Text buttons send.
+                </span>
+              )}
+            </p>
+          </div>
           <div className="flex gap-2">
             <Button
               variant="ghost"
               size="sm"
               className="text-xs"
-              onClick={() => setZelleTemplate(DEFAULT_ZELLE_UPDATE_TEMPLATE)}
+              onClick={() => {
+                setZelleTemplate(DEFAULT_ZELLE_UPDATE_TEMPLATE);
+                setTplDirty(true);
+              }}
             >
               <RotateCcw className="w-3 h-3 mr-1" /> Reset
             </Button>
@@ -369,28 +399,42 @@ function MealTextsPage() {
               disabled={savingTpl}
               onClick={async () => {
                 setSavingTpl(true);
+                setTplError(null);
                 try {
                   await saveTemplate({
                     data: { template: zelleTemplate, kind: "zelle" as const },
                   });
-                  toast.success("Wording saved");
+                  // Read the saved wording back so "Saved" can never be a guess.
+                  const res = await load({ data: {} as never });
+                  if (res.zelleTemplate !== zelleTemplate) {
+                    throw new Error("The database still has different wording. Please try again.");
+                  }
+                  setTplDirty(false);
+                  setTplSavedAt(new Date().toISOString());
+                  toast.success("Wording saved — this is what guests will receive");
                 } catch (e) {
+                  setTplError(getErrorMessage(e));
                   toast.error("Couldn't save", { description: getErrorMessage(e) });
                 } finally {
                   setSavingTpl(false);
                 }
               }}
             >
-              Save wording
+              {savingTpl ? "Saving…" : "Save wording"}
             </Button>
           </div>
         </div>
         <Textarea
           value={zelleTemplate}
-          onChange={(e) => setZelleTemplate(e.target.value)}
+          onChange={(e) => {
+            setZelleTemplate(e.target.value);
+            setTplDirty(true);
+          }}
           rows={9}
           className="font-mono text-sm"
         />
+        {tplError && <p className="text-xs text-brand-red">{tplError}</p>}
+
         <p className="text-xs text-muted-foreground">
           Placeholders: <code>{"{first_name}"}</code>, <code>{"{restaurant_name}"}</code>,{" "}
           <code>{"{restaurant_cuisine}"}</code>, <code>{"{restaurant_phone}"}</code>,{" "}
