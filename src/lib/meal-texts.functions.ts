@@ -55,7 +55,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
       supabaseAdmin.from("invitations").select("id,inviter_id"),
       supabaseAdmin.from("inviters").select("id,name"),
       supabaseAdmin.from("meal_text_sends").select("preorder_id,cuisine,sent_at"),
-      supabaseAdmin.from("meal_zelle_text_sends").select("preorder_id,cuisine,sent_at"),
+      supabaseAdmin.from("meal_zelle_text_sends").select("preorder_id,cuisine,sent_at,marked_by"),
       supabaseAdmin
         .from("app_settings")
         .select("value")
@@ -64,9 +64,27 @@ export const getMealTextData = createServerFn({ method: "POST" })
       loadMealCommunicationLedger(supabaseAdmin),
     ]);
 
+    // Every payment-update mark is attributable to the person who tapped it.
+    const markerIds = [
+      ...new Set(((zelleSends ?? []) as any[]).map((s) => s.marked_by).filter(Boolean)),
+    ] as string[];
+    const markerNames = new Map<string, string>();
+    if (markerIds.length > 0) {
+      const { data: profileRows } = await supabaseAdmin
+        .from("profiles")
+        .select("id,display_name")
+        .in("id", markerIds);
+      for (const p of ((profileRows ?? []) as any[])) {
+        markerNames.set(p.id as string, (p.display_name as string) ?? "");
+      }
+    }
+
     const zelleByMeal = new Map<string, string>();
+    const zelleByWhom = new Map<string, string | null>();
     for (const s of ((zelleSends ?? []) as any[])) {
-      zelleByMeal.set(`${s.preorder_id}::${String(s.cuisine ?? "")}`, s.sent_at);
+      const key = `${s.preorder_id}::${String(s.cuisine ?? "")}`;
+      zelleByMeal.set(key, s.sent_at);
+      zelleByWhom.set(key, (s.marked_by ? markerNames.get(s.marked_by) : null) || null);
     }
 
     const sentByMeal = new Map<string, string>();
@@ -118,6 +136,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
           qty,
           sent_at: sentByMeal.get(`${p.id}::${cuisine}`) ?? null,
           zelle_sent_at: zelleByMeal.get(`${p.id}::${cuisine}`) ?? null,
+          sent_by: zelleByWhom.get(`${p.id}::${cuisine}`) ?? null,
           state: ledgerByKey.get(`${p.id}::${cuisine}`)?.state,
           paid_at: ledgerByKey.get(`${p.id}::${cuisine}`)?.paid_at ?? null,
           paid_source: ledgerByKey.get(`${p.id}::${cuisine}`)?.paid_source ?? null,

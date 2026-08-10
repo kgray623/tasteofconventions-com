@@ -63,6 +63,8 @@ export type MealTextRow = {
   sent_at: string | null;
   /** Separate mark: the Zelle/Venmo follow-up text. Never derived from sent_at. */
   zelle_sent_at: string | null;
+  /** Who tapped the check for the payment update. Marks are human-only. */
+  sent_by?: string | null;
   inviter: string;
   state?: import("@/lib/meal-communication").MealCommunicationState;
   paid_at?: string | null;
