@@ -27,8 +27,10 @@ export type CommitteeMealTextRow = {
   qty: number;
   sent_at: string | null;
   zelle_sent_at: string | null;
-  state: "paid" | "needs_update" | "update_sent" | "exception";
+  state: MealCommunicationState;
   paid_at: string | null;
+  paid_source: MealPaymentSource | null;
+  paid_note: string | null;
   exception: string | null;
 };
 
