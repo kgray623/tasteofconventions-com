@@ -100,14 +100,18 @@ function MealTextsPage() {
     generated_at: string;
   } | null>(null);
 
-  const refresh = async () => {
+  const refresh = async (opts?: { keepWording?: boolean }) => {
     setLoading(true);
     try {
       const res = await load({ data: {} as never });
       setRestaurants(res.restaurants);
       setRows(res.rows);
       setTemplate(res.template);
-      setZelleTemplate(res.zelleTemplate);
+      // Never overwrite wording the user is still editing.
+      if (!opts?.keepWording) {
+        setZelleTemplate(res.zelleTemplate);
+        setTplDirty(false);
+      }
       setReconciliation(res.reconciliation);
     } catch (e) {
       toast.error("Couldn't load the meal orders", { description: getErrorMessage(e) });
@@ -115,6 +119,7 @@ function MealTextsPage() {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     void refresh();
