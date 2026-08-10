@@ -2,7 +2,7 @@
 // from a restaurant portal action (guest self-reports and committee entries).
 // Nothing here ever deletes or downgrades an existing restaurant confirmation.
 
-import { parseSelections } from "@/lib/preorder-math";
+import { normalizeCuisine, parseSelections } from "@/lib/preorder-math";
 
 export type MealPaymentReportInput = {
   preorder_id: string;
@@ -15,9 +15,6 @@ export type MealPaymentReportInput = {
   reported_by_label: string | null;
   paid_at: string;
 };
-
-const normalizeCuisine = (raw: string) =>
-  parseSelections([{ cuisine: raw, qty: 1 }])[0]?.cuisine ?? raw.trim();
 
 /**
  * Record one (preorder + cuisine) payment. Writes exactly one row — never
