@@ -111,6 +111,9 @@ function MyMealTextsPage() {
     [rows, isZelle],
   );
 
+  // Paid guests never disappear: shown per cuisine as "already paid".
+  const paidRows = useMemo(() => rows.filter((r) => isPaidState(r.state)), [rows]);
+
   const groups = useMemo(() => {
     const map = new Map<string, CommitteeMealTextRow[]>();
     for (const r of modeRows) {
