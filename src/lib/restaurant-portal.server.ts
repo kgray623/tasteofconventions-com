@@ -171,6 +171,8 @@ export async function loadPortalData(restaurantId: string): Promise<PortalData> 
         qty: sel.qty,
         paid: !!paidEntry && paidEntry.qty >= sel.qty,
         paidAt: paidEntry?.paidAt ?? null,
+        paidSource: paidEntry?.source ?? null,
+        paidNote: paidEntry?.note ?? null,
         qtyPaid: paidEntry?.qty ?? 0,
         confirmed: statusEntry?.confirmed ?? false,
         confirmedAt: statusEntry?.confirmedAt ?? null,
