@@ -6,6 +6,9 @@ export type PortalOrderRow = {
   qty: number;
   paid: boolean;
   paidAt: string | null;
+  /** Who recorded the payment: the restaurant, the guest, or a committee member. */
+  paidSource: "restaurant" | "guest_reported" | "committee_recorded" | null;
+  paidNote: string | null;
   qtyPaid: number;
   /** Restaurant has accepted this order into their kitchen queue. */
   confirmed: boolean;
