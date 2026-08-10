@@ -563,7 +563,7 @@ function MealTextsPage() {
                           onClick={() => void setSent(row, false)}
                         >
                           <Check className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
-                          {isZelle ? "Zelle update sent · Undo" : "Texted · Undo"}
+                          {isZelle ? "Payment update sent · Undo" : "Texted · Undo"}
                         </Button>
                       ) : (
                         <Button
