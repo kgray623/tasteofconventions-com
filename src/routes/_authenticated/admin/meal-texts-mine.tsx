@@ -14,6 +14,7 @@ import { ExportFallbackDialog } from "@/components/export-fallback-dialog";
 import { SmsTextButton } from "@/components/sms-text-button";
 import { OpenOnSiteBanner } from "@/components/open-on-site-banner";
 import { isPaidState } from "@/lib/meal-communication";
+import { CommitteeMealPayments } from "@/components/committee-meal-payments";
 import {
   cuisineLabel,
   matchRestaurant,
@@ -81,6 +82,7 @@ function MyMealTextsPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [fallback, setFallback] = useState<{ filename: string; text: string } | null>(null);
   const [fallbackOpen, setFallbackOpen] = useState(false);
+  const [readAt, setReadAt] = useState<string | null>(null);
 
   const refresh = async (inviterId: string | null) => {
     setLoading(true);
@@ -92,6 +94,7 @@ function MyMealTextsPage() {
       setZelleTemplate(res.zelleTemplate);
       setIsAdmin(res.isAdmin);
       setCommittee(res.committee);
+      setReadAt(new Date().toISOString());
     } catch (e) {
       toast.error("Couldn't load your guests' meal orders", { description: getErrorMessage(e) });
     } finally {
@@ -232,6 +235,8 @@ function MyMealTextsPage() {
         </div>
       </Card>
 
+
+      {!loading && <CommitteeMealPayments rows={rows} generatedAt={readAt} />}
 
       {isAdmin && committee.length > 0 && (
         <Card className="p-4 space-y-2">
