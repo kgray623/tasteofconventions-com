@@ -168,7 +168,7 @@ export function MealNotifyTracker({ compact = false }: { compact?: boolean }) {
                     <td className="py-2 pr-3 font-medium">{row.name}</td>
                     <td className="py-2 pr-3 text-right">{row.needs_update}</td>
                     <td className="py-2 pr-3 text-right">{row.update_sent}</td>
-                    <td className="py-2 pr-3 text-right">{row.paid}</td>
+                    <td className="py-2 pr-3 text-right">{row.paid_confirmed + row.paid_reported}</td>
                     <td className="py-2 text-right">{row.exceptions}</td>
                   </tr>
                 ))}
