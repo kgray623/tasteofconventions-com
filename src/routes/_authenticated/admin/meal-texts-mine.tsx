@@ -72,8 +72,7 @@ function MyMealTextsPage() {
   const [restaurants, setRestaurants] = useState<MealRestaurant[]>([]);
   const [template, setTemplate] = useState(DEFAULT_MEAL_TEXT_TEMPLATE);
   const [zelleTemplate, setZelleTemplate] = useState(DEFAULT_ZELLE_UPDATE_TEMPLATE);
-  // "zelle" = the follow-up Zelle/Venmo text for guests already texted once.
-  const [mode, setMode] = useState<"meal" | "zelle">("zelle");
+  // One queue only: the payment update.
   const [isAdmin, setIsAdmin] = useState(false);
   const [committee, setCommittee] = useState<Array<{ id: string; name: string }>>([]);
   const [actingFor, setActingFor] = useState<string | null>(null);
@@ -103,13 +102,9 @@ function MyMealTextsPage() {
     void refresh(actingFor);
   }, [actingFor]);
 
-  const isZelle = mode === "zelle";
   // Everyone who ordered needs the payment text except guests already recorded
-  // as paid by the restaurant.
-  const modeRows = useMemo(
-    () => (isZelle ? rows.filter((r) => !isPaidState(r.state)) : rows),
-    [rows, isZelle],
-  );
+  // as paid.
+  const modeRows = useMemo(() => rows.filter((r) => !isPaidState(r.state)), [rows]);
 
   // Paid guests never disappear: shown per cuisine as "already paid".
   const paidRows = useMemo(() => rows.filter((r) => isPaidState(r.state)), [rows]);
@@ -128,7 +123,7 @@ function MyMealTextsPage() {
   const bodyFor = (row: CommitteeMealTextRow) => {
     const r = restaurantFor(row.cuisine);
     const pay = paymentLines(r);
-    return renderMealTemplate(isZelle ? zelleTemplate : template, {
+    return renderMealTemplate(zelleTemplate, {
       ...pay,
       firstName: row.name.split(/\s+/)[0] ?? row.name,
       restaurantName: r?.name ?? row.cuisine,
@@ -149,13 +144,11 @@ function MyMealTextsPage() {
         sent,
         actingForInviterId: actingFor,
       };
-      const res = isZelle ? await markZelle({ data }) : await markSent({ data });
+      const res = await markZelle({ data });
       setRows((prev) =>
         prev.map((r) =>
           r.id === row.id && r.cuisine === row.cuisine
-            ? isZelle
-              ? { ...r, zelle_sent_at: res.sentAt }
-              : { ...r, sent_at: res.sentAt }
+            ? { ...r, zelle_sent_at: res.sentAt }
             : r,
         ),
       );
@@ -205,7 +198,7 @@ function MyMealTextsPage() {
   const totalOrders = modeRows.length;
   const totalPeople = new Set(modeRows.map((r) => r.id)).size;
   const totalMeals = modeRows.reduce((s, r) => s + r.qty, 0);
-  const sentCount = modeRows.filter((r) => (isZelle ? r.zelle_sent_at : r.sent_at)).length;
+  const sentCount = modeRows.filter((r) => r.zelle_sent_at).length;
 
   return (
     <div className="space-y-5">
@@ -225,27 +218,16 @@ function MyMealTextsPage() {
           Each restaurant needs its own text. If a guest ordered from two or three restaurants,
           they appear once per restaurant and each one is checked off separately.
         </p>
-        <div className="flex flex-wrap gap-2 pt-1">
-          <Button size="sm" variant={isZelle ? "outline" : "default"} onClick={() => setMode("meal")}>
-            Original meal message
-          </Button>
-          <Button size="sm" variant={isZelle ? "default" : "outline"} onClick={() => setMode("zelle")}>
-            New payment update
-          </Button>
-        </div>
-        {isZelle && (
-          <p className="text-sm text-muted-foreground">
-            This new payment-update list starts at zero sent. Send the update, then explicitly check
-            it off; opening or copying a message never marks it sent.
-          </p>
-        )}
+        <p className="text-sm text-muted-foreground">
+          Everyone you brought who ordered a meal is in this one payment-update queue, except guests
+          already recorded as paid. Send the update, then explicitly check it off; opening or copying
+          a message never marks it sent.
+        </p>
         <div className="flex flex-wrap gap-2 pt-1">
           <Badge variant="outline">{totalPeople} guests</Badge>
           <Badge variant="outline">{totalOrders} restaurant texts</Badge>
           <Badge variant="outline">{totalMeals} meals</Badge>
-          <Badge variant="outline">
-            {sentCount} {isZelle ? "sent the new payment update" : "sent the original meal message"}
-          </Badge>
+          <Badge variant="outline">{sentCount} payment update sent</Badge>
           <Badge variant="outline">{totalOrders - sentCount} to go</Badge>
         </div>
       </Card>
@@ -278,9 +260,7 @@ function MyMealTextsPage() {
       <div className="flex items-center gap-2">
         <Switch checked={onlyUnsent} onCheckedChange={setOnlyUnsent} id="only-unsent-mine" />
         <label htmlFor="only-unsent-mine" className="text-sm">
-          {isZelle
-            ? "Show only the guests who still need the payment text"
-            : "Show only the guests I haven't texted yet"}
+          Show only the guests who still need the payment text
         </label>
       </div>
 
@@ -299,9 +279,7 @@ function MyMealTextsPage() {
       {groups.map(([cuisine, list]) => {
         const r = restaurantFor(cuisine);
         const onHold = r ? !r.order_ready : false;
-        const visible = onlyUnsent
-          ? list.filter((x) => !(isZelle ? x.zelle_sent_at : x.sent_at))
-          : list;
+        const visible = onlyUnsent ? list.filter((x) => !x.zelle_sent_at) : list;
         return (
           <Card key={cuisine} className="overflow-hidden">
             <div className="p-4 border-b border-border space-y-2">
@@ -323,7 +301,7 @@ function MyMealTextsPage() {
                   This restaurant isn't taking orders yet — hold off on texting these guests.
                 </p>
               )}
-              {isZelle && paidRows.some((x) => x.cuisine === cuisine) && (
+              {paidRows.some((x) => x.cuisine === cuisine) && (
                 <p className="text-xs text-muted-foreground">
                   Already paid — no text needed:{" "}
                   {paidRows.filter((x) => x.cuisine === cuisine).map((x) => x.name).join(", ")}
@@ -344,7 +322,7 @@ function MyMealTextsPage() {
                 return (
                   <div
                     key={`${row.id}-${row.cuisine}`}
-                    className={`p-4 space-y-2 ${(isZelle ? row.zelle_sent_at : row.sent_at) ? "bg-emerald-50/60" : ""}`}
+                    className={`p-4 space-y-2 ${row.zelle_sent_at ? "bg-emerald-50/60" : ""}`}
                   >
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-medium">{row.name}</span>
@@ -357,26 +335,25 @@ function MyMealTextsPage() {
                             ? "Paid — restaurant confirmed"
                             : "Paid — reported, awaiting confirmation"}
                         </Badge>
-                      ) : (isZelle ? row.zelle_sent_at : row.sent_at) ? (
+                      ) : row.zelle_sent_at ? (
                         <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 text-[10px]">
-                          {isZelle ? "Payment update sent" : "Original meal message sent"}{" "}
-                          {new Date((isZelle ? row.zelle_sent_at : row.sent_at)!).toLocaleDateString()}{" "}
-                          · {cuisineLabel(row.cuisine)}
+                          Payment update sent{" "}
+                          {new Date(row.zelle_sent_at).toLocaleDateString()} ·{" "}
+                          {cuisineLabel(row.cuisine)}
                         </Badge>
                       ) : (
                         <Badge
                           variant="outline"
                           className="border-amber-400 text-amber-700 text-[10px]"
                         >
-                          {isZelle ? "Payment update not sent yet ·" : "No original meal message yet for"}{" "}
-                          {cuisineLabel(row.cuisine)}
+                          Payment update not sent yet · {cuisineLabel(row.cuisine)}
                         </Badge>
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {row.phone || "No phone on file"}
                     </p>
-                    {isZelle && row.sent_at && (
+                    {row.sent_at && (
                       <p className="text-xs text-muted-foreground">
                         Earlier meal message sent {new Date(row.sent_at).toLocaleDateString()} — reference only.
                       </p>
@@ -396,7 +373,7 @@ function MyMealTextsPage() {
                       <Button size="sm" variant="outline" onClick={() => void copy(body)}>
                         <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy message
                       </Button>
-                      {(isZelle ? row.zelle_sent_at : row.sent_at) ? (
+                      {row.zelle_sent_at ? (
                         <Button
                           size="sm"
                           variant="ghost"
@@ -404,7 +381,7 @@ function MyMealTextsPage() {
                           onClick={() => void setSent(row, false)}
                         >
                           <Check className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
-                           {isZelle ? "Payment update sent · Undo" : "Original message sent · Undo"}
+                          Payment update sent · Undo
                         </Button>
                       ) : (
                         <Button
