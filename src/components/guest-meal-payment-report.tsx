@@ -38,7 +38,7 @@ export function GuestMealPaymentReport({ token, unpaid, onReported }: Props) {
     setBusy(`${cuisine}:${method}`);
     try {
       const res = await report({
-        data: { token, cuisine, qty, method: method as "zelle", note: null ?? undefined },
+        data: { token, cuisine, qty, method: method as "zelle" },
       });
       if (res?.alreadyConfirmed) {
         toast.success("The restaurant had already confirmed this payment.");
