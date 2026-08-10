@@ -51,7 +51,13 @@ type MyRsvpData = {
   } | null;
   order?: { items?: unknown; total?: number | string | null; notes?: string | null } | null;
   preorder?: { selections?: unknown; updated_at?: string | null } | null;
-  mealPayments?: Array<{ cuisine: string; qty_paid: number; paid_at: string | null }> | null;
+  mealPayments?: Array<{
+    cuisine: string;
+    qty_paid: number;
+    paid_at: string | null;
+    source?: string | null;
+    method?: string | null;
+  }> | null;
   mealStatuses?: Array<{ cuisine: string; confirmed: boolean; confirmed_at: string | null }> | null;
 };
 
