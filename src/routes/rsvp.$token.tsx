@@ -38,6 +38,7 @@ import {
   MealRestaurantContact,
   useMealRestaurants,
 } from "@/components/meal-restaurant-contact";
+import { GuestMealPaymentReport } from "@/components/guest-meal-payment-report";
 import africanMeal1 from "@/assets/african-meal-1.jpg.asset.json";
 import africanMeal2 from "@/assets/african-meal-2.jpg.asset.json";
 import africanMeal3 from "@/assets/african-meal-3.jpg.asset.json";
@@ -82,6 +83,13 @@ type RsvpTokenData = {
   order?: { items?: unknown; total?: number | string | null; notes?: string | null } | null;
   preorder?: { selections?: unknown } | null;
   mealStatuses?: Array<{ cuisine: string; confirmed: boolean; confirmed_at: string | null }> | null;
+  mealPayments?: Array<{
+    cuisine: string;
+    qty_paid: number;
+    paid_at: string | null;
+    source?: string | null;
+    method?: string | null;
+  }> | null;
 };
 
 function isCuisineSelection(value: unknown): value is CuisineSelection {
@@ -135,6 +143,12 @@ function RsvpPage() {
   const [mealStatuses, setMealStatuses] = useState<
     Array<{ cuisine: string; confirmed: boolean; confirmed_at: string | null }>
   >([]);
+  // Payments already on record (restaurant-confirmed or reported by the guest).
+  const [mealPayments, setMealPayments] = useState<
+    Array<{ cuisine: string; qty_paid: number; paid_at: string | null; source?: string | null }>
+  >([]);
+  // Saved meals with no payment recorded yet — the "I already paid" list.
+  const [savedMeals, setSavedMeals] = useState<Array<{ cuisine: string; qty: number }>>([]);
   const [cuisineCounts, setCuisineCounts] = useDraftState<Record<string, number>>(
     orderDraftScope,
     "cuisineCounts",
@@ -189,6 +203,15 @@ function RsvpPage() {
         }
         setMealStatuses(
           (r.mealStatuses ?? []).filter((m) => m.confirmed),
+        );
+        setMealPayments((r.mealPayments ?? []).filter((p) => Number(p.qty_paid) > 0));
+        setSavedMeals(
+          Array.isArray(r.preorder?.selections)
+            ? (r.preorder!.selections as unknown[])
+                .filter(isCuisineSelection)
+                .map((sel) => ({ cuisine: sel.cuisine, qty: sel.qty }))
+                .filter((sel) => sel.qty > 0)
+            : [],
         );
         const selections: unknown = r.preorder?.selections;
         if (Array.isArray(selections)) {
@@ -571,6 +594,40 @@ function RsvpPage() {
 
           </div>
         </Card>
+
+        {mealPayments.length > 0 && (
+          <Card className="p-7 space-y-3 border-2 border-emerald-600">
+            <h2 className="font-display text-2xl text-ink">Meal payment on record</h2>
+            <ul className="divide-y divide-border">
+              {mealPayments.map((p) => {
+                const confirmed = (p.source ?? "restaurant") === "restaurant";
+                return (
+                  <li key={p.cuisine} className="py-2 text-sm flex items-center gap-3">
+                    <span className="font-display text-lg w-8 text-emerald-700">{p.qty_paid}×</span>
+                    <span className="flex-1 text-ink">{p.cuisine}</span>
+                    <span className={confirmed ? "text-emerald-700" : "text-terracotta"}>
+                      {confirmed ? "Paid" : "Awaiting restaurant confirmation"}
+                      {p.paid_at ? ` · ${new Date(p.paid_at).toLocaleDateString()}` : ""}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </Card>
+        )}
+
+        <GuestMealPaymentReport
+          token={token}
+          unpaid={savedMeals.filter(
+            (m) => !mealPayments.some((p) => p.cuisine === m.cuisine && Number(p.qty_paid) > 0),
+          )}
+          onReported={(cuisine, qty) =>
+            setMealPayments((current) => [
+              ...current.filter((p) => p.cuisine !== cuisine),
+              { cuisine, qty_paid: qty, paid_at: new Date().toISOString(), source: "guest_reported" },
+            ])
+          }
+        />
 
         {status === "yes" && attendanceMode === "in_person" && (
           <Card className="p-7 space-y-5">
