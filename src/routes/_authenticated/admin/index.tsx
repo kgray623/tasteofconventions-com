@@ -11,6 +11,7 @@ import { markSeen } from "@/lib/whats-new";
 import { getAdminAudit, getReconciliationRows, type AudienceTotals } from "@/lib/admin-audit.functions";
 import { RsvpTotalsCard } from "@/components/rsvp-totals-card";
 import { MealNotifyTracker } from "@/components/meal-notify-tracker";
+import { MealPaymentsToVerify } from "@/components/meal-payments-to-verify";
 import { SiteTrafficCard } from "@/components/site-traffic-card";
 import { ExternalLink, User, Users, Download, AlertTriangle, Archive, ArrowRight, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -291,6 +292,8 @@ function AdminOverview() {
       <RsvpTotalsCard />
 
       <MealNotifyTracker />
+
+      <MealPaymentsToVerify />
 
       {isAdmin && !previewCommittee && <SiteTrafficCard />}
 
