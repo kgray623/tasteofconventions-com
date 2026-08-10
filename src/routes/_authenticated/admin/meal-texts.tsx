@@ -477,6 +477,7 @@ function MealTextsPage() {
       {groups.map(([cuisine, list]) => {
         const r = restaurantFor(cuisine);
         const onHold = r ? !r.order_ready : false;
+        const paidHere = paidRows.filter((x) => x.cuisine === cuisine);
         const visible = list
           .filter((x) => (onlyUnsent ? !(isZelle ? x.zelle_sent_at : x.sent_at) : true))
           .filter((x) => (inviterFilter === "all" ? true : x.inviter === inviterFilter));
@@ -498,7 +499,14 @@ function MealTextsPage() {
                   Turn on “Ready to text” above when this restaurant is taking orders.
                 </p>
               )}
+              {isZelle && paidHere.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Already paid — no text needed ({paidHere.length}):{" "}
+                  {paidHere.map((x) => x.name).join(", ")}
+                </p>
+              )}
             </div>
+
 
             <div className="divide-y divide-border">
               {visible.length === 0 && (
