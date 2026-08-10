@@ -162,6 +162,19 @@ export function MyRsvpContent() {
     );
     const menuOrderDone = orderItems.length > 0;
     const orderDone = menuOrderDone || preorderTotal > 0;
+    // Saved meals (not the in-progress editor state) that have no payment on record.
+    const savedSelections = Array.isArray(data.preorder?.selections)
+      ? (data.preorder!.selections as unknown[]).filter(isCuisineSelection)
+      : [];
+    const unpaidOrderedCuisines = savedSelections
+      .map((s) => ({ cuisine: String(s.cuisine), qty: Number(s.qty) || 0 }))
+      .filter(
+        (s) =>
+          s.qty > 0 &&
+          !(data.mealPayments ?? []).some(
+            (p) => p.cuisine === s.cuisine && Number(p.qty_paid) > 0,
+          ),
+      );
     const setCuisineQty = (cuisine: string, qty: number) => {
       setCuisineCounts((current) => ({
         ...current,
