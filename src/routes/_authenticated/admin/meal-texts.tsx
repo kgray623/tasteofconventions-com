@@ -120,13 +120,11 @@ function MealTextsPage() {
     );
 
   // Everyone who ordered a meal needs the payment update text, except the
-  // guests the restaurant has recorded as paid. The original-message history is
-  // reference only and never filters this queue.
+  // guests with a recorded payment (restaurant-confirmed, guest-reported, or
+  // committee-recorded). The original-message history is reference only and
+  // never filters this queue.
   const modeRows = useMemo(
-    () =>
-      mode === "zelle"
-        ? rows.filter((r) => r.state !== "paid")
-        : rows,
+    () => (mode === "zelle" ? rows.filter((r) => !isPaidState(r.state)) : rows),
     [rows, mode],
   );
 
