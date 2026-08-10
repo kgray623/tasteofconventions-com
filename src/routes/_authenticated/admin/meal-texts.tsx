@@ -269,6 +269,7 @@ function MealTextsPage() {
           it after sending, and every mark shows who tapped it.
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
+          <span className="text-xs text-muted-foreground self-center">In this queue:</span>
           <MealCountBadges plates={totalMeals} households={totalHouseholds} lines={totalOrders} />
           <Badge variant="outline">{sentCount} payment update sent</Badge>
           <Badge variant="outline">{totalOrders - sentCount} still to text</Badge>

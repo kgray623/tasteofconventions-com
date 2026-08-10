@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { performProtectedDelete } from "@/lib/perform-protected-delete";
 import { downloadTextFile } from "@/lib/download-file";
 import { ExportFallbackDialog } from "@/components/export-fallback-dialog";
-import { householdsLabel, readAtUtc } from "@/lib/meal-count-labels";
+import { readAtUtc } from "@/lib/meal-count-labels";
 
 
 export const Route = createFileRoute("/_authenticated/admin/preorders")({
@@ -193,7 +193,7 @@ function PreorderReportPage() {
               </div>
               <p className="font-display text-4xl mt-3">{row.qty}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                plates ordered · {householdsLabel(orderers.length)}
+                plates ordered · {orderers.length} household{orderers.length === 1 ? "" : "s"}
               </p>
               {orderers.length > 0 && (
                 <ul className="mt-3 space-y-1 text-sm border-t border-border pt-3">
