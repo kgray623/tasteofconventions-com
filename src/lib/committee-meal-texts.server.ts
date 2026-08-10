@@ -6,6 +6,7 @@ import {
   DEFAULT_ZELLE_UPDATE_TEMPLATE,
   type MealRestaurant,
 } from "@/lib/meal-text-defaults";
+import type { MealCommunicationState, MealPaymentSource } from "@/lib/meal-communication";
 
 export const normName = (s: string | null | undefined) =>
   (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
@@ -27,8 +28,10 @@ export type CommitteeMealTextRow = {
   qty: number;
   sent_at: string | null;
   zelle_sent_at: string | null;
-  state: "paid" | "needs_update" | "update_sent" | "exception";
+  state: MealCommunicationState;
   paid_at: string | null;
+  paid_source: MealPaymentSource | null;
+  paid_note: string | null;
   exception: string | null;
 };
 
@@ -228,6 +231,8 @@ export async function loadCommitteeMealTexts(
         zelle_sent_at: zelleByMeal.get(`${p.id}::${cuisine}`) ?? null,
         state: communication.state,
         paid_at: communication.paid_at,
+        paid_source: communication.paid_source,
+        paid_note: communication.paid_note,
         exception: communication.exception,
 
       });

@@ -92,7 +92,9 @@ export async function loadPortalData(restaurantId: string): Promise<PortalData> 
       .from("cuisine_preorders")
       .select("id,name,phone,selections,invitation_id,invitations(rsvps(status))")
       .order("name"),
-    supabaseAdmin.from("meal_payments").select("preorder_id,cuisine,qty_paid,paid_at"),
+    supabaseAdmin
+      .from("meal_payments")
+      .select("preorder_id,cuisine,qty_paid,paid_at,source,reported_note"),
     supabaseAdmin.from("meal_order_status").select("preorder_id,cuisine,confirmed,confirmed_at"),
   ]);
 
@@ -109,16 +111,28 @@ export async function loadPortalData(restaurantId: string): Promise<PortalData> 
     });
   }
 
-  const paidMap = new Map<string, { qty: number; paidAt: string | null }>();
+  const paidMap = new Map<
+    string,
+    {
+      qty: number;
+      paidAt: string | null;
+      source: "restaurant" | "guest_reported" | "committee_recorded" | null;
+      note: string | null;
+    }
+  >();
   for (const p of (payments ?? []) as Array<{
     preorder_id: string;
     cuisine: string;
     qty_paid: number;
     paid_at: string;
+    source: string | null;
+    reported_note: string | null;
   }>) {
     paidMap.set(`${p.preorder_id}|${normalizeCuisine(p.cuisine)}`, {
       qty: Number(p.qty_paid ?? 0),
       paidAt: p.paid_at ?? null,
+      source: (p.source ?? "restaurant") as "restaurant",
+      note: p.reported_note ?? null,
     });
   }
 
@@ -157,6 +171,8 @@ export async function loadPortalData(restaurantId: string): Promise<PortalData> 
         qty: sel.qty,
         paid: !!paidEntry && paidEntry.qty >= sel.qty,
         paidAt: paidEntry?.paidAt ?? null,
+        paidSource: paidEntry?.source ?? null,
+        paidNote: paidEntry?.note ?? null,
         qtyPaid: paidEntry?.qty ?? 0,
         confirmed: statusEntry?.confirmed ?? false,
         confirmedAt: statusEntry?.confirmedAt ?? null,
@@ -316,6 +332,8 @@ export async function setPaid(opts: {
         qty_paid: row.qty,
         paid_at: new Date().toISOString(),
         marked_by_label: opts.markedByLabel,
+        source: "restaurant",
+        verified_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
       { onConflict: "preorder_id,cuisine" },

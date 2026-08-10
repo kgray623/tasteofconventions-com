@@ -131,7 +131,8 @@ export function MealNotifyTracker({ compact = false }: { compact?: boolean }) {
 
             <div className="flex flex-wrap gap-2 pt-2">
               <Badge variant="outline">{data.totals.message_units} meal orders in total</Badge>
-              <Badge variant="outline">{data.totals.paid} already paid</Badge>
+              <Badge variant="outline">{data.totals.paid_confirmed} paid · restaurant confirmed</Badge>
+              <Badge variant="outline">{data.totals.paid_reported} paid · awaiting confirmation</Badge>
               <Badge variant="outline">{data.totals.update_sent} payment text sent</Badge>
               <Badge variant="outline">{data.totals.exceptions} exceptions</Badge>
               <Badge variant="outline">{data.totals.meal_quantity} meals ordered (quantities)</Badge>
@@ -167,7 +168,7 @@ export function MealNotifyTracker({ compact = false }: { compact?: boolean }) {
                     <td className="py-2 pr-3 font-medium">{row.name}</td>
                     <td className="py-2 pr-3 text-right">{row.needs_update}</td>
                     <td className="py-2 pr-3 text-right">{row.update_sent}</td>
-                    <td className="py-2 pr-3 text-right">{row.paid}</td>
+                    <td className="py-2 pr-3 text-right">{row.paid_confirmed + row.paid_reported}</td>
                     <td className="py-2 text-right">{row.exceptions}</td>
                   </tr>
                 ))}

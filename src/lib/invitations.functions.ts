@@ -127,13 +127,19 @@ export const getMyInvitation = createServerFn({ method: "GET" })
       supabaseAdmin.from("orders").select("*").eq("invitation_id", inv.id).maybeSingle(),
       findCuisinePreorder(inv.id, inv.guest_phone ?? rawPhone),
     ]);
-    let mealPayments: Array<{ cuisine: string; qty_paid: number; paid_at: string | null }> = [];
+    let mealPayments: Array<{
+      cuisine: string;
+      qty_paid: number;
+      paid_at: string | null;
+      source: string | null;
+      method: string | null;
+    }> = [];
     let mealStatuses: Array<{ cuisine: string; confirmed: boolean; confirmed_at: string | null }> = [];
     if (preorder?.id) {
       const [{ data: paidRows }, { data: statusRows }] = await Promise.all([
         supabaseAdmin
           .from("meal_payments")
-          .select("cuisine,qty_paid,paid_at")
+          .select("cuisine,qty_paid,paid_at,source,method")
           .eq("preorder_id", preorder.id),
         supabaseAdmin
           .from("meal_order_status")
@@ -227,13 +233,19 @@ export const getInvitationByToken = createServerFn({ method: "GET" })
       supabaseAdmin.from("orders").select("*").eq("invitation_id", inv.id).maybeSingle(),
       findCuisinePreorder(inv.id, inv.guest_phone),
     ]);
-    let mealPayments: Array<{ cuisine: string; qty_paid: number; paid_at: string | null }> = [];
+    let mealPayments: Array<{
+      cuisine: string;
+      qty_paid: number;
+      paid_at: string | null;
+      source: string | null;
+      method: string | null;
+    }> = [];
     let mealStatuses: Array<{ cuisine: string; confirmed: boolean; confirmed_at: string | null }> = [];
     if (preorder?.id) {
       const [{ data: paidRows }, { data: statusRows }] = await Promise.all([
         supabaseAdmin
           .from("meal_payments")
-          .select("cuisine,qty_paid,paid_at")
+          .select("cuisine,qty_paid,paid_at,source,method")
           .eq("preorder_id", preorder.id),
         supabaseAdmin
           .from("meal_order_status")

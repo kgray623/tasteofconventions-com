@@ -319,12 +319,30 @@ function RestaurantPortalPage() {
                   {r.paid && r.paidAt && (
                     <div className="text-xs text-muted-foreground">
                       Paid {new Date(r.paidAt).toLocaleDateString()}
+                      {r.paidSource && r.paidSource !== "restaurant"
+                        ? r.paidSource === "guest_reported"
+                          ? " — reported by the guest, please verify"
+                          : " — recorded by the food committee, please verify"
+                        : ""}
                     </div>
+                  )}
+                  {r.paidNote && (
+                    <div className="text-xs text-muted-foreground">Note: {r.paidNote}</div>
                   )}
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
                   {r.confirmed && <Badge className="bg-terracotta text-cream">Confirmed</Badge>}
-                  {r.paid && <Badge className="bg-emerald-600 text-white">Paid</Badge>}
+                  {r.paid && (
+                    <Badge
+                      className={
+                        r.paidSource && r.paidSource !== "restaurant"
+                          ? "bg-amber-600 text-white"
+                          : "bg-emerald-600 text-white"
+                      }
+                    >
+                      {r.paidSource && r.paidSource !== "restaurant" ? "Paid · to verify" : "Paid"}
+                    </Badge>
+                  )}
                 </div>
               </div>
 
@@ -363,9 +381,16 @@ function RestaurantPortalPage() {
                   {r.confirmed ? "Undo confirm" : "Confirm order"}
                 </Button>
                 {r.paid ? (
-                  <Button variant="ghost" size="sm" disabled={busy} onClick={() => toggle(r.preorderId, false)}>
-                    Undo paid
-                  </Button>
+                  <>
+                    {r.paidSource && r.paidSource !== "restaurant" && (
+                      <Button size="sm" disabled={busy} onClick={() => toggle(r.preorderId, true)}>
+                        <Check className="h-4 w-4 mr-1" /> Verify payment
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="sm" disabled={busy} onClick={() => toggle(r.preorderId, false)}>
+                      Undo paid
+                    </Button>
+                  </>
                 ) : (
                   <Button size="sm" disabled={busy} onClick={() => toggle(r.preorderId, true)}>
                     <Check className="h-4 w-4 mr-1" /> Mark paid

@@ -12,6 +12,7 @@ import { downloadTextFile } from "@/lib/download-file";
 import { ExportFallbackDialog } from "@/components/export-fallback-dialog";
 import { SmsTextButton } from "@/components/sms-text-button";
 import { OpenOnSiteBanner } from "@/components/open-on-site-banner";
+import { isPaidState } from "@/lib/meal-communication";
 import {
   cuisineLabel,
   matchRestaurant,
@@ -106,7 +107,7 @@ function MyMealTextsPage() {
   // Everyone who ordered needs the payment text except guests already recorded
   // as paid by the restaurant.
   const modeRows = useMemo(
-    () => (isZelle ? rows.filter((r) => r.state !== "paid") : rows),
+    () => (isZelle ? rows.filter((r) => !isPaidState(r.state)) : rows),
     [rows, isZelle],
   );
 

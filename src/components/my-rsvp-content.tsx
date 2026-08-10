@@ -17,6 +17,7 @@ import {
   findRestaurantForCuisine,
   useMealRestaurants,
 } from "@/components/meal-restaurant-contact";
+import { GuestMealPaymentReport } from "@/components/guest-meal-payment-report";
 import africanMeal1 from "@/assets/african-meal-1.jpg.asset.json";
 import africanMeal2 from "@/assets/african-meal-2.jpg.asset.json";
 import africanMeal3 from "@/assets/african-meal-3.jpg.asset.json";
@@ -51,7 +52,13 @@ type MyRsvpData = {
   } | null;
   order?: { items?: unknown; total?: number | string | null; notes?: string | null } | null;
   preorder?: { selections?: unknown; updated_at?: string | null } | null;
-  mealPayments?: Array<{ cuisine: string; qty_paid: number; paid_at: string | null }> | null;
+  mealPayments?: Array<{
+    cuisine: string;
+    qty_paid: number;
+    paid_at: string | null;
+    source?: string | null;
+    method?: string | null;
+  }> | null;
   mealStatuses?: Array<{ cuisine: string; confirmed: boolean; confirmed_at: string | null }> | null;
 };
 
@@ -156,6 +163,19 @@ export function MyRsvpContent() {
     );
     const menuOrderDone = orderItems.length > 0;
     const orderDone = menuOrderDone || preorderTotal > 0;
+    // Saved meals (not the in-progress editor state) that have no payment on record.
+    const savedSelections = Array.isArray(data.preorder?.selections)
+      ? (data.preorder!.selections as unknown[]).filter(isCuisineSelection)
+      : [];
+    const unpaidOrderedCuisines = savedSelections
+      .map((s) => ({ cuisine: String(s.cuisine), qty: Number(s.qty) || 0 }))
+      .filter(
+        (s) =>
+          s.qty > 0 &&
+          !(data.mealPayments ?? []).some(
+            (p) => p.cuisine === s.cuisine && Number(p.qty_paid) > 0,
+          ),
+      );
     const setCuisineQty = (cuisine: string, qty: number) => {
       setCuisineCounts((current) => ({
         ...current,
@@ -312,33 +332,70 @@ export function MyRsvpContent() {
               <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-600 text-white text-lg">
                 ✓
               </span>
-              <h2 className="font-display text-2xl">Meal payment received</h2>
+              <h2 className="font-display text-2xl">Meal payment on record</h2>
             </div>
             <p className="text-sm text-muted-foreground">
-              The restaurant has confirmed your payment. Show this screen (or your receipt) at
-              the event to pick up your meal.
+              Show this screen (or your own receipt) at the event to pick up your meal. Payments
+              you reported yourself stay on record while the restaurant matches them up.
             </p>
             <ul className="divide-y divide-border">
               {(data.mealPayments ?? [])
                 .filter((p) => Number(p.qty_paid) > 0)
-                .map((p) => (
-                  <li key={p.cuisine} className="py-2 flex items-center gap-3 text-sm">
-                    <span className="font-display text-lg w-8 text-emerald-700">
-                      {p.qty_paid}×
-                    </span>
-                    <span className="flex-1 text-ink">
-                      {p.cuisine}
-                      {findRestaurantForCuisine(restaurants, p.cuisine)
-                        ? ` — confirmed by ${findRestaurantForCuisine(restaurants, p.cuisine)!.name}`
-                        : ""}
-                    </span>
-                    <span className="text-emerald-700 font-medium">
-                      Paid{p.paid_at ? ` · ${new Date(p.paid_at).toLocaleDateString()}` : ""}
-                    </span>
-                  </li>
-                ))}
+                .map((p) => {
+                  const confirmed = (p.source ?? "restaurant") === "restaurant";
+                  return (
+                    <li key={p.cuisine} className="py-2 flex items-center gap-3 text-sm">
+                      <span className="font-display text-lg w-8 text-emerald-700">
+                        {p.qty_paid}×
+                      </span>
+                      <span className="flex-1 text-ink">
+                        {p.cuisine}
+                        {confirmed && findRestaurantForCuisine(restaurants, p.cuisine)
+                          ? ` — confirmed by ${findRestaurantForCuisine(restaurants, p.cuisine)!.name}`
+                          : ""}
+                        {!confirmed ? " — you reported this payment" : ""}
+                      </span>
+                      <span
+                        className={
+                          confirmed
+                            ? "text-emerald-700 font-medium"
+                            : "text-terracotta font-medium"
+                        }
+                      >
+                        {confirmed ? "Paid" : "Awaiting restaurant confirmation"}
+                        {p.paid_at ? ` · ${new Date(p.paid_at).toLocaleDateString()}` : ""}
+                      </span>
+                    </li>
+                  );
+                })}
             </ul>
           </Card>
+        )}
+
+        {unpaidOrderedCuisines.length > 0 && (
+          <GuestMealPaymentReport
+            token={invitation.rsvp_token}
+            unpaid={unpaidOrderedCuisines}
+            onReported={(cuisine, qty, method) =>
+              setData((current) =>
+                current
+                  ? {
+                      ...current,
+                      mealPayments: [
+                        ...(current.mealPayments ?? []).filter((p) => p.cuisine !== cuisine),
+                        {
+                          cuisine,
+                          qty_paid: qty,
+                          paid_at: new Date().toISOString(),
+                          source: "guest_reported",
+                          method,
+                        },
+                      ],
+                    }
+                  : current,
+              )
+            }
+          />
         )}
 
         {rsvpAttending && rsvp?.attendance_mode !== "zoom" && (

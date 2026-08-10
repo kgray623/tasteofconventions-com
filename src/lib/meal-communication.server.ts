@@ -8,7 +8,9 @@ export async function loadMealCommunicationLedger(supabaseAdmin: any) {
       supabaseAdmin.from("inviters").select("id,name"),
       supabaseAdmin.from("meal_text_sends").select("preorder_id,cuisine,sent_at"),
       supabaseAdmin.from("meal_zelle_text_sends").select("preorder_id,cuisine,sent_at"),
-      supabaseAdmin.from("meal_payments").select("preorder_id,cuisine,paid_at"),
+      supabaseAdmin
+        .from("meal_payments")
+        .select("preorder_id,cuisine,paid_at,source,method,reported_note,reported_by_label,verified_at"),
       supabaseAdmin.from("meal_order_status").select("preorder_id,cuisine,confirmed,confirmed_at"),
     ]);
   for (const result of [

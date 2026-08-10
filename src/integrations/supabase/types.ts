@@ -756,33 +756,51 @@ export type Database = {
           cuisine: string
           id: string
           marked_by_label: string | null
+          method: string | null
           paid_at: string
           preorder_id: string
           qty_paid: number
+          reported_by: string | null
+          reported_by_label: string | null
+          reported_note: string | null
           restaurant_id: string | null
+          source: string
           updated_at: string
+          verified_at: string | null
         }
         Insert: {
           created_at?: string
           cuisine: string
           id?: string
           marked_by_label?: string | null
+          method?: string | null
           paid_at?: string
           preorder_id: string
           qty_paid?: number
+          reported_by?: string | null
+          reported_by_label?: string | null
+          reported_note?: string | null
           restaurant_id?: string | null
+          source?: string
           updated_at?: string
+          verified_at?: string | null
         }
         Update: {
           created_at?: string
           cuisine?: string
           id?: string
           marked_by_label?: string | null
+          method?: string | null
           paid_at?: string
           preorder_id?: string
           qty_paid?: number
+          reported_by?: string | null
+          reported_by_label?: string | null
+          reported_note?: string | null
           restaurant_id?: string | null
+          source?: string
           updated_at?: string
+          verified_at?: string | null
         }
         Relationships: [
           {
