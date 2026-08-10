@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { getErrorMessage } from "@/lib/async-safety";
 import { downloadTextFile, openTextInNewTab } from "@/lib/download-file";
 import { getMealNotifyRollup, type MealNotifyRollup } from "@/lib/meal-notify.functions";
+import { MealCountBadges } from "@/components/meal-counts";
+import { readAtUtc } from "@/lib/meal-count-labels";
 
 function escapeCsv(value: unknown) {
   const text = String(value ?? "");
@@ -130,12 +132,16 @@ export function MealNotifyTracker({ compact = false }: { compact?: boolean }) {
             </p>
 
             <div className="flex flex-wrap gap-2 pt-2">
-              <Badge variant="outline">{data.totals.message_units} meal orders in total</Badge>
+              <MealCountBadges
+                plates={data.totals.meal_quantity}
+                households={data.totals.households}
+                lines={data.totals.message_units}
+              />
               <Badge variant="outline">{data.totals.paid_confirmed} paid · restaurant confirmed</Badge>
               <Badge variant="outline">{data.totals.paid_reported} paid · awaiting confirmation</Badge>
               <Badge variant="outline">{data.totals.update_sent} payment text sent</Badge>
               <Badge variant="outline">{data.totals.exceptions} exceptions</Badge>
-              <Badge variant="outline">{data.totals.meal_quantity} meals ordered (quantities)</Badge>
+
               <Badge variant={data.totals.reconciles ? "outline" : "destructive"}>
                 {data.totals.reconciles ? "Counts reconcile" : "Accounting mismatch"}
               </Badge>
@@ -187,7 +193,7 @@ export function MealNotifyTracker({ compact = false }: { compact?: boolean }) {
             </div>
           )}
           <p className="text-xs text-muted-foreground">
-            Read from the database {new Date(data.generated_at).toLocaleString()}. Opening, copying, or tapping Text never changes this count; only “Check here after you text” does.
+            {readAtUtc(data.generated_at)}. Opening, copying, or tapping Text never changes this count; only “Check here after you text” does.
           </p>
         </>
       )}

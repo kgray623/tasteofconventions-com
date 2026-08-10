@@ -6,6 +6,8 @@ import { Check, Copy, Download, Globe, Loader2, MessageSquare, Phone, RotateCcw,
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { MealCountBadges } from "@/components/meal-counts";
+import { readAtUtc } from "@/lib/meal-count-labels";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -267,9 +269,7 @@ function MealTextsPage() {
           it after sending, and every mark shows who tapped it.
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
-          <Badge variant="outline">{totalHouseholds} households</Badge>
-          <Badge variant="outline">{totalOrders} restaurant texts</Badge>
-          <Badge variant="outline">{totalMeals} meals</Badge>
+          <MealCountBadges plates={totalMeals} households={totalHouseholds} lines={totalOrders} />
           <Badge variant="outline">{sentCount} payment update sent</Badge>
           <Badge variant="outline">{totalOrders - sentCount} still to text</Badge>
           {reconciliation && (
@@ -281,7 +281,7 @@ function MealTextsPage() {
 
         {reconciliation && (
           <p className="text-xs text-muted-foreground">
-            Reconciled from the database {new Date(reconciliation.generated_at).toLocaleString()}.
+            {readAtUtc(reconciliation.generated_at)}.
           </p>
         )}
 
