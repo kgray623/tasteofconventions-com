@@ -323,6 +323,12 @@ function MyMealTextsPage() {
                   This restaurant isn't taking orders yet — hold off on texting these guests.
                 </p>
               )}
+              {isZelle && paidRows.some((x) => x.cuisine === cuisine) && (
+                <p className="text-xs text-muted-foreground">
+                  Already paid — no text needed:{" "}
+                  {paidRows.filter((x) => x.cuisine === cuisine).map((x) => x.name).join(", ")}
+                </p>
+              )}
               <Button size="sm" variant="ghost" onClick={() => exportSheet(cuisine, list)}>
                 <Download className="w-3.5 h-3.5 mr-1.5" /> Restaurant sheet
               </Button>
