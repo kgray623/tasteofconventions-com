@@ -342,9 +342,15 @@ function MyMealTextsPage() {
                       <Badge variant="outline" className="text-[10px]">
                         {mealOrderText(row.qty, row.cuisine)}
                       </Badge>
-                      {(isZelle ? row.zelle_sent_at : row.sent_at) ? (
+                      {isPaidState(row.state) ? (
                         <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 text-[10px]">
-                          {isZelle ? "New payment update sent" : "Original meal message sent"}{" "}
+                          {row.state === "paid_confirmed"
+                            ? "Paid — restaurant confirmed"
+                            : "Paid — reported, awaiting confirmation"}
+                        </Badge>
+                      ) : (isZelle ? row.zelle_sent_at : row.sent_at) ? (
+                        <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 text-[10px]">
+                          {isZelle ? "Payment update sent" : "Original meal message sent"}{" "}
                           {new Date((isZelle ? row.zelle_sent_at : row.sent_at)!).toLocaleDateString()}{" "}
                           · {cuisineLabel(row.cuisine)}
                         </Badge>
@@ -353,7 +359,7 @@ function MyMealTextsPage() {
                           variant="outline"
                           className="border-amber-400 text-amber-700 text-[10px]"
                         >
-                           {isZelle ? "No new payment update yet for" : "No original meal message yet for"}{" "}
+                          {isZelle ? "Payment update not sent yet ·" : "No original meal message yet for"}{" "}
                           {cuisineLabel(row.cuisine)}
                         </Badge>
                       )}
@@ -361,6 +367,11 @@ function MyMealTextsPage() {
                     <p className="text-xs text-muted-foreground">
                       {row.phone || "No phone on file"}
                     </p>
+                    {isZelle && row.sent_at && (
+                      <p className="text-xs text-muted-foreground">
+                        Earlier meal message sent {new Date(row.sent_at).toLocaleDateString()} — reference only.
+                      </p>
+                    )}
                     <div className="flex flex-wrap gap-2">
                       {num && !onHold && (
                         <SmsTextButton
