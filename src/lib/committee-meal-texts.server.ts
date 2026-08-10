@@ -6,6 +6,7 @@ import {
   DEFAULT_ZELLE_UPDATE_TEMPLATE,
   type MealRestaurant,
 } from "@/lib/meal-text-defaults";
+import type { MealCommunicationState, MealPaymentSource } from "@/lib/meal-communication";
 
 export const normName = (s: string | null | undefined) =>
   (s ?? "").toLowerCase().replace(/[^a-z]/g, "");
