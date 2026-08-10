@@ -438,7 +438,7 @@ function MealTextsPage() {
           <Switch checked={onlyUnsent} onCheckedChange={setOnlyUnsent} id="only-unsent" />
           <label htmlFor="only-unsent" className="text-sm">
             {isZelle
-              ? "Show only people who haven't had the new payment update"
+              ? "Show only people who still need the payment text"
               : "Show only people I haven't texted yet"}
           </label>
         </div>
