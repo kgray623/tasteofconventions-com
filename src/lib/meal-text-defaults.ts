@@ -64,7 +64,9 @@ export type MealTextRow = {
   /** Separate mark: the Zelle/Venmo follow-up text. Never derived from sent_at. */
   zelle_sent_at: string | null;
   inviter: string;
-  state?: "paid" | "needs_update" | "update_sent" | "exception";
+  state?: import("@/lib/meal-communication").MealCommunicationState;
   paid_at?: string | null;
+  paid_source?: import("@/lib/meal-communication").MealPaymentSource | null;
+  paid_note?: string | null;
   exception?: string | null;
 };
