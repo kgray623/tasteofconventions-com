@@ -20,6 +20,7 @@ import {
 } from "@/lib/meal-text-message";
 import { SmsTextButton } from "@/components/sms-text-button";
 import { OpenOnSiteBanner } from "@/components/open-on-site-banner";
+import { isPaidState } from "@/lib/meal-communication";
 
 import {
   DEFAULT_MEAL_TEXT_TEMPLATE,
@@ -297,7 +298,7 @@ function MealTextsPage() {
           <Badge variant="outline">{totalOrders - sentCount} still to text</Badge>
           {reconciliation && (
             <Badge variant={reconciliation.totals.reconciles ? "outline" : "destructive"}>
-              {reconciliation.totals.message_units} orders = {reconciliation.totals.needs_update} still to text + {reconciliation.totals.update_sent} texted + {reconciliation.totals.paid} paid + {reconciliation.totals.exceptions} exceptions
+              {reconciliation.totals.message_units} orders = {reconciliation.totals.needs_update} still to text + {reconciliation.totals.update_sent} texted + {reconciliation.totals.paid_confirmed} paid (restaurant) + {reconciliation.totals.paid_reported} paid (reported) + {reconciliation.totals.exceptions} exceptions
             </Badge>
           )}
         </div>
