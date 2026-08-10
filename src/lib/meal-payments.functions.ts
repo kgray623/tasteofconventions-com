@@ -66,7 +66,11 @@ export const recordMealPaymentForGuest = createServerFn({ method: "POST" })
   .inputValidator((d) => CommitteeInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { recordMealPayment } = await import("@/lib/meal-payments.server");
+    const { recordMealPayment, assertMealPaymentStaff } = await import(
+      "@/lib/meal-payments.server"
+    );
+
+    await assertMealPaymentStaff(context.supabase, context.userId);
 
     const { data: profile } = await context.supabase
       .from("profiles")
@@ -90,8 +94,11 @@ export const recordMealPaymentForGuest = createServerFn({ method: "POST" })
 /** Reported payments the restaurant has not confirmed yet. */
 export const listMealPaymentsToVerify = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
+  .handler(async ({ context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { listReportedMealPayments } = await import("@/lib/meal-payments.server");
+    const { listReportedMealPayments, assertMealPaymentStaff } = await import(
+      "@/lib/meal-payments.server"
+    );
+    await assertMealPaymentStaff(context.supabase, context.userId);
     return listReportedMealPayments(supabaseAdmin);
   });

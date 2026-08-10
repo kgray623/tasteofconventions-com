@@ -121,3 +121,17 @@ export async function listReportedMealPayments(supabaseAdmin: any) {
     generated_at: new Date().toISOString(),
   };
 }
+
+/**
+ * Only admins and team (committee) members may record payments on behalf of
+ * guests or read the reported-payment roster, which contains other guests'
+ * names, phones, and private notes.
+ */
+export async function assertMealPaymentStaff(supabase: any, userId: string) {
+  const { data } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .in("role", ["admin", "team"]);
+  if (!data || data.length === 0) throw new Error("Forbidden");
+}
