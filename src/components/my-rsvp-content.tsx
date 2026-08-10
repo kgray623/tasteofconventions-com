@@ -17,6 +17,7 @@ import {
   findRestaurantForCuisine,
   useMealRestaurants,
 } from "@/components/meal-restaurant-contact";
+import { GuestMealPaymentReport } from "@/components/guest-meal-payment-report";
 import africanMeal1 from "@/assets/african-meal-1.jpg.asset.json";
 import africanMeal2 from "@/assets/african-meal-2.jpg.asset.json";
 import africanMeal3 from "@/assets/african-meal-3.jpg.asset.json";
