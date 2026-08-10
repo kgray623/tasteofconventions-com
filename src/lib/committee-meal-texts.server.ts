@@ -231,6 +231,8 @@ export async function loadCommitteeMealTexts(
         zelle_sent_at: zelleByMeal.get(`${p.id}::${cuisine}`) ?? null,
         state: communication.state,
         paid_at: communication.paid_at,
+        paid_source: communication.paid_source,
+        paid_note: communication.paid_note,
         exception: communication.exception,
 
       });
