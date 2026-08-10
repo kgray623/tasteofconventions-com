@@ -3,7 +3,8 @@ import { loadMealCommunicationLedger } from "@/lib/meal-communication.server";
 export type MealNotifyInviter = {
   inviter_id: string | null;
   name: string;
-  paid: number;
+  paid_confirmed: number;
+  paid_reported: number;
   needs_update: number;
   update_sent: number;
   exceptions: number;
@@ -17,7 +18,8 @@ export async function loadMealNotifyRollup(supabaseAdmin: any) {
     const bucket = byInviter.get(key) ?? {
       inviter_id: row.inviter_id,
       name: row.inviter,
-      paid: 0,
+      paid_confirmed: 0,
+      paid_reported: 0,
       needs_update: 0,
       update_sent: 0,
       exceptions: 0,
