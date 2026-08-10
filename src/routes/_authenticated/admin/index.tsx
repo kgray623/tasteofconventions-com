@@ -11,6 +11,8 @@ import { markSeen } from "@/lib/whats-new";
 import { getAdminAudit, getReconciliationRows, type AudienceTotals } from "@/lib/admin-audit.functions";
 import { RsvpTotalsCard } from "@/components/rsvp-totals-card";
 import { MealNotifyTracker } from "@/components/meal-notify-tracker";
+import { MealCountsCard } from "@/components/meal-counts";
+
 import { MealPaymentsToVerify } from "@/components/meal-payments-to-verify";
 import { SiteTrafficCard } from "@/components/site-traffic-card";
 import { ExternalLink, User, Users, Download, AlertTriangle, Archive, ArrowRight, ShieldCheck } from "lucide-react";
@@ -312,13 +314,8 @@ function AdminOverview() {
         <StatRow row={{ label: "Pending", value: all.pending, to: "/admin/guests", search: { status: "pending" } }} />
       </Card>
 
-      <Card className="p-5 space-y-1">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Food orders</p>
-        <StatRow row={{ label: "Meals ordered", value: all.meals_total, to: "/admin/preorders", emphasis: true }} />
-        {Object.entries(all.meals_by_cuisine).sort(([a],[b]) => a.localeCompare(b)).map(([cuisine, qty]) => (
-          <StatRow key={cuisine} row={{ label: cuisine, value: qty, to: "/admin/preorders" }} />
-        ))}
-      </Card>
+      <MealCountsCard />
+
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="p-5 space-y-1">

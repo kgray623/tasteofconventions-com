@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { performProtectedDelete } from "@/lib/perform-protected-delete";
 import { downloadTextFile } from "@/lib/download-file";
 import { ExportFallbackDialog } from "@/components/export-fallback-dialog";
+import { readAtUtc } from "@/lib/meal-count-labels";
 
 
 export const Route = createFileRoute("/_authenticated/admin/preorders")({
@@ -54,6 +55,7 @@ function escapeCsv(value: string | number | null | undefined) {
 function PreorderReportPage() {
   const { isTeam, loading: rolesLoading } = useRoles();
   const [rows, setRows] = useState<PreorderRow[]>([]);
+  const [readAt, setReadAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
@@ -64,6 +66,7 @@ function PreorderReportPage() {
       .order("updated_at", { ascending: false });
     if (error) toast.error(error.message);
     setRows((data as PreorderRow[]) ?? []);
+    setReadAt(new Date().toISOString());
     setLoading(false);
   };
 
@@ -164,8 +167,10 @@ function PreorderReportPage() {
           <p className="text-xs uppercase tracking-[0.3em] text-terracotta">Restaurant counts</p>
           <h2 className="font-display text-3xl mt-2">Cuisine preorder report</h2>
           <p className="text-sm text-muted-foreground mt-2">
-            Download this report when you are ready to tell each restaurant how many dishes people requested.
+            Download this report when you are ready to tell each restaurant how many plates people
+            ordered.
           </p>
+          {readAt && <p className="text-xs text-muted-foreground mt-1">{readAtUtc(readAt)}</p>}
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={load} disabled={loading}>
@@ -188,7 +193,7 @@ function PreorderReportPage() {
               </div>
               <p className="font-display text-4xl mt-3">{row.qty}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                dishes requested · {orderers.length} {orderers.length === 1 ? "person" : "people"}
+                plates ordered · {orderers.length} household{orderers.length === 1 ? "" : "s"}
               </p>
               {orderers.length > 0 && (
                 <ul className="mt-3 space-y-1 text-sm border-t border-border pt-3">
@@ -206,7 +211,10 @@ function PreorderReportPage() {
         <Card className="p-5 border-terracotta/30 bg-terracotta/5">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Restaurant total</p>
           <p className="font-display text-4xl mt-3">{restaurantMeals}</p>
-          <p className="text-xs text-muted-foreground mt-1">assigned cuisine dishes · {totalMeals} including review</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            plates ordered for the restaurants · {totalMeals} plates including orders still needing
+            phone review
+          </p>
           {unlinkedMeals > 0 && (
             <p className="text-xs text-amber-700 mt-2">
               + {unlinkedMeals} meal{unlinkedMeals === 1 ? "" : "s"} needing phone review (not counted)

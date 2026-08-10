@@ -6,6 +6,7 @@ import { Check, Copy, Download, Loader2, MessageSquare, Users } from "lucide-rea
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { MealCountBadges } from "@/components/meal-counts";
 import { Switch } from "@/components/ui/switch";
 import { getErrorMessage } from "@/lib/async-safety";
 import { downloadTextFile } from "@/lib/download-file";
@@ -224,9 +225,8 @@ function MyMealTextsPage() {
           a message never marks it sent.
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
-          <Badge variant="outline">{totalPeople} guests</Badge>
-          <Badge variant="outline">{totalOrders} restaurant texts</Badge>
-          <Badge variant="outline">{totalMeals} meals</Badge>
+          <span className="text-xs text-muted-foreground self-center">In this queue:</span>
+          <MealCountBadges plates={totalMeals} households={totalPeople} lines={totalOrders} />
           <Badge variant="outline">{sentCount} payment update sent</Badge>
           <Badge variant="outline">{totalOrders - sentCount} to go</Badge>
         </div>
