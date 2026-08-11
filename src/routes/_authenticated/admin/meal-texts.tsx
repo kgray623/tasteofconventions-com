@@ -526,10 +526,24 @@ function MealTextsPage() {
                 </p>
               )}
               {paidHere.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Already paid — no text needed ({paidHere.length}):{" "}
-                  {paidHere.map((x) => x.name).join(", ")}
-                </p>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">
+                    Already paid — no text needed ({paidHere.length}):
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {paidHere.map((x) => (
+                      <Button
+                        key={`${x.id}-paid`}
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        onClick={() => setPreview({ title: `${x.name} — ${cuisineLabel(x.cuisine)}`, body: bodyFor(x) })}
+                      >
+                        {x.name} — preview message
+                      </Button>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
 
