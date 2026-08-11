@@ -22,6 +22,8 @@ import {
   mealOrderText,
   renderMealTemplate,
   mealPhotosLine,
+  zelleQrLinkLine,
+
   smsNumber,
 } from "@/lib/meal-text-message";
 
