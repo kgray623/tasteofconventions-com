@@ -176,8 +176,9 @@ export function MealRestaurantContact({
                 </Dialog>
               </div>
               <p className="text-xs text-muted-foreground">
-                Tap the QR or open Zelle options. Zelle may ask you to select your bank. You can also
-                enlarge the QR to scan it from another device.
+                On this device, tap the QR to open the restaurant&apos;s Zelle payment. To pay from
+                another device, enlarge this clean QR and scan it there. Zelle may ask you to select
+                your bank.
               </p>
             </div>
           )}
