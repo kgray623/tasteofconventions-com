@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Copy, ExternalLink, Maximize2, Phone } from "lucide-react";
+import { Copy, ExternalLink, Maximize2, Phone, Smartphone } from "lucide-react";
+import { startZelleHandoff } from "@/lib/zelle-handoff";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -87,6 +89,7 @@ export function MealRestaurantContact({
   rows: RestaurantRow[] | undefined;
   paid?: boolean;
 }) {
+  const [payOpen, setPayOpen] = useState(false);
   const restaurant = findRestaurantForCuisine(rows, cuisineKey);
   if (!restaurant) return null;
   const telHref = restaurant.phone ? `tel:${restaurant.phone.replace(/[^\d+]/g, "")}` : null;
@@ -103,6 +106,23 @@ export function MealRestaurantContact({
     }
   };
 
+  const amountLine = [chicken ? `Chicken ${chicken}` : "", beef ? `Beef ${beef}` : ""]
+    .filter(Boolean)
+    .join(" · ");
+
+  const handleZelleTap = async () => {
+    const { opened, copied } = await startZelleHandoff({
+      payLink: restaurant.zelle_pay_link,
+      phone: restaurant.zelle_phone,
+      name: restaurant.zelle_name,
+    });
+    if (opened) return;
+    if (copied) {
+      toast.success(`${restaurant.zelle_phone} copied — paste it in Zelle.`);
+    }
+    setPayOpen(true);
+  };
+
   return (
     <div className="rounded-md border border-terracotta/40 bg-cream/50 p-3 space-y-1.5">
       <p className="font-display text-lg text-ink">{restaurant.name}</p>
@@ -112,42 +132,28 @@ export function MealRestaurantContact({
           {restaurant.zelle_qr_url && (
             <div className="rounded-md border border-terracotta/30 bg-white p-2 space-y-1.5">
               <p className="text-sm font-semibold text-ink">Zelle QR code</p>
-              {restaurant.zelle_pay_link ? (
-                <a
-                  href={restaurant.zelle_pay_link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block w-full rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                      aria-label={`Open Zelle payment options for ${restaurant.zelle_name ?? restaurant.name}`}
-                >
-                  <img
-                    src={restaurant.zelle_qr_url}
-                    alt={`Zelle QR code to pay ${restaurant.zelle_name ?? restaurant.name}`}
-                    loading="lazy"
-                    className="mx-auto h-56 w-56 max-w-full rounded border border-border bg-white object-contain p-1"
-                  />
-                </a>
-              ) : (
+              <button
+                type="button"
+                onClick={() => void handleZelleTap()}
+                className="block w-full rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                aria-label={`Pay ${restaurant.zelle_name ?? restaurant.name} with Zelle`}
+              >
                 <img
                   src={restaurant.zelle_qr_url}
                   alt={`Zelle QR code to pay ${restaurant.zelle_name ?? restaurant.name}`}
                   loading="lazy"
                   className="mx-auto h-56 w-56 max-w-full rounded border border-border bg-white object-contain p-1"
                 />
-              )}
+              </button>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {restaurant.zelle_pay_link && (
-                  <Button asChild className="w-full bg-terracotta text-primary-foreground hover:bg-terracotta/90">
-                    <a
-                      href={restaurant.zelle_pay_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                      Open Zelle options
-                    </a>
-                  </Button>
-                )}
+                <Button
+                  type="button"
+                  onClick={() => void handleZelleTap()}
+                  className="w-full bg-terracotta text-primary-foreground hover:bg-terracotta/90"
+                >
+                  <Smartphone className="h-4 w-4" />
+                  Pay with Zelle
+                </Button>
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button type="button" variant="outline" className="w-full">
@@ -176,12 +182,78 @@ export function MealRestaurantContact({
                 </Dialog>
               </div>
               <p className="text-xs text-muted-foreground">
-                On this device, tap the QR to open the restaurant&apos;s Zelle payment. To pay from
-                another device, enlarge this clean QR and scan it there. Zelle may ask you to select
-                your bank.
+                Tap the QR or &ldquo;Pay with Zelle&rdquo; on this device — we copy{" "}
+                {restaurant.zelle_name ?? restaurant.name}&apos;s Zelle number for you, so you can
+                paste it instead of searching. To pay from another device, enlarge this QR and scan
+                it there.
               </p>
             </div>
           )}
+
+          {/* Fallback sheet: shown when no payment app takes the hand-off. */}
+          <Dialog open={payOpen} onOpenChange={setPayOpen}>
+            <DialogContent className="max-w-[92vw] sm:max-w-md bg-white">
+              <DialogHeader>
+                <DialogTitle className="text-ink">
+                  Pay {restaurant.zelle_name ?? restaurant.name} by Zelle
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3">
+                {amountLine && (
+                  <p className="text-sm text-ink">
+                    Send: <span className="font-semibold">{amountLine}</span>
+                    {restaurant.price_note ? ` (${restaurant.price_note})` : ""}
+                  </p>
+                )}
+                {restaurant.zelle_phone && (
+                  <div className="rounded-md border border-terracotta/30 p-2.5 space-y-2">
+                    <p className="text-sm text-ink">
+                      Recipient:{" "}
+                      <span className="font-semibold text-terracotta">
+                        {restaurant.zelle_phone}
+                      </span>
+                      {restaurant.zelle_name ? ` — ${restaurant.zelle_name}` : ""}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Already copied to your clipboard — open Zelle in your bank app, choose Send,
+                      and paste this number.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => void copyZellePhone()}
+                    >
+                      <Copy className="h-4 w-4" />
+                      Copy Zelle number again
+                    </Button>
+                  </div>
+                )}
+                {restaurant.zelle_pay_link && (
+                  <Button
+                    asChild
+                    className="w-full bg-terracotta text-primary-foreground hover:bg-terracotta/90"
+                  >
+                    <a href={restaurant.zelle_pay_link} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="h-4 w-4" />
+                      Open your bank app
+                    </a>
+                  </Button>
+                )}
+                {restaurant.zelle_qr_url && (
+                  <img
+                    src={restaurant.zelle_qr_url}
+                    alt={`Zelle QR code to pay ${restaurant.zelle_name ?? restaurant.name}`}
+                    className="w-full rounded border border-border bg-white object-contain p-2"
+                  />
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Put your name in the Zelle memo so the restaurant can match your payment.
+                </p>
+              </div>
+            </DialogContent>
+          </Dialog>
+
           {restaurant.zelle_phone && (
             <div className="flex items-center justify-between gap-2 text-sm text-ink">
               <p className="min-w-0">
@@ -205,14 +277,10 @@ export function MealRestaurantContact({
           {!restaurant.zelle_phone && restaurant.zelle_name && (
             <p className="text-sm text-ink">Zelle: {restaurant.zelle_name}</p>
           )}
-          {(chicken || beef) && (
+          {amountLine && (
             <p className="text-sm text-ink">
               Send the amount for your choice:{" "}
-              <span className="font-semibold">
-                {[chicken ? `Chicken ${chicken}` : "", beef ? `Beef ${beef}` : ""]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </span>
+              <span className="font-semibold">{amountLine}</span>
               {restaurant.price_note ? ` (${restaurant.price_note})` : ""}
             </p>
           )}
@@ -234,6 +302,7 @@ export function MealRestaurantContact({
           )}
         </div>
       )}
+
 
       <p className="text-sm text-ink">
         {hasZelle ? "Or call to pay by phone:" : "Call to pay for this meal directly:"}{" "}
