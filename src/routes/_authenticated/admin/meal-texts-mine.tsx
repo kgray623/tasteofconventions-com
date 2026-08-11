@@ -23,6 +23,7 @@ import {
   renderMealTemplate,
   mealPhotosLine,
   zelleQrLinkLine,
+  zellePayLinkLine,
 
   smsNumber,
 } from "@/lib/meal-text-message";
@@ -139,6 +140,7 @@ function MyMealTextsPage() {
       order: mealOrderText(row.qty, row.cuisine),
       mealPhotos: mealPhotosLine(row.cuisine),
       zelleQrLink: zelleQrLinkLine(row.cuisine, r),
+      zelleLink: zellePayLinkLine(r),
 
     });
   };
