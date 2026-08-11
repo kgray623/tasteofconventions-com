@@ -121,6 +121,7 @@ export type MealTextContext = {
 
 type PaymentSource = {
   phone?: string | null;
+  zelle_qr_url?: string | null;
   venmo_handle?: string | null;
   zelle_name?: string | null;
   zelle_phone?: string | null;
@@ -249,7 +250,7 @@ export function zelleQrLinkLine(
   if (!restaurant?.zelle_qr_url) return "";
   const set = mealPhotoSetFor(cuisine);
   if (!set) return "";
-  return `To prepay, click here ${PUBLIC_SITE_ORIGIN}/meals/${set.slug}`;
+  return `To prepay, please click here ${PUBLIC_SITE_ORIGIN}/meals/${set.slug}`;
 }
 
 
