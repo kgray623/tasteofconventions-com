@@ -11,6 +11,13 @@ import { readAtUtc } from "@/lib/meal-count-labels";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { getErrorMessage } from "@/lib/async-safety";
 import { downloadTextFile, openTextInNewTab } from "@/lib/download-file";
 import {
@@ -24,6 +31,7 @@ import {
 } from "@/lib/meal-text-message";
 import { SmsTextButton } from "@/components/sms-text-button";
 import { OpenOnSiteBanner } from "@/components/open-on-site-banner";
+import { MealTextSelfTest } from "@/components/meal-text-self-test";
 import { isPaidState } from "@/lib/meal-communication";
 
 import {
@@ -74,6 +82,9 @@ function MealTextsPage() {
   const [loading, setLoading] = useState(true);
   const [restaurants, setRestaurants] = useState<MealRestaurant[]>([]);
   const [rows, setRows] = useState<MealTextRow[]>([]);
+  const [self, setSelf] = useState<{ name: string; phone: string }>({ name: "", phone: "" });
+  // Read-only look at any guest's exact message. Opening it records nothing.
+  const [preview, setPreview] = useState<{ title: string; body: string } | null>(null);
   const [template, setTemplate] = useState(DEFAULT_MEAL_TEXT_TEMPLATE);
   const [zelleTemplate, setZelleTemplate] = useState(DEFAULT_ZELLE_UPDATE_TEMPLATE);
   // One queue only: the payment update. The original meal message history is
@@ -109,6 +120,7 @@ function MealTextsPage() {
       setRestaurants(res.restaurants);
       setRows(res.rows);
       setTemplate(res.template);
+      setSelf(res.self ?? { name: "", phone: "" });
       // Never overwrite wording the user is still editing.
       if (!opts?.keepWording) {
         setZelleTemplate(res.zelleTemplate);
@@ -273,6 +285,9 @@ function MealTextsPage() {
   return (
     <div className="space-y-6">
       <OpenOnSiteBanner />
+      {!loading && (
+        <MealTextSelfTest restaurants={restaurants} zelleTemplate={zelleTemplate} self={self} />
+      )}
       <Card className="p-5 space-y-2">
         <div className="flex items-center gap-2">
           <MessageSquare className="w-5 h-5 text-terracotta" />
@@ -520,10 +535,24 @@ function MealTextsPage() {
                 </p>
               )}
               {paidHere.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Already paid — no text needed ({paidHere.length}):{" "}
-                  {paidHere.map((x) => x.name).join(", ")}
-                </p>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">
+                    Already paid — no text needed ({paidHere.length}):
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {paidHere.map((x) => (
+                      <Button
+                        key={`${x.id}-paid`}
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        onClick={() => setPreview({ title: `${x.name} — ${cuisineLabel(x.cuisine)}`, body: bodyFor(x) })}
+                      >
+                        {x.name} — preview message
+                      </Button>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
 
@@ -613,6 +642,21 @@ function MealTextsPage() {
           </Card>
         );
       })}
+
+      <Dialog open={preview !== null} onOpenChange={(open) => !open && setPreview(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{preview?.title ?? "Message preview"}</DialogTitle>
+            <DialogDescription>
+              Read-only preview of the exact text. Nothing is sent or recorded from here.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea readOnly value={preview?.body ?? ""} rows={12} className="text-xs" />
+          <Button size="sm" variant="outline" onClick={() => void copy(preview?.body ?? "")}>
+            <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy message
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

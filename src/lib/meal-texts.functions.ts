@@ -169,6 +169,42 @@ export const getMealTextData = createServerFn({ method: "POST" })
       template: (setting?.value as string | undefined) ?? DEFAULT_MEAL_TEXT_TEMPLATE,
       zelleTemplate: (zelleSetting?.value as string | undefined) ?? DEFAULT_ZELLE_UPDATE_TEMPLATE,
       reconciliation: { totals: ledger.totals, generated_at: ledger.generated_at },
+      // Who is signed in, so the test panel can text the message to themselves.
+      // Read-only: nothing about the tester is written anywhere.
+      self: await (async () => {
+        let phone = "";
+        let name = "";
+        try {
+          const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(context.userId);
+          phone = (authUser?.user?.phone as string | undefined) ?? "";
+        } catch {
+          /* phone stays blank; the panel lets you type one */
+        }
+        try {
+          const { data: profile } = await supabaseAdmin
+            .from("profiles")
+            .select("display_name")
+            .eq("id", context.userId)
+            .maybeSingle();
+          name = ((profile?.display_name as string | undefined) ?? "").trim();
+        } catch {
+          /* name stays blank */
+        }
+        if (!phone) {
+          const { data: inv } = await supabaseAdmin
+            .from("invitations")
+            .select("guest_name,guest_phone")
+            .eq("host_id", context.userId)
+            .not("guest_phone", "is", null)
+            .limit(1);
+          const first = ((inv ?? []) as any[])[0];
+          if (first) {
+            phone = (first.guest_phone as string | undefined) ?? "";
+            if (!name) name = ((first.guest_name as string | undefined) ?? "").trim();
+          }
+        }
+        return { name, phone };
+      })(),
     };
   });
 
