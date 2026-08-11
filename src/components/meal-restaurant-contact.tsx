@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Copy, ExternalLink, Maximize2, Phone, Smartphone } from "lucide-react";
 import {
@@ -119,7 +119,8 @@ export function MealRestaurantContact({
     .filter(Boolean)
     .join(" · ");
 
-  const handleZelleTap = async (event?: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleZelleTap = async (event?: MouseEvent<HTMLAnchorElement>) => {
+    if (!zelleUrl) event?.preventDefault();
     const result = await startZelleHandoff({
       payLink: restaurant.zelle_pay_link,
       phone: restaurant.zelle_phone,
@@ -127,7 +128,6 @@ export function MealRestaurantContact({
     });
     setDiag(result);
     if (result.opened && result.attempted) return;
-    event?.preventDefault();
     if (result.copied) {
       toast.success(`${restaurant.zelle_phone} copied — paste it in Zelle.`);
     } else {
