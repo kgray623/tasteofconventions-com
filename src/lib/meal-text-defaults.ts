@@ -53,6 +53,7 @@ export type MealRestaurant = {
   zelle_name?: string | null;
   zelle_phone?: string | null;
   zelle_qr_url?: string | null;
+  zelle_pay_link?: string | null;
   chicken_price?: number | null;
   beef_price?: number | null;
   price_note?: string | null;
