@@ -387,11 +387,12 @@ function RestaurantPortalPage() {
                         <Check className="h-4 w-4 mr-1" /> Verify payment
                       </Button>
                     )}
-                    <Button variant="ghost" size="sm" disabled={busy} onClick={() => toggle(r.preorderId, false)}>
-                      Undo paid
-                    </Button>
+                    <span className="text-xs text-muted-foreground self-center">
+                      Payment is on the permanent record — contact the organizers to correct it.
+                    </span>
                   </>
                 ) : (
+
                   <Button size="sm" disabled={busy} onClick={() => toggle(r.preorderId, true)}>
                     <Check className="h-4 w-4 mr-1" /> Mark paid
                   </Button>

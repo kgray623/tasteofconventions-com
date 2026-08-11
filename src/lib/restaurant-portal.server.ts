@@ -261,11 +261,16 @@ export async function setQty(opts: {
     .eq("id", opts.preorderId);
   if (updErr) throw new Error(updErr.message);
 
-  // Keep the payment/confirmation records consistent with the new count.
+  // Payment records are permanent. A count change never deletes or lowers a
+  // recorded payment — it is flagged instead, so the money history survives.
   if (qty === 0) {
     await supabaseAdmin
       .from("meal_payments")
-      .delete()
+      .update({
+        cancelled_meal_at: new Date().toISOString(),
+        cancelled_note: `Meal removed from the order in the ${row.cuisine} restaurant portal`,
+        updated_at: new Date().toISOString(),
+      })
       .eq("preorder_id", opts.preorderId)
       .eq("cuisine", row.cuisine);
     await supabaseAdmin
@@ -275,11 +280,19 @@ export async function setQty(opts: {
       .eq("cuisine", row.cuisine);
   } else {
     if (row.paid) {
-      await supabaseAdmin
+      const { data: payment } = await supabaseAdmin
         .from("meal_payments")
-        .update({ qty_paid: qty, updated_at: new Date().toISOString() })
+        .select("id,qty_paid")
         .eq("preorder_id", opts.preorderId)
-        .eq("cuisine", row.cuisine);
+        .eq("cuisine", row.cuisine)
+        .maybeSingle();
+      // Only ever raise a paid count; lowering one is refused by the database.
+      if (payment && qty > Number(payment.qty_paid ?? 0)) {
+        await supabaseAdmin
+          .from("meal_payments")
+          .update({ qty_paid: qty, updated_at: new Date().toISOString() })
+          .eq("id", payment.id);
+      }
     }
     if (row.confirmed) {
       await supabaseAdmin
@@ -289,6 +302,7 @@ export async function setQty(opts: {
         .eq("cuisine", row.cuisine);
     }
   }
+
 
   return loadPortalData(opts.restaurantId);
 }
@@ -304,13 +318,22 @@ export async function setPaid(opts: {
   const row = data.rows.find((r) => r.preorderId === opts.preorderId);
   if (!row) throw new Error("That order is not on your list");
 
+  const { data: existingPayment } = await supabaseAdmin
+    .from("meal_payments")
+    .select("id,qty_paid,source")
+    .eq("preorder_id", opts.preorderId)
+    .eq("cuisine", row.cuisine)
+    .maybeSingle();
+
   if (opts.paid) {
+    // Never lower a quantity already on record — the database refuses it.
+    const qtyPaid = Math.max(Number(row.qty ?? 0), Number(existingPayment?.qty_paid ?? 0));
     const { error } = await supabaseAdmin.from("meal_payments").upsert(
       {
         preorder_id: opts.preorderId,
         restaurant_id: opts.restaurantId,
         cuisine: row.cuisine,
-        qty_paid: row.qty,
+        qty_paid: qtyPaid,
         paid_at: new Date().toISOString(),
         marked_by_label: opts.markedByLabel,
         source: "restaurant",
@@ -320,13 +343,13 @@ export async function setPaid(opts: {
       { onConflict: "preorder_id,cuisine" },
     );
     if (error) throw new Error(error.message);
-  } else {
-    const { error } = await supabaseAdmin
-      .from("meal_payments")
-      .delete()
-      .eq("preorder_id", opts.preorderId)
-      .eq("cuisine", row.cuisine);
-    if (error) throw new Error(error.message);
+  } else if (existingPayment) {
+    // Payment records are permanent: a restaurant cannot erase one. Only the
+    // guest cancelling the meal in their own RSVP removes it from the order.
+    throw new Error(
+      "This payment is on the permanent record and cannot be removed here. If it was recorded in error, contact the organizers.",
+    );
   }
+
   return loadPortalData(opts.restaurantId);
 }

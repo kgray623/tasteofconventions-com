@@ -752,6 +752,8 @@ export type Database = {
       }
       meal_payments: {
         Row: {
+          cancelled_meal_at: string | null
+          cancelled_note: string | null
           created_at: string
           cuisine: string
           id: string
@@ -769,6 +771,8 @@ export type Database = {
           verified_at: string | null
         }
         Insert: {
+          cancelled_meal_at?: string | null
+          cancelled_note?: string | null
           created_at?: string
           cuisine: string
           id?: string
@@ -786,6 +790,8 @@ export type Database = {
           verified_at?: string | null
         }
         Update: {
+          cancelled_meal_at?: string | null
+          cancelled_note?: string | null
           created_at?: string
           cuisine?: string
           id?: string
