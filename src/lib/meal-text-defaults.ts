@@ -7,7 +7,7 @@ export const DEFAULT_MEAL_TEXT_TEMPLATE = `${MEAL_TEXT_UPDATE_INTRO}
 
 Hi {first_name} —
 
-The following information is how to pre-pay your catered meal. Each restaurant can be paid by Zelle which is secure and direct.
+The following information is how to pre-pay for your catered meal. Each restaurant provides Zelle which is secure and direct.
 
 Your pre-order is for {order}.
 
@@ -19,15 +19,15 @@ Your pre-order is for {order}.
 
 {pay_sentence}
 
-The restaurant will verify your payment within 72 hrs and you will have a bank receipt and your RSVP will be updated.
+The restaurant will verify your payment within 72 hrs. You will have both a bank receipt and your RSVP.
 
-August 23rd is the last day to prepay.
+August 23rd is the last day to prepay which guarantees your meal.
 
-At the event, please present your RSVP receipt when obtaining your meal.
+At the event, please present your RSVP receipt for your meal.
 
 If you decide to not pre-purchase your meal, please login to your RSVP and cancel your pre-order.
 
-Bringing a covered dish is an alternative to pre-paying a catered meal. We want to ensure no one is left out of the festivities.
+You may opt to bring a covered dish as an alternative to pre-paying for a catered meal. Ensuring all have food for the event means pre-planning for all of us.
 
 Thank you for your prompt attention and support in making this an encouraging and exciting experience for all! 😊
 
