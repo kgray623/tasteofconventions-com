@@ -1,6 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
 import { normalizeCuisine } from "@/lib/preorder-math";
 import { MEAL_PAY_DEADLINE_LINE, MEAL_PRICE_DISCLAIMER, MEAL_PRICE_LINE } from "@/lib/meal-pricing";
 
@@ -89,6 +97,45 @@ export function MealRestaurantContact({
       {hasZelle && (
         <div className="rounded-md bg-background/70 p-2.5 space-y-1.5">
           <p className="text-sm font-semibold text-ink">Pay by Zelle (fastest)</p>
+          {restaurant.zelle_qr_url && (
+            <div className="rounded-md border border-terracotta/30 bg-white p-2 space-y-1.5">
+              <p className="text-sm font-semibold text-ink">Scan this QR code to pay</p>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <button type="button" className="block w-full">
+                    <img
+                      src={restaurant.zelle_qr_url}
+                      alt={`Zelle QR code to pay ${restaurant.zelle_name ?? restaurant.name}`}
+                      loading="lazy"
+                      className="mx-auto h-56 w-56 max-w-full rounded border border-border bg-white object-contain p-1"
+                    />
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="max-w-[92vw] sm:max-w-md bg-white">
+                  <DialogHeader>
+                    <DialogTitle className="text-ink">
+                      Zelle QR — {restaurant.zelle_name ?? restaurant.name}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <img
+                    src={restaurant.zelle_qr_url}
+                    alt={`Zelle QR code to pay ${restaurant.zelle_name ?? restaurant.name}`}
+                    className="w-full rounded border border-border bg-white object-contain p-2"
+                  />
+                  {restaurant.zelle_phone && (
+                    <p className="text-center text-sm text-ink">
+                      Or look up {restaurant.zelle_phone}
+                      {restaurant.zelle_name ? ` — ${restaurant.zelle_name}` : ""}
+                    </p>
+                  )}
+                </DialogContent>
+              </Dialog>
+              <p className="text-xs text-muted-foreground">
+                Tap the code to open it full screen, then scan it in your banking app (or from another
+                phone).
+              </p>
+            </div>
+          )}
           {restaurant.zelle_phone && (
             <p className="text-sm text-ink">
               Zelle: look up{" "}
@@ -131,19 +178,9 @@ export function MealRestaurantContact({
               </a>
             </p>
           )}
-          {restaurant.zelle_qr_url && (
-            <a href={restaurant.zelle_qr_url} target="_blank" rel="noopener noreferrer" className="block">
-              <img
-                src={restaurant.zelle_qr_url}
-                alt={`Zelle QR code to pay ${restaurant.zelle_name ?? restaurant.name}`}
-                loading="lazy"
-                className="h-32 w-32 rounded border border-border bg-white object-contain p-1"
-              />
-              <span className="text-xs text-muted-foreground">Tap to enlarge, then scan in your banking app</span>
-            </a>
-          )}
         </div>
       )}
+
       <p className="text-sm text-ink">
         {hasZelle ? "Or call to pay by phone:" : "Call to pay for this meal directly:"}{" "}
         {telHref ? (

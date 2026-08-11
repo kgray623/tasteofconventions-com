@@ -1,19 +1,17 @@
 // Shared, client-safe meal-text defaults and types.
 
 /** Opening lines both catered-meal texts lead with. */
-export const MEAL_TEXT_UPDATE_INTRO = `IMPORTANT UPDATE REGARDING Your Catered Meal!`;
+export const MEAL_TEXT_UPDATE_INTRO = `UPDATE REGARDING Your Catered Meal!`;
 
 export const DEFAULT_MEAL_TEXT_TEMPLATE = `${MEAL_TEXT_UPDATE_INTRO}
 
 Hi {first_name} —
 
-This is an update regarding your Taste of Conventions catered meal.
+This is an update regarding your Taste of Conventions catered meal pre-order.
 
-In light of Jesus counsel about letting our yes mean yes, this is the information regarding your pre ordered catered meal request.
+The following information is how to pre-pay using a secure method.
 
-Each restaurant has provided a Zelle option which is a secure. Pre-pay with Zelle guarantees your meal. All catered meals must be pre-paid by AUGUST 23RD.
-
-Thank you for your understanding in this matter.
+Each of the restaurants have provided a Zelle option which is secured way to pay direct.
 
 For {restaurant_cuisine} your choices are:
 
@@ -21,28 +19,28 @@ For {restaurant_cuisine} your choices are:
 
 {pay_sentence}
 
+{zelle_qr_link}
+
 Your order is for {order}.
 
 {meal_photos}
 
-These are custom meals for our event that have been tasted by the Food Tasting Committee to ensure the quality.
-
-Once you make a payment, the restaurant will update your profile to PAID.
-
-Your receipt will appear in your bank account and in your RSVP.
+The restaurant will verify your payment has been received within 72 hrs. You will receive a receipt from your bank and your RSVP will be updated.
 
 August 23rd is the last day to prepay.
 
-Please present your RSVP receipt at the event when obtaining your meal.
+Please present your receipt at the Taste of Conventions event in order to obtain your meal.
 
-Thank you for your support in making this an encouraging and exciting experience for all! 😊
+If you decide to not purchase your meal, please login to your RSVP and cancel your pre-order.
+
+Bringing a covered dish is the alternative ensuring no one is left out.
+
+Thank you for your prompt attention and support in making this an encouraging and exciting experience for all! 😊
 
 Christian ❤️ love,
 
-Taste of Conventions Food Committee
+Taste of Conventions Food Committee`;
 
-
-P.S. Anyone not prepaying aren't guaranteed a meal. If you opt to not purchase a catered meal, please bring a covered dish.`;
 
 /** Follow-up text for guests who were already texted before Zelle/Venmo existed. */
 export const DEFAULT_ZELLE_UPDATE_TEMPLATE = DEFAULT_MEAL_TEXT_TEMPLATE;
