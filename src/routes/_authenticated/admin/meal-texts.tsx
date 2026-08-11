@@ -19,6 +19,8 @@ import {
   paymentLines,
   renderMealTemplate,
   mealPhotosLine,
+  zelleQrLinkLine,
+
 } from "@/lib/meal-text-message";
 import { SmsTextButton } from "@/components/sms-text-button";
 import { OpenOnSiteBanner } from "@/components/open-on-site-banner";
