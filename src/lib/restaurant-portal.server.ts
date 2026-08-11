@@ -261,11 +261,16 @@ export async function setQty(opts: {
     .eq("id", opts.preorderId);
   if (updErr) throw new Error(updErr.message);
 
-  // Keep the payment/confirmation records consistent with the new count.
+  // Payment records are permanent. A count change never deletes or lowers a
+  // recorded payment — it is flagged instead, so the money history survives.
   if (qty === 0) {
     await supabaseAdmin
       .from("meal_payments")
-      .delete()
+      .update({
+        cancelled_meal_at: new Date().toISOString(),
+        cancelled_note: `Meal removed from the order in the ${row.cuisine} restaurant portal`,
+        updated_at: new Date().toISOString(),
+      })
       .eq("preorder_id", opts.preorderId)
       .eq("cuisine", row.cuisine);
     await supabaseAdmin
@@ -275,11 +280,19 @@ export async function setQty(opts: {
       .eq("cuisine", row.cuisine);
   } else {
     if (row.paid) {
-      await supabaseAdmin
+      const { data: payment } = await supabaseAdmin
         .from("meal_payments")
-        .update({ qty_paid: qty, updated_at: new Date().toISOString() })
+        .select("id,qty_paid")
         .eq("preorder_id", opts.preorderId)
-        .eq("cuisine", row.cuisine);
+        .eq("cuisine", row.cuisine)
+        .maybeSingle();
+      // Only ever raise a paid count; lowering one is refused by the database.
+      if (payment && qty > Number(payment.qty_paid ?? 0)) {
+        await supabaseAdmin
+          .from("meal_payments")
+          .update({ qty_paid: qty, updated_at: new Date().toISOString() })
+          .eq("id", payment.id);
+      }
     }
     if (row.confirmed) {
       await supabaseAdmin
@@ -289,6 +302,7 @@ export async function setQty(opts: {
         .eq("cuisine", row.cuisine);
     }
   }
+
 
   return loadPortalData(opts.restaurantId);
 }
