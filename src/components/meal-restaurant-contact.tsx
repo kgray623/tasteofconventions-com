@@ -22,6 +22,7 @@ type RestaurantRow = {
   zelle_name?: string | null;
   zelle_phone?: string | null;
   zelle_qr_url?: string | null;
+  zelle_pay_link?: string | null;
   chicken_price?: number | string | null;
   beef_price?: number | string | null;
   price_note?: string | null;
@@ -35,7 +36,7 @@ export function useMealRestaurants() {
       const { data, error } = await supabase
         .from("restaurants")
         .select(
-          "id,name,cuisine,phone,website,venmo_handle,zelle_name,zelle_phone,zelle_qr_url,chicken_price,beef_price,price_note",
+          "id,name,cuisine,phone,website,venmo_handle,zelle_name,zelle_phone,zelle_qr_url,zelle_pay_link,chicken_price,beef_price,price_note",
         )
         .eq("active", true)
         .order("name");
@@ -97,6 +98,16 @@ export function MealRestaurantContact({
       {hasZelle && (
         <div className="rounded-md bg-background/70 p-2.5 space-y-1.5">
           <p className="text-sm font-semibold text-ink">Pay by Zelle (fastest)</p>
+          {restaurant.zelle_pay_link && (
+            <a
+              href={restaurant.zelle_pay_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block rounded-md bg-terracotta px-3 py-2 text-center text-sm font-semibold text-cream hover:bg-terracotta/90"
+            >
+              Pay with Zelle
+            </a>
+          )}
           {restaurant.zelle_qr_url && (
             <div className="rounded-md border border-terracotta/30 bg-white p-2 space-y-1.5">
               <p className="text-sm font-semibold text-ink">Scan this QR code to pay</p>
