@@ -228,6 +228,7 @@ export function renderMealTemplate(tpl: string, ctx: MealTextContext) {
     .replaceAll("{pay_sentence}", ctx.paySentence ?? "")
     .replaceAll("{meal_photos}", ctx.mealPhotos ?? "")
     .replaceAll("{zelle_qr_link}", ctx.zelleQrLink ?? "")
+    .replaceAll("{zelle_link}", ctx.zelleLink ?? "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
@@ -240,17 +241,29 @@ export function mealPhotosLine(cuisine: string | null | undefined) {
 }
 
 /**
- * "Use the Zelle QR code: https://.../meals/african" — empty unless the
- * restaurant actually has a QR image saved AND the cuisine has a public page.
+ * Secondary line: "QR code and food photos: https://.../meals/african" — empty
+ * unless the cuisine has a public meal page.
  */
 export function zelleQrLinkLine(
   cuisine: string | null | undefined,
-  restaurant: { zelle_qr_url?: string | null } | null | undefined,
+  _restaurant?: { zelle_qr_url?: string | null } | null | undefined,
 ) {
-  if (!restaurant?.zelle_qr_url) return "";
   const set = mealPhotoSetFor(cuisine);
   if (!set) return "";
-  return `To prepay, please click here ${PUBLIC_SITE_ORIGIN}/meals/${set.slug}`;
+  return `QR code and food photos: ${PUBLIC_SITE_ORIGIN}/meals/${set.slug}`;
+}
+
+/**
+ * Primary pay line: taps straight into Zelle with the restaurant prefilled —
+ * the same destination the restaurant's QR code encodes. Empty when the
+ * restaurant has no Zelle pay link saved.
+ */
+export function zellePayLinkLine(
+  restaurant: { zelle_pay_link?: string | null } | null | undefined,
+) {
+  const link = restaurant?.zelle_pay_link?.trim();
+  if (!link) return "";
+  return `To pay with Zelle, tap here: ${link}`;
 }
 
 
