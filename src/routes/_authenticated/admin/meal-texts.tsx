@@ -153,17 +153,32 @@ function MealTextsPage() {
   // Paid orders never disappear: they are listed per cuisine as "already paid".
   const paidRows = useMemo(() => rows.filter((r) => isPaidState(r.state)), [rows]);
 
+  // Kari's test rows come from her saved preorder itself, never from payment
+  // classification. They therefore remain visible even when a paid-state
+  // calculation changes or a cuisine has no outstanding guest texts.
+  const kariMockByCuisine = useMemo(() => {
+    const matches = rows.filter(
+      (row) =>
+        row.name.trim().toLowerCase() === "kari gray" &&
+        smsNumber(row.phone) === "+18082787562",
+    );
+    return new Map(matches.map((row) => [row.cuisine, row] as const));
+  }, [rows]);
+
   const groups = useMemo(() => {
     const map = new Map<string, MealTextRow[]>();
     for (const r of modeRows) {
       if (!map.has(r.cuisine)) map.set(r.cuisine, []);
       map.get(r.cuisine)!.push(r);
     }
+    for (const cuisine of kariMockByCuisine.keys()) {
+      if (!map.has(cuisine)) map.set(cuisine, []);
+    }
     for (const list of map.values()) {
       list.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
     }
     return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  }, [modeRows]);
+  }, [kariMockByCuisine, modeRows]);
 
   const inviterOptions = useMemo(() => {
     // Count outstanding restaurant texts (one per guest per cuisine), so this
@@ -507,7 +522,7 @@ function MealTextsPage() {
         const r = restaurantFor(cuisine);
         const onHold = r ? !r.order_ready : false;
         const paidHere = paidRows.filter((x) => x.cuisine === cuisine);
-        const kariMock = paidHere.find((x) => x.name.trim().toLowerCase() === "kari gray");
+        const kariMock = kariMockByCuisine.get(cuisine);
         const visible = list
           .filter((x) => (onlyUnsent ? !x.zelle_sent_at : true))
           .filter((x) => (inviterFilter === "all" ? true : x.inviter === inviterFilter));
