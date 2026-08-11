@@ -20,7 +20,6 @@ import {
   renderMealTemplate,
   mealPhotosLine,
   zelleQrLinkLine,
-  zellePayLinkLine,
 
 } from "@/lib/meal-text-message";
 import { SmsTextButton } from "@/components/sms-text-button";
@@ -209,7 +208,7 @@ function MealTextsPage() {
       order: orderText(row.qty, row.cuisine),
       mealPhotos: mealPhotosLine(row.cuisine),
       zelleQrLink: zelleQrLinkLine(row.cuisine, r),
-      zelleLink: zellePayLinkLine(r),
+      zelleLink: "",
 
     });
   };
@@ -449,7 +448,7 @@ function MealTextsPage() {
           <code>{"{zelle_line}"}</code>, <code>{"{venmo_line}"}</code>,{" "}
           <code>{"{online_prices}"}</code>, <code>{"{meal_choices}"}</code>,{" "}
           <code>{"{pay_sentence}"}</code>, <code>{"{meal_photos}"}</code>,{" "}
-          <code>{"{zelle_qr_link}"}</code>, <code>{"{zelle_link}"}</code>.
+          <code>{"{zelle_qr_link}"}</code>.
 
 
         </p>

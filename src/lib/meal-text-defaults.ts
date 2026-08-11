@@ -15,11 +15,9 @@ Your pre-order is for {order}.
 
 {meal_choices}
 
-{zelle_link}
-
-{pay_sentence}
-
 {zelle_qr_link}
+
+Open Zelle in your bank app, then {pay_sentence}
 
 The restaurant will verify your payment within 72 hrs. You will have both a bank receipt and your RSVP.
 
@@ -53,6 +51,7 @@ export type MealRestaurant = {
   zelle_name?: string | null;
   zelle_phone?: string | null;
   zelle_qr_url?: string | null;
+  /** Legacy Zelle QR landing URL. Do not present as a direct bank-app payment link. */
   zelle_pay_link?: string | null;
   chicken_price?: number | null;
   beef_price?: number | null;
