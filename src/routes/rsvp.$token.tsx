@@ -285,12 +285,41 @@ function RsvpPage() {
   };
 
   const handleCuisineOrder = async () => {
-    const selections = Object.entries(cuisineCounts)
-      .filter(([, qty]) => qty > 0)
-      .map(([cuisine, qty]) => ({ cuisine, qty }));
+    const savedMap = new Map(savedMeals.map((s) => [String(s.cuisine), Number(s.qty) || 0]));
+    const keys = Array.from(
+      new Set([...Object.keys(cuisineCounts), ...savedMap.keys()]),
+    );
+    const submitted = keys.map((cuisine) => ({
+      cuisine,
+      qty: Math.max(0, Number(cuisineCounts[cuisine] ?? savedMap.get(cuisine) ?? 0) || 0),
+    }));
+    const reductions = submitted.filter((s) => s.qty < (savedMap.get(s.cuisine) ?? 0));
+    if (reductions.length > 0) {
+      const detail = reductions
+        .map((r) => `${r.cuisine}: ${savedMap.get(r.cuisine) ?? 0} → ${r.qty}`)
+        .join(", ");
+      const ok = window.confirm(
+        `Remove or lower these meals? ${detail}\n\nNothing else changes, and this is recorded.`,
+      );
+      if (!ok) return;
+    }
     try {
       setSavingMeals(true);
-      await saveCuisinePreorder({ data: { token, selections } });
+      const result = (await saveCuisinePreorder({
+        data: {
+          token,
+          selections: submitted,
+          confirmed_removals: reductions.map((r) => r.cuisine),
+        },
+      })) as { selections?: Array<{ cuisine: string; qty: number }> };
+      const selections = result?.selections ?? submitted.filter((s) => s.qty > 0);
+      setSavedMeals(selections);
+      setCuisineCounts(
+        selections.reduce<Record<string, number>>((acc, s) => {
+          acc[s.cuisine] = s.qty;
+          return acc;
+        }, {}),
+      );
       clearDraftScope(orderDraftScope);
       toast.success(selections.length === 0 ? "Meal order cancelled" : "Meal order saved");
     } catch (e: unknown) {
@@ -299,6 +328,7 @@ function RsvpPage() {
       setSavingMeals(false);
     }
   };
+
 
   if (loading)
     return (

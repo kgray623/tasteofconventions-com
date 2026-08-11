@@ -183,13 +183,40 @@ export function MyRsvpContent() {
       }));
     };
     const saveMeals = async () => {
+      const savedMap = new Map(
+        savedSelections.map((s) => [String(s.cuisine), Number(s.qty) || 0]),
+      );
+      const submitted = cuisines.map((c) => ({
+        cuisine: c.key,
+        qty: Math.max(0, Number(cuisineCounts[c.key] ?? savedMap.get(c.key) ?? 0) || 0),
+      }));
+      const reductions = submitted.filter((s) => s.qty < (savedMap.get(s.cuisine) ?? 0));
+      if (reductions.length > 0) {
+        const detail = reductions
+          .map((r) => `${r.cuisine}: ${savedMap.get(r.cuisine) ?? 0} → ${r.qty}`)
+          .join(", ");
+        const ok = window.confirm(
+          `Remove or lower these meals? ${detail}\n\nNothing else changes, and this is recorded.`,
+        );
+        if (!ok) return;
+      }
       setSavingMeals(true);
       try {
-        const selections = Object.entries(cuisineCounts)
-          .filter(([, qty]) => qty > 0)
-          .map(([cuisine, qty]) => ({ cuisine, qty }));
-        await saveCuisinePreorder({ data: { token: invitation.rsvp_token, selections } });
+        const result = (await saveCuisinePreorder({
+          data: {
+            token: invitation.rsvp_token,
+            selections: submitted,
+            confirmed_removals: reductions.map((r) => r.cuisine),
+          },
+        })) as { selections?: Array<{ cuisine: string; qty: number }> };
+        const selections = result?.selections ?? submitted.filter((s) => s.qty > 0);
         setData((current) => (current ? { ...current, preorder: { selections } } : current));
+        setCuisineCounts(
+          selections.reduce((acc: Record<string, number>, s) => {
+            acc[s.cuisine] = s.qty;
+            return acc;
+          }, {}),
+        );
         toast.success(selections.length === 0 ? "Meal order cancelled." : "Meal order saved.");
       } catch (e: unknown) {
         toast.error(e instanceof Error ? e.message : "Could not save meal order");
@@ -197,6 +224,7 @@ export function MyRsvpContent() {
         setSavingMeals(false);
       }
     };
+
 
     return (
       <div className="mx-auto max-w-3xl space-y-6">
