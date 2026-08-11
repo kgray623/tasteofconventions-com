@@ -116,7 +116,7 @@ export type MealTextContext = {
   paySentence?: string;
   mealPhotos?: string;
   zelleQrLink?: string;
-  /** Tap-to-pay Zelle deep link (same destination the QR code encodes). */
+  /** Legacy placeholder retained so an older saved template renders without raw tokens. */
   zelleLink?: string;
 
 };
@@ -183,7 +183,7 @@ export function paymentLines(r: PaymentSource | undefined | null) {
     ? `${zelleTarget}${zellePhone && zelleName ? ` (${zelleName})` : ""}`
     : "";
   const paySentence = zelleIdentity
-    ? `${`Or search by phone number ${zelleIdentity}`}${
+    ? `${`search by phone number ${zelleIdentity}`}${
         venmoHandle ? `\nVenmo: ${venmoHandle}` : ""
       }`
     : venmoHandle
@@ -241,7 +241,7 @@ export function mealPhotosLine(cuisine: string | null | undefined) {
 }
 
 /**
- * Secondary line: "QR code and food photos: https://.../meals/african" — empty
+ * QR line: "Open the QR code and food photos: https://.../meals/african" — empty
  * unless the cuisine has a public meal page.
  */
 export function zelleQrLinkLine(
@@ -250,20 +250,17 @@ export function zelleQrLinkLine(
 ) {
   const set = mealPhotoSetFor(cuisine);
   if (!set) return "";
-  return `QR code and food photos: ${PUBLIC_SITE_ORIGIN}/meals/${set.slug}`;
+  return `Open the Zelle QR code and food photos: ${PUBLIC_SITE_ORIGIN}/meals/${set.slug}`;
 }
 
 /**
- * Primary pay line: taps straight into Zelle with the restaurant prefilled —
- * the same destination the restaurant's QR code encodes. Empty when the
- * restaurant has no Zelle pay link saved.
+ * Legacy helper retained for older callers. Zelle's QR web URL opens its
+ * bank-finder page; it is not a universal direct-payment handoff.
  */
 export function zellePayLinkLine(
-  restaurant: { zelle_pay_link?: string | null } | null | undefined,
+  _restaurant: { zelle_pay_link?: string | null } | null | undefined,
 ) {
-  const link = restaurant?.zelle_pay_link?.trim();
-  if (!link) return "";
-  return `To pay with Zelle, tap here: ${link}`;
+  return "";
 }
 
 
