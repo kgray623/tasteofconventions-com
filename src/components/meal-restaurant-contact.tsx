@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Copy, ExternalLink, Maximize2, Phone, Smartphone } from "lucide-react";
 import {
   CLIPBOARD_EXPLANATIONS,
+  officialZelleUrl,
   startZelleHandoff,
   type ZelleDiagnostics,
 } from "@/lib/zelle-handoff";
@@ -103,6 +104,7 @@ export function MealRestaurantContact({
   const chicken = fmtMoney(restaurant.chicken_price);
   const beef = fmtMoney(restaurant.beef_price);
   const hasZelle = !!(restaurant.zelle_phone || restaurant.zelle_name);
+  const zelleUrl = officialZelleUrl(restaurant.zelle_pay_link);
   const copyZellePhone = async () => {
     if (!restaurant.zelle_phone) return;
     try {
@@ -117,14 +119,15 @@ export function MealRestaurantContact({
     .filter(Boolean)
     .join(" · ");
 
-  const handleZelleTap = async () => {
+  const handleZelleTap = async (event?: MouseEvent<HTMLAnchorElement>) => {
+    if (!zelleUrl) event?.preventDefault();
     const result = await startZelleHandoff({
       payLink: restaurant.zelle_pay_link,
       phone: restaurant.zelle_phone,
       name: restaurant.zelle_name,
     });
     setDiag(result);
-    if (result.opened) return;
+    if (result.opened && result.attempted) return;
     if (result.copied) {
       toast.success(`${restaurant.zelle_phone} copied — paste it in Zelle.`);
     } else {
@@ -143,9 +146,11 @@ export function MealRestaurantContact({
           {restaurant.zelle_qr_url && (
             <div className="rounded-md border border-terracotta/30 bg-white p-2 space-y-1.5">
               <p className="text-sm font-semibold text-ink">Zelle QR code</p>
-              <button
-                type="button"
-                onClick={() => void handleZelleTap()}
+              <a
+                href={zelleUrl ?? "#zelle-fallback"}
+                target={zelleUrl ? "_blank" : undefined}
+                rel={zelleUrl ? "noopener noreferrer" : undefined}
+                onClick={(event) => void handleZelleTap(event)}
                 className="block w-full rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 aria-label={`Pay ${restaurant.zelle_name ?? restaurant.name} with Zelle`}
               >
@@ -155,15 +160,18 @@ export function MealRestaurantContact({
                   loading="lazy"
                   className="mx-auto h-56 w-56 max-w-full rounded border border-border bg-white object-contain p-1"
                 />
-              </button>
+              </a>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <Button
-                  type="button"
-                  onClick={() => void handleZelleTap()}
-                  className="w-full bg-terracotta text-primary-foreground hover:bg-terracotta/90"
-                >
-                  <Smartphone className="h-4 w-4" />
-                  Pay with Zelle
+                <Button asChild className="w-full bg-terracotta text-primary-foreground hover:bg-terracotta/90">
+                  <a
+                    href={zelleUrl ?? "#zelle-fallback"}
+                    target={zelleUrl ? "_blank" : undefined}
+                    rel={zelleUrl ? "noopener noreferrer" : undefined}
+                    onClick={(event) => void handleZelleTap(event)}
+                  >
+                    <Smartphone className="h-4 w-4" />
+                    Continue to Zelle
+                  </a>
                 </Button>
                 <Dialog>
                   <DialogTrigger asChild>
@@ -193,10 +201,9 @@ export function MealRestaurantContact({
                 </Dialog>
               </div>
               <p className="text-xs text-muted-foreground">
-                Tap the QR or &ldquo;Pay with Zelle&rdquo; on this device — we copy{" "}
-                {restaurant.zelle_name ?? restaurant.name}&apos;s Zelle number for you, so you can
-                paste it instead of searching. To pay from another device, enlarge this QR and scan
-                it there.
+                Tap the QR or &ldquo;Continue to Zelle&rdquo; to open the restaurant&apos;s official
+                Zelle banking connection. We also copy the recipient number as a backup. To pay
+                from another device, enlarge this QR and scan it there.
               </p>
             </div>
           )}
@@ -216,7 +223,7 @@ export function MealRestaurantContact({
                     role="status"
                     aria-live="polite"
                   >
-                    <p className="text-sm font-semibold text-ink">Why Zelle didn&apos;t open</p>
+                    <p className="text-sm font-semibold text-ink">Zelle fallback</p>
                     <p className="text-sm text-ink">{diag.message}</p>
                     <p className="text-sm text-ink">{diag.nextStep}</p>
                     <p className="text-xs text-muted-foreground">
@@ -259,14 +266,14 @@ export function MealRestaurantContact({
                     </Button>
                   </div>
                 )}
-                {restaurant.zelle_pay_link && (
+                {zelleUrl && (
                   <Button
                     asChild
                     className="w-full bg-terracotta text-primary-foreground hover:bg-terracotta/90"
                   >
-                    <a href={restaurant.zelle_pay_link} target="_blank" rel="noopener noreferrer">
+                    <a href={zelleUrl} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-4 w-4" />
-                      Open your bank app
+                      Open official Zelle banking connection
                     </a>
                   </Button>
                 )}
