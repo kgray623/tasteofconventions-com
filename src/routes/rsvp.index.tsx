@@ -46,20 +46,6 @@ const ev = {
   title: "A Taste of Special Conventions",
 };
 
-type CuisineSelection = { cuisine: string; qty: number };
-
-function isSelection(value: unknown): value is CuisineSelection {
-  return Boolean(
-    value &&
-    typeof value === "object" &&
-    !Array.isArray(value) &&
-    "cuisine" in value &&
-    "qty" in value &&
-    typeof (value as CuisineSelection).cuisine === "string" &&
-    typeof (value as CuisineSelection).qty === "number",
-  );
-}
-
 function PreviewPage() {
   const draftScope = "rsvp-public";
   const [status, setStatus] = useDraftState<"yes" | "no">(draftScope, "status", "yes");
