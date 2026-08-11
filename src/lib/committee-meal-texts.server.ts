@@ -117,7 +117,7 @@ export async function loadCommitteeMealTexts(
     supabaseAdmin
       .from("restaurants")
       .select(
-        "id,name,cuisine,phone,website,order_ready,active,venmo_handle,zelle_name,zelle_phone,zelle_qr_url,chicken_price,beef_price,price_note",
+        "id,name,cuisine,phone,website,order_ready,active,venmo_handle,zelle_name,zelle_phone,zelle_qr_url,zelle_pay_link,chicken_price,beef_price,price_note",
       )
       .order("name"),
     supabaseAdmin.from("app_settings").select("value").eq("key", "meal_text_template").maybeSingle(),
@@ -143,6 +143,7 @@ export async function loadCommitteeMealTexts(
       zelle_name: (r.zelle_name ?? null) as string | null,
       zelle_phone: (r.zelle_phone ?? null) as string | null,
       zelle_qr_url: (r.zelle_qr_url ?? null) as string | null,
+      zelle_pay_link: (r.zelle_pay_link ?? null) as string | null,
       chicken_price:
         r.chicken_price === null || r.chicken_price === undefined ? null : Number(r.chicken_price),
       beef_price: r.beef_price === null || r.beef_price === undefined ? null : Number(r.beef_price),

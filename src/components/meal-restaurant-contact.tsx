@@ -22,6 +22,7 @@ type RestaurantRow = {
   zelle_name?: string | null;
   zelle_phone?: string | null;
   zelle_qr_url?: string | null;
+  zelle_pay_link?: string | null;
   chicken_price?: number | string | null;
   beef_price?: number | string | null;
   price_note?: string | null;
@@ -35,7 +36,7 @@ export function useMealRestaurants() {
       const { data, error } = await supabase
         .from("restaurants")
         .select(
-          "id,name,cuisine,phone,website,venmo_handle,zelle_name,zelle_phone,zelle_qr_url,chicken_price,beef_price,price_note",
+          "id,name,cuisine,phone,website,venmo_handle,zelle_name,zelle_phone,zelle_qr_url,zelle_pay_link,chicken_price,beef_price,price_note",
         )
         .eq("active", true)
         .order("name");
