@@ -318,13 +318,22 @@ export async function setPaid(opts: {
   const row = data.rows.find((r) => r.preorderId === opts.preorderId);
   if (!row) throw new Error("That order is not on your list");
 
+  const { data: existingPayment } = await supabaseAdmin
+    .from("meal_payments")
+    .select("id,qty_paid,source")
+    .eq("preorder_id", opts.preorderId)
+    .eq("cuisine", row.cuisine)
+    .maybeSingle();
+
   if (opts.paid) {
+    // Never lower a quantity already on record — the database refuses it.
+    const qtyPaid = Math.max(Number(row.qty ?? 0), Number(existingPayment?.qty_paid ?? 0));
     const { error } = await supabaseAdmin.from("meal_payments").upsert(
       {
         preorder_id: opts.preorderId,
         restaurant_id: opts.restaurantId,
         cuisine: row.cuisine,
-        qty_paid: row.qty,
+        qty_paid: qtyPaid,
         paid_at: new Date().toISOString(),
         marked_by_label: opts.markedByLabel,
         source: "restaurant",
@@ -334,13 +343,13 @@ export async function setPaid(opts: {
       { onConflict: "preorder_id,cuisine" },
     );
     if (error) throw new Error(error.message);
-  } else {
-    const { error } = await supabaseAdmin
-      .from("meal_payments")
-      .delete()
-      .eq("preorder_id", opts.preorderId)
-      .eq("cuisine", row.cuisine);
-    if (error) throw new Error(error.message);
+  } else if (existingPayment) {
+    // Payment records are permanent: a restaurant cannot erase one. Only the
+    // guest cancelling the meal in their own RSVP removes it from the order.
+    throw new Error(
+      "This payment is on the permanent record and cannot be removed here. If it was recorded in error, contact the organizers.",
+    );
   }
+
   return loadPortalData(opts.restaurantId);
 }
