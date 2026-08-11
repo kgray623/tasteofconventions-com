@@ -95,6 +95,8 @@ export function MealRestaurantContact({
   paid?: boolean;
 }) {
   const [payOpen, setPayOpen] = useState(false);
+  const [diag, setDiag] = useState<ZelleDiagnostics | null>(null);
+
   const restaurant = findRestaurantForCuisine(rows, cuisineKey);
   if (!restaurant) return null;
   const telHref = restaurant.phone ? `tel:${restaurant.phone.replace(/[^\d+]/g, "")}` : null;
