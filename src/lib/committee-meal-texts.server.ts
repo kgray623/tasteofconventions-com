@@ -46,7 +46,11 @@ export type CommitteeMealTextsResult = {
 };
 
 export async function resolveIdentity(supabase: any, userId: string) {
-  const { data: roleRows } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+  const { data: roleRows, error: roleError } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
+  if (roleError) throw new Error("Forbidden");
   const roles = new Set(((roleRows ?? []) as { role: string }[]).map((r) => r.role));
   const { data: authUser } = await supabase.auth.getUser();
   const myTail = phoneTail(authUser?.user?.phone);

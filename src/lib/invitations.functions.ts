@@ -684,10 +684,6 @@ const PublicRsvpInput = z.object({
     .nullable(),
 });
 
-const PublicRsvpLookupInput = z.object({
-  phone: z.string().min(7).max(40),
-});
-
 function normalizeAuthPhone(value: string | null) {
   if (!value) return "";
   const digits = value.replace(/\D/g, "");
@@ -696,46 +692,6 @@ function normalizeAuthPhone(value: string | null) {
   if (value.trim().startsWith("+") && digits.length >= 10) return `+${digits}`;
   return "";
 }
-
-export const getPublicRsvpByPhone = createServerFn({ method: "GET" })
-  .inputValidator((d) => PublicRsvpLookupInput.parse(d))
-  .handler(async ({ data }) => {
-    const phoneNorm = data.phone.replace(/\D/g, "");
-    if (phoneNorm.length < 7) throw new Error("Enter a valid mobile number");
-
-    const { data: ev } = await supabaseAdmin
-      .from("events")
-      .select("id")
-      .order("starts_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-    if (!ev) return { invitation: null, rsvp: null, preorder: null };
-
-    const candidates = phoneCandidates(phoneNorm);
-
-    const { data: invitation, error: invErr } = await supabaseAdmin
-      .from("invitations")
-      .select("id,guest_name,guest_phone")
-      .eq("event_id", ev.id)
-      .in("guest_phone_normalized", candidates)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (invErr) throw publicDbError(invErr);
-    if (!invitation) return { invitation: null, rsvp: null, preorder: null };
-
-    const [{ data: rsvp, error: rsvpErr }, preorder] = await Promise.all([
-      supabaseAdmin
-        .from("rsvps")
-        .select("status,party_size,attendance_mode,ordering_food,invited_by,responded_at")
-        .eq("invitation_id", invitation.id)
-        .maybeSingle(),
-      findCuisinePreorder(invitation.id, invitation.guest_phone ?? data.phone),
-    ]);
-    if (rsvpErr) throw publicDbError(rsvpErr);
-
-    return { invitation, rsvp, preorder };
-  });
 
 export const submitPublicRsvp = createServerFn({ method: "POST" })
   .inputValidator((d) => PublicRsvpInput.parse(d))

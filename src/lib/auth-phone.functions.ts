@@ -141,26 +141,6 @@ function nameTokens(value: string | null | undefined): string[] {
     .filter((t) => t.length >= 2);
 }
 
-function levenshtein(a: string, b: string): number {
-  if (a === b) return 0;
-  if (!a.length) return b.length;
-  if (!b.length) return a.length;
-  const prev = new Array(b.length + 1);
-  for (let j = 0; j <= b.length; j++) prev[j] = j;
-  for (let i = 1; i <= a.length; i++) {
-    let prevDiag = prev[0];
-    prev[0] = i;
-    for (let j = 1; j <= b.length; j++) {
-      const tmp = prev[j];
-      prev[j] = a[i - 1] === b[j - 1]
-        ? prevDiag
-        : 1 + Math.min(prevDiag, prev[j], prev[j - 1]);
-      prevDiag = tmp;
-    }
-  }
-  return prev[b.length];
-}
-
 function tokensFuzzyEqual(a: string, b: string): boolean {
   return a === b;
 }

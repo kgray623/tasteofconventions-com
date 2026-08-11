@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { getPublicRsvpByPhone, submitPublicRsvp } from "@/lib/invitations.functions";
+import { submitPublicRsvp } from "@/lib/invitations.functions";
 
 import { Card } from "@/components/ui/card";
 import { SiteHeader } from "@/components/site-header";
@@ -103,45 +103,9 @@ function PreviewPage() {
   const canChooseMeals = name.trim().length > 0 && phoneDigits.length >= 7;
 
   const save = useServerFn(submitPublicRsvp);
-  const lookupRsvp = useServerFn(getPublicRsvpByPhone);
   const [saving, setSaving] = useState(false);
-  const [restoring, setRestoring] = useState(false);
   const [saved, setSaved] = useState(false);
   const hasSubmitted = saved || Boolean(submittedAt);
-
-  const restoreByPhone = async () => {
-    if (phoneDigits.length < 7) return toast.error("Enter your mobile number first");
-    setRestoring(true);
-    try {
-      const result = await lookupRsvp({ data: { phone } });
-      if (!result.invitation || !result.rsvp) {
-        return toast.error("No RSVP was found for that mobile number");
-      }
-      setName(result.invitation.guest_name ?? name);
-      setPhone(result.invitation.guest_phone ?? phone);
-      setStatus(result.rsvp.status === "no" ? "no" : "yes");
-      setAttendanceMode(result.rsvp.attendance_mode === "zoom" ? "zoom" : "in_person");
-      setPartySize(result.rsvp.party_size ?? 1);
-      setInvitedBy(result.rsvp.invited_by ?? "");
-      const restoredCounts = Array.isArray(result.preorder?.selections)
-        ? result.preorder.selections
-            .filter(isSelection)
-            .reduce<Record<string, number>>((acc, item) => {
-              acc[item.cuisine] = item.qty;
-              return acc;
-            }, {})
-        : {};
-      setCuisineCounts(restoredCounts);
-      setWantsCuisine(Object.values(restoredCounts).some((n) => n > 0) ? "yes" : "no");
-      setSubmittedAt(result.rsvp.responded_at ?? new Date().toISOString());
-      setSaved(false);
-      toast.success("Your RSVP was restored.");
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Could not restore RSVP");
-    } finally {
-      setRestoring(false);
-    }
-  };
 
   const handleSave = async () => {
     if (!name.trim()) return toast.error("Please enter your full name");
