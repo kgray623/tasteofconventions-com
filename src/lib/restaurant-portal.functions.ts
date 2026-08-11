@@ -26,15 +26,15 @@ export const restaurantPortalLogin = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<{ ok: boolean; reason?: "name" | "code"; data?: PortalData }> => {
     const {
       findRestaurantByName,
-      findRestaurantByPhone,
       codeMatches,
       restaurantPhoneMatches,
       loadPortalData,
     } = await import("@/lib/restaurant-portal.server");
 
-    // Name first; if the typed name is off, the phone number alone identifies it.
-    const restaurant =
-      (await findRestaurantByName(data.restaurant)) ?? (await findRestaurantByPhone(data.code));
+    // Both credentials are required: restaurant name is the username and the
+    // restaurant's phone number is the password. Never identify an account by
+    // the password alone.
+    const restaurant = await findRestaurantByName(data.restaurant);
     if (!restaurant) return { ok: false, reason: "name" };
 
     // Primary credential: the restaurant's own phone number.
@@ -133,12 +133,12 @@ export const restaurantSetQty = createServerFn({ method: "POST" })
 /* ---------- Admin: manage access codes + see payment status ---------- */
 
 async function assertAdminOrTeam(supabase: any, userId: string) {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", userId)
     .in("role", ["admin", "team"]);
-  if (!data || data.length === 0) throw new Error("Forbidden");
+  if (error || !data || data.length === 0) throw new Error("Forbidden");
 }
 
 export const listRestaurantAccess = createServerFn({ method: "POST" })

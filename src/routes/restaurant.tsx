@@ -59,7 +59,7 @@ function RestaurantPortalPage() {
   useEffect(() => {
     void (async () => {
       try {
-        const res = await fetchData({ data: undefined } as never);
+        const res = await fetchData();
         if (res.signedIn && res.data) setData(res.data);
       } catch {
         /* not signed in */
@@ -95,7 +95,7 @@ function RestaurantPortalPage() {
   const refresh = async () => {
     setBusy(true);
     try {
-      const res = await fetchData({ data: undefined } as never);
+      const res = await fetchData();
       if (res.signedIn && res.data) setData(res.data);
       else setData(null);
     } finally {
@@ -250,7 +250,7 @@ function RestaurantPortalPage() {
             variant="outline"
             size="sm"
             onClick={async () => {
-              await logout({ data: undefined } as never);
+              await logout();
               setData(null);
             }}
           >

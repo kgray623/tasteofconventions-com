@@ -3,12 +3,12 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 async function assertStaff(supabase: any, userId: string) {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", userId)
     .in("role", ["admin", "team"]);
-  if (!data || data.length === 0) throw new Error("Forbidden");
+  if (error || !data || data.length === 0) throw new Error("Forbidden");
 }
 
 export {

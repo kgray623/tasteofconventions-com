@@ -7,7 +7,7 @@ export const DEFAULT_MEAL_TEXT_TEMPLATE = `${MEAL_TEXT_UPDATE_INTRO}
 
 Hi {first_name} —
 
-The following information is how to pre-pay for your catered meal. Each restaurant provides Zelle which is secure and direct.
+The following information is how to pre-pay for your catered meal. Each restaurant accepts Zelle through your own bank.
 
 Your pre-order is for {order}.
 
