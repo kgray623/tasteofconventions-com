@@ -507,9 +507,7 @@ function MealTextsPage() {
         const r = restaurantFor(cuisine);
         const onHold = r ? !r.order_ready : false;
         const paidHere = paidRows.filter((x) => x.cuisine === cuisine);
-        const kariMock = paidHere.find(
-          (x) => x.id === "e958b919-a110-42c9-a30d-85551a75bab4",
-        );
+        const kariMock = paidHere.find((x) => x.name.trim().toLowerCase() === "kari gray");
         const visible = list
           .filter((x) => (onlyUnsent ? !x.zelle_sent_at : true))
           .filter((x) => (inviterFilter === "all" ? true : x.inviter === inviterFilter));
