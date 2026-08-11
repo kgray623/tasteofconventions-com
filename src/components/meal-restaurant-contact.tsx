@@ -210,6 +210,25 @@ export function MealRestaurantContact({
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-3">
+                {diag && !diag.opened && (
+                  <div
+                    className="rounded-md border border-terracotta/40 bg-cream/60 p-2.5 space-y-1"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    <p className="text-sm font-semibold text-ink">Why Zelle didn&apos;t open</p>
+                    <p className="text-sm text-ink">{diag.message}</p>
+                    <p className="text-sm text-ink">{diag.nextStep}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {CLIPBOARD_EXPLANATIONS[diag.clipboard]}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Diagnostic code: {diag.reason} · clipboard: {diag.clipboard}
+                      {diag.detail ? ` · ${diag.detail}` : ""}
+                    </p>
+                  </div>
+                )}
+
                 {amountLine && (
                   <p className="text-sm text-ink">
                     Send: <span className="font-semibold">{amountLine}</span>
