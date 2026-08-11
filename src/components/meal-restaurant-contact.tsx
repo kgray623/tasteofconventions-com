@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Copy, ExternalLink, Maximize2, Phone, Smartphone } from "lucide-react";
-import { startZelleHandoff } from "@/lib/zelle-handoff";
+import {
+  CLIPBOARD_EXPLANATIONS,
+  startZelleHandoff,
+  type ZelleDiagnostics,
+} from "@/lib/zelle-handoff";
+
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -90,6 +95,8 @@ export function MealRestaurantContact({
   paid?: boolean;
 }) {
   const [payOpen, setPayOpen] = useState(false);
+  const [diag, setDiag] = useState<ZelleDiagnostics | null>(null);
+
   const restaurant = findRestaurantForCuisine(rows, cuisineKey);
   if (!restaurant) return null;
   const telHref = restaurant.phone ? `tel:${restaurant.phone.replace(/[^\d+]/g, "")}` : null;
@@ -111,17 +118,21 @@ export function MealRestaurantContact({
     .join(" · ");
 
   const handleZelleTap = async () => {
-    const { opened, copied } = await startZelleHandoff({
+    const result = await startZelleHandoff({
       payLink: restaurant.zelle_pay_link,
       phone: restaurant.zelle_phone,
       name: restaurant.zelle_name,
     });
-    if (opened) return;
-    if (copied) {
+    setDiag(result);
+    if (result.opened) return;
+    if (result.copied) {
       toast.success(`${restaurant.zelle_phone} copied — paste it in Zelle.`);
+    } else {
+      toast.error(CLIPBOARD_EXPLANATIONS[result.clipboard]);
     }
     setPayOpen(true);
   };
+
 
   return (
     <div className="rounded-md border border-terracotta/40 bg-cream/50 p-3 space-y-1.5">
@@ -199,6 +210,25 @@ export function MealRestaurantContact({
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-3">
+                {diag && !diag.opened && (
+                  <div
+                    className="rounded-md border border-terracotta/40 bg-cream/60 p-2.5 space-y-1"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    <p className="text-sm font-semibold text-ink">Why Zelle didn&apos;t open</p>
+                    <p className="text-sm text-ink">{diag.message}</p>
+                    <p className="text-sm text-ink">{diag.nextStep}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {CLIPBOARD_EXPLANATIONS[diag.clipboard]}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Diagnostic code: {diag.reason} · clipboard: {diag.clipboard}
+                      {diag.detail ? ` · ${diag.detail}` : ""}
+                    </p>
+                  </div>
+                )}
+
                 {amountLine && (
                   <p className="text-sm text-ink">
                     Send: <span className="font-semibold">{amountLine}</span>
