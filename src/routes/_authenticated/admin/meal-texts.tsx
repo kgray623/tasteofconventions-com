@@ -81,6 +81,7 @@ function MealTextsPage() {
   const [loading, setLoading] = useState(true);
   const [restaurants, setRestaurants] = useState<MealRestaurant[]>([]);
   const [rows, setRows] = useState<MealTextRow[]>([]);
+  const [kariTestRows, setKariTestRows] = useState<MealTextRow[]>([]);
   // Read-only look at any guest's exact message. Opening it records nothing.
   const [preview, setPreview] = useState<{ title: string; body: string } | null>(null);
   const [template, setTemplate] = useState(DEFAULT_MEAL_TEXT_TEMPLATE);
@@ -117,6 +118,7 @@ function MealTextsPage() {
       const res = await load({ data: {} as never });
       setRestaurants(res.restaurants);
       setRows(res.rows);
+      setKariTestRows(res.kariTestRows);
       setTemplate(res.template);
       // Never overwrite wording the user is still editing.
       if (!opts?.keepWording) {
@@ -153,17 +155,11 @@ function MealTextsPage() {
   // Paid orders never disappear: they are listed per cuisine as "already paid".
   const paidRows = useMemo(() => rows.filter((r) => isPaidState(r.state)), [rows]);
 
-  // Kari's test rows come from her saved preorder itself, never from payment
-  // classification. They therefore remain visible even when a paid-state
-  // calculation changes or a cuisine has no outstanding guest texts.
+  // These rows are supplied explicitly by the authenticated server response
+  // from Kari's retained preorder. They never depend on queue classification.
   const kariMockByCuisine = useMemo(() => {
-    const matches = rows.filter(
-      (row) =>
-        row.name.trim().toLowerCase() === "kari gray" &&
-        smsNumber(row.phone) === "+18082787562",
-    );
-    return new Map(matches.map((row) => [row.cuisine, row] as const));
-  }, [rows]);
+    return new Map(kariTestRows.map((row) => [row.cuisine, row] as const));
+  }, [kariTestRows]);
 
   const groups = useMemo(() => {
     const map = new Map<string, MealTextRow[]>();

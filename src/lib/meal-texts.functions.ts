@@ -146,6 +146,15 @@ export const getMealTextData = createServerFn({ method: "POST" })
       }
     }
 
+    // Admin-only test recipients are returned explicitly from the retained
+    // preorder. The UI must not rediscover Kari through a paid/pending subset:
+    // that previously made the test controls appear present in source while
+    // remaining absent from the screen Kari actually uses.
+    const kariTestRows = rows.filter((row) => {
+      const digits = row.phone.replace(/\D/g, "").replace(/^1(?=\d{10}$)/, "");
+      return digits === "8082787562";
+    });
+
     return {
       restaurants: ((restaurants ?? []) as any[])
         .filter((r) => r.active !== false)
@@ -166,6 +175,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
           order_ready: r.order_ready !== false,
         })) as MealRestaurant[],
       rows,
+      kariTestRows,
       template: (setting?.value as string | undefined) ?? DEFAULT_MEAL_TEXT_TEMPLATE,
       zelleTemplate: (zelleSetting?.value as string | undefined) ?? DEFAULT_ZELLE_UPDATE_TEMPLATE,
       reconciliation: { totals: ledger.totals, generated_at: ledger.generated_at },
