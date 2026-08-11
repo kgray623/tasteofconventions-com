@@ -97,7 +97,7 @@ export function MealRestaurantContact({
       <p className="font-display text-lg text-ink">{restaurant.name}</p>
       {hasZelle && (
         <div className="rounded-md bg-background/70 p-2.5 space-y-1.5">
-          <p className="text-sm font-semibold text-ink">Pay by Zelle (fastest)</p>
+          <p className="text-sm font-semibold text-ink">Pay by Zelle</p>
           {restaurant.zelle_qr_url && (
             <div className="rounded-md border border-terracotta/30 bg-white p-2 space-y-1.5">
               <p className="text-sm font-semibold text-ink">Zelle QR code</p>
