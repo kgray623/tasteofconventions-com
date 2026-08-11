@@ -153,18 +153,6 @@ function MealTextsPage() {
   // Paid orders never disappear: they are listed per cuisine as "already paid".
   const paidRows = useMemo(() => rows.filter((r) => isPaidState(r.state)), [rows]);
 
-  // Kari's paid meals stay out of the real queue, but her own saved preorder is
-  // available in each cuisine as a non-recording mock text recipient.
-  const kariMockByCuisine = useMemo(() => {
-    const byCuisine = new Map<string, MealTextRow>();
-    for (const row of rows) {
-      if (row.id === "e958b919-a110-42c9-a30d-85551a75bab4") {
-        byCuisine.set(row.cuisine, row);
-      }
-    }
-    return byCuisine;
-  }, [rows]);
-
   const groups = useMemo(() => {
     const map = new Map<string, MealTextRow[]>();
     for (const r of modeRows) {
@@ -519,7 +507,9 @@ function MealTextsPage() {
         const r = restaurantFor(cuisine);
         const onHold = r ? !r.order_ready : false;
         const paidHere = paidRows.filter((x) => x.cuisine === cuisine);
-        const kariMock = kariMockByCuisine.get(cuisine);
+        const kariMock = paidHere.find(
+          (x) => x.id === "e958b919-a110-42c9-a30d-85551a75bab4",
+        );
         const visible = list
           .filter((x) => (onlyUnsent ? !x.zelle_sent_at : true))
           .filter((x) => (inviterFilter === "all" ? true : x.inviter === inviterFilter));
