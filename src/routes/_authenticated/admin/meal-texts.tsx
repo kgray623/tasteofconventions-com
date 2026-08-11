@@ -24,6 +24,7 @@ import {
 } from "@/lib/meal-text-message";
 import { SmsTextButton } from "@/components/sms-text-button";
 import { OpenOnSiteBanner } from "@/components/open-on-site-banner";
+import { MealTextSelfTest } from "@/components/meal-text-self-test";
 import { isPaidState } from "@/lib/meal-communication";
 
 import {
