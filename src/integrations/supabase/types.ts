@@ -1482,6 +1482,17 @@ export type Database = {
         Args: { _raw_name: string }
         Returns: string
       }
+      save_meal_order: {
+        Args: {
+          _confirmed_removals?: string[]
+          _invitation_id: string
+          _mode?: string
+          _name: string
+          _phone: string
+          _submitted: Json
+        }
+        Returns: Json
+      }
       search_invitations_fuzzy: {
         Args: { _event_id: string; _query: string; _threshold?: number }
         Returns: {

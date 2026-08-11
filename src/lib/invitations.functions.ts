@@ -375,10 +375,13 @@ const CuisinePreorderInput = z.object({
     .array(
       z.object({
         cuisine: z.string().min(1).max(80),
-        qty: z.number().int().min(1).max(50),
+        qty: z.number().int().min(0).max(50),
       }),
     )
     .max(10),
+  // Cuisines the person explicitly confirmed they want lowered or removed.
+  // Without this, a save can never reduce or erase a meal already on record.
+  confirmed_removals: z.array(z.string().min(1).max(80)).max(10).optional(),
 });
 
 const StandaloneCuisinePreorderInput = z.object({
@@ -395,6 +398,20 @@ const StandaloneCuisinePreorderInput = z.object({
     .max(10),
 });
 
+function mealWriteError(error: { message?: string } | null): Error {
+  const message = error?.message ?? "";
+  if (message.includes("MEAL_REMOVAL_NOT_CONFIRMED")) {
+    const cuisine = message.split("MEAL_REMOVAL_NOT_CONFIRMED:")[1]?.trim() || "that";
+    return new Error(
+      `To lower or remove your ${cuisine} meals, please confirm the removal first. Nothing was changed.`,
+    );
+  }
+  if (message.includes("MEAL_REDUCTION_NOT_CONFIRMED")) {
+    return new Error("Meals can only be removed with a confirmed removal. Nothing was changed.");
+  }
+  return publicDbError(error as any);
+}
+
 export const submitCuisinePreorder = createServerFn({ method: "POST" })
   .inputValidator((d) => CuisinePreorderInput.parse(d))
   .handler(async ({ data }) => {
@@ -405,22 +422,21 @@ export const submitCuisinePreorder = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!inv) throw new Error("Invitation not found");
 
-    // Never delete the record — an empty selections array means "cancelled".
-    // The row (person, phone, history) is retained and the audit ledger keeps
-    // the change. Deletes are blocked by the protected-delete guard anyway.
-    const { error } = await supabaseAdmin.from("cuisine_preorders").upsert(
-      {
-        invitation_id: inv.id,
-        name: inv.guest_name.slice(0, 120),
-        phone: (inv.guest_phone ?? "").slice(0, 40) || "—",
-        selections: data.selections,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "invitation_id" },
-    );
-    if (error) throw publicDbError(error);
+    // Merge-safe: the record is never deleted and cuisines that were not
+    // submitted are left exactly as they are. Reductions/removals only apply
+    // when explicitly confirmed; everything is kept in the audit ledger.
+    const { data: merged, error } = await supabaseAdmin.rpc("save_meal_order" as any, {
+      _invitation_id: inv.id,
+      _name: inv.guest_name.slice(0, 120),
+      _phone: (inv.guest_phone ?? "").slice(0, 40) || "—",
+      _submitted: data.selections,
+      _confirmed_removals: data.confirmed_removals ?? [],
+      _mode: "strict",
+    });
+    if (error) throw mealWriteError(error);
 
-    return { ok: true, cancelled: data.selections.length === 0 };
+    const selections = (merged ?? []) as Array<{ cuisine: string; qty: number }>;
+    return { ok: true, selections, cancelled: selections.length === 0 };
   });
 
 export const submitStandaloneCuisinePreorder = createServerFn({ method: "POST" })
@@ -460,20 +476,20 @@ export const submitStandaloneCuisinePreorder = createServerFn({ method: "POST" }
       throw new Error("Meal choices are only saved after an attending RSVP is on file.");
     }
 
-    const { error } = await supabaseAdmin.from("cuisine_preorders").upsert(
-      {
-        invitation_id: invitation.id,
-        name: (invitation.guest_name || data.name).slice(0, 120),
-        phone: (invitation.guest_phone || data.phone).slice(0, 40),
-        selections: data.selections,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "invitation_id" },
-    );
-    if (error) throw publicDbError(error);
+    // Additive: this public form can only add or raise meals, never lose one.
+    const { error } = await supabaseAdmin.rpc("save_meal_order" as any, {
+      _invitation_id: invitation.id,
+      _name: (invitation.guest_name || data.name).slice(0, 120),
+      _phone: (invitation.guest_phone || data.phone).slice(0, 40),
+      _submitted: data.selections,
+      _confirmed_removals: [],
+      _mode: "additive",
+    });
+    if (error) throw mealWriteError(error);
 
     return { ok: true };
   });
+
 
 export const submitOrder = createServerFn({ method: "POST" })
   .inputValidator((d) => OrderInput.parse(d))
@@ -924,24 +940,21 @@ async function submitPublicRsvpInner(data: z.infer<typeof PublicRsvpInput>) {
     );
   }
 
-  // Capture cuisine pre-order interest (separate table, no restaurant binding yet)
+  // Capture cuisine pre-order interest (separate table, no restaurant binding yet).
+  // Additive only: an RSVP submission can add or raise meals, but it can never
+  // reduce, remove, or delete meals already on record.
   if (selections.length > 0 && (data.guest_name || phone)) {
-    await supabaseAdmin.from("cuisine_preorders").upsert(
-      {
-        invitation_id: invitationId,
-        name: data.guest_name.slice(0, 120),
-        phone: (phone ?? "").slice(0, 40) || "—",
-        selections,
-      },
-      { onConflict: "invitation_id" },
-    );
-  } else if (invitationId) {
-    await supabaseAdmin.rpc("system_delete_rows" as any, {
-      _table: "cuisine_preorders",
-      _column: "invitation_id",
-      _value: invitationId,
+    const { error: mealErr } = await supabaseAdmin.rpc("save_meal_order" as any, {
+      _invitation_id: invitationId,
+      _name: data.guest_name.slice(0, 120),
+      _phone: (phone ?? "").slice(0, 40) || "—",
+      _submitted: selections,
+      _confirmed_removals: [],
+      _mode: "additive",
     });
+    if (mealErr) throw publicDbError(mealErr);
   }
+
 
   return {
     ok: true,
