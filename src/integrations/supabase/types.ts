@@ -1157,6 +1157,7 @@ export type Database = {
           venmo_handle: string | null
           website: string | null
           zelle_name: string | null
+          zelle_pay_link: string | null
           zelle_phone: string | null
           zelle_qr_url: string | null
         }
@@ -1176,6 +1177,7 @@ export type Database = {
           venmo_handle?: string | null
           website?: string | null
           zelle_name?: string | null
+          zelle_pay_link?: string | null
           zelle_phone?: string | null
           zelle_qr_url?: string | null
         }
@@ -1195,6 +1197,7 @@ export type Database = {
           venmo_handle?: string | null
           website?: string | null
           zelle_name?: string | null
+          zelle_pay_link?: string | null
           zelle_phone?: string | null
           zelle_qr_url?: string | null
         }
