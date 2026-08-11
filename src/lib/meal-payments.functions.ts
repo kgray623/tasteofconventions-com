@@ -60,17 +60,23 @@ export const reportMyMealPayment = createServerFn({ method: "POST" })
     });
   });
 
-/** A committee member or admin records a payment a guest told them about. */
+/**
+ * A committee member or admin records a payment a guest told them about.
+ * The admin (service-role) client is only loaded AFTER the caller's admin/team
+ * role is verified against their own RLS-scoped client.
+ */
 export const recordMealPaymentForGuest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => CommitteeInput.parse(d))
   .handler(async ({ data, context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { recordMealPayment, assertMealPaymentStaff } = await import(
       "@/lib/meal-payments.server"
     );
 
+    // Authorization first: being signed in is not enough.
     await assertMealPaymentStaff(context.supabase, context.userId);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: profile } = await context.supabase
       .from("profiles")
@@ -91,14 +97,18 @@ export const recordMealPaymentForGuest = createServerFn({ method: "POST" })
     });
   });
 
-/** Reported payments the restaurant has not confirmed yet. */
+/**
+ * Reported payments the restaurant has not confirmed yet. This roster contains
+ * other guests' names, phones, and notes, so admin/team role is required before
+ * the service-role client is used.
+ */
 export const listMealPaymentsToVerify = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { listReportedMealPayments, assertMealPaymentStaff } = await import(
       "@/lib/meal-payments.server"
     );
     await assertMealPaymentStaff(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     return listReportedMealPayments(supabaseAdmin);
   });

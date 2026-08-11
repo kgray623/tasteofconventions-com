@@ -126,12 +126,21 @@ export async function listReportedMealPayments(supabaseAdmin: any) {
  * Only admins and team (committee) members may record payments on behalf of
  * guests or read the reported-payment roster, which contains other guests'
  * names, phones, and private notes.
+ *
+ * SECURITY: every server function that touches meal_payments through the
+ * service-role client (which bypasses RLS) must call this first. The check runs
+ * on the caller's own RLS-scoped client — never the admin client — and fails
+ * closed on any error or missing role, so a signed-in guest can never read or
+ * write another guest's payment records.
  */
 export async function assertMealPaymentStaff(supabase: any, userId: string) {
-  const { data } = await supabase
+  if (!supabase || !userId) throw new Error("Forbidden");
+  const { data, error } = await supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", userId)
     .in("role", ["admin", "team"]);
-  if (!data || data.length === 0) throw new Error("Forbidden");
+  if (error) throw new Error("Forbidden");
+  const roles = (data ?? []).map((r: any) => r?.role);
+  if (!roles.includes("admin") && !roles.includes("team")) throw new Error("Forbidden");
 }
