@@ -205,6 +205,8 @@ function MealTextsPage() {
       restaurantWebsite: r?.website?.trim() || "",
       order: orderText(row.qty, row.cuisine),
       mealPhotos: mealPhotosLine(row.cuisine),
+      zelleQrLink: zelleQrLinkLine(row.cuisine, r),
+
     });
   };
 
