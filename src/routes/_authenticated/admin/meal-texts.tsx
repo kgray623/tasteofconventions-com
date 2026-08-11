@@ -75,6 +75,7 @@ function MealTextsPage() {
   const [loading, setLoading] = useState(true);
   const [restaurants, setRestaurants] = useState<MealRestaurant[]>([]);
   const [rows, setRows] = useState<MealTextRow[]>([]);
+  const [self, setSelf] = useState<{ name: string; phone: string }>({ name: "", phone: "" });
   const [template, setTemplate] = useState(DEFAULT_MEAL_TEXT_TEMPLATE);
   const [zelleTemplate, setZelleTemplate] = useState(DEFAULT_ZELLE_UPDATE_TEMPLATE);
   // One queue only: the payment update. The original meal message history is
