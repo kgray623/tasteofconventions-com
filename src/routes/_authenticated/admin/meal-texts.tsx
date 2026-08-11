@@ -11,6 +11,13 @@ import { readAtUtc } from "@/lib/meal-count-labels";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { getErrorMessage } from "@/lib/async-safety";
 import { downloadTextFile, openTextInNewTab } from "@/lib/download-file";
 import {
@@ -635,6 +642,21 @@ function MealTextsPage() {
           </Card>
         );
       })}
+
+      <Dialog open={preview !== null} onOpenChange={(open) => !open && setPreview(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{preview?.title ?? "Message preview"}</DialogTitle>
+            <DialogDescription>
+              Read-only preview of the exact text. Nothing is sent or recorded from here.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea readOnly value={preview?.body ?? ""} rows={12} className="text-xs" />
+          <Button size="sm" variant="outline" onClick={() => void copy(preview?.body ?? "")}>
+            <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy message
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
