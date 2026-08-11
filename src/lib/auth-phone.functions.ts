@@ -162,14 +162,7 @@ function levenshtein(a: string, b: string): number {
 }
 
 function tokensFuzzyEqual(a: string, b: string): boolean {
-  if (a === b) return true;
-  // One of the names contains the other (e.g. "salis" vs "salisbury") — accept.
-  if (a.length >= 4 && b.length >= 4 && (a.includes(b) || b.includes(a))) return true;
-  const longer = Math.max(a.length, b.length);
-  // Allow 1 typo for short tokens (4–5 chars) and 2 typos for longer ones.
-  const tolerance = longer >= 6 ? 2 : longer >= 4 ? 1 : 0;
-  if (tolerance === 0) return false;
-  return levenshtein(a, b) <= tolerance;
+  return a === b;
 }
 
 function namesMatch(input: string, candidates: Array<string | null | undefined>): boolean {

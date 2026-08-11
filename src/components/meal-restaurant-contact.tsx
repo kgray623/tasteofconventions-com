@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { ExternalLink, Maximize2, Phone } from "lucide-react";
+import { Copy, ExternalLink, Maximize2, Phone } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -92,6 +93,15 @@ export function MealRestaurantContact({
   const chicken = fmtMoney(restaurant.chicken_price);
   const beef = fmtMoney(restaurant.beef_price);
   const hasZelle = !!(restaurant.zelle_phone || restaurant.zelle_name);
+  const copyZellePhone = async () => {
+    if (!restaurant.zelle_phone) return;
+    try {
+      await navigator.clipboard.writeText(restaurant.zelle_phone);
+      toast.success("Zelle phone number copied.");
+    } catch {
+      toast.error("Could not copy the number. Press and hold the number to copy it.");
+    }
+  };
 
   return (
     <div className="rounded-md border border-terracotta/40 bg-cream/50 p-3 space-y-1.5">
@@ -108,7 +118,7 @@ export function MealRestaurantContact({
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block w-full rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  aria-label={`Open Zelle payment for ${restaurant.zelle_name ?? restaurant.name}`}
+                      aria-label={`Open Zelle payment options for ${restaurant.zelle_name ?? restaurant.name}`}
                 >
                   <img
                     src={restaurant.zelle_qr_url}
@@ -134,7 +144,7 @@ export function MealRestaurantContact({
                       rel="noopener noreferrer"
                     >
                       <ExternalLink className="h-4 w-4" />
-                      Open in Zelle
+                      Open Zelle options
                     </a>
                   </Button>
                 )}
@@ -166,22 +176,30 @@ export function MealRestaurantContact({
                 </Dialog>
               </div>
               <p className="text-xs text-muted-foreground">
-                Tap the QR or Open in Zelle. Your bank may ask you to select its Zelle service. You can
-                also enlarge the QR to scan it from another device.
+                Tap the QR or open Zelle options. Zelle may ask you to select your bank. You can also
+                enlarge the QR to scan it from another device.
               </p>
             </div>
           )}
           {restaurant.zelle_phone && (
-            <p className="text-sm text-ink">
-              Zelle: look up{" "}
-              <a
-                href={`tel:${restaurant.zelle_phone.replace(/[^\d+]/g, "")}`}
-                className="font-semibold text-terracotta underline underline-offset-4"
+            <div className="flex items-center justify-between gap-2 text-sm text-ink">
+              <p className="min-w-0">
+                Zelle: look up{" "}
+                <span className="font-semibold text-terracotta">{restaurant.zelle_phone}</span>
+                {restaurant.zelle_name ? ` — ${restaurant.zelle_name}` : ""}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="shrink-0"
+                onClick={() => void copyZellePhone()}
+                aria-label={`Copy Zelle phone number for ${restaurant.zelle_name ?? restaurant.name}`}
+                title="Copy Zelle phone number"
               >
-                {restaurant.zelle_phone}
-              </a>
-              {restaurant.zelle_name ? ` — ${restaurant.zelle_name}` : ""}
-            </p>
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
           )}
           {!restaurant.zelle_phone && restaurant.zelle_name && (
             <p className="text-sm text-ink">Zelle: {restaurant.zelle_name}</p>
