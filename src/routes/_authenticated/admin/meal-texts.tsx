@@ -158,7 +158,7 @@ function MealTextsPage() {
   const kariMockByCuisine = useMemo(() => {
     const byCuisine = new Map<string, MealTextRow>();
     for (const row of rows) {
-      if (smsNumber(row.phone) === "8082787562" && row.name.trim().toLowerCase() === "kari gray") {
+      if (smsNumber(row.phone) === "+18082787562" && row.name.trim().toLowerCase() === "kari gray") {
         byCuisine.set(row.cuisine, row);
       }
     }
