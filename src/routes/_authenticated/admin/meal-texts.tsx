@@ -111,6 +111,7 @@ function MealTextsPage() {
       setRestaurants(res.restaurants);
       setRows(res.rows);
       setTemplate(res.template);
+      setSelf(res.self ?? { name: "", phone: "" });
       // Never overwrite wording the user is still editing.
       if (!opts?.keepWording) {
         setZelleTemplate(res.zelleTemplate);
