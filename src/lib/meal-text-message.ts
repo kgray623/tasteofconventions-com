@@ -116,6 +116,8 @@ export type MealTextContext = {
   paySentence?: string;
   mealPhotos?: string;
   zelleQrLink?: string;
+  /** Tap-to-pay Zelle deep link (same destination the QR code encodes). */
+  zelleLink?: string;
 
 };
 
