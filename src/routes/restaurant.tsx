@@ -250,7 +250,7 @@ function RestaurantPortalPage() {
             variant="outline"
             size="sm"
             onClick={async () => {
-              await logout({ data: undefined } as never);
+              await logout();
               setData(null);
             }}
           >
