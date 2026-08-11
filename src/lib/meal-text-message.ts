@@ -183,7 +183,7 @@ export function paymentLines(r: PaymentSource | undefined | null) {
     ? `${zelleTarget}${zellePhone && zelleName ? ` (${zelleName})` : ""}`
     : "";
   const paySentence = zelleIdentity
-    ? `${`search by phone number ${zelleIdentity}`}${
+    ? `${`search phone number ${zelleIdentity}`}${
         venmoHandle ? `\nVenmo: ${venmoHandle}` : ""
       }`
     : venmoHandle
@@ -250,7 +250,7 @@ export function zelleQrLinkLine(
 ) {
   const set = mealPhotoSetFor(cuisine);
   if (!set) return "";
-  return `Open the Zelle QR code and food photos: ${PUBLIC_SITE_ORIGIN}/meals/${set.slug}`;
+  return `Click here to pay using Zelle QR code: ${PUBLIC_SITE_ORIGIN}/meals/${set.slug}`;
 }
 
 /**
