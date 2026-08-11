@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { Phone } from "lucide-react";
+import { ExternalLink, Maximize2, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -101,39 +102,72 @@ export function MealRestaurantContact({
           {restaurant.zelle_qr_url && (
             <div className="rounded-md border border-terracotta/30 bg-white p-2 space-y-1.5">
               <p className="text-sm font-semibold text-ink">Zelle QR code</p>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <button type="button" className="block w-full">
-                    <img
-                      src={restaurant.zelle_qr_url}
-                      alt={`Zelle QR code to pay ${restaurant.zelle_name ?? restaurant.name}`}
-                      loading="lazy"
-                      className="mx-auto h-56 w-56 max-w-full rounded border border-border bg-white object-contain p-1"
-                    />
-                  </button>
-                </DialogTrigger>
-                <DialogContent className="max-w-[92vw] sm:max-w-md bg-white">
-                  <DialogHeader>
-                    <DialogTitle className="text-ink">
-                      Zelle QR — {restaurant.zelle_name ?? restaurant.name}
-                    </DialogTitle>
-                  </DialogHeader>
+              {restaurant.zelle_pay_link ? (
+                <a
+                  href={restaurant.zelle_pay_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  aria-label={`Open Zelle payment for ${restaurant.zelle_name ?? restaurant.name}`}
+                >
                   <img
                     src={restaurant.zelle_qr_url}
                     alt={`Zelle QR code to pay ${restaurant.zelle_name ?? restaurant.name}`}
-                    className="w-full rounded border border-border bg-white object-contain p-2"
+                    loading="lazy"
+                    className="mx-auto h-56 w-56 max-w-full rounded border border-border bg-white object-contain p-1"
                   />
-                  {restaurant.zelle_phone && (
-                    <p className="text-center text-sm text-ink">
-                      Or look up {restaurant.zelle_phone}
-                      {restaurant.zelle_name ? ` — ${restaurant.zelle_name}` : ""}
-                    </p>
-                  )}
-                </DialogContent>
-              </Dialog>
+                </a>
+              ) : (
+                <img
+                  src={restaurant.zelle_qr_url}
+                  alt={`Zelle QR code to pay ${restaurant.zelle_name ?? restaurant.name}`}
+                  loading="lazy"
+                  className="mx-auto h-56 w-56 max-w-full rounded border border-border bg-white object-contain p-1"
+                />
+              )}
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {restaurant.zelle_pay_link && (
+                  <Button asChild className="w-full bg-terracotta text-primary-foreground hover:bg-terracotta/90">
+                    <a
+                      href={restaurant.zelle_pay_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Open in Zelle
+                    </a>
+                  </Button>
+                )}
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button type="button" variant="outline" className="w-full">
+                      <Maximize2 className="h-4 w-4" />
+                      Enlarge QR
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-[92vw] sm:max-w-md bg-white">
+                    <DialogHeader>
+                      <DialogTitle className="text-ink">
+                        Zelle QR — {restaurant.zelle_name ?? restaurant.name}
+                      </DialogTitle>
+                    </DialogHeader>
+                    <img
+                      src={restaurant.zelle_qr_url}
+                      alt={`Zelle QR code to pay ${restaurant.zelle_name ?? restaurant.name}`}
+                      className="w-full rounded border border-border bg-white object-contain p-2"
+                    />
+                    {restaurant.zelle_phone && (
+                      <p className="text-center text-sm text-ink">
+                        Or look up {restaurant.zelle_phone}
+                        {restaurant.zelle_name ? ` — ${restaurant.zelle_name}` : ""}
+                      </p>
+                    )}
+                  </DialogContent>
+                </Dialog>
+              </div>
               <p className="text-xs text-muted-foreground">
-                Tap to enlarge. Open Zelle in your bank app and scan this code from another device, or
-                search using the phone number below.
+                Tap the QR or Open in Zelle. Your bank may ask you to select its Zelle service. You can
+                also enlarge the QR to scan it from another device.
               </p>
             </div>
           )}
