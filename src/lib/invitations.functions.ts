@@ -436,7 +436,37 @@ export const submitCuisinePreorder = createServerFn({ method: "POST" })
     if (error) throw mealWriteError(error);
 
     const selections = (merged ?? []) as Array<{ cuisine: string; qty: number }>;
+
+    // A guest cancelling their own meal is the only thing that retires a
+    // payment record — and even then the record is kept and flagged, never
+    // deleted, so the money history stays intact.
+    const removed = (data.confirmed_removals ?? []).filter(
+      (cuisine) => !selections.some((s) => s.cuisine === cuisine && s.qty > 0),
+    );
+    if (removed.length > 0) {
+      const { data: preorder } = await supabaseAdmin
+        .from("cuisine_preorders")
+        .select("id")
+        .eq("invitation_id", inv.id)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (preorder?.id) {
+        await supabaseAdmin
+          .from("meal_payments")
+          .update({
+            cancelled_meal_at: new Date().toISOString(),
+            cancelled_note: "Guest cancelled this meal from their own RSVP",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("preorder_id", preorder.id)
+          .in("cuisine", removed)
+          .is("cancelled_meal_at", null);
+      }
+    }
+
     return { ok: true, selections, cancelled: selections.length === 0 };
+
   });
 
 export const submitStandaloneCuisinePreorder = createServerFn({ method: "POST" })
