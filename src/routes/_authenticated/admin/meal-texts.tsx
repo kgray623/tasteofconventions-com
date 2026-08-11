@@ -446,7 +446,9 @@ function MealTextsPage() {
           <code>{"{payment_options}"}</code>, <code>{"{restaurant_zelle}"}</code>,{" "}
           <code>{"{zelle_line}"}</code>, <code>{"{venmo_line}"}</code>,{" "}
           <code>{"{online_prices}"}</code>, <code>{"{meal_choices}"}</code>,{" "}
-          <code>{"{pay_sentence}"}</code>, <code>{"{meal_photos}"}</code>.
+          <code>{"{pay_sentence}"}</code>, <code>{"{meal_photos}"}</code>,{" "}
+          <code>{"{zelle_qr_link}"}</code>.
+
 
         </p>
 
