@@ -179,16 +179,13 @@ export function paymentLines(r: PaymentSource | undefined | null) {
 
   // The Zelle identity to look up (or the fallback way to pay this restaurant).
   const zelleTarget = zellePhone || zelleName;
-  const hasQr = Boolean(r?.zelle_qr_url?.trim());
   const zelleIdentity = zelleTarget
     ? `${zelleTarget}${zellePhone && zelleName ? ` (${zelleName})` : ""}`
     : "";
   const paySentence = zelleIdentity
-    ? `${
-        hasQr
-          ? `You can use either the QR code or search by phone number ${zelleIdentity}`
-          : `You can search by phone number ${zelleIdentity}`
-      }${venmoHandle ? `\nVenmo: ${venmoHandle}` : ""}`
+    ? `${`Or search by phone number ${zelleIdentity}`}${
+        venmoHandle ? `\nVenmo: ${venmoHandle}` : ""
+      }`
     : venmoHandle
       ? `Venmo: ${venmoHandle}`
       : phone
