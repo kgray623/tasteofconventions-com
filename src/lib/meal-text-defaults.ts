@@ -7,11 +7,11 @@ export const DEFAULT_MEAL_TEXT_TEMPLATE = `${MEAL_TEXT_UPDATE_INTRO}
 
 Hi {first_name} —
 
-This is an update to your Taste of Conventions catered pre-order meal.
+The following information is how to pre-pay your catered meal. Each restaurant can be paid by Zelle which is secure and direct.
 
-The following information is how to pre-pay. Each restaurant has provided Zelle which is secure and direct.
+Your pre-order is for {order}.
 
-For {restaurant_cuisine} your choices are:
+{restaurant_cuisine} meal choices are:
 
 {meal_choices}
 
@@ -19,17 +19,15 @@ For {restaurant_cuisine} your choices are:
 
 {pay_sentence}
 
-Your order is for {order}.
-
-The restaurant will verify your payment within 72 hrs and your RSVP will be updated and verified.
+The restaurant will verify your payment within 72 hrs and you will have a bank receipt and your RSVP will be updated.
 
 August 23rd is the last day to prepay.
 
-Please present your receipt at the Taste of Conventions event in order to obtain your meal.
+At the event, please present your RSVP receipt when obtaining your meal.
 
 If you decide to not pre-purchase your meal, please login to your RSVP and cancel your pre-order.
 
-Bringing a covered dish is the alternative to a pre-paid catered meal ensuring no one is left out of the festivities.
+Bringing a covered dish is an alternative to pre-paying a catered meal. We want to ensure no one is left out of the festivities.
 
 Thank you for your prompt attention and support in making this an encouraging and exciting experience for all! 😊
 

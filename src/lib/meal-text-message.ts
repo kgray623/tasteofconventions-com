@@ -165,22 +165,22 @@ export function paymentLines(r: PaymentSource | undefined | null) {
     .filter(Boolean)
     .join("\n");
 
-  // "Chicken Meal $24" / "Beef Meal $29", spaced one per paragraph.
+  // "Chicken Meal plate $24" / "Beef Meal plate $29", spaced one per paragraph.
   const mealChoices = [
-    chicken ? `Chicken Meal ${chicken}` : "",
-    beef ? `Beef Meal ${beef}` : "",
+    chicken ? `Chicken Meal plate ${chicken}` : "",
+    beef ? `Beef Meal plate ${beef}` : "",
   ]
     .filter(Boolean)
     .join("\n\n");
 
-  // One sentence naming the secure ways to pay this restaurant directly.
+  // The Zelle identity to look up (or the fallback way to pay this restaurant).
   const zelleTarget = zellePhone || zelleName;
   const paySentence = zelleTarget
-    ? `Or use Zelle phone search ${zelleTarget}${zellePhone && zelleName ? ` (${zelleName})` : ""}${
-        venmoHandle ? ` or to Venmo: ${venmoHandle}` : ""
+    ? `${zelleTarget}${zellePhone && zelleName ? ` (${zelleName})` : ""}${
+        venmoHandle ? `\nVenmo: ${venmoHandle}` : ""
       }`
     : venmoHandle
-      ? `To use Venmo: ${venmoHandle}`
+      ? `Venmo: ${venmoHandle}`
       : phone
         ? `To pay by phone, call the restaurant: ${phone}`
         : "";
@@ -243,7 +243,7 @@ export function zelleQrLinkLine(
   if (!restaurant?.zelle_qr_url) return "";
   const set = mealPhotoSetFor(cuisine);
   if (!set) return "";
-  return `Use the Zelle QR code: ${PUBLIC_SITE_ORIGIN}/meals/${set.slug}`;
+  return `To prepay, click here ${PUBLIC_SITE_ORIGIN}/meals/${set.slug}`;
 }
 
 
