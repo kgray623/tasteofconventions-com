@@ -124,6 +124,7 @@ export type MealTextContext = {
 type PaymentSource = {
   phone?: string | null;
   zelle_qr_url?: string | null;
+  zelle_pay_link?: string | null;
   venmo_handle?: string | null;
   zelle_name?: string | null;
   zelle_phone?: string | null;
