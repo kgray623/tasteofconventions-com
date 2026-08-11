@@ -220,6 +220,7 @@ export function renderMealTemplate(tpl: string, ctx: MealTextContext) {
     .replaceAll("{meal_choices}", ctx.mealChoices ?? "")
     .replaceAll("{pay_sentence}", ctx.paySentence ?? "")
     .replaceAll("{meal_photos}", ctx.mealPhotos ?? "")
+    .replaceAll("{zelle_qr_link}", ctx.zelleQrLink ?? "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
@@ -230,6 +231,21 @@ export function mealPhotosLine(cuisine: string | null | undefined) {
   if (!set) return "";
   return `See the food images at: ${PUBLIC_SITE_ORIGIN}/meals/${set.slug}`;
 }
+
+/**
+ * "Or scan the Zelle QR code here: https://.../meals/african" — empty unless the
+ * restaurant actually has a QR image saved AND the cuisine has a public page.
+ */
+export function zelleQrLinkLine(
+  cuisine: string | null | undefined,
+  restaurant: { zelle_qr_url?: string | null } | null | undefined,
+) {
+  if (!restaurant?.zelle_qr_url) return "";
+  const set = mealPhotoSetFor(cuisine);
+  if (!set) return "";
+  return `Or scan the Zelle QR code here: ${PUBLIC_SITE_ORIGIN}/meals/${set.slug}`;
+}
+
 
 
 export const mealOrderText = (qty: number, cuisine: string) =>
