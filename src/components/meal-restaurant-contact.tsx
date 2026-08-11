@@ -111,17 +111,21 @@ export function MealRestaurantContact({
     .join(" · ");
 
   const handleZelleTap = async () => {
-    const { opened, copied } = await startZelleHandoff({
+    const result = await startZelleHandoff({
       payLink: restaurant.zelle_pay_link,
       phone: restaurant.zelle_phone,
       name: restaurant.zelle_name,
     });
-    if (opened) return;
-    if (copied) {
+    setDiag(result);
+    if (result.opened) return;
+    if (result.copied) {
       toast.success(`${restaurant.zelle_phone} copied — paste it in Zelle.`);
+    } else {
+      toast.error(CLIPBOARD_EXPLANATIONS[result.clipboard]);
     }
     setPayOpen(true);
   };
+
 
   return (
     <div className="rounded-md border border-terracotta/40 bg-cream/50 p-3 space-y-1.5">
