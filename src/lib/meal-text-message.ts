@@ -115,6 +115,8 @@ export type MealTextContext = {
   mealChoices?: string;
   paySentence?: string;
   mealPhotos?: string;
+  zelleQrLink?: string;
+
 };
 
 type PaymentSource = {
