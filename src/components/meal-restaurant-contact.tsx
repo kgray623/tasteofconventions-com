@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Copy, ExternalLink, Maximize2, Phone } from "lucide-react";
+import { Copy, ExternalLink, Maximize2, Phone, Smartphone } from "lucide-react";
+import { startZelleHandoff } from "@/lib/zelle-handoff";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
