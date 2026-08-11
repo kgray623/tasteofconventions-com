@@ -31,7 +31,6 @@ import {
 } from "@/lib/meal-text-message";
 import { SmsTextButton } from "@/components/sms-text-button";
 import { OpenOnSiteBanner } from "@/components/open-on-site-banner";
-import { MealTextSelfTest } from "@/components/meal-text-self-test";
 import { isPaidState } from "@/lib/meal-communication";
 
 import {
@@ -82,7 +81,6 @@ function MealTextsPage() {
   const [loading, setLoading] = useState(true);
   const [restaurants, setRestaurants] = useState<MealRestaurant[]>([]);
   const [rows, setRows] = useState<MealTextRow[]>([]);
-  const [self, setSelf] = useState<{ name: string; phone: string }>({ name: "", phone: "" });
   // Read-only look at any guest's exact message. Opening it records nothing.
   const [preview, setPreview] = useState<{ title: string; body: string } | null>(null);
   const [template, setTemplate] = useState(DEFAULT_MEAL_TEXT_TEMPLATE);
@@ -120,7 +118,6 @@ function MealTextsPage() {
       setRestaurants(res.restaurants);
       setRows(res.rows);
       setTemplate(res.template);
-      setSelf(res.self ?? { name: "", phone: "" });
       // Never overwrite wording the user is still editing.
       if (!opts?.keepWording) {
         setZelleTemplate(res.zelleTemplate);
@@ -285,9 +282,6 @@ function MealTextsPage() {
   return (
     <div className="space-y-6">
       <OpenOnSiteBanner />
-      {!loading && (
-        <MealTextSelfTest restaurants={restaurants} zelleTemplate={zelleTemplate} self={self} />
-      )}
       <Card className="p-5 space-y-2">
         <div className="flex items-center gap-2">
           <MessageSquare className="w-5 h-5 text-terracotta" />
@@ -513,6 +507,7 @@ function MealTextsPage() {
         const r = restaurantFor(cuisine);
         const onHold = r ? !r.order_ready : false;
         const paidHere = paidRows.filter((x) => x.cuisine === cuisine);
+        const kariMock = paidHere.find((x) => x.name.trim().toLowerCase() === "kari gray");
         const visible = list
           .filter((x) => (onlyUnsent ? !x.zelle_sent_at : true))
           .filter((x) => (inviterFilter === "all" ? true : x.inviter === inviterFilter));
@@ -558,6 +553,36 @@ function MealTextsPage() {
 
 
             <div className="divide-y divide-border">
+              {kariMock && (() => {
+                const mockBody = bodyFor(kariMock);
+                const mockNumber = smsNumber(kariMock.phone);
+                return (
+                  <div className="p-4 space-y-2 bg-muted/30">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium">Kari Gray</span>
+                      <Badge variant="outline" className="text-[10px]">
+                        {orderText(kariMock.qty, kariMock.cuisine)}
+                      </Badge>
+                      <Badge className="bg-terracotta text-cream hover:bg-terracotta text-[10px]">
+                        Mock message to myself — nothing is recorded
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">808-278-7562</p>
+                    <div className="flex flex-wrap gap-2">
+                      {mockNumber && (
+                        <SmsTextButton
+                          numbers={[mockNumber]}
+                          body={mockBody}
+                          label="Text Kari (mock)"
+                        />
+                      )}
+                      <Button size="sm" variant="outline" onClick={() => void copy(mockBody)}>
+                        <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy mock message
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })()}
               {visible.length === 0 && (
                 <p className="p-4 text-sm text-muted-foreground">Nobody left in this list.</p>
               )}
