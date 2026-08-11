@@ -89,6 +89,7 @@ export function MealRestaurantContact({
   rows: RestaurantRow[] | undefined;
   paid?: boolean;
 }) {
+  const [payOpen, setPayOpen] = useState(false);
   const restaurant = findRestaurantForCuisine(rows, cuisineKey);
   if (!restaurant) return null;
   const telHref = restaurant.phone ? `tel:${restaurant.phone.replace(/[^\d+]/g, "")}` : null;
