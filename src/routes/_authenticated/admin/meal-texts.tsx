@@ -81,7 +81,6 @@ function MealTextsPage() {
   const [loading, setLoading] = useState(true);
   const [restaurants, setRestaurants] = useState<MealRestaurant[]>([]);
   const [rows, setRows] = useState<MealTextRow[]>([]);
-  const [self, setSelf] = useState<{ name: string; phone: string }>({ name: "", phone: "" });
   // Read-only look at any guest's exact message. Opening it records nothing.
   const [preview, setPreview] = useState<{ title: string; body: string } | null>(null);
   const [template, setTemplate] = useState(DEFAULT_MEAL_TEXT_TEMPLATE);
@@ -119,7 +118,6 @@ function MealTextsPage() {
       setRestaurants(res.restaurants);
       setRows(res.rows);
       setTemplate(res.template);
-      setSelf(res.self ?? { name: "", phone: "" });
       // Never overwrite wording the user is still editing.
       if (!opts?.keepWording) {
         setZelleTemplate(res.zelleTemplate);
