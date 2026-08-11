@@ -176,7 +176,7 @@ export function paymentLines(r: PaymentSource | undefined | null) {
   // One sentence naming the secure ways to pay this restaurant directly.
   const zelleTarget = zellePhone || zelleName;
   const paySentence = zelleTarget
-    ? `To use Zelle: search ${zelleTarget}${zellePhone && zelleName ? ` (${zelleName})` : ""}${
+    ? `Or use Zelle phone search ${zelleTarget}${zellePhone && zelleName ? ` (${zelleName})` : ""}${
         venmoHandle ? ` or to Venmo: ${venmoHandle}` : ""
       }`
     : venmoHandle
@@ -233,7 +233,7 @@ export function mealPhotosLine(cuisine: string | null | undefined) {
 }
 
 /**
- * "Or scan the Zelle QR code here: https://.../meals/african" — empty unless the
+ * "Use the Zelle QR code: https://.../meals/african" — empty unless the
  * restaurant actually has a QR image saved AND the cuisine has a public page.
  */
 export function zelleQrLinkLine(
@@ -243,7 +243,7 @@ export function zelleQrLinkLine(
   if (!restaurant?.zelle_qr_url) return "";
   const set = mealPhotoSetFor(cuisine);
   if (!set) return "";
-  return `Or scan the Zelle QR code here: ${PUBLIC_SITE_ORIGIN}/meals/${set.slug}`;
+  return `Use the Zelle QR code: ${PUBLIC_SITE_ORIGIN}/meals/${set.slug}`;
 }
 
 
