@@ -121,6 +121,11 @@ function MealTextsPage() {
       setRestaurants(res.restaurants);
       setRows(res.rows);
       setKariTestRows(res.kariTestRows);
+      // Prefill the test panel: signed-in phone, else the retained preorder phone.
+      setSelf({
+        name: res.self?.name || res.kariTestRows[0]?.name || "",
+        phone: res.self?.phone || res.kariTestRows[0]?.phone || "",
+      });
       setTemplate(res.template);
       // Never overwrite wording the user is still editing.
       if (!opts?.keepWording) {
