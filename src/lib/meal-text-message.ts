@@ -169,13 +169,13 @@ export function paymentLines(r: PaymentSource | undefined | null) {
     .filter(Boolean)
     .join("\n");
 
-  // "Chicken Meal plate $24" / "Beef Meal plate $29", spaced one per paragraph.
+  // "Chicken Meal plate $24" / "Beef Meal plate $29", one per line.
   const mealChoices = [
     chicken ? `Chicken Meal plate ${chicken}` : "",
     beef ? `Beef Meal plate ${beef}` : "",
   ]
     .filter(Boolean)
-    .join("\n\n");
+    .join("\n");
 
   // The Zelle identity to look up (or the fallback way to pay this restaurant).
   const zelleTarget = zellePhone || zelleName;
@@ -183,14 +183,15 @@ export function paymentLines(r: PaymentSource | undefined | null) {
     ? `${zelleTarget}${zellePhone && zelleName ? ` (${zelleName})` : ""}`
     : "";
   const paySentence = zelleIdentity
-    ? `${`search for phone number ${zelleIdentity}`}${
-        venmoHandle ? `\nVenmo: ${venmoHandle}` : ""
+    ? `Or open Zelle in your bank app. Search phone number ${zelleIdentity}${
+        venmoHandle ? ` or Venmo: ${venmoHandle}` : ""
       }`
     : venmoHandle
       ? `Venmo: ${venmoHandle}`
       : phone
         ? `To pay by phone, call the restaurant: ${phone}`
         : "";
+
 
   const paymentOptions = [
     zelleLine,
@@ -250,7 +251,7 @@ export function zelleQrLinkLine(
 ) {
   const set = mealPhotoSetFor(cuisine);
   if (!set) return "";
-  return `Zelle QR code: ${PUBLIC_SITE_ORIGIN}/meals/${set.slug}`;
+  return `Click here to pay using Zelle: ${PUBLIC_SITE_ORIGIN}/meals/${set.slug}`;
 }
 
 /**
