@@ -237,7 +237,14 @@ export const getReconciliationRows = createServerFn({ method: "GET" })
       inviterNameById.set(inv.id, inv.name);
     }
 
-    const rawRows = ((invRes.data ?? []) as any[]).map((inv) => {
+    const visibleInvitations = ((invRes.data ?? []) as any[]).filter((inv) => {
+      if (isAdmin) return true;
+      const byInviter = inv.inviter_id && ownInviterIds.includes(inv.inviter_id);
+      const byHost = inv.host_id === context.userId;
+      return !!byInviter || !!byHost;
+    });
+
+    const rawRows = visibleInvitations.map((inv) => {
       const r = rsvpByInv.get(inv.id);
       const p = preByInv.get(inv.id);
       const sels = parseSelections(p?.selections);
@@ -292,6 +299,6 @@ export const getReconciliationRows = createServerFn({ method: "GET" })
 
     const rows = Array.from(grouped.values()).map(({ guest_phone_normalized, ...row }) => row);
 
-    return { rows };
+    return { rows, scope: (isAdmin ? "admin" : "mine") as "admin" | "mine" };
   });
 
