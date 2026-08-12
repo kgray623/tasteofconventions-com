@@ -30,6 +30,7 @@ import {
 
 } from "@/lib/meal-text-message";
 import { SmsTextButton } from "@/components/sms-text-button";
+import { MealTextSelfTest } from "@/components/meal-text-self-test";
 import { OpenOnSiteBanner } from "@/components/open-on-site-banner";
 import { isPaidState } from "@/lib/meal-communication";
 
