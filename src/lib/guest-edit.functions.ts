@@ -132,7 +132,7 @@ export const updateGuestRecord = createServerFn({ method: "POST" })
         ok: false as const,
         needsMealConfirm: true as const,
         mealQty,
-        message: `This guest has ${mealQty} meal${mealQty === 1 ? "" : "s"} on order. Their meals stay on the restaurant list until you cancel them separately — confirm to save the RSVP change anyway.`,
+        message: `This guest has ${mealQty} meal${mealQty === 1 ? "" : "s"} on order. Their meals stay on the restaurant list until you cancel them separately — confirm to save the RSVP change anyway.` as string,
       };
     }
 
