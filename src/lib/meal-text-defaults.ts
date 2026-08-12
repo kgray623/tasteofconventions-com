@@ -7,33 +7,35 @@ export const DEFAULT_MEAL_TEXT_TEMPLATE = `${MEAL_TEXT_UPDATE_INTRO}
 
 Hi {first_name} —
 
-Please see the following information regarding your catered, pre-ordered meal.
+Please see the following regarding your catered meal.
 
-1. The {restaurant_cuisine} restaurant has provided Zelle to collect pre-payment for your order, a secure method of payment.
+1. The {restaurant_cuisine} restaurant has provided Zelle to pre-pay your order, which is a secure method of payment.
 
-2. All meals are gluten-free, seed oil free (only using butter or beef tallow) and MSG free.
+2. All meals will be gluten-free, seed oil free (only using butter or beef tallow) and MSG free.
 
 3. Your meal choices are:
 
 {meal_choices}
 
-Side dishes are included. The committee vetted the meals and selected specific dishes for all tastes.
+Authentic side dishes will be included on each plate as seen at the tasteofconventions.com RSVP.
+
+The committee vetted each meal and selected the best dishes for all tastes.
 
 4. {zelle_qr_link}
 
 {pay_sentence}
 
-5. The restaurant will verify your payment receipt within 72 hrs.
+Send payment above.
 
-6. You will have both your bank receipt and your RSVP of your meal purchase.
+5. The restaurant will verify your payment receipt within 72 hrs. You will have both your bank receipt and your RSVP as proof of your meal purchase.
 
-7. August 23rd is the last day to prepay which guarantees your meal at the event.
+6. August 23rd is the last day to pre-pay your meal which guarantees your meal will be available at the event.
 
-8. If you don't want to pre-purchase a catered meal, please cancel your RSVP by logging into your account at tasteofconventions.com.
+7. If you chose to not pre-purchase a catered meal, please cancel your RSVP by logging into your account at tasteofconventions.com.
 
-9. If you're declining a catered meal, please bring a covered dish to share as we enjoy a meal together.
+8. If you decline to purchase a catered meal, please bring a covered dish so you may enjoy a meal together.
 
-10. If you have any issues, please text 808.278.7562.
+9. If you have any issues, please text 808.278.7562.
 
 Thank you for your support in making this an encouraging and exciting experience for all! 😊
 

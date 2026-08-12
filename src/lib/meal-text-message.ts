@@ -183,8 +183,8 @@ export function paymentLines(r: PaymentSource | undefined | null) {
     ? `${zelleTarget}${zellePhone && zelleName ? ` (${zelleName})` : ""}`
     : "";
   const paySentence = zelleIdentity
-    ? `Or open Zelle in your bank app, then search phone number ${zelleIdentity}${
-        venmoHandle ? ` or Venmo: ${venmoHandle}` : ""
+    ? `Or open your bank app, look for Zelle -then search for phone number ${zelleIdentity}.${
+        venmoHandle ? ` Or Venmo: ${venmoHandle}` : ""
       }`
     : venmoHandle
       ? `Venmo: ${venmoHandle}`
