@@ -38,7 +38,6 @@ import {
   DEFAULT_MEAL_TEXT_TEMPLATE,
   DEFAULT_ZELLE_UPDATE_TEMPLATE,
   getMealTextData,
-  markMealTextSent,
   markZelleTextSent,
   saveMealTextTemplate,
   saveRestaurantContact,
