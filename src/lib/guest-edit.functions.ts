@@ -3,7 +3,6 @@ import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { digitsOnly } from "@/lib/phone";
 
 export type GuestEditScope = { isAdmin: boolean; inviterIds: string[] };
 
@@ -139,10 +138,10 @@ export const updateGuestRecord = createServerFn({ method: "POST" })
     const phoneTrimmed = data.phone.trim();
     const { error: invError } = await supabaseAdmin
       .from("invitations")
+      // guest_phone_normalized is a generated column — never written directly.
       .update({
         guest_name: data.name.trim(),
         guest_phone: phoneTrimmed || null,
-        guest_phone_normalized: phoneTrimmed ? digitsOnly(phoneTrimmed) : null,
       })
       .eq("id", data.invitationId);
     if (invError) throw new Error("Could not save the guest's name or phone.");
