@@ -62,6 +62,13 @@ export function MealTextSelfTest({ restaurants, zelleTemplate, self }: Props) {
     }
   }, []);
 
+  // The signed-in name/phone arrive after the page loads its data, so fill any
+  // field still blank. Anything you typed yourself is never overwritten.
+  useEffect(() => {
+    if (self.name) setName((prev) => prev || self.name);
+    if (self.phone) setPhone((prev) => prev || self.phone);
+  }, [self.name, self.phone]);
+
   useEffect(() => {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ name, phone, qty }));

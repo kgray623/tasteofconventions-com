@@ -30,6 +30,7 @@ import {
 
 } from "@/lib/meal-text-message";
 import { SmsTextButton } from "@/components/sms-text-button";
+import { MealTextSelfTest } from "@/components/meal-text-self-test";
 import { OpenOnSiteBanner } from "@/components/open-on-site-banner";
 import { isPaidState } from "@/lib/meal-communication";
 
@@ -82,6 +83,8 @@ function MealTextsPage() {
   const [restaurants, setRestaurants] = useState<MealRestaurant[]>([]);
   const [rows, setRows] = useState<MealTextRow[]>([]);
   const [kariTestRows, setKariTestRows] = useState<MealTextRow[]>([]);
+  // Who is signed in, so the test panel can text the message to yourself.
+  const [self, setSelf] = useState<{ name: string; phone: string }>({ name: "", phone: "" });
   // Read-only look at any guest's exact message. Opening it records nothing.
   const [preview, setPreview] = useState<{ title: string; body: string } | null>(null);
   const [template, setTemplate] = useState(DEFAULT_MEAL_TEXT_TEMPLATE);
@@ -119,6 +122,11 @@ function MealTextsPage() {
       setRestaurants(res.restaurants);
       setRows(res.rows);
       setKariTestRows(res.kariTestRows);
+      // Prefill the test panel: signed-in phone, else the retained preorder phone.
+      setSelf({
+        name: res.self?.name || res.kariTestRows[0]?.name || "",
+        phone: res.self?.phone || res.kariTestRows[0]?.phone || "",
+      });
       setTemplate(res.template);
       // Never overwrite wording the user is still editing.
       if (!opts?.keepWording) {
@@ -327,6 +335,11 @@ function MealTextsPage() {
           </Button>
         </div>
       </Card>
+
+      {/* Send yourself the exact guest message. Records nothing. */}
+      <MealTextSelfTest restaurants={restaurants} zelleTemplate={zelleTemplate} self={self} />
+
+
 
       <Card className="p-5 space-y-3">
         <p className="font-medium">Restaurant name and phone number</p>
