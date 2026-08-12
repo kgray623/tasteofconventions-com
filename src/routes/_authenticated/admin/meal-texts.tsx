@@ -97,7 +97,7 @@ function MealTextsPage() {
   const [tplSavedAt, setTplSavedAt] = useState<string | null>(null);
   const [tplError, setTplError] = useState<string | null>(null);
 
-  const [onlyUnsent, setOnlyUnsent] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"all" | "needs" | "sent" | "paid">("all");
   const [inviterFilter, setInviterFilter] = useState("all");
   const [busy, setBusy] = useState<string | null>(null);
   const [reconciliation, setReconciliation] = useState<{
@@ -154,13 +154,11 @@ function MealTextsPage() {
         (cuisine === "Myanmar" && r.name.toLowerCase().includes("burmese")),
     );
 
-  // Everyone who ordered a meal needs the payment update text, except the
-  // guests with a recorded payment (restaurant-confirmed, guest-reported, or
-  // committee-recorded). The original-message history is reference only and
-  // never filters this queue.
-  const modeRows = useMemo(() => rows.filter((r) => !isPaidState(r.state)), [rows]);
-
-  // Paid orders never disappear: they are listed per cuisine as "already paid".
+  const needsTextRows = useMemo(
+    () => rows.filter((r) => r.state === "needs_update" || r.state === "exception"),
+    [rows],
+  );
+  const textSentRows = useMemo(() => rows.filter((r) => r.state === "update_sent"), [rows]);
   const paidRows = useMemo(() => rows.filter((r) => isPaidState(r.state)), [rows]);
 
   // These rows are supplied explicitly by the authenticated server response
@@ -171,7 +169,7 @@ function MealTextsPage() {
 
   const groups = useMemo(() => {
     const map = new Map<string, MealTextRow[]>();
-    for (const r of modeRows) {
+    for (const r of rows) {
       if (!map.has(r.cuisine)) map.set(r.cuisine, []);
       map.get(r.cuisine)!.push(r);
     }
@@ -182,22 +180,21 @@ function MealTextsPage() {
       list.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
     }
     return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  }, [kariMockByCuisine, modeRows]);
+  }, [kariMockByCuisine, rows]);
 
   const inviterOptions = useMemo(() => {
     // Count outstanding restaurant texts (one per guest per cuisine), so this
     // matches the pending numbers on the tracker card exactly.
     const seen = new Map<string, number>();
-    for (const r of modeRows) {
-      if (r.zelle_sent_at) continue;
+    for (const r of needsTextRows) {
       seen.set(r.inviter, (seen.get(r.inviter) ?? 0) + 1);
     }
     return [...seen.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-  }, [modeRows]);
+  }, [needsTextRows]);
 
 
   const downloadPending = () => {
-    const pending = modeRows.filter((r) => !r.zelle_sent_at);
+    const pending = needsTextRows;
     if (pending.length === 0) {
       toast.error("Everyone in this list has been texted");
       return;
@@ -293,10 +290,12 @@ function MealTextsPage() {
     }
   };
 
-  const totalOrders = modeRows.length;
-  const totalHouseholds = new Set(modeRows.map((r) => r.id)).size;
-  const totalMeals = modeRows.reduce((s, r) => s + r.qty, 0);
-  const sentCount = modeRows.filter((r) => r.zelle_sent_at).length;
+  const totalOrders = rows.length;
+  const totalHouseholds = new Set(rows.map((r) => r.id)).size;
+  const totalMeals = rows.reduce((s, r) => s + r.qty, 0);
+  const sentCount = textSentRows.length;
+  const paidCount = paidRows.length;
+  const needsTextCount = needsTextRows.length;
 
   return (
     <div className="space-y-6">
@@ -307,15 +306,17 @@ function MealTextsPage() {
           <h2 className="font-display text-2xl">Meal texts</h2>
         </div>
         <p className="text-sm text-muted-foreground">
-          Everyone who ordered a meal is in this one queue except guests already recorded as paid.
-          Every text opens in your own Messages app; nothing is recorded until you explicitly check
-          it after sending, and every mark shows who tapped it.
+          Every active meal order stays visible in this accounting list. Paid guests are labeled “no
+          text needed”; a text is recorded only when you explicitly check it after sending.
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
-          <span className="text-xs text-muted-foreground self-center">In this queue:</span>
+          <span className="text-xs text-muted-foreground self-center">All active meal orders:</span>
           <MealCountBadges plates={totalMeals} households={totalHouseholds} lines={totalOrders} />
           <Badge variant="outline">{sentCount} payment update sent</Badge>
-          <Badge variant="outline">{totalOrders - sentCount} still to text</Badge>
+          <Badge variant="outline">{paidCount} paid — no text needed</Badge>
+          <Badge variant={needsTextCount === 0 ? "outline" : "destructive"}>
+            {needsTextCount} still to text
+          </Badge>
           {reconciliation && (
             <Badge variant={reconciliation.totals.reconciles ? "outline" : "destructive"}>
               {reconciliation.totals.message_units} orders = {reconciliation.totals.needs_update} still to text + {reconciliation.totals.update_sent} texted + {reconciliation.totals.paid_confirmed} paid (restaurant) + {reconciliation.totals.paid_reported} paid (reported) + {reconciliation.totals.exceptions} exceptions
@@ -325,6 +326,9 @@ function MealTextsPage() {
 
         {reconciliation && (
           <p className="text-xs text-muted-foreground">
+            {needsTextCount === 0
+              ? "All real meal orders are accounted for; no payment texts remain outstanding. "
+              : `${needsTextCount} meal order${needsTextCount === 1 ? "" : "s"} still need the payment text. `}
             {readAtUtc(reconciliation.generated_at)}.
           </p>
         )}
@@ -489,11 +493,38 @@ function MealTextsPage() {
       </Card>
 
       <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Switch checked={onlyUnsent} onCheckedChange={setOnlyUnsent} id="only-unsent" />
-          <label htmlFor="only-unsent" className="text-sm">
-            Show only people who still need the payment text
-          </label>
+        <div className="space-y-2">
+          <p className="text-sm font-medium">Show meal orders</p>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap" role="group" aria-label="Filter meal orders by text status">
+            <Button
+              size="sm"
+              variant={statusFilter === "all" ? "default" : "outline"}
+              onClick={() => setStatusFilter("all")}
+            >
+              All ({totalOrders})
+            </Button>
+            <Button
+              size="sm"
+              variant={statusFilter === "needs" ? "default" : "outline"}
+              onClick={() => setStatusFilter("needs")}
+            >
+              Needs text ({needsTextCount})
+            </Button>
+            <Button
+              size="sm"
+              variant={statusFilter === "sent" ? "default" : "outline"}
+              onClick={() => setStatusFilter("sent")}
+            >
+              Text sent ({sentCount})
+            </Button>
+            <Button
+              size="sm"
+              variant={statusFilter === "paid" ? "default" : "outline"}
+              onClick={() => setStatusFilter("paid")}
+            >
+              Paid — no text needed ({paidCount})
+            </Button>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <label htmlFor="inviter-filter" className="text-sm text-muted-foreground">
@@ -530,10 +561,14 @@ function MealTextsPage() {
       {groups.map(([cuisine, list]) => {
         const r = restaurantFor(cuisine);
         const onHold = r ? !r.order_ready : false;
-        const paidHere = paidRows.filter((x) => x.cuisine === cuisine);
         const kariMock = kariMockByCuisine.get(cuisine);
         const visible = list
-          .filter((x) => (onlyUnsent ? !x.zelle_sent_at : true))
+          .filter((x) => {
+            if (statusFilter === "needs") return x.state === "needs_update" || x.state === "exception";
+            if (statusFilter === "sent") return x.state === "update_sent";
+            if (statusFilter === "paid") return isPaidState(x.state);
+            return true;
+          })
           .filter((x) => (inviterFilter === "all" ? true : x.inviter === inviterFilter));
         return (
           <Card key={cuisine} className="overflow-hidden">
@@ -553,31 +588,11 @@ function MealTextsPage() {
                   Turn on “Ready to text” above when this restaurant is taking orders.
                 </p>
               )}
-              {paidHere.length > 0 && (
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">
-                    Already paid — no text needed ({paidHere.length}):
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {paidHere.map((x) => (
-                      <Button
-                        key={`${x.id}-paid`}
-                        size="sm"
-                        variant="outline"
-                        className="h-7 text-xs"
-                        onClick={() => setPreview({ title: `${x.name} — ${cuisineLabel(x.cuisine)}`, body: bodyFor(x) })}
-                      >
-                        {x.name} — preview message
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
 
 
             <div className="divide-y divide-border">
-              {kariMock && (() => {
+              {kariMock && statusFilter === "all" && inviterFilter === "all" && (() => {
                 const mockBody = bodyFor(kariMock);
                 const mockNumber = smsNumber(kariMock.phone);
                 return (
@@ -623,8 +638,8 @@ function MealTextsPage() {
                       {isPaidState(row.state) ? (
                         <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 text-[10px]">
                           {row.state === "paid_confirmed"
-                            ? "Paid — restaurant confirmed"
-                            : "Paid — reported, awaiting confirmation"}
+                            ? "Paid — restaurant confirmed · no text needed"
+                            : "Paid — reported, awaiting confirmation · no text needed"}
                         </Badge>
                       ) : row.zelle_sent_at ? (
                         <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 text-[10px]">
@@ -648,7 +663,7 @@ function MealTextsPage() {
                       </p>
                     )}
                     <div className="flex flex-wrap gap-2">
-                      {num && !onHold && (
+                      {num && !onHold && !isPaidState(row.state) && (
                         <SmsTextButton
                           numbers={[num]}
                           body={body}
@@ -661,7 +676,15 @@ function MealTextsPage() {
                       <Button size="sm" variant="outline" onClick={() => void copy(body)}>
                         <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy
                       </Button>
-                      {row.zelle_sent_at ? (
+                      {isPaidState(row.state) ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setPreview({ title: `${row.name} — ${cuisineLabel(row.cuisine)}`, body })}
+                        >
+                          Preview only — already paid
+                        </Button>
+                      ) : row.zelle_sent_at ? (
                         <Button
                           size="sm"
                           variant="ghost"
