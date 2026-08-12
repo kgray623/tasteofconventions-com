@@ -742,6 +742,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "meal_order_status_preorder_id_fkey"
+            columns: ["preorder_id"]
+            isOneToOne: false
+            referencedRelation: "meal_accounting_lines"
+            referencedColumns: ["preorder_id"]
+          },
+          {
             foreignKeyName: "meal_order_status_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false
@@ -817,6 +824,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "meal_payments_preorder_id_fkey"
+            columns: ["preorder_id"]
+            isOneToOne: false
+            referencedRelation: "meal_accounting_lines"
+            referencedColumns: ["preorder_id"]
+          },
+          {
             foreignKeyName: "meal_payments_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false
@@ -824,6 +838,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      meal_text_events: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_label: string | null
+          campaign: string
+          created_at: string
+          cuisine: string
+          event_at: string
+          evidence_source: string
+          id: string
+          legacy_audit_id: string | null
+          legacy_row_id: string | null
+          preorder_id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_label?: string | null
+          campaign: string
+          created_at?: string
+          cuisine: string
+          event_at: string
+          evidence_source: string
+          id?: string
+          legacy_audit_id?: string | null
+          legacy_row_id?: string | null
+          preorder_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_label?: string | null
+          campaign?: string
+          created_at?: string
+          cuisine?: string
+          event_at?: string
+          evidence_source?: string
+          id?: string
+          legacy_audit_id?: string | null
+          legacy_row_id?: string | null
+          preorder_id?: string
+        }
+        Relationships: []
       }
       meal_text_sends: {
         Row: {
@@ -863,6 +922,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "cuisine_preorders"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_text_sends_preorder_id_fkey"
+            columns: ["preorder_id"]
+            isOneToOne: false
+            referencedRelation: "meal_accounting_lines"
+            referencedColumns: ["preorder_id"]
           },
         ]
       }
@@ -904,6 +970,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "cuisine_preorders"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_zelle_text_sends_preorder_id_fkey"
+            columns: ["preorder_id"]
+            isOneToOne: false
+            referencedRelation: "meal_accounting_lines"
+            referencedColumns: ["preorder_id"]
           },
         ]
       }
@@ -1401,6 +1474,25 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meal_accounting_lines: {
+        Row: {
+          cuisine: string | null
+          invitation_id: string | null
+          name: string | null
+          phone: string | null
+          preorder_id: string | null
+          quantity: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cuisine_preorders_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: true
+            referencedRelation: "invitations"
             referencedColumns: ["id"]
           },
         ]
