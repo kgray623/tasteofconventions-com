@@ -1589,7 +1589,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_current_user_committee: { Args: never; Returns: boolean }
       merge_preorder_selections: {
         Args: { _existing: Json; _incoming: Json }
         Returns: Json
