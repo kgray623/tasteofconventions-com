@@ -251,7 +251,7 @@ export function zelleQrLinkLine(
 ) {
   const set = mealPhotoSetFor(cuisine);
   if (!set) return "";
-  return `Click here to pay using Zelle: ${PUBLIC_SITE_ORIGIN}/meals/${set.slug}`;
+  return `Click to pay using Zelle: ${PUBLIC_SITE_ORIGIN}/meals/${set.slug}`;
 }
 
 /**
