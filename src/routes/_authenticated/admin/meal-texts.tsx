@@ -352,7 +352,9 @@ function MealTextsPage() {
                 <Badge variant={needsTextCount === 0 ? "outline" : "destructive"}>{needsTextCount} order lines</Badge>
               </div>
               <Badge variant={reconciliation.totals.reconciles ? "outline" : "destructive"}>
-                {reconciliation.totals.reconciles ? "All 108 order lines reconcile" : "Accounting mismatch — review required"}
+                {reconciliation.totals.reconciles
+                  ? `All ${reconciliation.totals.message_units} order lines reconcile`
+                  : "Accounting mismatch — review required"}
               </Badge>
             </>
           )}

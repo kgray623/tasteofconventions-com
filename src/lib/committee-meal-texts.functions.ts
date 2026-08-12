@@ -59,31 +59,13 @@ export const markMyMealTextSent = createServerFn({ method: "POST" })
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const sentAt = new Date().toISOString();
-
-    if (data.sent) {
-      const { error } = await supabaseAdmin.from("meal_text_sends").upsert(
-        data.marks.map((m) => ({
-          preorder_id: m.preorderId,
-          cuisine: m.cuisine,
-          sent_at: sentAt,
-          marked_by: context.userId,
-        })),
-        { onConflict: "preorder_id,cuisine" },
-      );
-      if (error) throw new Error(error.message);
-      return { ok: true, sentAt };
-    }
-
-    for (const m of data.marks) {
-      const { error } = await supabaseAdmin
-        .from("meal_text_sends")
-        .delete()
-        .eq("preorder_id", m.preorderId)
-        .eq("cuisine", m.cuisine);
-      if (error) throw new Error(error.message);
-    }
-    return { ok: true, sentAt: null };
+    const { appendMealTextEvents } = await import("@/lib/meal-text-tracking.server");
+    return appendMealTextEvents(supabaseAdmin, {
+      campaign: "original",
+      marks: data.marks,
+      sent: data.sent,
+      actorId: context.userId,
+    });
   });
 
 
@@ -120,29 +102,11 @@ export const markMyZelleTextSent = createServerFn({ method: "POST" })
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const sentAt = new Date().toISOString();
-
-    if (data.sent) {
-      const { error } = await supabaseAdmin.from("meal_zelle_text_sends").upsert(
-        data.marks.map((m) => ({
-          preorder_id: m.preorderId,
-          cuisine: m.cuisine,
-          sent_at: sentAt,
-          marked_by: context.userId,
-        })),
-        { onConflict: "preorder_id,cuisine" },
-      );
-      if (error) throw new Error(error.message);
-      return { ok: true, sentAt };
-    }
-
-    for (const m of data.marks) {
-      const { error } = await supabaseAdmin
-        .from("meal_zelle_text_sends")
-        .delete()
-        .eq("preorder_id", m.preorderId)
-        .eq("cuisine", m.cuisine);
-      if (error) throw new Error(error.message);
-    }
-    return { ok: true, sentAt: null };
+    const { appendMealTextEvents } = await import("@/lib/meal-text-tracking.server");
+    return appendMealTextEvents(supabaseAdmin, {
+      campaign: "payment_update",
+      marks: data.marks,
+      sent: data.sent,
+      actorId: context.userId,
+    });
   });
