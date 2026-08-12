@@ -202,6 +202,17 @@ export async function loadCommitteeMealTexts(
   for (const s of (zelleSends ?? []) as any[]) {
     zelleByMeal.set(`${s.preorder_id}::${normalizeCuisine(String(s.cuisine ?? ""))}`, s.sent_at);
   }
+  const { data: textEvents } = await supabaseAdmin
+    .from("meal_text_events")
+    .select("preorder_id,cuisine,campaign,action,event_at,created_at")
+    .order("event_at")
+    .order("created_at");
+  for (const event of (textEvents ?? []) as any[]) {
+    const key = `${event.preorder_id}::${normalizeCuisine(String(event.cuisine ?? ""))}`;
+    const target = event.campaign === "original" ? sentByMeal : zelleByMeal;
+    if (event.action === "sent") target.set(key, event.event_at);
+    else target.delete(key);
+  }
 
 
 

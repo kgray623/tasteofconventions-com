@@ -11,8 +11,8 @@ export type MealNotifyInviter = {
 };
 
 export type MealTextLedgerSummary = {
-  original: { active_lines: number; active_households: number; live_rows: number; historical_deletes: number };
-  payment_update: { active_lines: number; active_households: number; live_rows: number; historical_deletes: number };
+  original: { active_lines: number; active_households: number; live_rows: number; historical_deletes: number; retained_events: number };
+  payment_update: { active_lines: number; active_households: number; live_rows: number; historical_deletes: number; retained_events: number };
   actors: Array<{
     actor_id: string | null;
     actor_name: string;
@@ -51,10 +51,15 @@ export async function loadMealNotifyRollup(supabaseAdmin: any) {
     bucket[bucketKey] += 1;
     byInviter.set(key, bucket);
   }
-  const [{ data: originalRows }, { data: updateRows }, { data: committeeInvitations }, { data: auditRows }] =
+  const [{ data: originalRows }, { data: updateRows }, { data: textEvents }, { data: committeeInvitations }, { data: auditRows }] =
     await Promise.all([
       supabaseAdmin.from("meal_text_sends").select("preorder_id,cuisine,marked_by"),
       supabaseAdmin.from("meal_zelle_text_sends").select("preorder_id,cuisine,marked_by"),
+      supabaseAdmin
+        .from("meal_text_events")
+        .select("preorder_id,cuisine,campaign,action,actor_id,event_at,created_at")
+        .order("event_at")
+        .order("created_at"),
       supabaseAdmin.from("invitations").select("id,guest_name,guest_phone").eq("is_committee", true).order("guest_name"),
       supabaseAdmin
         .from("audit_log")
@@ -97,6 +102,16 @@ export async function loadMealNotifyRollup(supabaseAdmin: any) {
     paymentUpdateKeys: Set<string>;
     paymentUpdateHouseholds: Set<string>;
   }>();
+  const latestEvents = new Map<string, any>();
+  for (const event of (textEvents ?? []) as any[]) {
+    latestEvents.set(`${event.campaign}::${event.preorder_id}::${normalizeCuisine(String(event.cuisine ?? ""))}`, event);
+  }
+  const effectiveOriginal = [...latestEvents.values()]
+    .filter((event) => event.campaign === "original" && event.action === "sent")
+    .map((event) => ({ ...event, marked_by: event.actor_id }));
+  const effectiveUpdates = [...latestEvents.values()]
+    .filter((event) => event.campaign === "payment_update" && event.action === "sent")
+    .map((event) => ({ ...event, marked_by: event.actor_id }));
   const countActors = (source: any[], kind: "original" | "payment_update") => {
     for (const row of source) {
       const mealKey = `${row.preorder_id}::${normalizeCuisine(String(row.cuisine ?? ""))}`;
@@ -123,8 +138,8 @@ export async function loadMealNotifyRollup(supabaseAdmin: any) {
       actors.set(key, entry);
     }
   };
-  countActors((originalRows ?? []) as any[], "original");
-  countActors((updateRows ?? []) as any[], "payment_update");
+  countActors(effectiveOriginal, "original");
+  countActors(effectiveUpdates, "payment_update");
 
   const rowsByInvitation = new Map<string, typeof ledger.rows>();
   for (const row of ledger.rows) {
@@ -162,8 +177,16 @@ export async function loadMealNotifyRollup(supabaseAdmin: any) {
         a.name.localeCompare(b.name),
     ),
     text_accounting: {
-      original: { ...originalSummary, historical_deletes: deletedOriginal },
-      payment_update: { ...updateSummary, historical_deletes: deletedUpdates },
+      original: {
+        ...summarize(effectiveOriginal),
+        historical_deletes: deletedOriginal,
+        retained_events: ((textEvents ?? []) as any[]).filter((event) => event.campaign === "original").length,
+      },
+      payment_update: {
+        ...summarize(effectiveUpdates),
+        historical_deletes: deletedUpdates,
+        retained_events: ((textEvents ?? []) as any[]).filter((event) => event.campaign === "payment_update").length,
+      },
       actors: [...actors.values()]
         .map((actor) => ({
           actor_id: actor.actor_id,

@@ -31,6 +31,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
       { data: inviterRows },
       { data: sends },
       { data: zelleSends },
+      { data: textEvents },
       { data: zelleSetting },
       ledger,
     ] = await Promise.all([
@@ -44,6 +45,11 @@ export const getMealTextData = createServerFn({ method: "POST" })
       supabaseAdmin.from("inviters").select("id,name"),
       supabaseAdmin.from("meal_text_sends").select("preorder_id,cuisine,sent_at"),
       supabaseAdmin.from("meal_zelle_text_sends").select("preorder_id,cuisine,sent_at,marked_by"),
+      supabaseAdmin
+        .from("meal_text_events")
+        .select("preorder_id,cuisine,campaign,action,event_at,actor_id,created_at")
+        .order("event_at")
+        .order("created_at"),
       supabaseAdmin
         .from("app_settings")
         .select("value")
@@ -78,6 +84,19 @@ export const getMealTextData = createServerFn({ method: "POST" })
     const sentByMeal = new Map<string, string>();
     for (const s of ((sends ?? []) as any[])) {
       sentByMeal.set(`${s.preorder_id}::${String(s.cuisine ?? "")}`, s.sent_at);
+    }
+    for (const event of ((textEvents ?? []) as any[])) {
+      const key = `${event.preorder_id}::${String(event.cuisine ?? "")}`;
+      const target = event.campaign === "original" ? sentByMeal : zelleByMeal;
+      if (event.action === "sent") target.set(key, event.event_at);
+      else target.delete(key);
+      if (event.campaign === "payment_update") {
+        if (event.action === "sent") {
+          zelleByWhom.set(key, event.actor_id ? markerNames.get(event.actor_id) || null : null);
+        } else {
+          zelleByWhom.delete(key);
+        }
+      }
     }
 
     const inviterNameById = new Map<string, string>(
