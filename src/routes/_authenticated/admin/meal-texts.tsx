@@ -102,6 +102,7 @@ function MealTextsPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [reconciliation, setReconciliation] = useState<{
     totals: {
+      households: number;
       message_units: number;
       meal_quantity: number;
       paid: number;
@@ -261,13 +262,7 @@ function MealTextsPage() {
     try {
       const data = { marks: [{ preorderId: row.id, cuisine: row.cuisine }], sent };
       const res = await markZelle({ data });
-      setRows((prev) =>
-        prev.map((r) =>
-          r.id === row.id && r.cuisine === row.cuisine
-            ? { ...r, zelle_sent_at: res.sentAt, sent_by: res.sentAt ? "you" : null }
-            : r,
-        ),
-      );
+      if (res.ok) await refresh({ keepWording: true });
     } catch (e) {
       toast.error("Couldn't update the sent mark", { description: getErrorMessage(e) });
     } finally {
@@ -308,9 +303,7 @@ function MealTextsPage() {
   };
 
   const totalOrders = reconciliation?.totals.message_units ?? rows.length;
-  const totalHouseholds = reconciliation?.committee_orders
-    ? new Set(rows.map((r) => r.id)).size
-    : new Set(rows.map((r) => r.id)).size;
+  const totalHouseholds = reconciliation?.totals.households ?? new Set(rows.map((r) => r.id)).size;
   const totalMeals = reconciliation?.totals.meal_quantity ?? rows.reduce((s, r) => s + r.qty, 0);
   const sentCount = textSentRows.length;
   const paidCount = paidRows.length;
@@ -373,6 +366,30 @@ function MealTextsPage() {
           </Button>
         </div>
       </Card>
+
+      {reconciliation && (
+        <Card className="p-5 space-y-4">
+          <div>
+            <h2 className="font-display text-2xl">Text-mark accounting</h2>
+            <p className="text-sm text-muted-foreground">
+              Counts are mark records, grouped by who explicitly checked them. They are not presented as one person's sends.
+            </p>
+          </div>
+          <div className="divide-y divide-border rounded-md border border-border">
+            {reconciliation.text_accounting.actors.map((actor) => (
+              <div key={actor.actor_id ?? "historical"} className="flex items-center justify-between gap-3 p-3 text-sm">
+                <span className="font-medium">{actor.actor_name}</span>
+                <span className="text-right text-muted-foreground">
+                  {actor.original} original · {actor.payment_update} payment update
+                </span>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Retained audit history also records {reconciliation.text_accounting.original.historical_deletes} original-text deletions and {reconciliation.text_accounting.payment_update.historical_deletes} payment-update deletions. These remain visible for reconciliation and are not silently counted as current sends.
+          </p>
+        </Card>
+      )}
 
       {reconciliation && (
         <Card className="p-5 space-y-4">
