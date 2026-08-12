@@ -1,13 +1,17 @@
 import { buildMealCommunicationLedger } from "@/lib/meal-communication";
 
 export async function loadMealCommunicationLedger(supabaseAdmin: any) {
-  const [preorders, invitations, inviters, originalSends, updateSends, payments, confirmations] =
+  const [preorders, invitations, inviters, originalSends, updateSends, textEvents, payments, confirmations] =
     await Promise.all([
       supabaseAdmin.from("cuisine_preorders").select("id,invitation_id,name,phone,selections").order("name"),
       supabaseAdmin.from("invitations").select("id,inviter_id"),
       supabaseAdmin.from("inviters").select("id,name"),
       supabaseAdmin.from("meal_text_sends").select("preorder_id,cuisine,sent_at"),
       supabaseAdmin.from("meal_zelle_text_sends").select("preorder_id,cuisine,sent_at"),
+      supabaseAdmin
+        .from("meal_text_events")
+        .select("preorder_id,cuisine,campaign,action,event_at,created_at")
+        .order("event_at"),
       supabaseAdmin
         .from("meal_payments")
         .select("preorder_id,cuisine,paid_at,source,method,reported_note,reported_by_label,verified_at"),
@@ -19,6 +23,7 @@ export async function loadMealCommunicationLedger(supabaseAdmin: any) {
     inviters,
     originalSends,
     updateSends,
+    textEvents,
     payments,
     confirmations,
   ]) {
@@ -30,6 +35,7 @@ export async function loadMealCommunicationLedger(supabaseAdmin: any) {
     inviters: inviters.data ?? [],
     originalSends: originalSends.data ?? [],
     updateSends: updateSends.data ?? [],
+    textEvents: textEvents.data ?? [],
     payments: payments.data ?? [],
     confirmations: confirmations.data ?? [],
   });

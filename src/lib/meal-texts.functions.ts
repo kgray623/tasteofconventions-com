@@ -2,15 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-async function assertStaff(supabase: any, userId: string) {
-  const { data, error } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", userId)
-    .in("role", ["admin", "team"]);
-  if (error || !data || data.length === 0) throw new Error("Forbidden");
-}
-
 export {
   DEFAULT_MEAL_TEXT_TEMPLATE,
   DEFAULT_ZELLE_UPDATE_TEMPLATE,
@@ -24,14 +15,11 @@ import {
   type MealTextRow,
 } from "@/lib/meal-text-defaults";
 
-const RESTAURANT_COLUMNS =
-  "id,name,cuisine,phone,website,order_ready,active,venmo_handle,zelle_name,zelle_phone,zelle_qr_url,zelle_pay_link,chicken_price,beef_price,price_note";
-
-
 export const getMealTextData = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertStaff(context.supabase, context.userId);
+    const { assertMealStaff } = await import("@/lib/meal-text-tracking.server");
+    await assertMealStaff(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { loadMealNotifyRollup } = await import("@/lib/meal-notify.server");
 
@@ -43,10 +31,11 @@ export const getMealTextData = createServerFn({ method: "POST" })
       { data: inviterRows },
       { data: sends },
       { data: zelleSends },
+      { data: textEvents },
       { data: zelleSetting },
       ledger,
     ] = await Promise.all([
-      supabaseAdmin.from("restaurants").select(RESTAURANT_COLUMNS).order("name"),
+      supabaseAdmin.from("restaurants").select("id,name,cuisine,phone,website,order_ready,active,venmo_handle,zelle_name,zelle_phone,zelle_qr_url,zelle_pay_link,chicken_price,beef_price,price_note").order("name"),
       supabaseAdmin
         .from("cuisine_preorders")
         .select("id,name,phone,selections,invitation_id")
@@ -56,6 +45,11 @@ export const getMealTextData = createServerFn({ method: "POST" })
       supabaseAdmin.from("inviters").select("id,name"),
       supabaseAdmin.from("meal_text_sends").select("preorder_id,cuisine,sent_at"),
       supabaseAdmin.from("meal_zelle_text_sends").select("preorder_id,cuisine,sent_at,marked_by"),
+      supabaseAdmin
+        .from("meal_text_events")
+        .select("preorder_id,cuisine,campaign,action,event_at,actor_id,created_at")
+        .order("event_at")
+        .order("created_at"),
       supabaseAdmin
         .from("app_settings")
         .select("value")
@@ -90,6 +84,19 @@ export const getMealTextData = createServerFn({ method: "POST" })
     const sentByMeal = new Map<string, string>();
     for (const s of ((sends ?? []) as any[])) {
       sentByMeal.set(`${s.preorder_id}::${String(s.cuisine ?? "")}`, s.sent_at);
+    }
+    for (const event of ((textEvents ?? []) as any[])) {
+      const key = `${event.preorder_id}::${String(event.cuisine ?? "")}`;
+      const target = event.campaign === "original" ? sentByMeal : zelleByMeal;
+      if (event.action === "sent") target.set(key, event.event_at);
+      else target.delete(key);
+      if (event.campaign === "payment_update") {
+        if (event.action === "sent") {
+          zelleByWhom.set(key, event.actor_id ? markerNames.get(event.actor_id) || null : null);
+        } else {
+          zelleByWhom.delete(key);
+        }
+      }
     }
 
     const inviterNameById = new Map<string, string>(
@@ -237,7 +244,8 @@ export const saveRestaurantContact = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    await assertStaff(context.supabase, context.userId);
+    const { assertMealStaff } = await import("@/lib/meal-text-tracking.server");
+    await assertMealStaff(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const patch: { phone: string | null; order_ready: boolean; website?: string | null } = {
       phone: data.phone?.trim() || null,
@@ -265,7 +273,8 @@ export const saveMealTextTemplate = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    await assertStaff(context.supabase, context.userId);
+    const { assertMealStaff } = await import("@/lib/meal-text-tracking.server");
+    await assertMealStaff(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("app_settings")
@@ -302,33 +311,15 @@ export const markMealTextSent = createServerFn({ method: "POST" })
   )
 
   .handler(async ({ data, context }) => {
-    await assertStaff(context.supabase, context.userId);
+    const { appendMealTextEvents, assertMealStaff } = await import("@/lib/meal-text-tracking.server");
+    await assertMealStaff(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const sentAt = new Date().toISOString();
-
-    if (data.sent) {
-      const { error } = await supabaseAdmin.from("meal_text_sends").upsert(
-        data.marks.map((m) => ({
-          preorder_id: m.preorderId,
-          cuisine: m.cuisine,
-          sent_at: sentAt,
-          marked_by: context.userId,
-        })),
-        { onConflict: "preorder_id,cuisine" },
-      );
-      if (error) throw new Error(error.message);
-      return { ok: true, sentAt };
-    }
-
-    for (const m of data.marks) {
-      const { error } = await supabaseAdmin
-        .from("meal_text_sends")
-        .delete()
-        .eq("preorder_id", m.preorderId)
-        .eq("cuisine", m.cuisine);
-      if (error) throw new Error(error.message);
-    }
-    return { ok: true, sentAt: null };
+    return appendMealTextEvents(supabaseAdmin, {
+      campaign: "original",
+      marks: data.marks,
+      sent: data.sent,
+      actorId: context.userId,
+    });
   });
 
 
@@ -354,31 +345,13 @@ export const markZelleTextSent = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    await assertStaff(context.supabase, context.userId);
+    const { appendMealTextEvents, assertMealStaff } = await import("@/lib/meal-text-tracking.server");
+    await assertMealStaff(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const sentAt = new Date().toISOString();
-
-    if (data.sent) {
-      const { error } = await supabaseAdmin.from("meal_zelle_text_sends").upsert(
-        data.marks.map((m) => ({
-          preorder_id: m.preorderId,
-          cuisine: m.cuisine,
-          sent_at: sentAt,
-          marked_by: context.userId,
-        })),
-        { onConflict: "preorder_id,cuisine" },
-      );
-      if (error) throw new Error(error.message);
-      return { ok: true, sentAt };
-    }
-
-    for (const m of data.marks) {
-      const { error } = await supabaseAdmin
-        .from("meal_zelle_text_sends")
-        .delete()
-        .eq("preorder_id", m.preorderId)
-        .eq("cuisine", m.cuisine);
-      if (error) throw new Error(error.message);
-    }
-    return { ok: true, sentAt: null };
+    return appendMealTextEvents(supabaseAdmin, {
+      campaign: "payment_update",
+      marks: data.marks,
+      sent: data.sent,
+      actorId: context.userId,
+    });
   });

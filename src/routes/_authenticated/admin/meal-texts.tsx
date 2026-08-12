@@ -117,8 +117,8 @@ function MealTextsPage() {
     };
     generated_at: string;
     text_accounting: {
-      original: { active_lines: number; active_households: number; live_rows: number; historical_deletes: number };
-      payment_update: { active_lines: number; active_households: number; live_rows: number; historical_deletes: number };
+      original: { active_lines: number; active_households: number; live_rows: number; historical_deletes: number; retained_events: number };
+      payment_update: { active_lines: number; active_households: number; live_rows: number; historical_deletes: number; retained_events: number };
       actors: Array<{
         actor_id: string | null;
         actor_name: string;
@@ -352,7 +352,9 @@ function MealTextsPage() {
                 <Badge variant={needsTextCount === 0 ? "outline" : "destructive"}>{needsTextCount} order lines</Badge>
               </div>
               <Badge variant={reconciliation.totals.reconciles ? "outline" : "destructive"}>
-                {reconciliation.totals.reconciles ? "All 108 order lines reconcile" : "Accounting mismatch — review required"}
+                {reconciliation.totals.reconciles
+                  ? `All ${reconciliation.totals.message_units} order lines reconcile`
+                  : "Accounting mismatch — review required"}
               </Badge>
             </>
           )}
@@ -396,7 +398,7 @@ function MealTextsPage() {
             ))}
           </div>
           <p className="text-xs text-muted-foreground">
-            Retained audit history also records {reconciliation.text_accounting.original.historical_deletes} original-text deletions and {reconciliation.text_accounting.payment_update.historical_deletes} payment-update deletions. These remain visible for reconciliation and are not silently counted as current sends.
+            The append-only history retains {reconciliation.text_accounting.original.retained_events} original-text events and {reconciliation.text_accounting.payment_update.retained_events} payment-update events, including {reconciliation.text_accounting.original.historical_deletes} original reversals and {reconciliation.text_accounting.payment_update.historical_deletes} payment-update reversals. They are never silently deleted or counted as current sends after reversal.
           </p>
         </Card>
       )}

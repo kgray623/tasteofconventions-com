@@ -67,6 +67,14 @@ type SourcePreorder = {
 };
 
 type SourceSend = { preorder_id: string; cuisine: string; sent_at: string };
+type SourceTextEvent = {
+  preorder_id: string;
+  cuisine: string;
+  campaign: "original" | "payment_update";
+  action: "sent" | "reversed";
+  event_at: string;
+  created_at: string;
+};
 type SourcePayment = {
   preorder_id: string;
   cuisine: string;
@@ -107,6 +115,7 @@ export function buildMealCommunicationLedger(input: {
   inviters: SourceInviter[];
   originalSends: SourceSend[];
   updateSends: SourceSend[];
+  textEvents?: SourceTextEvent[];
   payments?: SourcePayment[];
   confirmations?: SourceConfirmation[];
 }) {
@@ -116,6 +125,21 @@ export function buildMealCommunicationLedger(input: {
   const updateByKey = new Map<string, string>();
   const paidByKey = new Map<string, PaymentFact>();
 
+  const latestEvents = new Map<string, SourceTextEvent>();
+  for (const event of input.textEvents ?? []) {
+    const cuisine = normalizeCuisine(event.cuisine);
+    if (!cuisine) continue;
+    const key = `${event.campaign}::${keyFor(event.preorder_id, cuisine)}`;
+    const existing = latestEvents.get(key);
+    if (
+      !existing ||
+      event.event_at > existing.event_at ||
+      (event.event_at === existing.event_at && event.created_at > existing.created_at)
+    ) {
+      latestEvents.set(key, event);
+    }
+  }
+
   for (const row of input.originalSends) {
     const cuisine = normalizeCuisine(row.cuisine);
     if (cuisine) originalByKey.set(keyFor(row.preorder_id, cuisine), row.sent_at);
@@ -123,6 +147,13 @@ export function buildMealCommunicationLedger(input: {
   for (const row of input.updateSends) {
     const cuisine = normalizeCuisine(row.cuisine);
     if (cuisine) updateByKey.set(keyFor(row.preorder_id, cuisine), row.sent_at);
+  }
+  for (const [eventKey, event] of latestEvents) {
+    const prefix = `${event.campaign}::`;
+    const key = eventKey.slice(prefix.length);
+    const target = event.campaign === "original" ? originalByKey : updateByKey;
+    if (event.action === "sent") target.set(key, event.event_at);
+    else target.delete(key);
   }
   for (const row of input.payments ?? []) {
     const cuisine = normalizeCuisine(row.cuisine);
