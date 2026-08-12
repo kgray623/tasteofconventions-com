@@ -118,8 +118,8 @@ export const updateGuestRecord = createServerFn({ method: "POST" })
       .select("id,selections")
       .eq("invitation_id", data.invitationId)
       .maybeSingle();
-    const mealQty = Array.isArray(preorder?.selections)
-      ? (preorder!.selections as unknown[]).reduce((sum, item) => {
+    const mealQty: number = Array.isArray(preorder?.selections)
+      ? (preorder!.selections as unknown[]).reduce<number>((sum, item) => {
           const qty = Number((item as { qty?: unknown })?.qty ?? 0);
           return sum + (Number.isFinite(qty) ? qty : 0);
         }, 0)
