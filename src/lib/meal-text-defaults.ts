@@ -7,29 +7,27 @@ export const DEFAULT_MEAL_TEXT_TEMPLATE = `${MEAL_TEXT_UPDATE_INTRO}
 
 Hi {first_name} —
 
-The following information is how to pay for your catered pre-order meal. Each restaurant has provided Zelle which is secure and direct.
+The following information is how to pay for your catered pre-ordered meal. Each restaurant has provided Zelle for payment which is secure.
 
-All meals will be gluten-free, seed oil free (using butter or beef tallow) and MSG free.
+All meals are gluten-free, seed oil free (using butter or beef tallow) and MSG free.
 
-Your pre-order is for {order} and {restaurant_cuisine} meal choices are:
+Your pre-order {restaurant_cuisine} meal choices are:
 
 {meal_choices}
 
 {zelle_qr_link}
 
-Or open Zelle in your bank app, then {pay_sentence}
+{pay_sentence}
 
-The restaurant will verify your payment within 72 hrs. You will have both a bank receipt and your RSVP securing your meal purchase.
+The restaurant will verify your payment within 72 hrs.
 
-August 23rd is the last day to prepay catered meal(s). Pre-pay guarantees your meal for the Taste of Conventions.
+You will have both a bank receipt and your RSVP verifying your meal purchase.
 
-When you're at the event, present your RSVP receipt for your meal.
+August 23rd is the last day to prepay for catered meal(s). Pre-paying guarantees your meal at the event.
 
-If you decide to not pre-purchase a catered meal, please login to your RSVP and cancel your pre-order. Thank you.
+If you don't want to pre-purchase a catered meal, please cancel your pre-order on your RSVP. Please bring a covered dish to share, so everyone has a meal to share together.
 
-For all not pre-paying for a catered meal, please bring a covered dish to share, so everyone has a meal to share together.
-
-Thank you for your support in making this an encouraging and exciting experience for all of us! 😊
+Thank you for your support in making this an encouraging and exciting experience for all! 😊
 
 Christian ❤️ love,
 
