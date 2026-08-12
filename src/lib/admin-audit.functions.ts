@@ -187,14 +187,24 @@ export const getAdminAudit = createServerFn({ method: "GET" })
 export const getReconciliationRows = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: adminRole } = await context.supabase
+    const { data: roleRows } = await context.supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", context.userId)
-      .eq("role", "admin")
-      .maybeSingle();
-    if (!adminRole) throw new Error("Forbidden");
+      .in("role", ["admin", "team"]);
+    if (!roleRows || roleRows.length === 0) throw new Error("Forbidden");
+    const isAdmin = roleRows.some((r) => r.role === "admin");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Committee members see only the guests on their own list.
+    let ownInviterIds: string[] = [];
+    if (!isAdmin) {
+      const { data: mine } = await supabaseAdmin
+        .from("inviters")
+        .select("id")
+        .eq("host_id", context.userId);
+      ownInviterIds = (mine ?? []).map((r) => r.id);
+    }
 
     const [invRes, rsvpRes, preRes, inviterRes] = await Promise.all([
       supabaseAdmin
