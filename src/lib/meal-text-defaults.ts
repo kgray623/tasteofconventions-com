@@ -1,19 +1,23 @@
 // Shared, client-safe meal-text defaults and types.
 
 /** Opening lines both catered-meal texts lead with. */
-export const MEAL_TEXT_UPDATE_INTRO = `IMPORTANT UPDATE REGARDING Your Taste of Conventions catered meal!`;
+export const MEAL_TEXT_UPDATE_INTRO = `IMPORTANT UPDATE REGARDING your Taste of Conventions catered meal!`;
 
 export const DEFAULT_MEAL_TEXT_TEMPLATE = `${MEAL_TEXT_UPDATE_INTRO}
 
 Hi {first_name} —
 
-The following information is how to pay for your catered pre-ordered meal. Each restaurant has provided Zelle for payment which is secure.
+Please see the following information regarding your catered pre-ordered meal.
+
+The {restaurant_cuisine} restaurant has provided Zelle to collect payment for your order, which is a secure method of payment.
 
 All meals are gluten-free, seed oil free (using butter or beef tallow) and MSG free.
 
-Your pre-order {restaurant_cuisine} meal choices are:
+Your meal choices are:
 
 {meal_choices}
+
+Side dishes are included. The committee vetted the meals on behalf of all guests and selected specific dishes for all tastes.
 
 {zelle_qr_link}
 
@@ -21,11 +25,11 @@ Your pre-order {restaurant_cuisine} meal choices are:
 
 The restaurant will verify your payment within 72 hrs.
 
-You will have both a bank receipt and your RSVP verifying your meal purchase.
+You will have both your bank receipt and your RSVP of your meal purchase.
 
-August 23rd is the last day to prepay for catered meal(s). Pre-paying guarantees your meal at the event.
+August 23rd is the last day to prepay. Pre-paying guarantees your meal at the event.
 
-If you don't want to pre-purchase a catered meal, please cancel your pre-order on your RSVP. Please bring a covered dish to share, so everyone has a meal to share together.
+If you don't want to pre-purchase a catered meal, we ask you bring a covered dish to share, so we share a meal together.
 
 Thank you for your support in making this an encouraging and exciting experience for all! 😊
 
