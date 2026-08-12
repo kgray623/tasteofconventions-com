@@ -144,7 +144,10 @@ export const updateGuestRecord = createServerFn({ method: "POST" })
         guest_phone: phoneTrimmed || null,
       })
       .eq("id", data.invitationId);
-    if (invError) throw new Error("Could not save the guest's name or phone.");
+    if (invError) {
+      console.error("[guest-edit] invitation update failed", invError);
+      throw new Error(`Could not save the guest's name or phone: ${invError.message}`);
+    }
 
     if (data.status === "pending") {
       // Keep the row; clear the reply so the roster shows "no reply yet".
@@ -167,7 +170,10 @@ export const updateGuestRecord = createServerFn({ method: "POST" })
         },
         { onConflict: "invitation_id" },
       );
-      if (error) throw new Error("Could not save that RSVP.");
+      if (error) {
+        console.error("[guest-edit] rsvp upsert failed", error);
+        throw new Error(`Could not save that RSVP: ${error.message}`);
+      }
     }
 
     const [{ data: afterInv }, { data: afterRsvp }] = await Promise.all([
