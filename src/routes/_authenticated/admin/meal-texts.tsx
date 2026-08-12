@@ -82,6 +82,8 @@ function MealTextsPage() {
   const [restaurants, setRestaurants] = useState<MealRestaurant[]>([]);
   const [rows, setRows] = useState<MealTextRow[]>([]);
   const [kariTestRows, setKariTestRows] = useState<MealTextRow[]>([]);
+  // Who is signed in, so the test panel can text the message to yourself.
+  const [self, setSelf] = useState<{ name: string; phone: string }>({ name: "", phone: "" });
   // Read-only look at any guest's exact message. Opening it records nothing.
   const [preview, setPreview] = useState<{ title: string; body: string } | null>(null);
   const [template, setTemplate] = useState(DEFAULT_MEAL_TEXT_TEMPLATE);
