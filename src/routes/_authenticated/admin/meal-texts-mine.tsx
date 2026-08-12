@@ -35,7 +35,6 @@ import {
 } from "@/lib/meal-text-defaults";
 import {
   getMyMealTexts,
-  markMyMealTextSent,
   markMyZelleTextSent,
   type CommitteeMealTextRow,
 } from "@/lib/committee-meal-texts.functions";
@@ -68,7 +67,6 @@ function escapeCsv(value: string | number | null | undefined) {
 
 function MyMealTextsPage() {
   const load = useServerFn(getMyMealTexts);
-  const markSent = useServerFn(markMyMealTextSent);
   const markZelle = useServerFn(markMyZelleTextSent);
 
   const [loading, setLoading] = useState(true);
@@ -85,6 +83,7 @@ function MyMealTextsPage() {
   const [fallback, setFallback] = useState<{ filename: string; text: string } | null>(null);
   const [fallbackOpen, setFallbackOpen] = useState(false);
   const [readAt, setReadAt] = useState<string | null>(null);
+  const [totals, setTotals] = useState({ households: 0, order_lines: 0, plates: 0, paid_plates: 0, unpaid_plates: 0 });
 
   const refresh = async (inviterId: string | null) => {
     setLoading(true);
@@ -96,6 +95,7 @@ function MyMealTextsPage() {
       setZelleTemplate(res.zelleTemplate);
       setIsAdmin(res.isAdmin);
       setCommittee(res.committee);
+      setTotals(res.totals);
       setReadAt(new Date().toISOString());
     } catch (e) {
       toast.error("Couldn't load your guests' meal orders", { description: getErrorMessage(e) });
@@ -198,12 +198,12 @@ function MyMealTextsPage() {
     }
   };
 
-  const totalOrders = rows.length;
-  const totalPeople = new Set(rows.map((r) => r.id)).size;
-  const totalMeals = rows.reduce((s, r) => s + r.qty, 0);
+  const totalOrders = totals.order_lines;
+  const totalPeople = totals.households;
+  const totalMeals = totals.plates;
   const sentCount = modeRows.filter((r) => r.zelle_sent_at).length;
-  const paidPlates = paidRows.reduce((sum, row) => sum + row.qty, 0);
-  const unpaidPlates = modeRows.reduce((sum, row) => sum + row.qty, 0);
+  const paidPlates = totals.paid_plates;
+  const unpaidPlates = totals.unpaid_plates;
   const stillToText = modeRows.filter((row) => !row.zelle_sent_at).length;
 
   return (
@@ -239,7 +239,7 @@ function MyMealTextsPage() {
       </Card>
 
 
-      {!loading && <CommitteeMealPayments rows={rows} generatedAt={readAt} />}
+      {!loading && <CommitteeMealPayments rows={rows} totals={totals} generatedAt={readAt} />}
 
       {isAdmin && committee.length > 0 && (
         <Card className="p-4 space-y-2">

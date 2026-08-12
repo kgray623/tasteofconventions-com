@@ -884,6 +884,44 @@ export type Database = {
         }
         Relationships: []
       }
+      meal_text_evidence_reviews: {
+        Row: {
+          created_at: string
+          decision: string
+          id: string
+          meal_text_event_id: string
+          note: string | null
+          reviewed_at: string
+          reviewer_id: string
+        }
+        Insert: {
+          created_at?: string
+          decision: string
+          id?: string
+          meal_text_event_id: string
+          note?: string | null
+          reviewed_at?: string
+          reviewer_id: string
+        }
+        Update: {
+          created_at?: string
+          decision?: string
+          id?: string
+          meal_text_event_id?: string
+          note?: string | null
+          reviewed_at?: string
+          reviewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_text_evidence_reviews_meal_text_event_id_fkey"
+            columns: ["meal_text_event_id"]
+            isOneToOne: false
+            referencedRelation: "meal_text_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meal_text_sends: {
         Row: {
           created_at: string
@@ -1551,7 +1589,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_current_user_committee: { Args: never; Returns: boolean }
       merge_preorder_selections: {
         Args: { _existing: Json; _incoming: Json }
         Returns: Json

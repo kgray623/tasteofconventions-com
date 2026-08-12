@@ -73,7 +73,37 @@ export async function appendMealTextEvents(
     }
   }
 
-  const { error } = await supabaseAdmin.from("meal_text_events").insert(rows);
+  const { data: insertedData, error } = await supabaseAdmin
+    .from("meal_text_events")
+    .insert(rows)
+    .select("id,campaign,action,preorder_id,cuisine,actor_id,event_at,evidence_source");
   if (error) throw new Error(error.message);
-  return { ok: true, sentAt: input.sent ? rows[0]?.event_at ?? null : null };
+  const inserted = (insertedData ?? []) as Array<{
+    id: string;
+    campaign: string;
+    action: string;
+    preorder_id: string;
+    cuisine: string;
+    actor_id: string | null;
+    event_at: string;
+    evidence_source: string;
+  }>;
+  if (inserted.length !== rows.length) {
+    throw new Error("The text history write could not be verified");
+  }
+  for (const event of inserted) {
+    if (
+      event.campaign !== input.campaign ||
+      event.action !== action ||
+      event.actor_id !== input.actorId ||
+      event.evidence_source !== "human_action"
+    ) {
+      throw new Error("The text history read-back did not match the requested action");
+    }
+  }
+  return {
+    ok: true,
+    sentAt: input.sent ? rows[0]?.event_at ?? null : null,
+    eventIds: inserted.map((event) => event.id),
+  };
 }

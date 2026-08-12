@@ -38,7 +38,6 @@ import {
   DEFAULT_MEAL_TEXT_TEMPLATE,
   DEFAULT_ZELLE_UPDATE_TEMPLATE,
   getMealTextData,
-  markMealTextSent,
   markZelleTextSent,
   saveMealTextTemplate,
   saveRestaurantContact,
@@ -76,7 +75,6 @@ function MealTextsPage() {
   const load = useServerFn(getMealTextData);
   const saveContact = useServerFn(saveRestaurantContact);
   const saveTemplate = useServerFn(saveMealTextTemplate);
-  const markSent = useServerFn(markMealTextSent);
   const markZelle = useServerFn(markZelleTextSent);
 
   const [loading, setLoading] = useState(true);

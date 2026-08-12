@@ -137,20 +137,19 @@ export const getAdminAudit = createServerFn({ method: "GET" })
     totals.waitlist = rollup.people.waitlist;
     totals.pending = rollup.responses.pending;
 
-    // Food orders: count meals (quantities), not rows.
-    totals.preorder_rows = preorders.length;
-    const byCuisine: Record<string, number> = {};
-    for (const p of preorders) {
-      const sels = parseSelections(p.selections);
-      for (const s of sels) {
-        totals.meals_total += s.qty;
-        byCuisine[s.cuisine] = (byCuisine[s.cuisine] ?? 0) + s.qty;
-      }
-      if (!p.invitation_id || !invIds.has(p.invitation_id)) {
-        totals.unlinked_preorders += 1;
-      }
-    }
-    totals.meals_by_cuisine = byCuisine;
+    // Meal totals must come from the same canonical ledger as every meal screen.
+    // The raw rows below are retained only to surface linkage exceptions.
+    const { loadMealCommunicationLedger } = await import("@/lib/meal-communication.server");
+    const mealLedger = await loadMealCommunicationLedger(supabaseAdmin);
+    totals.preorder_rows = mealLedger.totals.households;
+    totals.meals_total = mealLedger.totals.meal_quantity;
+    totals.meals_by_cuisine = mealLedger.rows.reduce<Record<string, number>>((byCuisine, row) => {
+      byCuisine[row.cuisine] = (byCuisine[row.cuisine] ?? 0) + row.qty;
+      return byCuisine;
+    }, {});
+    totals.unlinked_preorders = preorders.filter(
+      (p) => !p.invitation_id || !invIds.has(p.invitation_id),
+    ).length;
 
     const orphanRsvps = rsvps.filter((r) => !invIds.has(r.invitation_id)).length;
     const unlinkedPreorders = preorders

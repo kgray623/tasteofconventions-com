@@ -14,16 +14,15 @@ import type { CommitteeMealTextRow } from "@/lib/committee-meal-texts.functions"
  */
 export function CommitteeMealPayments({
   rows,
+  totals,
   generatedAt,
 }: {
   rows: CommitteeMealTextRow[];
+  totals: { plates: number; paid_plates: number; unpaid_plates: number };
   generatedAt?: string | null;
 }) {
   const paid = useMemo(() => rows.filter((r) => isPaidState(r.state)), [rows]);
   const unpaid = useMemo(() => rows.filter((r) => !isPaidState(r.state)), [rows]);
-
-  const platesPaid = paid.reduce((s, r) => s + r.qty, 0);
-  const platesTotal = rows.reduce((s, r) => s + r.qty, 0);
 
   const byCuisine = (list: CommitteeMealTextRow[]) => {
     const map = new Map<string, CommitteeMealTextRow[]>();
@@ -53,9 +52,9 @@ export function CommitteeMealPayments({
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
           <Badge variant="outline">
-            {platesPaid} of {platesTotal} plates paid
+            {totals.paid_plates} of {totals.plates} plates paid
           </Badge>
-          <Badge variant="outline">{platesTotal - platesPaid} plates still to pay</Badge>
+          <Badge variant="outline">{totals.unpaid_plates} plates still to pay</Badge>
         </div>
       </div>
 

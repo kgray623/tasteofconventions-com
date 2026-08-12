@@ -1,138 +1,105 @@
 # Permanent meal accounting correction and proof system
 
-**2026-08-12 23:21 UTC**
+2026-08-12 23:35 UTC
 
-## Direct explanation and accountability
+## What went wrong
 
-You are right: this became a mess because I repeatedly changed the presentation and queue rules before establishing one written accounting model, one canonical database result, and end-to-end proof across every screen. I then reported totals as complete after partial checks. That violated the required standard and made you find contradictions that the system should have blocked automatically.
+This was not one arithmetic error. The system allowed different screens and labels to describe different units as though they were the same number:
 
-The failures were:
+- **Plates** are quantities restaurants prepare.
+- **Households** are people/families with a preorder.
+- **Order lines** are household + cuisine combinations, which are the individual texts.
+- **Paid/unpaid plates** are subsets of total plates, not alternative totals.
+- **Texted households** and **texted order lines** are different measures because one household may receive several cuisine-specific texts.
 
-1. **Different units were presented as though they were the same number.**
-   - A **plate** is a quantity of food.
-   - A **household/person record** is one preorder.
-   - An **order line** is one preorder + one cuisine.
-   - A person ordering two cuisines is one household, two order lines, and potentially several plates.
-   - Text marks apply to order lines, not plates. I failed to define and label these units first.
+The implementation then compounded that ambiguity:
 
-2. **Paid/unpaid subsets were mislabeled as total orders.**
-   - The verified database currently contains **137 plates**: African 36 + Indonesian 57 + Myanmar 44.
-   - Those plates belong to **70 preorder households** and **108 cuisine order lines**.
-   - **13 paid plates + 124 unpaid plates = 137 total plates**. The earlier screen called 124 “plates ordered,” which was false; it was the unpaid subset.
+- Admin meal totals are still calculated independently in one audit path instead of always using the canonical ledger.
+- One success message still hard-codes “108 order lines,” even though the live database has changed.
+- The old text ledgers used upsert for “sent” and hard delete for “undo,” so the live tables alone could not explain historical actions.
+- Historical marks were attributed from retained database evidence, but that evidence does not prove every mark was an explicit text Kari personally sent.
+- Committee members with no linked preorder were previously omitted instead of being shown as “No meal order stored.”
 
-3. **Two separate text campaigns were blended together.**
-   - `meal_text_sends` records the original meal message.
-   - `meal_zelle_text_sends` records the later payment update.
-   - The current database has **22 live original-message rows** but only **19 match active order lines across 10 households**.
-   - It has **105 live payment-update rows**, of which **101 match active order lines across 66 households**.
-   - I used terms such as “texts sent,” “people,” and “updates” without consistently stating which campaign or unit they represented.
+These were design and implementation failures. The app presented plausible-looking numbers without enforcing one definition, one source, and one proof trail. That is why you repeatedly had to identify contradictions manually.
 
-4. **Historical text marks were mutable instead of permanently retained.**
-   - The audit log records **77 original-text deletions** and **2 payment-update deletions**.
-   - That means the current live tables alone cannot reconstruct every historical statement about what was sent. I should never have claimed that your reported **54** was disproved or explained without reconciling the exact recipient rows and audit events first.
+## Verified live state
 
-5. **Current-order accounting and historical activity accounting were mixed.**
-   - A sent mark may remain after an order is changed or cancelled; that history must remain retained, but it must not inflate the current active-order count.
-   - The code now filters actor totals to active order keys while separately counting historical rows. This distinction is necessary, but it was added after contradictory numbers had already been shown.
+The database and the exact admin mobile route were checked before this plan:
 
-6. **Committee visibility was inferred only from linked active preorders.**
-   - The database contains **25 committee invitations**.
-   - **11 have linked active orders; 14 currently have no linked active preorder**.
-   - Meal-only lists silently omitted those 14, making it look as though committee members were lost. The correct system must always list all 25 and explicitly state active order, no stored order, or linkage exception.
+- **134 plates · 69 households · 106 active order lines** now exist in the live database.
+- Cuisine totals are **36 African · 55 Indonesian · 43 Myanmar = 134 plates**.
+- Payment status is **13 paid plates · 121 unpaid plates = 134 plates**.
+- The committee audit shows **25 members: 11 with active orders, 14 with no stored order; 20 lines and 23 plates**.
+- Kari is currently attributed **55 active households / 83 active payment-update lines**, plus two retained marks for orders later changed or cancelled.
+- Kari’s stated **54 sent** is not reconciled. The database attribution cannot be treated as proof that she personally sent 55. Recipient-by-recipient review is required; the system must show the discrepancy rather than overwrite her count.
+- The screen now displays the live 134/69/106 values, but a stale hard-coded “108” remains in source and another admin path still performs independent meal arithmetic.
 
-7. **The UI still contains an unsafe hard-coded reconciliation sentence.**
-   - The meal-text page currently renders “All 108 order lines reconcile” as literal text instead of inserting the live total. Even when 108 is correct today, hard-coding it creates the next contradiction as soon as an order changes.
+## Correction plan
 
-8. **My verification and reporting process was inadequate.**
-   - I accepted compilation, isolated queries, or one screen as proof.
-   - I did not compare every displayed number against the exact rows behind it on every affected route.
-   - I changed definitions during successive fixes instead of freezing the accounting contract first.
-   - I made completion claims before exact-role, exact-mobile, database-write/read-back verification. That is why you had to keep correcting the system.
+### 1. Enforce one accounting contract
 
-## Permanent solution
-
-### 1. Establish one immutable accounting contract
-
-Define and display these separately everywhere:
+Use the canonical meal ledger as the only source for every admin, committee, restaurant, notification, and export total.
 
 ```text
-Total plates        = sum of active cuisine quantities
-Households          = distinct active preorder IDs
-Order lines         = distinct active preorder ID + normalized cuisine
-Paid plates         = quantities on active paid order lines
-Unpaid plates       = total plates - paid plates
-Original texts      = distinct original-message marks by order line and household
-Payment updates     = distinct update marks by order line and household
-Historical activity = retained marks/events no longer attached to an active order line
+Total plates = African + Indonesian + Myanmar
+Total plates = paid plates + unpaid plates
+Active order lines = every active preorder + normalized cuisine
+Text state groups = active order lines exactly once
 ```
 
-Require these equations before any total is presented as reconciled:
+Every view will use the same explicit labels: plates, households, order lines, paid plates, unpaid plates, texted households, and texted order lines. No screen may use “meals” or “sent” without naming the unit.
 
-```text
-African + Indonesian + Myanmar = total plates
-Paid plates + unpaid plates = total plates
-Paid lines + update-sent lines + needs-update lines + exception lines = total order lines
-Active-order history + inactive/cancelled history + unresolved history = all retained text events
-Committee active-order + no-order + linkage-exception = all committee members
-```
+### 2. Remove remaining parallel and hard-coded totals
 
-### 2. Move reconciliation into one database-backed source of truth
+- Replace the Admin Overview audit calculation with canonical ledger totals while retaining a separate, plainly labeled unlinked-record exception list.
+- Replace the hard-coded “108 order lines” message with the current database value.
+- Pass canonical paid/total quantities into committee payment displays instead of recalculating them locally.
+- Audit every CSV/export and route consumer so all totals and row membership come from the same ledger snapshot and carry the same UTC read timestamp.
 
-- Create one canonical read model keyed by `preorder_id + normalized cuisine`.
-- Make Admin Overview, preorder reports, Meal Texts, committee Meal Texts, restaurant views, and CSV exports consume that same result.
-- Remove route-local arithmetic and literal totals, including the hard-coded “108.”
-- Return named values with their units; a component must not be able to label unpaid plates as total plates or cuisine lines as people.
+### 3. Make text history evidentiary, not assumptive
 
-### 3. Make text tracking append-only and human-verifiable
+- Keep the new append-only text-event history; never delete or overwrite sent/reversed evidence.
+- Stop presenting imported legacy marks as proven human sends. Label each event by evidence source: explicit current action, legacy live mark, recovered reversal, or unresolved historical evidence.
+- Display active current state separately from retained history for cancelled/changed orders.
+- Require every new sent/reversed event to contain actor, campaign, preorder, cuisine, timestamp, and source, followed by immediate database read-back.
+- Keep original meal texts and payment-update texts as separate campaigns everywhere.
 
-- Preserve every existing mark and audit record; delete or overwrite none of them.
-- Replace destructive sent/undo behavior with append-only `sent` and `reversed` events containing campaign, preorder, cuisine, actor, and UTC timestamp.
-- Derive current status from the latest valid event while retaining the complete history.
-- A Text/Copy/Open action never records a sent mark. Only the explicit human confirmation after sending does.
-- Reject duplicate active marks and marks that do not correspond to an active order line, while retaining exceptions for authorized review.
+### 4. Reconcile Kari’s 54 recipient by recipient
 
-### 4. Reconcile the reported 54 row by row
+Create an authorized reconciliation view containing the 55 active households currently attributed to Kari, the two changed/cancelled historical marks, cuisine lines, timestamps, and evidence source.
 
-- Identify the exact signed-in actor record for Kari.
-- List every original and payment-update event attributed to Kari, including active rows, cancelled/changed-order rows, deletions, reversals, duplicates, and unattributed historical imports.
-- Produce a recipient-level reconciliation, not a forced total:
-  - distinct people/households,
-  - distinct cuisine lines,
-  - campaign,
-  - active/inactive status,
-  - sent/reversed timestamp,
-  - evidence source.
-- Do not change 54 into 55, 66, 83, 101, or 105 by relabeling it. Explain exactly which evidence accounts for each of the 54 and leave any unmatched event visibly unresolved.
+- Kari can confirm or dispute each attribution without deleting the evidence.
+- Confirmed explicit actions count toward “Kari confirmed sent.”
+- Unconfirmed legacy marks remain visible as “historical mark — not personally confirmed.”
+- The screen will show the honest equation, for example: confirmed + unconfirmed + reversed/changed = retained attributed evidence.
+- Do not force the result to 54. Resolve the one-household discrepancy from actual recipient evidence and preserve the outcome in append-only events.
 
-### 5. Keep every committee member visible
+### 5. Preserve every order and committee member
 
-- Show all 25 committee members in the authorized audit view.
-- Classify each as active order, no meal order stored, or linkage exception.
-- For active orders, show cuisine lines and plate quantities.
-- Never invent a missing order and never hide a member because no preorder link exists.
-- Add an authorized correction flow that writes a new retained order/update and reads it back without overwriting previous submitted information.
+- Continue showing all 25 committee members, including “No meal order stored” and linkage exceptions.
+- Never infer or invent an order for a member without one.
+- Never delete or hide cancelled, changed, unlinked, or historical submissions; show them in authorized exception/history views while excluding them from active totals by an explicit rule.
 
-### 6. Add automated controls that prevent another contradiction
+### 6. Add automatic reconciliation gates
 
-- Add reconciliation tests for unit definitions, cuisine normalization, paid/unpaid equations, multi-cuisine households, cancellations, text reversals, duplicate marks, and committee linkage exceptions.
-- Make every affected screen show the database read timestamp and a visible accounting warning if any invariant fails.
-- Disable confident summary language and exports when totals do not reconcile; exceptions remain visible and downloadable.
-- Compare each CSV row set to the on-screen filtered row set and canonical totals.
+- Add tests using live-shaped fixtures for plate, household, order-line, payment, campaign-state, committee, and actor-attribution equations.
+- If any invariant fails, replace confident totals with a visible accounting warning and the exception rows.
+- Add a database-backed snapshot identifier/read timestamp so two screens can prove they are showing the same accounting state.
+- Treat every future mutation as incomplete until the exact database row is read back and every affected total reconciles.
 
-## Verification required before any completion claim
+## End-to-end verification required before any completion claim
 
-1. Read back the live database and prove the current baseline: **137 plates = 36 African + 57 Indonesian + 44 Myanmar; 70 households; 108 order lines; 13 paid + 124 unpaid plates**.
-2. Account for all **22 original live rows, 105 payment-update live rows, 77 original deletions, and 2 update deletions** as active, inactive, reversed, duplicate, or unresolved evidence.
-3. Produce and inspect Kari’s recipient-level 54 reconciliation without changing its unit or hiding discrepancies.
-4. Verify all 25 committee members: 11 currently linked to active orders and 14 currently without active orders, with any linkage exception shown separately.
-5. As admin at **384×681**, verify Admin Overview, preorder report, Meal Texts, committee audit, and every meal CSV show the same unit-labeled totals.
-6. As a committee user at **384×681**, verify only authorized guests while preserving the same canonical accounting definitions.
-7. Perform one controlled send confirmation and one reversal; verify the append-only database events, current status, audit history, rendered counts, and export, then restore the visible baseline without deleting history.
-8. Report each route, role, database result, and unresolved exception separately. If any role/session cannot be tested, state that explicitly and do not call the work fixed or complete.
+- Database read-back proves the then-current cuisine sum, payment sum, household count, and order-line count.
+- Admin at **384×681**: Overview, Meal texts, committee audit, payment views, and CSV exports show identical definitions and totals.
+- Committee at **384×681**: own meal-text list and payment list match the same canonical rows and do not expose other committee members’ private lists.
+- Restaurant role: cuisine-scoped active lines and quantities match the canonical ledger.
+- Controlled explicit send and reversal: verify the exact append-only events, current status, actor attribution, screen movement, and restored totals.
+- Kari reconciliation: every one of the 55 currently attributed active households is accounted for as confirmed or unconfirmed, the two changed/cancelled marks remain retained, and the stated 54 discrepancy is resolved from evidence rather than arithmetic assumptions.
+- No submitted preorder, RSVP, payment, text mark, committee member, or audit record is deleted, hidden, or overwritten.
 
 ## Technical details
 
-- Keep app-internal logic in authenticated TanStack server functions; server-function files remain thin wrappers.
-- Use an approved database migration for the canonical read model and append-only text-event protections, with required grants and RLS.
-- Preserve existing order, RSVP, payment, sent-mark, and audit records throughout migration and reconciliation.
-- Backfill retained legacy marks into the event model only when the original row/audit evidence supports the mapping; unresolved history remains visible rather than guessed.
+- Keep TanStack authenticated server functions and the current role model.
+- Keep server-function modules thin; calculations and reconciliation helpers remain imported server modules.
+- Use schema migration only if an additional immutable reconciliation field/view is required; use approved data operations only for evidence-backed reconciliation events.
+- Preserve legacy ledgers during transition until every reader is verified against the append-only event model.
