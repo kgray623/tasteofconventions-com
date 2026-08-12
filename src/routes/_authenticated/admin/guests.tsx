@@ -7,11 +7,12 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, ExternalLink, Search, Users } from "lucide-react";
+import { Download, ExternalLink, Pencil, Search, Users } from "lucide-react";
 import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
 import { toast } from "sonner";
 import { downloadTextFile } from "@/lib/download-file";
 import { ExportFallbackDialog } from "@/components/export-fallback-dialog";
+import { GuestEditDialog, type GuestEditTarget } from "@/components/guest-edit-dialog";
 
 
 const GUEST_LOAD_TIMEOUT_MS = 20_000;
@@ -145,6 +146,8 @@ function GuestsPage() {
   const navigate = useNavigate({ from: "/admin/guests" });
   const fetchRows = useServerFn(getReconciliationRows);
   const [rows, setRows] = useState<Row[] | null>(null);
+  const [scope, setScope] = useState<"admin" | "mine">("admin");
+  const [editing, setEditing] = useState<GuestEditTarget | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const activeStatus: StatusFilter = status ?? "all";
@@ -162,8 +165,11 @@ function GuestsPage() {
           new Promise<never>((_, reject) => {
             window.setTimeout(() => reject(new Error("Guest list took too long to load. Please refresh.")), GUEST_LOAD_TIMEOUT_MS);
           }),
-        ])) as { rows: Row[] };
-        if (alive) setRows(res.rows);
+        ])) as { rows: Row[]; scope?: "admin" | "mine" };
+        if (alive) {
+          setRows(res.rows);
+          setScope(res.scope ?? "admin");
+        }
       } catch (e) {
         if (alive) setError(e instanceof Error ? e.message : "Failed to load guests");
       }
@@ -380,6 +386,12 @@ function GuestsPage() {
         </div>
       </div>
 
+      {scope === "mine" && (
+        <p className="text-xs text-muted-foreground">
+          You're seeing the guests on your own list. You can update their RSVP on their behalf.
+        </p>
+      )}
+
       <Card className="p-3">
         <div className="flex flex-wrap gap-1.5">
           {tabs.map((t) => {
@@ -396,6 +408,30 @@ function GuestsPage() {
                 {STATUS_LABEL[t]}
                 <span className={`tabular-nums text-xs ${active ? "text-cream/80" : "text-muted-foreground"}`}>
                   {counts.people[t]} people
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5 mt-3 pt-3 border-t border-border">
+          <span className="text-[11px] uppercase tracking-wider text-muted-foreground mr-1">Attending</span>
+          {([undefined, "in_person", "zoom"] as const).map((m) => {
+            const active = (mode ?? undefined) === m;
+            const label = m === "in_person" ? "In person" : m === "zoom" ? "Zoom" : "All";
+            const count =
+              m === "in_person" ? counts.modePeople.in_person : m === "zoom" ? counts.modePeople.zoom : counts.people.all;
+            return (
+              <Link
+                key={label}
+                to="/admin/guests"
+                search={cleanGuestSearch({ ...currentCleanSearch, mode: m })}
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm border transition ${
+                  active ? "bg-terracotta text-cream border-terracotta" : "bg-background hover:bg-muted border-border"
+                }`}
+              >
+                {label}
+                <span className={`tabular-nums text-xs ${active ? "text-cream/80" : "text-muted-foreground"}`}>
+                  {count} people
                 </span>
               </Link>
             );
@@ -529,6 +565,24 @@ function GuestsPage() {
                     </p>
                   )}
                 </div>
+                <div className="flex items-center gap-3 shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setEditing({
+                      invitation_id: r.invitation_id,
+                      name: r.name,
+                      phone: r.phone,
+                      rsvp_status: r.rsvp_status,
+                      party_size: r.party_size,
+                      attendance_mode: r.attendance_mode,
+                      preorder_meals: r.preorder_meals,
+                    })
+                  }
+                >
+                  <Pencil className="w-3.5 h-3.5 mr-1.5" /> Edit RSVP
+                </Button>
                 {r.rsvp_token && (
                   <a
                     href={`/rsvp/${encodeURIComponent(r.rsvp_token.trim().replace(/\+/g, "-").replace(/\//g, "_"))}`}
@@ -539,11 +593,36 @@ function GuestsPage() {
                     Open RSVP <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                 )}
+                </div>
               </div>
             </Card>
           );
         })}
       </div>
+
+      <GuestEditDialog
+        guest={editing}
+        onOpenChange={(open) => { if (!open) setEditing(null); }}
+        onSaved={(saved) =>
+          setRows((prev) =>
+            prev
+              ? prev.map((row) =>
+                  row.invitation_id === saved.invitation_id
+                    ? {
+                        ...row,
+                        name: saved.name,
+                        phone: saved.phone,
+                        rsvp_status: saved.rsvp_status,
+                        party_size: saved.party_size,
+                        attendance_mode: saved.attendance_mode,
+                        responded_at: saved.responded_at,
+                      }
+                    : row,
+                )
+              : prev,
+          )
+        }
+      />
 
       <ExportFallbackDialog
         open={fallbackOpen}

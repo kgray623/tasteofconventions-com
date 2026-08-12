@@ -27,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boolean; team?: boolean; teamLabel?: string; group: "main" | "committee" }[] = [
   { to: "/admin", label: "Overview", icon: ShieldCheck, exact: true, group: "main" },
-  { to: "/admin/guests", label: "Guests", icon: UserCheck, group: "main" },
+  { to: "/admin/guests", label: "Guests", icon: UserCheck, team: true, teamLabel: "My guests", group: "main" },
   { to: "/admin/inviters", label: "Committee Guests", icon: UserPlus, team: true, teamLabel: "Committee Guests", group: "main" },
   { to: "/admin/reconcile", label: "Reconcile list", icon: ListChecks, group: "main" },
   { to: "/admin/rsvp-issues", label: "Replies that didn't stick", icon: ListChecks, group: "main" },
@@ -49,7 +49,7 @@ const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boole
 ];
 
 
-const teamAllowedPrefixes = ["/admin/subcommittee", "/admin/upload", "/admin/inviters", "/admin/categories", "/admin/chat", "/admin/my-volunteer-chats", "/admin/my-rsvp", "/admin/preorders", "/admin/meal-texts-mine"];
+const teamAllowedPrefixes = ["/admin/subcommittee", "/admin/guests", "/admin/upload", "/admin/inviters", "/admin/categories", "/admin/chat", "/admin/my-volunteer-chats", "/admin/my-rsvp", "/admin/preorders", "/admin/meal-texts-mine"];
 const isTeamAllowedPath = (path: string) =>
   path === "/admin" || teamAllowedPrefixes.some((p) => path === p || path.startsWith(p + "/"));
 
