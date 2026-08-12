@@ -39,7 +39,7 @@ Taste of Conventions Food Committee
 ## What the placeholders produce (Indonesian, read from the database)
 
 - `{restaurant_cuisine}` → `Indonesian`
-- `{meal_choices}` → `Chicken Meal plate $24` / `Beef Meal plate $29`
+- `{meal_choices}` → `Chicken Meal plate $24` and `Beef Meal plate $29` on back-to-back lines (no blank line between them, matching your latest version)
 - `{zelle_qr_link}` → `Click here to pay using Zelle: https://tasteofconventions.com/meals/indonesian`
 - `{pay_sentence}` → `Or open Zelle in your bank app. Search phone number 402-853-2509 (Inez Retnosari) or Venmo: @Inez-Retnosari`
 
@@ -53,6 +53,7 @@ Note: this version no longer states the quantity ordered ("1 Indonesian meal") �
 - `src/lib/meal-text-message.ts`:
   - `zelleQrLinkLine` → `Click here to pay using Zelle: <url>`.
   - `paySentence` → `Or open Zelle in your bank app. Search phone number <phone> (<name>)`, plus ` or Venmo: @<handle>` when the restaurant has Venmo. Venmo-only and phone-only fallbacks unchanged.
+  - `mealChoices` joins the chicken and beef lines with a single newline instead of a blank line.
 - Save the same wording into the `meal_text_template` and `meal_zelle_text_template` rows in `app_settings`, then read both back to confirm.
 - No change to counts, payments, RSVPs, sent marks, QR images, or the `/meals/<cuisine>` pages.
 
