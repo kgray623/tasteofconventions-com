@@ -10,6 +10,29 @@ export type MealNotifyInviter = {
   exceptions: number;
 };
 
+export type MealTextLedgerSummary = {
+  original: { active_lines: number; active_households: number; live_rows: number; historical_deletes: number };
+  payment_update: { active_lines: number; active_households: number; live_rows: number; historical_deletes: number };
+  actors: Array<{
+    actor_id: string | null;
+    actor_name: string;
+    original_lines: number;
+    original_households: number;
+    payment_update_lines: number;
+    payment_update_households: number;
+  }>;
+};
+
+export type CommitteeMealAuditRow = {
+  invitation_id: string;
+  name: string;
+  phone: string;
+  status: "active_order" | "no_order" | "linkage_exception";
+  order_lines: number;
+  plates: number;
+  selections: string;
+};
+
 export async function loadMealNotifyRollup(supabaseAdmin: any) {
   const ledger = await loadMealCommunicationLedger(supabaseAdmin);
   const byInviter = new Map<string, MealNotifyInviter>();
@@ -28,6 +51,108 @@ export async function loadMealNotifyRollup(supabaseAdmin: any) {
     bucket[bucketKey] += 1;
     byInviter.set(key, bucket);
   }
+  const [{ data: originalRows }, { data: updateRows }, { data: committeeInvitations }, { data: auditRows }] =
+    await Promise.all([
+      supabaseAdmin.from("meal_text_sends").select("preorder_id,cuisine,marked_by"),
+      supabaseAdmin.from("meal_zelle_text_sends").select("preorder_id,cuisine,marked_by"),
+      supabaseAdmin.from("invitations").select("id,guest_name,guest_phone").eq("is_committee", true).order("guest_name"),
+      supabaseAdmin
+        .from("audit_log")
+        .select("action,target_type")
+        .in("target_type", ["meal_text_sends", "meal_zelle_text_sends"])
+        .like("action", "DELETE%"),
+    ]);
+
+  const normalizeCuisine = (raw: string) => {
+    const lower = raw.toLowerCase();
+    if (lower.includes("myanmar") || lower.includes("burmese")) return "Myanmar";
+    if (lower.includes("african") || lower.includes("mozambique")) return "African";
+    if (lower.includes("indonesia") || lower.includes("jakarta")) return "Indonesian";
+    return raw.trim();
+  };
+  const activeKeys = new Set(ledger.rows.map((row) => `${row.id}::${row.cuisine}`));
+  const summarize = (source: any[]) => {
+    const active = source.filter((row) => activeKeys.has(`${row.preorder_id}::${normalizeCuisine(String(row.cuisine ?? ""))}`));
+    return {
+      active_lines: new Set(active.map((row) => `${row.preorder_id}::${normalizeCuisine(String(row.cuisine ?? ""))}`)).size,
+      active_households: new Set(active.map((row) => row.preorder_id)).size,
+      live_rows: source.length,
+    };
+  };
+  const originalSummary = summarize((originalRows ?? []) as any[]);
+  const updateSummary = summarize((updateRows ?? []) as any[]);
+  const deletedOriginal = ((auditRows ?? []) as any[]).filter((row) => row.target_type === "meal_text_sends").length;
+  const deletedUpdates = ((auditRows ?? []) as any[]).filter((row) => row.target_type === "meal_zelle_text_sends").length;
+
+  const actorIds = [...new Set([...(originalRows ?? []), ...(updateRows ?? [])].map((row: any) => row.marked_by).filter(Boolean))] as string[];
+  const { data: profiles } = actorIds.length
+    ? await supabaseAdmin.from("profiles").select("id,display_name").in("id", actorIds)
+    : { data: [] };
+  const actorNames = new Map(((profiles ?? []) as any[]).map((row) => [row.id, row.display_name?.trim() || "Committee member"]));
+  const actors = new Map<string, {
+    actor_id: string | null;
+    actor_name: string;
+    originalKeys: Set<string>;
+    originalHouseholds: Set<string>;
+    paymentUpdateKeys: Set<string>;
+    paymentUpdateHouseholds: Set<string>;
+  }>();
+  const countActors = (source: any[], kind: "original" | "payment_update") => {
+    for (const row of source) {
+      const mealKey = `${row.preorder_id}::${normalizeCuisine(String(row.cuisine ?? ""))}`;
+      // Actor accounting describes the active order list on this screen.
+      // Retained marks for cancelled/changed orders stay in live_rows and audit
+      // history, but must not inflate a person's current sent count.
+      if (!activeKeys.has(mealKey)) continue;
+      const key = row.marked_by ?? "__historical__";
+      const entry = actors.get(key) ?? {
+        actor_id: row.marked_by ?? null,
+        actor_name: row.marked_by ? (actorNames.get(row.marked_by) ?? "Committee member") : "Historical import",
+        originalKeys: new Set<string>(),
+        originalHouseholds: new Set<string>(),
+        paymentUpdateKeys: new Set<string>(),
+        paymentUpdateHouseholds: new Set<string>(),
+      };
+      if (kind === "original") {
+        entry.originalKeys.add(mealKey);
+        entry.originalHouseholds.add(row.preorder_id);
+      } else {
+        entry.paymentUpdateKeys.add(mealKey);
+        entry.paymentUpdateHouseholds.add(row.preorder_id);
+      }
+      actors.set(key, entry);
+    }
+  };
+  countActors((originalRows ?? []) as any[], "original");
+  countActors((updateRows ?? []) as any[], "payment_update");
+
+  const rowsByInvitation = new Map<string, typeof ledger.rows>();
+  for (const row of ledger.rows) {
+    if (!row.invitation_id) continue;
+    const list = rowsByInvitation.get(row.invitation_id) ?? [];
+    list.push(row);
+    rowsByInvitation.set(row.invitation_id, list);
+  }
+  const committeeOrders: CommitteeMealAuditRow[] = ((committeeInvitations ?? []) as any[]).map((invitation) => {
+    const orders = rowsByInvitation.get(invitation.id) ?? [];
+    return {
+      invitation_id: invitation.id,
+      name: invitation.guest_name?.trim() || "Committee member",
+      phone: invitation.guest_phone?.trim() || "",
+      status: orders.length > 0 ? "active_order" : "no_order",
+      order_lines: orders.length,
+      plates: orders.reduce((sum, row) => sum + row.qty, 0),
+      selections: orders.map((row) => `${row.cuisine} ×${row.qty}`).join(" · "),
+    };
+  });
+  const committeeTotals = {
+    members: committeeOrders.length,
+    active_orderers: committeeOrders.filter((row) => row.status === "active_order").length,
+    no_order: committeeOrders.filter((row) => row.status === "no_order").length,
+    order_lines: committeeOrders.reduce((sum, row) => sum + row.order_lines, 0),
+    plates: committeeOrders.reduce((sum, row) => sum + row.plates, 0),
+  };
+
   return {
     ...ledger,
     inviters: [...byInviter.values()].sort(
@@ -36,5 +161,26 @@ export async function loadMealNotifyRollup(supabaseAdmin: any) {
         b.update_sent - a.update_sent ||
         a.name.localeCompare(b.name),
     ),
+    text_accounting: {
+      original: { ...originalSummary, historical_deletes: deletedOriginal },
+      payment_update: { ...updateSummary, historical_deletes: deletedUpdates },
+      actors: [...actors.values()]
+        .map((actor) => ({
+          actor_id: actor.actor_id,
+          actor_name: actor.actor_name,
+          original_lines: actor.originalKeys.size,
+          original_households: actor.originalHouseholds.size,
+          payment_update_lines: actor.paymentUpdateKeys.size,
+          payment_update_households: actor.paymentUpdateHouseholds.size,
+        }))
+        .sort(
+          (a, b) =>
+            b.payment_update_households - a.payment_update_households ||
+            b.payment_update_lines - a.payment_update_lines ||
+            b.original_households - a.original_households,
+        ),
+    } satisfies MealTextLedgerSummary,
+    committee_orders: committeeOrders,
+    committee_totals: committeeTotals,
   };
 }

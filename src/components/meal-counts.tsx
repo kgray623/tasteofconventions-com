@@ -113,6 +113,8 @@ export function MealCountsCard() {
 
       {data && (
         <div className="flex flex-wrap gap-2 pt-1">
+          <Badge variant="outline">{data.totals.paid_meal_quantity} paid plates</Badge>
+          <Badge variant="outline">{data.totals.unpaid_meal_quantity} unpaid plates</Badge>
           <Badge variant={platesReconcile ? "outline" : "destructive"}>
             {platesReconcile
               ? "Plates match the per-restaurant totals"

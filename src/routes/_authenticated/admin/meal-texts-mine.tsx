@@ -117,12 +117,12 @@ function MyMealTextsPage() {
 
   const groups = useMemo(() => {
     const map = new Map<string, CommitteeMealTextRow[]>();
-    for (const r of modeRows) {
+    for (const r of rows) {
       if (!map.has(r.cuisine)) map.set(r.cuisine, []);
       map.get(r.cuisine)!.push(r);
     }
     return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  }, [modeRows]);
+  }, [rows]);
 
   const restaurantFor = (cuisine: string) => matchRestaurant(restaurants, cuisine);
 
@@ -154,13 +154,7 @@ function MyMealTextsPage() {
         actingForInviterId: actingFor,
       };
       const res = await markZelle({ data });
-      setRows((prev) =>
-        prev.map((r) =>
-          r.id === row.id && r.cuisine === row.cuisine
-            ? { ...r, zelle_sent_at: res.sentAt }
-            : r,
-        ),
-      );
+      if (res.ok) await refresh(actingFor);
     } catch (e) {
       toast.error("Couldn't update the texted mark", { description: getErrorMessage(e) });
     } finally {
@@ -204,10 +198,13 @@ function MyMealTextsPage() {
     }
   };
 
-  const totalOrders = modeRows.length;
-  const totalPeople = new Set(modeRows.map((r) => r.id)).size;
-  const totalMeals = modeRows.reduce((s, r) => s + r.qty, 0);
+  const totalOrders = rows.length;
+  const totalPeople = new Set(rows.map((r) => r.id)).size;
+  const totalMeals = rows.reduce((s, r) => s + r.qty, 0);
   const sentCount = modeRows.filter((r) => r.zelle_sent_at).length;
+  const paidPlates = paidRows.reduce((sum, row) => sum + row.qty, 0);
+  const unpaidPlates = modeRows.reduce((sum, row) => sum + row.qty, 0);
+  const stillToText = modeRows.filter((row) => !row.zelle_sent_at).length;
 
   return (
     <div className="space-y-5">
@@ -233,10 +230,11 @@ function MyMealTextsPage() {
           a message never marks it sent.
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
-          <span className="text-xs text-muted-foreground self-center">In this queue:</span>
+          <span className="text-xs text-muted-foreground self-center">All active meal orders:</span>
           <MealCountBadges plates={totalMeals} households={totalPeople} lines={totalOrders} />
           <Badge variant="outline">{sentCount} payment update sent</Badge>
-          <Badge variant="outline">{totalOrders - sentCount} to go</Badge>
+          <Badge variant="outline">{paidPlates} paid plates · {unpaidPlates} unpaid plates</Badge>
+          <Badge variant="outline">{stillToText} order lines to go</Badge>
         </div>
       </Card>
 
@@ -289,7 +287,7 @@ function MyMealTextsPage() {
       {groups.map(([cuisine, list]) => {
         const r = restaurantFor(cuisine);
         const onHold = r ? !r.order_ready : false;
-        const visible = onlyUnsent ? list.filter((x) => !x.zelle_sent_at) : list;
+        const visible = onlyUnsent ? list.filter((x) => !isPaidState(x.state) && !x.zelle_sent_at) : list;
         return (
           <Card key={cuisine} className="overflow-hidden">
             <div className="p-4 border-b border-border space-y-2">
@@ -369,7 +367,7 @@ function MyMealTextsPage() {
                       </p>
                     )}
                     <div className="flex flex-wrap gap-2">
-                      {num && !onHold && (
+                      {num && !onHold && !isPaidState(row.state) && (
                         <SmsTextButton
                           numbers={[num]}
                           body={body}
@@ -383,7 +381,9 @@ function MyMealTextsPage() {
                       <Button size="sm" variant="outline" onClick={() => void copy(body)}>
                         <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy message
                       </Button>
-                      {row.zelle_sent_at ? (
+                      {isPaidState(row.state) ? (
+                        <span className="text-xs font-medium text-muted-foreground">No payment text needed</span>
+                      ) : row.zelle_sent_at ? (
                         <Button
                           size="sm"
                           variant="ghost"

@@ -33,7 +33,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     await assertStaff(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { loadMealCommunicationLedger } = await import("@/lib/meal-communication.server");
+    const { loadMealNotifyRollup } = await import("@/lib/meal-notify.server");
 
     const [
       { data: restaurants },
@@ -61,7 +61,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
         .select("value")
         .eq("key", "meal_zelle_text_template")
         .maybeSingle(),
-      loadMealCommunicationLedger(supabaseAdmin),
+      loadMealNotifyRollup(supabaseAdmin),
     ]);
 
     // Every payment-update mark is attributable to the person who tapped it.
@@ -178,7 +178,13 @@ export const getMealTextData = createServerFn({ method: "POST" })
       kariTestRows,
       template: (setting?.value as string | undefined) ?? DEFAULT_MEAL_TEXT_TEMPLATE,
       zelleTemplate: (zelleSetting?.value as string | undefined) ?? DEFAULT_ZELLE_UPDATE_TEMPLATE,
-      reconciliation: { totals: ledger.totals, generated_at: ledger.generated_at },
+      reconciliation: {
+        totals: ledger.totals,
+        generated_at: ledger.generated_at,
+        text_accounting: ledger.text_accounting,
+        committee_orders: ledger.committee_orders,
+        committee_totals: ledger.committee_totals,
+      },
       // Who is signed in, so the test panel can text the message to themselves.
       // Read-only: nothing about the tester is written anywhere.
       self: await (async () => {

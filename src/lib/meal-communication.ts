@@ -47,6 +47,8 @@ export type MealCommunicationTotals = {
   households: number;
   message_units: number;
   meal_quantity: number;
+  paid_meal_quantity: number;
+  unpaid_meal_quantity: number;
   paid_confirmed: number;
   paid_reported: number;
   paid: number;
@@ -222,6 +224,12 @@ export function buildMealCommunicationLedger(input: {
     households: new Set(rows.map((row) => row.id)).size,
     message_units: rows.length,
     meal_quantity: rows.reduce((sum, row) => sum + row.qty, 0),
+    paid_meal_quantity: rows
+      .filter((row) => row.state === "paid_confirmed" || row.state === "paid_reported")
+      .reduce((sum, row) => sum + row.qty, 0),
+    unpaid_meal_quantity: rows
+      .filter((row) => row.state !== "paid_confirmed" && row.state !== "paid_reported")
+      .reduce((sum, row) => sum + row.qty, 0),
     paid_confirmed: count("paid_confirmed"),
     paid_reported: count("paid_reported"),
     paid: count("paid_confirmed") + count("paid_reported"),

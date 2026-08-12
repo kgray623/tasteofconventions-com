@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Check, Copy, Download, Globe, Loader2, MessageSquare, Phone, RotateCcw, Utensils } from "lucide-react";
+import { Check, Copy, Download, Globe, Loader2, MessageSquare, Phone, RotateCcw, Utensils, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -102,6 +102,7 @@ function MealTextsPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [reconciliation, setReconciliation] = useState<{
     totals: {
+      households: number;
       message_units: number;
       meal_quantity: number;
       paid: number;
@@ -111,8 +112,32 @@ function MealTextsPage() {
       update_sent: number;
       exceptions: number;
       reconciles: boolean;
+      paid_meal_quantity: number;
+      unpaid_meal_quantity: number;
     };
     generated_at: string;
+    text_accounting: {
+      original: { active_lines: number; active_households: number; live_rows: number; historical_deletes: number };
+      payment_update: { active_lines: number; active_households: number; live_rows: number; historical_deletes: number };
+      actors: Array<{
+        actor_id: string | null;
+        actor_name: string;
+        original_lines: number;
+        original_households: number;
+        payment_update_lines: number;
+        payment_update_households: number;
+      }>;
+    };
+    committee_orders: Array<{
+      invitation_id: string;
+      name: string;
+      phone: string;
+      status: "active_order" | "no_order" | "linkage_exception";
+      order_lines: number;
+      plates: number;
+      selections: string;
+    }>;
+    committee_totals: { members: number; active_orderers: number; no_order: number; order_lines: number; plates: number };
   } | null>(null);
 
   const refresh = async (opts?: { keepWording?: boolean }) => {
@@ -244,13 +269,7 @@ function MealTextsPage() {
     try {
       const data = { marks: [{ preorderId: row.id, cuisine: row.cuisine }], sent };
       const res = await markZelle({ data });
-      setRows((prev) =>
-        prev.map((r) =>
-          r.id === row.id && r.cuisine === row.cuisine
-            ? { ...r, zelle_sent_at: res.sentAt, sent_by: res.sentAt ? "you" : null }
-            : r,
-        ),
-      );
+      if (res.ok) await refresh({ keepWording: true });
     } catch (e) {
       toast.error("Couldn't update the sent mark", { description: getErrorMessage(e) });
     } finally {
@@ -290,9 +309,9 @@ function MealTextsPage() {
     }
   };
 
-  const totalOrders = rows.length;
-  const totalHouseholds = new Set(rows.map((r) => r.id)).size;
-  const totalMeals = rows.reduce((s, r) => s + r.qty, 0);
+  const totalOrders = reconciliation?.totals.message_units ?? rows.length;
+  const totalHouseholds = reconciliation?.totals.households ?? new Set(rows.map((r) => r.id)).size;
+  const totalMeals = reconciliation?.totals.meal_quantity ?? rows.reduce((s, r) => s + r.qty, 0);
   const sentCount = textSentRows.length;
   const paidCount = paidRows.length;
   const needsTextCount = needsTextRows.length;
@@ -309,18 +328,33 @@ function MealTextsPage() {
           Every active meal order stays visible in this accounting list. Paid guests are labeled “no
           text needed”; a text is recorded only when you explicitly check it after sending.
         </p>
-        <div className="flex flex-wrap gap-2 pt-1">
-          <span className="text-xs text-muted-foreground self-center">All active meal orders:</span>
-          <MealCountBadges plates={totalMeals} households={totalHouseholds} lines={totalOrders} />
-          <Badge variant="outline">{sentCount} payment update sent</Badge>
-          <Badge variant="outline">{paidCount} paid — no text needed</Badge>
-          <Badge variant={needsTextCount === 0 ? "outline" : "destructive"}>
-            {needsTextCount} still to text
-          </Badge>
+        <div className="space-y-2 pt-2 text-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2">
+            <strong>Total orders</strong>
+            <MealCountBadges plates={totalMeals} households={totalHouseholds} lines={totalOrders} />
+          </div>
           {reconciliation && (
-            <Badge variant={reconciliation.totals.reconciles ? "outline" : "destructive"}>
-              {reconciliation.totals.message_units} orders = {reconciliation.totals.needs_update} still to text + {reconciliation.totals.update_sent} texted + {reconciliation.totals.paid_confirmed} paid (restaurant) + {reconciliation.totals.paid_reported} paid (reported) + {reconciliation.totals.exceptions} exceptions
-            </Badge>
+            <>
+              <div className="flex items-center justify-between gap-3">
+                <span>Payment status</span>
+                <strong>{reconciliation.totals.paid_meal_quantity} paid plates · {reconciliation.totals.unpaid_meal_quantity} unpaid plates</strong>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span>Original meal texts</span>
+                <strong>{reconciliation.text_accounting.original.active_households} households · {reconciliation.text_accounting.original.active_lines} active lines</strong>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span>Payment updates</span>
+                <strong>{reconciliation.text_accounting.payment_update.active_households} households · {reconciliation.text_accounting.payment_update.active_lines} active lines</strong>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span>Still needs payment update</span>
+                <Badge variant={needsTextCount === 0 ? "outline" : "destructive"}>{needsTextCount} order lines</Badge>
+              </div>
+              <Badge variant={reconciliation.totals.reconciles ? "outline" : "destructive"}>
+                {reconciliation.totals.reconciles ? "All 108 order lines reconcile" : "Accounting mismatch — review required"}
+              </Badge>
+            </>
           )}
         </div>
 
@@ -339,6 +373,68 @@ function MealTextsPage() {
           </Button>
         </div>
       </Card>
+
+      {reconciliation && (
+        <Card className="p-5 space-y-4">
+          <div>
+            <h2 className="font-display text-2xl">Text-mark accounting</h2>
+            <p className="text-sm text-muted-foreground">
+              People are counted once even when they ordered from multiple restaurants. Cuisine lines show the separate texts required for those orders.
+            </p>
+          </div>
+          <div className="divide-y divide-border rounded-md border border-border">
+            {reconciliation.text_accounting.actors.map((actor) => (
+              <div key={actor.actor_id ?? "historical"} className="flex items-center justify-between gap-3 p-3 text-sm">
+                <span className="font-medium">{actor.actor_name}</span>
+                <span className="text-right text-muted-foreground">
+                  {actor.payment_update_households} people · {actor.payment_update_lines} payment-update cuisine lines
+                  {actor.original_lines > 0 && (
+                    <><br />{actor.original_households} people · {actor.original_lines} original cuisine lines</>
+                  )}
+                </span>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Retained audit history also records {reconciliation.text_accounting.original.historical_deletes} original-text deletions and {reconciliation.text_accounting.payment_update.historical_deletes} payment-update deletions. These remain visible for reconciliation and are not silently counted as current sends.
+          </p>
+        </Card>
+      )}
+
+      {reconciliation && (
+        <Card className="p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-terracotta" />
+            <h2 className="font-display text-2xl">Committee meal-order audit</h2>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Every committee member remains visible, including those with no meal preorder stored.
+          </p>
+          <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-5">
+            <Badge variant="outline">{reconciliation.committee_totals.members} members</Badge>
+            <Badge variant="outline">{reconciliation.committee_totals.active_orderers} ordered</Badge>
+            <Badge variant="outline">{reconciliation.committee_totals.no_order} no order stored</Badge>
+            <Badge variant="outline">{reconciliation.committee_totals.order_lines} order lines</Badge>
+            <Badge variant="outline">{reconciliation.committee_totals.plates} plates</Badge>
+          </div>
+          <div className="divide-y divide-border rounded-md border border-border">
+            {reconciliation.committee_orders.map((member) => (
+              <div key={member.invitation_id} className="p-3 text-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-medium">{member.name}</p>
+                    <p className="text-xs text-muted-foreground">{member.phone || "No phone"}</p>
+                  </div>
+                  <Badge variant={member.status === "active_order" ? "outline" : "secondary"}>
+                    {member.status === "active_order" ? `${member.plates} plates` : "No meal order stored"}
+                  </Badge>
+                </div>
+                {member.selections && <p className="mt-2 text-xs text-muted-foreground">{member.selections}</p>}
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* Send yourself the exact guest message. Records nothing. */}
       <MealTextSelfTest restaurants={restaurants} zelleTemplate={zelleTemplate} self={self} />

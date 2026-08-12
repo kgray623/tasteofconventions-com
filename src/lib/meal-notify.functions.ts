@@ -1,15 +1,20 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export type { MealNotifyInviter } from "@/lib/meal-notify.server";
+export type { MealTextLedgerSummary, CommitteeMealAuditRow } from "@/lib/meal-notify.server";
 export type { MealCommunicationRow, MealCommunicationTotals } from "@/lib/meal-communication";
 import type { MealCommunicationRow, MealCommunicationTotals } from "@/lib/meal-communication";
 import type { MealNotifyInviter } from "@/lib/meal-notify.server";
+import type { MealTextLedgerSummary, CommitteeMealAuditRow } from "@/lib/meal-notify.server";
 
 export type MealNotifyRollup = {
   rows: MealCommunicationRow[];
   totals: MealCommunicationTotals;
   inviters: MealNotifyInviter[];
   generated_at: string;
+  text_accounting: MealTextLedgerSummary;
+  committee_orders: CommitteeMealAuditRow[];
+  committee_totals: { members: number; active_orderers: number; no_order: number; order_lines: number; plates: number };
 };
 
 /**
