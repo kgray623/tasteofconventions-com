@@ -43,6 +43,13 @@ export type CommitteeMealTextsResult = {
   isAdmin: boolean;
   actingFor: { id: string; name: string } | null;
   committee: Array<{ id: string; name: string }>;
+  totals: {
+    households: number;
+    order_lines: number;
+    plates: number;
+    paid_plates: number;
+    unpaid_plates: number;
+  };
 };
 
 export async function resolveIdentity(supabase: any, userId: string) {
@@ -157,10 +164,11 @@ export async function loadCommitteeMealTexts(
 
   const template = (setting?.value as string | undefined) ?? DEFAULT_MEAL_TEXT_TEMPLATE;
   const zelleTemplate = (zelleSetting?.value as string | undefined) ?? DEFAULT_ZELLE_UPDATE_TEMPLATE;
+  const emptyTotals = { households: 0, order_lines: 0, plates: 0, paid_plates: 0, unpaid_plates: 0 };
   const base = { template, zelleTemplate, restaurants: restaurantList, isAdmin: identity.isAdmin, actingFor, committee };
 
   const eventId = events?.[0]?.id as string | undefined;
-  if (!eventId || targetInviterIds.length === 0) return { ...base, rows: [] };
+  if (!eventId || targetInviterIds.length === 0) return { ...base, rows: [], totals: emptyTotals };
 
   const { data: invitations } = await supabaseAdmin
     .from("invitations")
@@ -257,5 +265,18 @@ export async function loadCommitteeMealTexts(
   }
 
   rows.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
-  return { ...base, rows };
+  const paidRows = rows.filter((row) => row.state === "paid_confirmed" || row.state === "paid_reported");
+  const paidPlates = paidRows.reduce((sum, row) => sum + row.qty, 0);
+  const plates = rows.reduce((sum, row) => sum + row.qty, 0);
+  return {
+    ...base,
+    rows,
+    totals: {
+      households: new Set(rows.map((row) => row.id)).size,
+      order_lines: rows.length,
+      plates,
+      paid_plates: paidPlates,
+      unpaid_plates: plates - paidPlates,
+    },
+  };
 }
