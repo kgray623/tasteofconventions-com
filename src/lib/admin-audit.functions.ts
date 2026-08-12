@@ -209,7 +209,7 @@ export const getReconciliationRows = createServerFn({ method: "GET" })
     const [invRes, rsvpRes, preRes, inviterRes] = await Promise.all([
       supabaseAdmin
         .from("invitations")
-        .select("id,guest_name,guest_phone,guest_phone_normalized,is_committee,invite_sent_at,created_at,rsvp_token,inviter_id")
+        .select("id,guest_name,guest_phone,guest_phone_normalized,is_committee,invite_sent_at,created_at,rsvp_token,inviter_id,host_id")
         .order("created_at", { ascending: true }),
       supabaseAdmin
         .from("rsvps")
