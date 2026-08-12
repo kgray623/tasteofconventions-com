@@ -12,8 +12,9 @@ Nothing paid, so cancelling reverses no money.
 ## What I will do
 
 1. **Cancel all plates for both** — each meal record is kept (name, phone, and full history intact) with an empty meal selection, which is how this platform records a cancellation. Nothing is deleted.
-2. **Mark both as not ordering food** on their RSVPs; their No status and party size stay exactly as-is.
+2. **Cancel their RSVPs too.** Both RSVPs are already recorded as **Declined (No)**, so I will leave that status as-is rather than change it, and clear the food-order flag so neither shows as attending-with-a-meal anywhere. If by "cancel the RSVP" you mean something different from Declined — for example removing them from the guest list entirely — tell me and I'll adjust; nothing is deleted by default.
 3. The permanent activity ledger keeps before/after values and who made the change. Their earlier meal-text history is left untouched.
+
 
 ## Verification before I say it's done
 
