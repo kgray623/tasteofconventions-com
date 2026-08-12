@@ -335,6 +335,11 @@ function MealTextsPage() {
         </div>
       </Card>
 
+      {/* Send yourself the exact guest message. Records nothing. */}
+      <MealTextSelfTest restaurants={restaurants} zelleTemplate={zelleTemplate} self={self} />
+
+
+
       <Card className="p-5 space-y-3">
         <p className="font-medium">Restaurant name and phone number</p>
         <div className="space-y-3">
