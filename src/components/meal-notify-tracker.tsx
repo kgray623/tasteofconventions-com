@@ -141,10 +141,23 @@ export function MealNotifyTracker({ compact = false }: { compact?: boolean }) {
               <Badge variant="outline">{data.totals.paid_reported} paid · awaiting confirmation</Badge>
               <Badge variant="outline">{data.totals.update_sent} payment text sent</Badge>
               <Badge variant="outline">{data.totals.exceptions} exceptions</Badge>
+              <Badge variant="outline">{data.totals.paid_meal_quantity} paid plates</Badge>
+              <Badge variant="outline">{data.totals.unpaid_meal_quantity} unpaid plates</Badge>
 
               <Badge variant={data.totals.reconciles ? "outline" : "destructive"}>
                 {data.totals.reconciles ? "Counts reconcile" : "Accounting mismatch"}
               </Badge>
+            </div>
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-2 text-sm">
+            <div className="rounded-md border border-border p-3">
+              <p className="font-medium">Original meal texts</p>
+              <p className="text-muted-foreground">{data.text_accounting.original.active_households} households · {data.text_accounting.original.active_lines} active cuisine lines</p>
+            </div>
+            <div className="rounded-md border border-border p-3">
+              <p className="font-medium">Payment update texts</p>
+              <p className="text-muted-foreground">{data.text_accounting.payment_update.active_households} households · {data.text_accounting.payment_update.active_lines} active cuisine lines</p>
             </div>
           </div>
 
