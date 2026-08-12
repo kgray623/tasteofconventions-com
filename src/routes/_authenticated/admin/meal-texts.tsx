@@ -119,7 +119,14 @@ function MealTextsPage() {
     text_accounting: {
       original: { active_lines: number; active_households: number; live_rows: number; historical_deletes: number };
       payment_update: { active_lines: number; active_households: number; live_rows: number; historical_deletes: number };
-      actors: Array<{ actor_id: string | null; actor_name: string; original: number; payment_update: number }>;
+      actors: Array<{
+        actor_id: string | null;
+        actor_name: string;
+        original_lines: number;
+        original_households: number;
+        payment_update_lines: number;
+        payment_update_households: number;
+      }>;
     };
     committee_orders: Array<{
       invitation_id: string;
@@ -372,7 +379,7 @@ function MealTextsPage() {
           <div>
             <h2 className="font-display text-2xl">Text-mark accounting</h2>
             <p className="text-sm text-muted-foreground">
-              Counts are mark records, grouped by who explicitly checked them. They are not presented as one person's sends.
+              People are counted once even when they ordered from multiple restaurants. Cuisine lines show the separate texts required for those orders.
             </p>
           </div>
           <div className="divide-y divide-border rounded-md border border-border">
@@ -380,7 +387,10 @@ function MealTextsPage() {
               <div key={actor.actor_id ?? "historical"} className="flex items-center justify-between gap-3 p-3 text-sm">
                 <span className="font-medium">{actor.actor_name}</span>
                 <span className="text-right text-muted-foreground">
-                  {actor.original} original · {actor.payment_update} payment update
+                  {actor.payment_update_households} people · {actor.payment_update_lines} payment-update cuisine lines
+                  {actor.original_lines > 0 && (
+                    <><br />{actor.original_households} people · {actor.original_lines} original cuisine lines</>
+                  )}
                 </span>
               </div>
             ))}

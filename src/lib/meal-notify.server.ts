@@ -13,7 +13,14 @@ export type MealNotifyInviter = {
 export type MealTextLedgerSummary = {
   original: { active_lines: number; active_households: number; live_rows: number; historical_deletes: number };
   payment_update: { active_lines: number; active_households: number; live_rows: number; historical_deletes: number };
-  actors: Array<{ actor_id: string | null; actor_name: string; original: number; payment_update: number }>;
+  actors: Array<{
+    actor_id: string | null;
+    actor_name: string;
+    original_lines: number;
+    original_households: number;
+    payment_update_lines: number;
+    payment_update_households: number;
+  }>;
 };
 
 export type CommitteeMealAuditRow = {
@@ -82,17 +89,37 @@ export async function loadMealNotifyRollup(supabaseAdmin: any) {
     ? await supabaseAdmin.from("profiles").select("id,display_name").in("id", actorIds)
     : { data: [] };
   const actorNames = new Map(((profiles ?? []) as any[]).map((row) => [row.id, row.display_name?.trim() || "Committee member"]));
-  const actors = new Map<string, { actor_id: string | null; actor_name: string; original: number; payment_update: number }>();
+  const actors = new Map<string, {
+    actor_id: string | null;
+    actor_name: string;
+    originalKeys: Set<string>;
+    originalHouseholds: Set<string>;
+    paymentUpdateKeys: Set<string>;
+    paymentUpdateHouseholds: Set<string>;
+  }>();
   const countActors = (source: any[], kind: "original" | "payment_update") => {
     for (const row of source) {
+      const mealKey = `${row.preorder_id}::${normalizeCuisine(String(row.cuisine ?? ""))}`;
+      // Actor accounting describes the active order list on this screen.
+      // Retained marks for cancelled/changed orders stay in live_rows and audit
+      // history, but must not inflate a person's current sent count.
+      if (!activeKeys.has(mealKey)) continue;
       const key = row.marked_by ?? "__historical__";
       const entry = actors.get(key) ?? {
         actor_id: row.marked_by ?? null,
         actor_name: row.marked_by ? (actorNames.get(row.marked_by) ?? "Committee member") : "Historical import",
-        original: 0,
-        payment_update: 0,
+        originalKeys: new Set<string>(),
+        originalHouseholds: new Set<string>(),
+        paymentUpdateKeys: new Set<string>(),
+        paymentUpdateHouseholds: new Set<string>(),
       };
-      entry[kind] += 1;
+      if (kind === "original") {
+        entry.originalKeys.add(mealKey);
+        entry.originalHouseholds.add(row.preorder_id);
+      } else {
+        entry.paymentUpdateKeys.add(mealKey);
+        entry.paymentUpdateHouseholds.add(row.preorder_id);
+      }
       actors.set(key, entry);
     }
   };
@@ -137,7 +164,21 @@ export async function loadMealNotifyRollup(supabaseAdmin: any) {
     text_accounting: {
       original: { ...originalSummary, historical_deletes: deletedOriginal },
       payment_update: { ...updateSummary, historical_deletes: deletedUpdates },
-      actors: [...actors.values()].sort((a, b) => b.payment_update - a.payment_update || b.original - a.original),
+      actors: [...actors.values()]
+        .map((actor) => ({
+          actor_id: actor.actor_id,
+          actor_name: actor.actor_name,
+          original_lines: actor.originalKeys.size,
+          original_households: actor.originalHouseholds.size,
+          payment_update_lines: actor.paymentUpdateKeys.size,
+          payment_update_households: actor.paymentUpdateHouseholds.size,
+        }))
+        .sort(
+          (a, b) =>
+            b.payment_update_households - a.payment_update_households ||
+            b.payment_update_lines - a.payment_update_lines ||
+            b.original_households - a.original_households,
+        ),
     } satisfies MealTextLedgerSummary,
     committee_orders: committeeOrders,
     committee_totals: committeeTotals,
