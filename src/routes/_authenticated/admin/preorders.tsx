@@ -233,6 +233,23 @@ function PreorderReportPage() {
               + {unlinkedMeals} meal{unlinkedMeals === 1 ? "" : "s"} needing phone review (not counted)
             </p>
           )}
+          {canonical && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              <Badge variant={canonical.reconciles ? "outline" : "destructive"}>
+                {canonical.reconciles ? "Order lines all accounted for" : "Order lines don't add up — needs review"}
+              </Badge>
+              <Badge variant={canonical.plates_reconcile ? "outline" : "destructive"}>
+                {canonical.plates_reconcile
+                  ? "Plates match the per-restaurant totals"
+                  : "Plate mismatch — review required"}
+              </Badge>
+              {canonical.meal_quantity !== totalMeals && (
+                <Badge variant="destructive">
+                  This report shows {totalMeals} plates; the ledger has {canonical.meal_quantity}
+                </Badge>
+              )}
+            </div>
+          )}
         </Card>
       </div>
 
