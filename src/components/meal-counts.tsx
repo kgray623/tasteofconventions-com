@@ -118,7 +118,7 @@ export function MealCountsCard() {
           <Badge variant={platesReconcile ? "outline" : "destructive"}>
             {platesReconcile
               ? "Plates match the per-restaurant totals"
-              : `Mismatch: ${plates} plates vs ${cuisineTotal} across restaurants`}
+              : `Plate mismatch — ${plates} plates don't match the per-restaurant totals`}
           </Badge>
           <Badge variant={data.totals.reconciles ? "outline" : "destructive"}>
             {data.totals.reconciles
