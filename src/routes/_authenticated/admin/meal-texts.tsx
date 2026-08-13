@@ -114,6 +114,7 @@ function MealTextsPage() {
       update_sent: number;
       exceptions: number;
       reconciles: boolean;
+      plates_reconcile: boolean;
       paid_meal_quantity: number;
       unpaid_meal_quantity: number;
     };
