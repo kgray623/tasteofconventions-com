@@ -1,44 +1,48 @@
-# Replace the misleading meal-text list with the complete verified-unsent list
+# Exact Remaining Meal-Payment Text List
 
-**Database and code review: 2026-08-13 04:59 UTC**
+## Verified answer — August 13, 2026 at 05:11 UTC
 
-## Verified problem
+I compared every currently active meal preorder against every platform text-sent mark recorded on **August 12 in Chicago time**, using normalized 10-digit phone numbers. No one was excluded because of role, inviter, payment state, RSVP ownership, or committee membership.
 
-- Rick & Maddie Madrid have an active in-person preorder at **562-326-4395** for **Indonesian ×1 and Myanmar ×1**.
-- Their database history contains two old `legacy_live_mark` rows, but there is **no human evidence review confirming either physical text was sent**.
-- The visible controls labeled “Confirm Indonesian text sent” and “Confirm Myanmar text sent” are actions the user can tap after sending; they are not checked states. The leading check icons make them look like proof that the texts were already sent.
-- The server currently reconstructs 54 “physically texted” contacts from chronological legacy marks and removes those contacts from the queue. Those timestamps do not prove which messages exist on Kari’s phone.
-- The latest retained evidence-review state currently proves **zero confirmed contacts**; the only reviewed cuisine line is disputed.
-- Kari’s uploaded Google Messages screenshots provide additional phone-level evidence of Wednesday “IMPORTANT UPDATE” conversations. They also show explicit **“Not delivered yet”** messages, which cannot be counted as successfully sent.
+- **69** unique phone numbers currently have an active meal preorder.
+- **55** of those active preorder phone numbers were marked sent on August 12.
+- **14** active preorder phone numbers have no August 12 sent mark and are left to message.
+- There are no duplicate phone numbers among the 69 active preorder contacts.
+- The database has 57 marked contacts on August 12 overall, but Frank Skorniak and Gloria J. Groves now have empty/canceled meal selections. They are not part of the 69 active preorder contacts and are not included below.
 
-## Changes
+## The 14 phone numbers left to message
 
-1. Remove the reconstructed 54-contact exclusion from the authoritative needs-text queue. No legacy timestamp, inferred batch position, payment, page view, copy action, or SMS-composer launch may remove a person.
-2. Build the complete list from every currently active preorder cuisine line. Exclude a cuisine only when its latest retained human review explicitly confirms that exact physical text was sent.
-3. Keep Rick & Maddie Madrid visible once as a contact with both **Indonesian ×1** and **Myanmar ×1**, each with its own Text action, until each message is explicitly confirmed after Kari sends it.
-4. Replace misleading check-styled action buttons with unmistakable neutral actions such as **“Mark Indonesian sent”** and **“Mark Myanmar sent.”** Do not show a checkmark until confirmation has actually been saved and read back.
-5. After a successful confirmation, read the appended event/review back from the database, then remove only that confirmed cuisine line. If another cuisine remains unconfirmed, keep the contact visible with the remaining cuisine.
-6. Remove the unproven “54 physically texted” and subtraction-based “remaining” claims from the top of the screen. Show only counts derived from active preorder lines and explicit human confirmations.
-7. Reconcile the uploaded phone screenshots against active preorder phone numbers. Count a screenshot as supporting evidence only when the visible number uniquely matches one active preorder and the conversation visibly shows Kari’s Wednesday “IMPORTANT UPDATE”; do not count “Not delivered yet,” group threads, ambiguous names, cropped entries, or unmatched numbers.
-8. Present screenshot matches for Kari to review before they become retained human confirmations. The screenshots must never silently or automatically remove a person from the list.
-9. Make both meal-instruction CSV controls export exactly the same complete visible unsent list.
-10. Preserve every preorder, RSVP, payment, legacy mark, dispute, screenshot match, and historical text record. This changes interpretation and presentation only; it does not delete or overwrite submitted information.
+| # | Name | Phone | Active preorder |
+|---:|---|---|---|
+| 1 | Adrianna Marie Gonzalez | **402-807-6980** | Indonesian, Myanmar |
+| 2 | Aletta Blair | **402-999-1213** | Myanmar |
+| 3 | Angela Waters | **402-616-1025** | African, Myanmar |
+| 4 | Cindy Garo | **786-205-1210** | African |
+| 5 | Gussie Sorensen | **402-830-7297** | Indonesian |
+| 6 | Kari Gray | **808-278-7562** | African, Indonesian, Myanmar |
+| 7 | Laura Haffke | **402-490-2907** | African |
+| 8 | Liza Efigenio | **402-515-7916** | African, Indonesian, Myanmar |
+| 9 | Lori McLaren | **402-213-1461** | African, Indonesian |
+| 10 | Melissa Novotny | **402-679-6544** | Indonesian |
+| 11 | Rahul Kumar | **531-484-7499** | Indonesian |
+| 12 | Rick & Maddie Madrid | **562-326-4395** | Indonesian, Myanmar |
+| 13 | Stephanie Williams | **402-686-9238** | Myanmar |
+| 14 | Whitney Hopkins | **402-598-6777** | African, Indonesian |
 
-## Technical details
+## Platform correction
 
-- Make `buildMealInstructionQueue` depend only on active ledger rows plus latest explicit cuisine-level evidence; remove `reconstructedSentContactIds` from its filtering contract.
-- Keep the server-function module thin and perform queue calculation in the imported queue helper.
-- Treat the latest append-only review as authoritative so a later dispute restores a cuisine to the unsent list without deleting prior history.
-- Match screenshot evidence through canonical last-10-digit phone normalization. A contact with multiple cuisines remains unresolved per cuisine until Kari confirms which cuisine-specific instruction was sent.
-- Add regression coverage proving legacy marks never hide a contact, multi-cuisine contacts remain until every cuisine is confirmed, and a checkmark/status is rendered only after verified read-back.
+1. Replace the unreliable reconstructed 54-person logic with this direct contact-level calculation: every unique active preorder phone minus every phone explicitly marked sent for the selected communication date.
+2. Include all active preorder contacts regardless of committee status, guest ownership, inviter, RSVP category, payment state, or cuisine.
+3. Display one contact once with all ordered cuisines and the exact normalized phone number.
+4. Label unsent actions neutrally as **Mark sent**; never show a check icon before the database contains the explicit sent mark.
+5. Keep canceled/empty orders out of the active list without deleting their history.
+6. Make the on-screen list and CSV use the identical database-derived result.
 
-## Verification before any completion claim
+## End-to-end verification
 
-1. Read the backend immediately before testing and reconcile active contacts, cuisine lines, explicit confirmations, disputes, cancellations, declines, and Zoom exclusions.
-2. Sign in as Kari/admin and test `/admin/meal-texts` at **384×681**.
-3. Search for Rick & Maddie Madrid and verify their name, phone, Indonesian ×1, and Myanmar ×1 are visible with no checked/confirmed appearance.
-4. Produce a line-by-line screenshot reconciliation: uniquely matched successful conversations, failed/not-delivered messages, ambiguous or cropped entries, group threads, and numbers with no active preorder match. Verify none are silently treated as sent.
-5. Open both Rick & Maddie Text actions and verify the exact recipient and cuisine-specific message in the phone SMS composer; confirm that merely opening Messages changes no database row.
-6. Explicitly mark one controlled cuisine sent, read back the new append-only event and review, reload, and verify only that cuisine leaves the unsent list while the other remains.
-7. Verify the visible counts and both CSV exports match the database-derived unsent contacts and cuisine lines exactly.
-8. Read the backend again and prove that no preorder, RSVP, payment, guest, legacy mark, screenshot match, or historical review was deleted or overwritten.
+- Verify the admin meal-text route at Kari's **384×681** viewport and admin role.
+- Confirm the screen shows exactly **69 active / 55 marked sent / 14 left** and the same 14 names and phone numbers above.
+- Open each SMS action and verify its recipient and cuisine instructions; opening Messages must not mark it sent.
+- Mark one controlled contact sent, read the new record back from the database, reload, and verify the remaining count drops by exactly one.
+- Verify the CSV contains the same remaining contacts as the screen.
+- Confirm no preorder, RSVP, payment, sent mark, cancellation, or historical record was deleted, hidden, or overwritten.
