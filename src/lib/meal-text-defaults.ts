@@ -95,6 +95,7 @@ export type MealTextEvidenceLine = {
   reviewed_at: string | null;
 };
 
+/** Retained type for the archived committee-text audit helper. Not rendered by the meal-text route. */
 export type CommitteeTextRosterRow = {
   id: string;
   name: string;
