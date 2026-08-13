@@ -21,6 +21,17 @@ export type PaymentUpdateEvent = {
 /** The communication batch Kari explicitly marked after texting on August 12. */
 export const MEAL_INSTRUCTION_BATCH_DAY = "2026-08-12";
 
+const chicagoDay = (value: string) => {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Chicago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date(value));
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? "";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+};
+
 /**
  * Count every active preorder contact with an explicit sent mark on the
  * selected communication day. There is no inferred count, chronological cap,
@@ -37,7 +48,7 @@ export function reconcileExplicitTextBatch(
     if (event.campaign !== "payment_update" || event.action !== "sent") continue;
     if (event.evidence_source === "human_reconciliation") continue;
     if (!activeIds.has(event.preorder_id)) continue;
-    if (event.event_at.slice(0, 10) !== activityDay) continue;
+    if (chicagoDay(event.event_at) !== activityDay) continue;
     const current = firstByContact.get(event.preorder_id);
     if (!current || event.event_at < current) firstByContact.set(event.preorder_id, event.event_at);
   }

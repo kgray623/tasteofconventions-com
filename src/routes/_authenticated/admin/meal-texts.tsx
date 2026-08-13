@@ -440,6 +440,22 @@ function MealTextsPage() {
     }
   };
 
+  const confirmContactSent = async (contact: MealInstructionQueueContact) => {
+    const key = `instruction-contact::${contact.id}`;
+    setBusy(key);
+    try {
+      for (const row of contact.orders) {
+        await confirmInstruction({ data: { preorderId: row.id, cuisine: row.cuisine } });
+      }
+      await refresh({ keepWording: true });
+      toast.success(`${contact.name} marked sent`);
+    } catch (e) {
+      toast.error("Couldn't mark this contact sent", { description: getErrorMessage(e) });
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <OpenOnSiteBanner />
@@ -490,9 +506,10 @@ function MealTextsPage() {
               <Button
                 size="sm"
                 variant="outline"
-                disabled={contact.orders.some((row) => busy === `instruction::${row.id}::${row.cuisine}`)}
-                onClick={() => void Promise.all(contact.orders.map(confirmInstructionSent))}
+                disabled={busy === `instruction-contact::${contact.id}`}
+                onClick={() => void confirmContactSent(contact)}
               >
+                {busy === `instruction-contact::${contact.id}` && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
                 Mark sent
               </Button>
             </div>
