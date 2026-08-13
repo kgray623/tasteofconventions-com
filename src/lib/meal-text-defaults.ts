@@ -104,7 +104,7 @@ export type MealEventContact = {
   orders: Array<{
     cuisine: string;
     qty: number;
-    state: MealCommunicationState | undefined;
+    state: import("@/lib/meal-communication").MealCommunicationState | undefined;
     textStatus: "paid" | "confirmed" | "marked" | "needs" | "disputed";
   }>;
   status: "paid" | "confirmed" | "marked" | "needs";

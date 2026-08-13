@@ -225,7 +225,9 @@ function MealTextsPage() {
 
   const eventContacts = useMemo(() => {
     const marked = new Set(todayEvidence.lines.map((line) => `${line.preorder_id}::${line.cuisine}`));
-    const decisions = new Map(todayEvidence.lines.map((line) => [`${line.preorder_id}::${line.cuisine}`, line.decision] as const));
+    const decisions = new Map<string, "confirmed" | "disputed" | null>(
+      todayEvidence.lines.map((line) => [`${line.preorder_id}::${line.cuisine}`, line.decision]),
+    );
     const byContact = new Map<string, MealTextRow[]>();
     for (const row of rows) {
       const current = byContact.get(row.id) ?? [];
@@ -453,38 +455,42 @@ function MealTextsPage() {
         <div className="flex items-start gap-2">
           <AlertTriangle className="mt-1 h-5 w-5 shrink-0 text-amber-700" />
           <div>
-            <h2 className="font-display text-2xl">Complete unpaid-contact reconciliation</h2>
+            <h2 className="font-display text-2xl">Current event meal contacts</h2>
             <p className="text-sm text-muted-foreground">
-              Confirm the 54 people you physically texted. Database marks are shown only as reference and do not count as proof.
+              Everyone with a current in-person meal preorder, after cancellations. Each person appears once with every cuisine they ordered.
             </p>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-sm">
-          <div className="rounded-md border border-border p-2"><strong className="block text-lg">{unpaidContacts.length}</strong>Unpaid</div>
-          <div className="rounded-md border border-border p-2"><strong className="block text-lg">{confirmedContactCount}</strong>Confirmed</div>
-          <div className="rounded-md border border-border p-2"><strong className="block text-lg">{missingContacts.length}</strong>Missing</div>
+          <div className="rounded-md border border-border p-2"><strong className="block text-lg">{eventContacts.length}</strong>Contacts</div>
+          <div className="rounded-md border border-border p-2"><strong className="block text-lg">{rows.length}</strong>Cuisine orders</div>
+          <div className="rounded-md border border-border p-2"><strong className="block text-lg">{totalMeals}</strong>Plates</div>
         </div>
         <p className="text-sm font-medium" aria-live="polite">
-          {reconciliationReady
-            ? "Reconciled: 54 confirmed sent · 8 missing · 62 unpaid contacts"
-            : `${Math.max(54 - confirmedContactCount, 0)} more people must be identified before the exact 8-person missing list is proven.`}
+          {missingContacts.length} need a prepay text · {confirmedContactCount} documented sent · {markedContactCount} marked but not verified
         </p>
+        <div className="grid grid-cols-2 gap-2" role="group" aria-label="Filter current event meal contacts">
+          <Button size="sm" variant={statusFilter === "needs" ? "default" : "outline"} onClick={() => setStatusFilter("needs")}>Needs text ({missingContacts.length})</Button>
+          <Button size="sm" variant={statusFilter === "all" ? "default" : "outline"} onClick={() => setStatusFilter("all")}>All current ({eventContacts.length})</Button>
+          <Button size="sm" variant={statusFilter === "sent" ? "default" : "outline"} onClick={() => setStatusFilter("sent")}>Documented sent ({confirmedContactCount})</Button>
+          <Button size="sm" variant={statusFilter === "marked" ? "default" : "outline"} onClick={() => setStatusFilter("marked")}>Verify marks ({markedContactCount})</Button>
+          <Button size="sm" variant={statusFilter === "paid" ? "default" : "outline"} onClick={() => setStatusFilter("paid")}>Paid ({eventContacts.filter((contact) => contact.status === "paid").length})</Button>
+          <Button size="sm" variant="outline" onClick={downloadPending}><Download className="mr-1.5 h-3.5 w-3.5" />Export view</Button>
+        </div>
         <div className="divide-y divide-border rounded-md border border-border">
-          {unpaidContacts.map((contact) => (
+          {visibleEventContacts.length === 0 && <p className="p-3 text-sm text-muted-foreground">Nobody is in this view.</p>}
+          {visibleEventContacts.map((contact) => (
             <div key={contact.id} className="space-y-2 p-3 text-sm">
               <div className="flex items-start justify-between gap-2">
-                <div><p className="font-medium">{contact.name}</p><p className="text-xs text-muted-foreground">{contact.phone || "No phone on file"}</p></div>
-                <Badge variant={contact.confirmed ? "outline" : contact.disputed ? "destructive" : "secondary"}>
-                  {contact.confirmed ? "Physically sent" : contact.disputed ? "Not sent" : contact.hasMark ? "Mark only — verify" : "No mark"}
+                <div><p className="font-medium">{contact.name}</p><p className="text-xs text-muted-foreground">{contact.phone || "No phone on file"} · {contact.inviter}</p></div>
+                <Badge variant={contact.status === "needs" ? "destructive" : "outline"}>
+                  {contact.status === "needs" ? "Needs prepay text" : contact.status === "marked" ? "Mark needs verification" : contact.status === "confirmed" ? "Documented sent" : "Paid — no text needed"}
                 </Badge>
               </div>
               <div className="mt-2 flex flex-wrap gap-2">
-                {contact.rows.map((row) => <Badge key={row.cuisine} variant="outline">{row.cuisine} · {row.qty} plate{row.qty === 1 ? "" : "s"}</Badge>)}
+                {contact.orders.map(({ row, textStatus }) => <Badge key={row.cuisine} variant={textStatus === "needs" || textStatus === "disputed" ? "destructive" : "outline"}>{row.cuisine} · {row.qty} plate{row.qty === 1 ? "" : "s"} · {textStatus === "paid" ? "paid" : textStatus === "confirmed" ? "sent" : textStatus === "marked" ? "verify" : "needs text"}</Badge>)}
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Button size="sm" variant="outline" disabled={busy === `contact::${contact.id}`} onClick={() => void reconcileOneContact(contact, "confirmed")}><Check className="mr-1.5 h-3.5 w-3.5" /> Physically sent</Button>
-                <Button size="sm" variant="outline" disabled={busy === `contact::${contact.id}` || !contact.hasMark} onClick={() => void reconcileOneContact(contact, "disputed")}><X className="mr-1.5 h-3.5 w-3.5" /> Not sent</Button>
-              </div>
+              {contact.status === "marked" && <Button size="sm" variant="outline" disabled={busy === `contact::${contact.id}`} onClick={() => void reconcileOneContact(contact, "confirmed")}><Check className="mr-1.5 h-3.5 w-3.5" /> Confirm physically sent</Button>}
             </div>
           ))}
         </div>
