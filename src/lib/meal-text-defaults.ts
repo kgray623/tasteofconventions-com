@@ -94,3 +94,18 @@ export type MealTextEvidenceLine = {
   note: string | null;
   reviewed_at: string | null;
 };
+
+export type MealEventContact = {
+  id: string;
+  name: string;
+  phone: string;
+  inviter: string;
+  totalPlates: number;
+  orders: Array<{
+    cuisine: string;
+    qty: number;
+    state: import("@/lib/meal-communication").MealCommunicationState | undefined;
+    textStatus: "paid" | "confirmed" | "marked" | "needs" | "disputed";
+  }>;
+  status: "paid" | "confirmed" | "marked" | "needs";
+};

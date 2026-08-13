@@ -14,7 +14,6 @@ export async function loadTodayPaymentTextEvidence(supabaseAdmin: any, actorId: 
     .select("event_at")
     .eq("campaign", "payment_update")
     .eq("action", "sent")
-    .eq("actor_id", actorId)
     .neq("evidence_source", "human_reconciliation")
     .order("event_at", { ascending: false })
     .limit(1);
@@ -29,7 +28,6 @@ export async function loadTodayPaymentTextEvidence(supabaseAdmin: any, actorId: 
     .select("id,preorder_id,cuisine,event_at,actor_id")
     .eq("campaign", "payment_update")
     .eq("action", "sent")
-    .eq("actor_id", actorId)
     .gte("event_at", start)
     .lt("event_at", endDate.toISOString())
     .order("event_at", { ascending: false });

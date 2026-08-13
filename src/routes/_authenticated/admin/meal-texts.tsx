@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, Check, Copy, Download, Globe, Loader2, MessageSquare, Phone, RotateCcw, Utensils, Users, X } from "lucide-react";
+import { AlertTriangle, Check, Copy, Download, Globe, Loader2, MessageSquare, Phone, RotateCcw, Utensils, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -182,7 +182,7 @@ function MealTextsPage() {
     );
 
   const confirmedEvidenceKeys = useMemo(
-    () => new Set(todayEvidence.lines.filter((line) => line.decision === "confirmed").map((line) => `${line.preorder_id}::${line.cuisine}`)),
+    () => new Set(todayEvidence.lines.filter((line) => line.decision !== "disputed").map((line) => `${line.preorder_id}::${line.cuisine}`)),
     [todayEvidence],
   );
   const needsTextRows = useMemo(
@@ -223,38 +223,58 @@ function MealTextsPage() {
     return [...seen.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   }, [needsTextRows]);
 
-  const unpaidContacts = useMemo(() => {
+  const eventContacts = useMemo(() => {
     const marked = new Set(todayEvidence.lines.map((line) => `${line.preorder_id}::${line.cuisine}`));
-    const decisions = new Map(todayEvidence.lines.map((line) => [`${line.preorder_id}::${line.cuisine}`, line.decision] as const));
+    const decisions = new Map<string, "confirmed" | "disputed" | null>(
+      todayEvidence.lines.map((line) => [`${line.preorder_id}::${line.cuisine}`, line.decision]),
+    );
     const byContact = new Map<string, MealTextRow[]>();
     for (const row of rows) {
-      if (isPaidState(row.state)) continue;
       const current = byContact.get(row.id) ?? [];
       current.push(row);
       byContact.set(row.id, current);
     }
-    return [...byContact.values()].map((contact) => ({
-      id: contact[0]?.id ?? "",
-      name: contact[0]?.name ?? "Guest",
-      phone: contact[0]?.phone ?? "",
-      rows: contact,
-      hasMark: contact.some((row) => marked.has(`${row.id}::${row.cuisine}`)),
-      confirmed: contact.every((row) => decisions.get(`${row.id}::${row.cuisine}`) === "confirmed"),
-      disputed: contact.some((row) => decisions.get(`${row.id}::${row.cuisine}`) === "disputed"),
-    })).sort((a, b) => a.name.localeCompare(b.name));
+    return [...byContact.values()].map((contact) => {
+      const orders = contact.map((row) => {
+        const key = `${row.id}::${row.cuisine}`;
+        const decision = decisions.get(key);
+        const textStatus = isPaidState(row.state) ? "paid" as const
+          : decision === "disputed" ? "disputed" as const
+          : marked.has(key) ? "confirmed" as const
+          : "needs" as const;
+        return { row, textStatus };
+      });
+      const status = orders.every((order) => order.textStatus === "paid") ? "paid" as const
+        : orders.some((order) => order.textStatus === "needs" || order.textStatus === "disputed") ? "needs" as const
+        : "confirmed" as const;
+      return {
+        id: contact[0]?.id ?? "",
+        name: contact[0]?.name ?? "Guest",
+        phone: contact[0]?.phone ?? "",
+        inviter: contact[0]?.inviter ?? "Not linked",
+        totalPlates: contact.reduce((sum, row) => sum + row.qty, 0),
+        orders,
+        status,
+      };
+    }).sort((a, b) => a.name.localeCompare(b.name));
   }, [rows, todayEvidence]);
 
-  const confirmedContactCount = unpaidContacts.filter((contact) => contact.confirmed).length;
-  const missingContacts = unpaidContacts.filter((contact) => !contact.confirmed);
-  const reconciliationReady = confirmedContactCount === 54 && unpaidContacts.length === 62;
+  const visibleEventContacts = eventContacts.filter((contact) => {
+    if (statusFilter === "all") return true;
+    if (statusFilter === "sent") return contact.status === "confirmed";
+    return contact.status === statusFilter;
+  }).filter((contact) => inviterFilter === "all" || contact.inviter === inviterFilter);
+  const confirmedContactCount = eventContacts.filter((contact) => contact.status === "confirmed").length;
+  const missingContacts = eventContacts.filter((contact) => contact.status === "needs");
+  const todayMarkedContactCount = new Set(todayEvidence.lines.filter((line) => line.decision !== "disputed").map((line) => line.preorder_id)).size;
 
-  const reconcileOneContact = async (contact: (typeof unpaidContacts)[number], decision: "confirmed" | "disputed") => {
+  const reconcileOneContact = async (contact: (typeof eventContacts)[number], decision: "confirmed" | "disputed") => {
     const key = `contact::${contact.id}`;
     setBusy(key);
     try {
       await reconcileContact({ data: {
         preorderId: contact.id,
-        cuisines: contact.rows.map((row) => row.cuisine),
+        cuisines: contact.orders.filter((order) => order.textStatus !== "paid").map((order) => order.row.cuisine),
         decision,
       } });
       await refresh({ keepWording: true });
@@ -267,7 +287,7 @@ function MealTextsPage() {
   };
 
   const downloadPending = () => {
-    const pending = needsTextRows;
+    const pending = visibleEventContacts.flatMap((contact) => contact.orders.map(({ row, textStatus }) => ({ ...row, textStatus })));
     if (pending.length === 0) {
       toast.error("Everyone in this list has been texted");
       return;
@@ -277,12 +297,12 @@ function MealTextsPage() {
       return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
     };
     const csv = [
-      ["Guest", "Phone", "Cuisine", "Meals", "Committee member", "Notified"].join(","),
+      ["Guest", "Phone", "Cuisine", "Meals", "Committee member", "Payment/text status"].join(","),
       ...pending.map((r) =>
-        [r.name, r.phone, r.cuisine, r.qty, r.inviter, "Not yet"].map(esc).join(","),
+        [r.name, r.phone, r.cuisine, r.qty, r.inviter, r.textStatus].map(esc).join(","),
       ),
     ].join("\n");
-    const name = `payment-update-pending-${new Date().toISOString().slice(0, 10)}.csv`;
+    const name = `current-event-meal-contacts-${statusFilter}-${new Date().toISOString().slice(0, 10)}.csv`;
     const res = downloadTextFile(name, csv);
     if (res.ok) {
       toast.success("Pending list downloaded");
@@ -433,37 +453,42 @@ function MealTextsPage() {
         <div className="flex items-start gap-2">
           <AlertTriangle className="mt-1 h-5 w-5 shrink-0 text-amber-700" />
           <div>
-            <h2 className="font-display text-2xl">Complete unpaid-contact reconciliation</h2>
+            <h2 className="font-display text-2xl">Current event meal contacts</h2>
             <p className="text-sm text-muted-foreground">
-              Confirm the 54 people you physically texted. Database marks are shown only as reference and do not count as proof.
+              Everyone with a current in-person meal preorder, after cancellations. Each person appears once with every cuisine they ordered.
             </p>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-sm">
-          <div className="rounded-md border border-border p-2"><strong className="block text-lg">{unpaidContacts.length}</strong>Unpaid</div>
-          <div className="rounded-md border border-border p-2"><strong className="block text-lg">{confirmedContactCount}</strong>Confirmed</div>
-          <div className="rounded-md border border-border p-2"><strong className="block text-lg">{missingContacts.length}</strong>Missing</div>
+          <div className="rounded-md border border-border p-2"><strong className="block text-lg">{eventContacts.length}</strong>Contacts</div>
+          <div className="rounded-md border border-border p-2"><strong className="block text-lg">{rows.length}</strong>Cuisine orders</div>
+          <div className="rounded-md border border-border p-2"><strong className="block text-lg">{totalMeals}</strong>Plates</div>
         </div>
         <p className="text-sm font-medium" aria-live="polite">
-          {reconciliationReady
-            ? "Reconciled: 54 confirmed sent · 8 missing · 62 unpaid contacts"
-            : `${Math.max(54 - confirmedContactCount, 0)} more people must be identified before the exact 8-person missing list is proven.`}
+          {missingContacts.length} need a prepay text · {confirmedContactCount} documented sent
         </p>
+        <p className="text-xs text-muted-foreground">
+          The database documents physical texts today for {todayMarkedContactCount} current contacts, including paid contacts. A disputed mark remains on the needs-text list.
+        </p>
+        <div className="grid grid-cols-2 gap-2" role="group" aria-label="Filter current event meal contacts">
+          <Button size="sm" variant={statusFilter === "needs" ? "default" : "outline"} onClick={() => setStatusFilter("needs")}>Needs text ({missingContacts.length})</Button>
+          <Button size="sm" variant={statusFilter === "all" ? "default" : "outline"} onClick={() => setStatusFilter("all")}>All current ({eventContacts.length})</Button>
+          <Button size="sm" variant={statusFilter === "sent" ? "default" : "outline"} onClick={() => setStatusFilter("sent")}>Documented sent ({confirmedContactCount})</Button>
+          <Button size="sm" variant={statusFilter === "paid" ? "default" : "outline"} onClick={() => setStatusFilter("paid")}>Paid ({eventContacts.filter((contact) => contact.status === "paid").length})</Button>
+          <Button size="sm" variant="outline" onClick={downloadPending}><Download className="mr-1.5 h-3.5 w-3.5" />Export view</Button>
+        </div>
         <div className="divide-y divide-border rounded-md border border-border">
-          {unpaidContacts.map((contact) => (
+          {visibleEventContacts.length === 0 && <p className="p-3 text-sm text-muted-foreground">Nobody is in this view.</p>}
+          {visibleEventContacts.map((contact) => (
             <div key={contact.id} className="space-y-2 p-3 text-sm">
               <div className="flex items-start justify-between gap-2">
-                <div><p className="font-medium">{contact.name}</p><p className="text-xs text-muted-foreground">{contact.phone || "No phone on file"}</p></div>
-                <Badge variant={contact.confirmed ? "outline" : contact.disputed ? "destructive" : "secondary"}>
-                  {contact.confirmed ? "Physically sent" : contact.disputed ? "Not sent" : contact.hasMark ? "Mark only — verify" : "No mark"}
+                <div><p className="font-medium">{contact.name}</p><p className="text-xs text-muted-foreground">{contact.phone || "No phone on file"} · {contact.inviter}</p></div>
+                <Badge variant={contact.status === "needs" ? "destructive" : "outline"}>
+                  {contact.status === "needs" ? "Needs prepay text" : contact.status === "confirmed" ? "Documented sent" : "Paid — no text needed"}
                 </Badge>
               </div>
               <div className="mt-2 flex flex-wrap gap-2">
-                {contact.rows.map((row) => <Badge key={row.cuisine} variant="outline">{row.cuisine} · {row.qty} plate{row.qty === 1 ? "" : "s"}</Badge>)}
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Button size="sm" variant="outline" disabled={busy === `contact::${contact.id}`} onClick={() => void reconcileOneContact(contact, "confirmed")}><Check className="mr-1.5 h-3.5 w-3.5" /> Physically sent</Button>
-                <Button size="sm" variant="outline" disabled={busy === `contact::${contact.id}` || !contact.hasMark} onClick={() => void reconcileOneContact(contact, "disputed")}><X className="mr-1.5 h-3.5 w-3.5" /> Not sent</Button>
+                {contact.orders.map(({ row, textStatus }) => <Badge key={row.cuisine} variant={textStatus === "needs" || textStatus === "disputed" ? "destructive" : "outline"}>{row.cuisine} · {row.qty} plate{row.qty === 1 ? "" : "s"} · {textStatus === "paid" ? "paid" : textStatus === "confirmed" ? "sent" : "needs text"}</Badge>)}
               </div>
             </div>
           ))}
