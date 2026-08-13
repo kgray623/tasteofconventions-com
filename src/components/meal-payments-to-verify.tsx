@@ -19,6 +19,10 @@ type Row = {
   reported_by_label: string | null;
 };
 
+/** Whole days a reported payment has been waiting for restaurant confirmation. */
+const ageDays = (paidAt: string | null) =>
+  paidAt ? Math.max(0, Math.floor((Date.now() - new Date(paidAt).getTime()) / 86_400_000)) : 0;
+
 /**
  * Payments a guest or committee member reported that no restaurant has
  * verified yet. Nothing here is hidden or deleted — the restaurant confirms it
@@ -64,9 +68,27 @@ export function MealPaymentsToVerify() {
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
+      {rows && rows.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          <Badge variant="outline">
+            {rows.reduce((sum, r) => sum + r.qty, 0)} plates paid, not yet confirmed
+          </Badge>
+          <Badge
+            variant="outline"
+            className={
+              rows.some((r) => ageDays(r.paid_at) >= 3) ? "border-amber-500 text-amber-700" : ""
+            }
+          >
+            Oldest waiting {Math.max(...rows.map((r) => ageDays(r.paid_at)))} day
+            {Math.max(...rows.map((r) => ageDays(r.paid_at))) === 1 ? "" : "s"}
+          </Badge>
+        </div>
+      )}
+
       {rows && rows.length === 0 && (
         <p className="text-sm text-muted-foreground">Nothing waiting for verification.</p>
       )}
+
 
       {rows && rows.length > 0 && (
         <ul className="divide-y divide-border">

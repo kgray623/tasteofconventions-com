@@ -31,6 +31,7 @@ import {
 import { SmsTextButton } from "@/components/sms-text-button";
 import { MealTextSelfTest } from "@/components/meal-text-self-test";
 import { OpenOnSiteBanner } from "@/components/open-on-site-banner";
+import { RecordMealPaymentDialog } from "@/components/record-meal-payment-dialog";
 import { isPaidState } from "@/lib/meal-communication";
 
 import {
@@ -490,8 +491,19 @@ function MealTextsPage() {
               <div className="mt-2 flex flex-wrap gap-2">
                 {contact.orders.map(({ row, textStatus }) => <Badge key={row.cuisine} variant={textStatus === "needs" || textStatus === "disputed" ? "destructive" : "outline"}>{row.cuisine} · {row.qty} plate{row.qty === 1 ? "" : "s"} · {textStatus === "paid" ? "paid" : textStatus === "confirmed" ? "sent" : "needs text"}</Badge>)}
               </div>
+              {contact.orders.some(({ textStatus }) => textStatus !== "paid") && (
+                <RecordMealPaymentDialog
+                  preorderId={contact.id}
+                  guestName={contact.name}
+                  orders={contact.orders
+                    .filter(({ textStatus }) => textStatus !== "paid")
+                    .map(({ row }) => ({ cuisine: row.cuisine, qty: row.qty }))}
+                  onRecorded={() => refresh({ keepWording: true })}
+                />
+              )}
             </div>
           ))}
+
         </div>
       </Card>
 

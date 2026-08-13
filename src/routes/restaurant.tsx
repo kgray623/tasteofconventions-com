@@ -277,6 +277,18 @@ function RestaurantPortalPage() {
           </Card>
         </div>
 
+        <Card className="border-amber-400 p-3 text-sm">
+          <p className="font-medium text-ink">
+            Did anyone pay you by phone, cash, or in person?
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Please tap <strong>Mark paid</strong> on their name below as soon as it happens, even if
+            they did not use Zelle. That is the only way the committee can see the payment — a
+            payment you don&rsquo;t mark here is invisible to everyone else.
+          </p>
+        </Card>
+
+
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[180px]">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />

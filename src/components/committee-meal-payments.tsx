@@ -1,10 +1,12 @@
 import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { RecordMealPaymentDialog } from "@/components/record-meal-payment-dialog";
 import { isPaidState } from "@/lib/meal-communication";
 import { cuisineLabel } from "@/lib/meal-text-message";
 import { MEAL_PRICE_LINE } from "@/lib/meal-pricing";
 import type { CommitteeMealTextRow } from "@/lib/committee-meal-texts.functions";
+
 
 /**
  * Plain paid / not-paid roster for one committee member's own guests, so they
@@ -16,13 +18,16 @@ export function CommitteeMealPayments({
   rows,
   totals,
   generatedAt,
+  onRecorded,
 }: {
   rows: CommitteeMealTextRow[];
   totals: { plates: number; paid_plates: number; unpaid_plates: number };
   generatedAt?: string | null;
+  onRecorded?: () => void | Promise<void>;
 }) {
   const paid = useMemo(() => rows.filter((r) => isPaidState(r.state)), [rows]);
   const unpaid = useMemo(() => rows.filter((r) => !isPaidState(r.state)), [rows]);
+
 
   const byCuisine = (list: CommitteeMealTextRow[]) => {
     const map = new Map<string, CommitteeMealTextRow[]>();
@@ -92,6 +97,15 @@ export function CommitteeMealPayments({
                   {r.exception && (
                     <span className="text-xs text-muted-foreground">{r.exception}</span>
                   )}
+                  <RecordMealPaymentDialog
+                    preorderId={r.id}
+                    guestName={r.name}
+                    orders={[{ cuisine: r.cuisine, qty: r.qty }]}
+                    onRecorded={onRecorded}
+                    label="They already paid"
+                    variant="ghost"
+                  />
+
                 </li>
               ))}
             </ul>

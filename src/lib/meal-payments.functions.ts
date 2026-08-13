@@ -16,9 +16,13 @@ const CommitteeInput = z.object({
   preorder_id: z.string().uuid(),
   cuisine: z.string().min(2).max(60),
   qty: z.number().int().min(1).max(20).default(1),
-  method: z.enum(["zelle", "venmo", "cash", "card", "other"]).default("zelle"),
+  method: z
+    .enum(["called_restaurant", "zelle", "venmo", "cash", "in_person", "card", "other"])
+    .default("called_restaurant"),
+  reported_by: z.string().trim().max(120).optional(),
   note: z.string().max(500).optional(),
 });
+
 
 /**
  * A guest tells us they paid the restaurant directly (e.g. Zelle without a
@@ -69,14 +73,21 @@ export const recordMealPaymentForGuest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => CommitteeInput.parse(d))
   .handler(async ({ data, context }) => {
-    const { recordMealPayment, assertMealPaymentStaff } = await import(
-      "@/lib/meal-payments.server"
-    );
+    const { recordMealPayment, assertMealPaymentStaff, assertCanRecordPaymentForPreorder } =
+      await import("@/lib/meal-payments.server");
 
     // Authorization first: being signed in is not enough.
-    await assertMealPaymentStaff(context.supabase, context.userId);
+    const { isAdmin } = await assertMealPaymentStaff(context.supabase, context.userId);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // A committee member may only record for a guest on their own list.
+    await assertCanRecordPaymentForPreorder(
+      supabaseAdmin,
+      context.userId,
+      data.preorder_id,
+      isAdmin,
+    );
 
     const { data: profile } = await context.supabase
       .from("profiles")
@@ -84,17 +95,24 @@ export const recordMealPaymentForGuest = createServerFn({ method: "POST" })
       .eq("id", context.userId)
       .maybeSingle();
 
+    // Who told us, kept with the record so the report is never anonymous.
+    const reporter = data.reported_by?.trim();
+    const note = [reporter ? `Reported by ${reporter}` : null, data.note?.trim() || null]
+      .filter(Boolean)
+      .join(" — ");
+
     return recordMealPayment(supabaseAdmin, {
       preorder_id: data.preorder_id,
       cuisine: data.cuisine,
       qty: data.qty,
-      method: data.method,
-      note: data.note ?? null,
+      method: data.method.replace(/_/g, " "),
+      note: note || null,
       source: "committee_recorded",
       reported_by: context.userId,
       reported_by_label: profile?.display_name ?? null,
       paid_at: new Date().toISOString(),
     });
+
   });
 
 /**
