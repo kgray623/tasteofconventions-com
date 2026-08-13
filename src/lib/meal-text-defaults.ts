@@ -95,6 +95,14 @@ export type MealTextEvidenceLine = {
   reviewed_at: string | null;
 };
 
+export type MealInstructionQueueContact = {
+  id: string;
+  name: string;
+  phone: string;
+  inviter: string;
+  orders: MealTextRow[];
+};
+
 /** Retained type for the archived committee-text audit helper. Not rendered by the meal-text route. */
 export type CommitteeTextRosterRow = {
   id: string;

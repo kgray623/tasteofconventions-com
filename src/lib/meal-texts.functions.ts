@@ -8,6 +8,7 @@ export {
   type MealRestaurant,
   type MealTextEvidenceLine,
   type MealEventContact,
+  type MealInstructionQueueContact,
   type MealTextRow,
 } from "@/lib/meal-text-defaults";
 import {
@@ -16,6 +17,7 @@ import {
   type MealRestaurant,
   type MealTextEvidenceLine,
   type MealEventContact,
+  type MealInstructionQueueContact,
   type MealTextRow,
 } from "@/lib/meal-text-defaults";
 
@@ -39,6 +41,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
       { data: zelleSetting },
       ledger,
       todayEvidence,
+      instructionEvidence,
     ] = await Promise.all([
       supabaseAdmin.from("restaurants").select("id,name,cuisine,phone,website,order_ready,active,venmo_handle,zelle_name,zelle_phone,zelle_qr_url,zelle_pay_link,chicken_price,beef_price,price_note").order("name"),
       supabaseAdmin
@@ -62,6 +65,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
         .maybeSingle(),
       loadMealNotifyRollup(supabaseAdmin),
       (await import("@/lib/meal-text-evidence.server")).loadTodayPaymentTextEvidence(supabaseAdmin, context.userId),
+      (await import("@/lib/meal-text-evidence.server")).loadConfirmedInstructionEvidence(supabaseAdmin),
     ]);
 
     // Every payment-update mark is attributable to the person who tapped it.
@@ -170,6 +174,8 @@ export const getMealTextData = createServerFn({ method: "POST" })
       return digits === "8082787562";
     });
 
+    const { buildMealInstructionQueue } = await import("@/lib/meal-instruction-queue");
+
     return {
       restaurants: ((restaurants ?? []) as any[])
         .filter((r) => r.active !== false)
@@ -190,6 +196,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
           order_ready: r.order_ready !== false,
         })) as MealRestaurant[],
       rows,
+      instructionQueue: buildMealInstructionQueue(rows, instructionEvidence.lines) as MealInstructionQueueContact[],
       kariTestRows,
       template: (setting?.value as string | undefined) ?? DEFAULT_MEAL_TEXT_TEMPLATE,
       zelleTemplate: (zelleSetting?.value as string | undefined) ?? DEFAULT_ZELLE_UPDATE_TEMPLATE,
@@ -281,6 +288,26 @@ export const reconcilePaymentTextContact = createServerFn({ method: "POST" })
       cuisines: data.cuisines,
       reviewerId: context.userId,
       decision: data.decision,
+    });
+  });
+
+export const confirmMealInstructionText = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      preorderId: z.string().uuid(),
+      cuisine: z.string().min(1).max(80),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { assertMealStaff } = await import("@/lib/meal-text-tracking.server");
+    await assertMealStaff(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { confirmMealInstructionText } = await import("@/lib/meal-text-evidence.server");
+    return confirmMealInstructionText(supabaseAdmin, {
+      preorderId: data.preorderId,
+      cuisine: data.cuisine,
+      reviewerId: context.userId,
     });
   });
 
