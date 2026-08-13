@@ -98,7 +98,7 @@ function MealTextsPage() {
   const [tplSavedAt, setTplSavedAt] = useState<string | null>(null);
   const [tplError, setTplError] = useState<string | null>(null);
 
-  const [statusFilter, setStatusFilter] = useState<"all" | "needs" | "sent" | "marked" | "paid">("needs");
+  const [statusFilter, setStatusFilter] = useState<"all" | "needs" | "sent" | "paid">("needs");
   const [inviterFilter, setInviterFilter] = useState("all");
   const [busy, setBusy] = useState<string | null>(null);
   const [reconciliation, setReconciliation] = useState<{
@@ -474,7 +474,6 @@ function MealTextsPage() {
           <Button size="sm" variant={statusFilter === "needs" ? "default" : "outline"} onClick={() => setStatusFilter("needs")}>Needs text ({missingContacts.length})</Button>
           <Button size="sm" variant={statusFilter === "all" ? "default" : "outline"} onClick={() => setStatusFilter("all")}>All current ({eventContacts.length})</Button>
           <Button size="sm" variant={statusFilter === "sent" ? "default" : "outline"} onClick={() => setStatusFilter("sent")}>Documented sent ({confirmedContactCount})</Button>
-          <Button size="sm" variant={statusFilter === "marked" ? "default" : "outline"} onClick={() => setStatusFilter("marked")}>Legacy marks</Button>
           <Button size="sm" variant={statusFilter === "paid" ? "default" : "outline"} onClick={() => setStatusFilter("paid")}>Paid ({eventContacts.filter((contact) => contact.status === "paid").length})</Button>
           <Button size="sm" variant="outline" onClick={downloadPending}><Download className="mr-1.5 h-3.5 w-3.5" />Export view</Button>
         </div>
@@ -785,7 +784,6 @@ function MealTextsPage() {
             const evidenceConfirmed = confirmedEvidenceKeys.has(`${x.id}::${x.cuisine}`);
             if (statusFilter === "needs") return !isPaidState(x.state) && !evidenceConfirmed;
             if (statusFilter === "sent") return evidenceConfirmed;
-            if (statusFilter === "marked") return Boolean(x.zelle_sent_at) && !evidenceConfirmed && !isPaidState(x.state);
             if (statusFilter === "paid") return isPaidState(x.state);
             return true;
           })
