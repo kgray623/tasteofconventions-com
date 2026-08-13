@@ -154,6 +154,14 @@ function PreorderReportPage() {
   };
 
   const exportCsv = () => {
+    if (!canonical) {
+      toast.error("The canonical meal totals are still loading. Try again in a moment.");
+      return;
+    }
+    if (!canonical.reconciles || !canonical.plates_reconcile || canonical.meal_quantity !== totalMeals) {
+      toast.error("Meal totals do not reconcile. Review the visible warnings before exporting.");
+      return;
+    }
     const csv = buildCsv();
     const filename = `cuisine-preorder-report-${new Date().toISOString().slice(0, 10)}.csv`;
     setFallback({ filename, text: csv });
