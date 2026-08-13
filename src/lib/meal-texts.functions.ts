@@ -176,8 +176,8 @@ export const getMealTextData = createServerFn({ method: "POST" })
       return digits === "8082787562";
     });
 
-    const { buildMealInstructionQueue, reconstructReportedTextBatch } = await import("@/lib/meal-instruction-queue");
-    const batchReconciliation = reconstructReportedTextBatch(rows, (textEvents ?? []) as any[], 54);
+    const { buildMealInstructionQueue, reconcileExplicitTextBatch } = await import("@/lib/meal-instruction-queue");
+    const batchReconciliation = reconcileExplicitTextBatch(rows, (textEvents ?? []) as any[]);
 
     return {
       restaurants: ((restaurants ?? []) as any[])

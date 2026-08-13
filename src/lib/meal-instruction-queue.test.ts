@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildMealInstructionQueue, reconstructReportedTextBatch } from "@/lib/meal-instruction-queue";
+import { buildMealInstructionQueue, reconcileExplicitTextBatch } from "@/lib/meal-instruction-queue";
 import type { MealTextRow } from "@/lib/meal-text-defaults";
 
 const paidRow: MealTextRow = {
@@ -28,7 +28,7 @@ describe("meal instruction queue", () => {
     }])).toHaveLength(0);
   });
 
-  it("uses only the reported number of chronological contacts and exposes overflow marks", () => {
+  it("subtracts every active contact explicitly marked on August 12 without an inferred cap", () => {
     const rows = [
       paidRow,
       { ...paidRow, id: "preorder-2", name: "Second Guest" },
@@ -40,10 +40,22 @@ describe("meal instruction queue", () => {
       campaign: "payment_update",
       action: "sent",
     }));
-    const batch = reconstructReportedTextBatch(rows, events, 2);
-    expect(batch.reconstructed_contact_ids).toEqual(["preorder-1", "preorder-2"]);
-    expect(batch.overflow.map((contact) => contact.id)).toEqual(["preorder-3"]);
+    const batch = reconcileExplicitTextBatch(rows, events);
+    expect(batch.reconstructed_contact_ids).toEqual(["preorder-1", "preorder-2", "preorder-3"]);
+    expect(batch.reconstructed_count).toBe(3);
     expect(buildMealInstructionQueue(rows, [], batch.reconstructed_contact_ids).map((contact) => contact.id))
-      .toEqual(["preorder-3"]);
+      .toEqual([]);
+  });
+
+  it("does not let an older legacy mark hide a contact from the August 12 list", () => {
+    const batch = reconcileExplicitTextBatch([paidRow], [{
+      preorder_id: paidRow.id,
+      event_at: "2026-08-11T12:00:00Z",
+      campaign: "payment_update",
+      action: "sent",
+      evidence_source: "legacy_live_mark",
+    }]);
+    expect(batch.reconstructed_contact_ids).toEqual([]);
+    expect(buildMealInstructionQueue([paidRow], [], batch.reconstructed_contact_ids)).toHaveLength(1);
   });
 });
