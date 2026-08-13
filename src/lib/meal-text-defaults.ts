@@ -95,7 +95,24 @@ export type MealTextEvidenceLine = {
   reviewed_at: string | null;
 };
 
-export type CommitteeTextRosterRow = import("@/lib/committee-text-tracking.server").CommitteeTextRosterRow;
+export type CommitteeTextRosterRow = {
+  id: string;
+  name: string;
+  phone: string;
+  sent: boolean;
+  sent_at: string | null;
+  sent_by: string | null;
+  active_contacts: number;
+  outstanding_lines: number;
+  contacts: Array<{
+    id: string;
+    name: string;
+    phone: string;
+    cuisine: string;
+    qty: number;
+    status: "paid" | "confirmed" | "unverified" | "disputed" | "needs";
+  }>;
+};
 
 export type MealEventContact = {
   id: string;

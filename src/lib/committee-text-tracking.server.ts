@@ -1,23 +1,5 @@
 import type { MealCommunicationRow } from "@/lib/meal-communication";
-
-export type CommitteeTextRosterRow = {
-  id: string;
-  name: string;
-  phone: string;
-  sent: boolean;
-  sent_at: string | null;
-  sent_by: string | null;
-  active_contacts: number;
-  outstanding_lines: number;
-  contacts: Array<{
-    id: string;
-    name: string;
-    phone: string;
-    cuisine: string;
-    qty: number;
-    status: "paid" | "confirmed" | "unverified" | "disputed" | "needs";
-  }>;
-};
+import type { CommitteeTextRosterRow } from "@/lib/meal-text-defaults";
 
 export async function loadCommitteeTextRoster(
   supabaseAdmin: any,

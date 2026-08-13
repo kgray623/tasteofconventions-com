@@ -41,7 +41,6 @@ export const getMealTextData = createServerFn({ method: "POST" })
       { data: zelleSetting },
       ledger,
       todayEvidence,
-      committeeRoster,
     ] = await Promise.all([
       supabaseAdmin.from("restaurants").select("id,name,cuisine,phone,website,order_ready,active,venmo_handle,zelle_name,zelle_phone,zelle_qr_url,zelle_pay_link,chicken_price,beef_price,price_note").order("name"),
       supabaseAdmin
@@ -65,7 +64,6 @@ export const getMealTextData = createServerFn({ method: "POST" })
         .maybeSingle(),
       loadMealNotifyRollup(supabaseAdmin),
       (await import("@/lib/meal-text-evidence.server")).loadTodayPaymentTextEvidence(supabaseAdmin, context.userId),
-      Promise.resolve(null),
     ]);
 
     const loadedCommitteeRoster = await (await import("@/lib/committee-text-tracking.server")).loadCommitteeTextRoster(
