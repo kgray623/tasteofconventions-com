@@ -19,6 +19,10 @@ type Row = {
   reported_by_label: string | null;
 };
 
+/** Whole days a reported payment has been waiting for restaurant confirmation. */
+const ageDays = (paidAt: string | null) =>
+  paidAt ? Math.max(0, Math.floor((Date.now() - new Date(paidAt).getTime()) / 86_400_000)) : 0;
+
 /**
  * Payments a guest or committee member reported that no restaurant has
  * verified yet. Nothing here is hidden or deleted — the restaurant confirms it
