@@ -95,6 +95,8 @@ export type MealTextEvidenceLine = {
   reviewed_at: string | null;
 };
 
+export type CommitteeTextRosterRow = import("@/lib/committee-text-tracking.server").CommitteeTextRosterRow;
+
 export type MealEventContact = {
   id: string;
   name: string;

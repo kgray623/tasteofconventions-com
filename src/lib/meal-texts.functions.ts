@@ -9,6 +9,7 @@ export {
   type MealTextEvidenceLine,
   type MealEventContact,
   type MealTextRow,
+  type CommitteeTextRosterRow,
 } from "@/lib/meal-text-defaults";
 import {
   DEFAULT_MEAL_TEXT_TEMPLATE,
@@ -17,6 +18,7 @@ import {
   type MealTextEvidenceLine,
   type MealEventContact,
   type MealTextRow,
+  type CommitteeTextRosterRow,
 } from "@/lib/meal-text-defaults";
 
 export const getMealTextData = createServerFn({ method: "POST" })
@@ -39,6 +41,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
       { data: zelleSetting },
       ledger,
       todayEvidence,
+      committeeRoster,
     ] = await Promise.all([
       supabaseAdmin.from("restaurants").select("id,name,cuisine,phone,website,order_ready,active,venmo_handle,zelle_name,zelle_phone,zelle_qr_url,zelle_pay_link,chicken_price,beef_price,price_note").order("name"),
       supabaseAdmin
@@ -62,7 +65,14 @@ export const getMealTextData = createServerFn({ method: "POST" })
         .maybeSingle(),
       loadMealNotifyRollup(supabaseAdmin),
       (await import("@/lib/meal-text-evidence.server")).loadTodayPaymentTextEvidence(supabaseAdmin, context.userId),
+      Promise.resolve(null),
     ]);
+
+    const loadedCommitteeRoster = await (await import("@/lib/committee-text-tracking.server")).loadCommitteeTextRoster(
+      supabaseAdmin,
+      ledger.rows,
+      todayEvidence.lines,
+    );
 
     // Every payment-update mark is attributable to the person who tapped it.
     const markerIds = [
@@ -201,6 +211,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
         committee_totals: ledger.committee_totals,
       },
       todayEvidence: todayEvidence as { utc_day: string; lines: MealTextEvidenceLine[] },
+      committeeRoster: loadedCommitteeRoster as { rows: CommitteeTextRosterRow[]; totals: { active_members: number; sent: number; pending: number; missing_phone: number } },
       // Who is signed in, so the test panel can text the message to themselves.
       // Read-only: nothing about the tester is written anywhere.
       self: await (async () => {
@@ -238,6 +249,24 @@ export const getMealTextData = createServerFn({ method: "POST" })
         return { name, phone };
       })(),
     };
+  });
+
+export const markCommitteeTextSent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ inviterId: z.string().uuid(), sent: z.boolean() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { assertMealStaff } = await import("@/lib/meal-text-tracking.server");
+    await assertMealStaff(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: profile } = await supabaseAdmin.from("profiles").select("display_name").eq("id", context.userId).maybeSingle();
+    const actorLabel = profile?.display_name?.trim() || "Committee staff";
+    const { appendCommitteeTextEvent } = await import("@/lib/committee-text-tracking.server");
+    return appendCommitteeTextEvent(supabaseAdmin, {
+      inviterId: data.inviterId,
+      sent: data.sent,
+      actorId: context.userId,
+      actorLabel,
+    });
   });
 
 export const reviewPaymentTextEvidence = createServerFn({ method: "POST" })
