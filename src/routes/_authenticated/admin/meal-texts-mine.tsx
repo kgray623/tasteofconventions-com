@@ -239,7 +239,14 @@ function MyMealTextsPage() {
       </Card>
 
 
-      {!loading && <CommitteeMealPayments rows={rows} totals={totals} generatedAt={readAt} />}
+      {!loading && (
+        <CommitteeMealPayments
+          rows={rows}
+          totals={totals}
+          generatedAt={readAt}
+          onRecorded={() => refresh(actingFor)}
+        />
+      )}
 
       {isAdmin && committee.length > 0 && (
         <Card className="p-4 space-y-2">
