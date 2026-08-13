@@ -27,6 +27,42 @@ describe("meal communication accounting", () => {
     const ledger = buildMealCommunicationLedger(base);
     expect(ledger.totals).toMatchObject({ meal_quantity: 3, households: 1, message_units: 2 });
     expect(ledger.totals.reconciles).toBe(true);
+    expect(ledger.totals.plates_reconcile).toBe(true);
+  });
+
+  it("flags plates_reconcile false when a submitted meal quantity is dropped", () => {
+    const ledger = buildMealCommunicationLedger({
+      ...base,
+      preorders: [
+        {
+          ...base.preorders[0],
+          selections: [
+            { cuisine: "African", qty: 2 },
+            { cuisine: "Burmese", qty: "two" as unknown as number },
+          ],
+        },
+      ],
+    });
+    // The unreadable quantity must never disappear silently.
+    expect(ledger.totals.meal_quantity).toBe(2);
+    expect(ledger.totals.plates_reconcile).toBe(false);
+  });
+
+  it("keeps plates_reconcile true for a deliberately cancelled zero-quantity meal", () => {
+    const ledger = buildMealCommunicationLedger({
+      ...base,
+      preorders: [
+        {
+          ...base.preorders[0],
+          selections: [
+            { cuisine: "African", qty: 2 },
+            { cuisine: "Burmese", qty: 0 },
+          ],
+        },
+      ],
+    });
+    expect(ledger.totals.meal_quantity).toBe(2);
+    expect(ledger.totals.plates_reconcile).toBe(true);
   });
 
   it("derives current text status from the latest append-only event", () => {
