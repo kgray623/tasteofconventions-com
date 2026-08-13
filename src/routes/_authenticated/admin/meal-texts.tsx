@@ -44,6 +44,7 @@ import {
   saveRestaurantContact,
   type MealRestaurant,
   type MealInstructionQueueContact,
+  type MealTextBatchReconciliation,
   type MealTextEvidenceLine,
   type MealTextRow,
 } from "@/lib/meal-texts.functions";
@@ -86,6 +87,7 @@ function MealTextsPage() {
   const [restaurants, setRestaurants] = useState<MealRestaurant[]>([]);
   const [rows, setRows] = useState<MealTextRow[]>([]);
   const [instructionQueue, setInstructionQueue] = useState<MealInstructionQueueContact[]>([]);
+  const [batchReconciliation, setBatchReconciliation] = useState<MealTextBatchReconciliation | null>(null);
   const [todayEvidence, setTodayEvidence] = useState<{ utc_day: string; lines: MealTextEvidenceLine[] }>({ utc_day: "", lines: [] });
   const [kariTestRows, setKariTestRows] = useState<MealTextRow[]>([]);
   // Who is signed in, so the test panel can text the message to yourself.
@@ -153,6 +155,7 @@ function MealTextsPage() {
       setRestaurants(res.restaurants);
       setRows(res.rows);
       setInstructionQueue(res.instructionQueue);
+      setBatchReconciliation(res.batchReconciliation);
       setTodayEvidence(res.todayEvidence);
       setKariTestRows(res.kariTestRows);
       // Prefill the test panel: signed-in phone, else the retained preorder phone.
@@ -444,27 +447,43 @@ function MealTextsPage() {
         <div className="flex items-start gap-2">
           <MessageSquare className="mt-1 h-5 w-5 shrink-0 text-terracotta" />
           <div>
-            <h1 className="font-display text-2xl">Everyone who still needs meal instructions</h1>
+            <h1 className="font-display text-2xl">Meal-order contacts you still need to text</h1>
             <p className="text-sm text-muted-foreground">
-              Every active preorder stays here until each cuisine’s instruction text is physically sent and confirmed.
+              This is the remainder after reconciling your reported 54 physical texts against the chronological meal-order list.
             </p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Badge variant={instructionQueue.length === 0 ? "outline" : "destructive"}>
-            {instructionQueue.length} contact{instructionQueue.length === 1 ? "" : "s"}
+          <Badge variant="outline">
+            {totalHouseholds} total meal-order contacts
           </Badge>
-          <Badge variant={instructionMessageCount === 0 ? "outline" : "destructive"}>
-            {instructionMessageCount} cuisine instruction text{instructionMessageCount === 1 ? "" : "s"}
+          <Badge variant="outline">
+            {batchReconciliation?.reconstructed_count ?? 0} physically texted
+          </Badge>
+          <Badge variant={instructionQueue.length === 0 ? "outline" : "destructive"}>
+            {instructionQueue.length} remaining
           </Badge>
         </div>
         <div className="rounded-md border border-amber-400 bg-amber-50 p-3 text-sm text-amber-950">
-          Paid people are included because payment does not prove they received instructions. Old marks do not count
-          until explicitly confirmed. Cancelled meals, declined RSVPs, and Zoom attendees are excluded without deleting history.
+          Paid contacts remain included because payment does not prove they received restaurant instructions. Cancelled meals,
+          declines, and Zoom attendees are excluded without deleting their history.
         </div>
+        {batchReconciliation && batchReconciliation.overflow.length > 0 && (
+          <div className="space-y-2 rounded-md border border-border p-3 text-sm">
+            <p className="font-medium">Marks not counted in your reported 54</p>
+            <p className="text-muted-foreground">
+              These later marks remain in the list below until you explicitly confirm the physical text was sent.
+            </p>
+            <ul className="space-y-1">
+              {batchReconciliation.overflow.map((contact) => (
+                <li key={contact.id}>{contact.name} · {contact.phone || "No phone on file"}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         <div className="divide-y divide-border rounded-md border border-border">
           {loading && <p className="p-3 text-sm text-muted-foreground">Loading the current list…</p>}
-          {!loading && instructionQueue.length === 0 && <p className="p-3 text-sm text-muted-foreground">Every active preorder has confirmed meal instructions.</p>}
+          {!loading && instructionQueue.length === 0 && <p className="p-3 text-sm text-muted-foreground">No meal-order contacts remain.</p>}
           {instructionQueue.map((contact) => (
             <div key={contact.id} className="space-y-3 p-3">
               <div>
