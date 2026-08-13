@@ -16,9 +16,13 @@ const CommitteeInput = z.object({
   preorder_id: z.string().uuid(),
   cuisine: z.string().min(2).max(60),
   qty: z.number().int().min(1).max(20).default(1),
-  method: z.enum(["zelle", "venmo", "cash", "card", "other"]).default("zelle"),
+  method: z
+    .enum(["called_restaurant", "zelle", "venmo", "cash", "in_person", "card", "other"])
+    .default("called_restaurant"),
+  reported_by: z.string().trim().max(120).optional(),
   note: z.string().max(500).optional(),
 });
+
 
 /**
  * A guest tells us they paid the restaurant directly (e.g. Zelle without a
