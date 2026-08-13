@@ -143,4 +143,44 @@ export async function assertMealPaymentStaff(supabase: any, userId: string) {
   if (error) throw new Error("Forbidden");
   const roles = (data ?? []).map((r: any) => r?.role);
   if (!roles.includes("admin") && !roles.includes("team")) throw new Error("Forbidden");
+  return { isAdmin: roles.includes("admin") };
 }
+
+/**
+ * Admins may record a payment for anyone. A committee (team) member may only
+ * record one for a guest on their own list — the same ownership rule the guest
+ * roster uses. Fails closed.
+ */
+export async function assertCanRecordPaymentForPreorder(
+  supabaseAdmin: any,
+  userId: string,
+  preorderId: string,
+  isAdmin: boolean,
+) {
+  if (isAdmin) return;
+
+  const { data: preorder, error } = await supabaseAdmin
+    .from("cuisine_preorders")
+    .select("invitation_id")
+    .eq("id", preorderId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!preorder?.invitation_id) {
+    throw new Error("That meal order is not linked to a guest on your list.");
+  }
+
+  const { data: inv } = await supabaseAdmin
+    .from("invitations")
+    .select("inviter_id,host_id")
+    .eq("id", preorder.invitation_id)
+    .maybeSingle();
+  if (!inv) throw new Error("That guest no longer exists.");
+
+  const { data: mine } = await supabaseAdmin.from("inviters").select("id").eq("host_id", userId);
+  const inviterIds = (mine ?? []).map((r: any) => r.id as string);
+  const ownsByInviter = !!inv.inviter_id && inviterIds.includes(inv.inviter_id);
+  if (!ownsByInviter && inv.host_id !== userId) {
+    throw new Error("That guest is not on your list, so you cannot record their payment.");
+  }
+}
+
