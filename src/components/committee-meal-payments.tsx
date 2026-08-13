@@ -16,13 +16,16 @@ export function CommitteeMealPayments({
   rows,
   totals,
   generatedAt,
+  onRecorded,
 }: {
   rows: CommitteeMealTextRow[];
   totals: { plates: number; paid_plates: number; unpaid_plates: number };
   generatedAt?: string | null;
+  onRecorded?: () => void | Promise<void>;
 }) {
   const paid = useMemo(() => rows.filter((r) => isPaidState(r.state)), [rows]);
   const unpaid = useMemo(() => rows.filter((r) => !isPaidState(r.state)), [rows]);
+
 
   const byCuisine = (list: CommitteeMealTextRow[]) => {
     const map = new Map<string, CommitteeMealTextRow[]>();
