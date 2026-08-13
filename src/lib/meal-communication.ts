@@ -278,6 +278,7 @@ export function buildMealCommunicationLedger(input: {
     update_sent: count("update_sent"),
     exceptions: count("exception"),
     reconciles: false,
+    plates_reconcile: false,
   };
   totals.reconciles =
     totals.message_units ===
@@ -287,7 +288,30 @@ export function buildMealCommunicationLedger(input: {
       totals.update_sent +
       totals.exceptions;
 
+  const byCuisine = new Map<string, number>();
+  for (const row of rows) byCuisine.set(row.cuisine, (byCuisine.get(row.cuisine) ?? 0) + row.qty);
+  const cuisineTotal = Array.from(byCuisine.values()).reduce((sum, qty) => sum + qty, 0);
+  totals.plates_reconcile = droppedSubmittedQuantities === 0 && cuisineTotal === totals.meal_quantity;
+
   return { rows, totals, generated_at: new Date().toISOString() };
+}
+
+/** Submitted selection entries whose quantity could not be read as a real plate count. */
+function countDroppedSelections(selections: unknown) {
+  if (!Array.isArray(selections)) return 0;
+  let dropped = 0;
+  for (const item of selections) {
+    if (!item || typeof item !== "object") {
+      dropped += 1;
+      continue;
+    }
+    const raw = item as { qty?: unknown; quantity?: unknown };
+    const hasQty = raw.qty !== undefined || raw.quantity !== undefined;
+    if (!hasQty) continue; // no quantity submitted at all — nothing was dropped
+    const qty = Number(raw.qty ?? raw.quantity);
+    if (!Number.isFinite(qty) || qty <= 0) dropped += 1;
+  }
+  return dropped;
 }
 
 /** True when this order unit still needs the payment update text. */
