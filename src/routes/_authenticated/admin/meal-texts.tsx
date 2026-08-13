@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, Check, Copy, Download, Globe, Loader2, MessageSquare, Phone, RotateCcw, Utensils, Users } from "lucide-react";
+import { Check, Copy, Download, Globe, Loader2, MessageSquare, Phone, RotateCcw, Utensils, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +31,6 @@ import {
 import { SmsTextButton } from "@/components/sms-text-button";
 import { MealTextSelfTest } from "@/components/meal-text-self-test";
 import { OpenOnSiteBanner } from "@/components/open-on-site-banner";
-import { RecordMealPaymentDialog } from "@/components/record-meal-payment-dialog";
 import { isPaidState } from "@/lib/meal-communication";
 
 import {
@@ -266,9 +265,7 @@ function MealTextsPage() {
     if (statusFilter === "sent") return contact.status === "confirmed";
     return contact.status === statusFilter;
   }).filter((contact) => inviterFilter === "all" || contact.inviter === inviterFilter);
-  const confirmedContactCount = eventContacts.filter((contact) => contact.status === "confirmed").length;
   const missingContacts = eventContacts.filter((contact) => contact.status === "needs");
-  const todayMarkedContactCount = new Set(todayEvidence.lines.filter((line) => line.decision !== "disputed").map((line) => line.preorder_id)).size;
 
   const reconcileOneContact = async (contact: (typeof eventContacts)[number], decision: "confirmed" | "disputed") => {
     const key = `contact::${contact.id}`;
@@ -379,6 +376,15 @@ function MealTextsPage() {
     }
   };
 
+  const copyNumber = async (phone: string) => {
+    try {
+      await navigator.clipboard.writeText(phone);
+      toast.success("Phone number copied");
+    } catch (e) {
+      toast.error("Couldn't copy the phone number", { description: getErrorMessage(e) });
+    }
+  };
+
   const totalOrders = reconciliation?.totals.message_units ?? rows.length;
   const totalHouseholds = reconciliation?.totals.households ?? new Set(rows.map((r) => r.id)).size;
   const totalMeals = reconciliation?.totals.meal_quantity ?? rows.reduce((s, r) => s + r.qty, 0);
@@ -388,9 +394,91 @@ function MealTextsPage() {
   const paidCount = paidRows.length;
   const needsTextCount = needsTextRows.length;
 
+  const downloadNeedsText = () => {
+    if (missingContacts.length === 0) {
+      toast.success("Nobody currently needs the prepay text");
+      return;
+    }
+    const esc = (value: unknown) => {
+      const text = String(value ?? "");
+      return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    };
+    const csv = [
+      ["Guest", "Phone", "Cuisine", "Meals", "Committee member", "Status"].join(","),
+      ...missingContacts.flatMap((contact) => contact.orders
+        .filter(({ textStatus }) => textStatus === "needs" || textStatus === "disputed")
+        .map(({ row }) => [row.name, row.phone, row.cuisine, row.qty, row.inviter, "Needs prepay text"].map(esc).join(","))),
+    ].join("\n");
+    const result = downloadTextFile(`needs-prepay-text-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+    if (result.ok) toast.success("Needs-text list downloaded");
+    else {
+      const tab = openTextInNewTab(csv);
+      if (tab.ok) toast.success("Opened the needs-text list in a new tab");
+      else toast.error("Couldn't download", { description: tab.reason });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <OpenOnSiteBanner />
+      <Card className="space-y-4 border-amber-400 p-5">
+        <div className="flex items-start gap-2">
+          <MessageSquare className="mt-1 h-5 w-5 shrink-0 text-terracotta" />
+          <div>
+            <h1 className="font-display text-2xl">Text these people now</h1>
+            <p className="text-sm text-muted-foreground">
+              Current event meal contacts who still have an unpaid cuisine without confirmed physical-send evidence.
+            </p>
+          </div>
+        </div>
+        <Badge variant={missingContacts.length === 0 ? "outline" : "destructive"}>
+          {missingContacts.length} contact{missingContacts.length === 1 ? "" : "s"} need the prepay text
+        </Badge>
+        <div className="rounded-md border border-amber-400 bg-amber-50 p-3 text-sm text-amber-950">
+          Recorded send marks exceed the 54 physical texts reported. This list includes every currently identifiable missing contact; review the retained marks below to identify any others without guessing.
+          <Button
+            className="mt-2 w-full sm:w-auto"
+            size="sm"
+            variant="outline"
+            onClick={() => document.getElementById("text-mark-accounting")?.scrollIntoView({ behavior: "smooth" })}
+          >
+            Review text marks
+          </Button>
+        </div>
+        <div className="divide-y divide-border rounded-md border border-border">
+          {loading && <p className="p-3 text-sm text-muted-foreground">Loading the current list…</p>}
+          {!loading && missingContacts.length === 0 && <p className="p-3 text-sm text-muted-foreground">Nobody is currently identifiable as needing the prepay text.</p>}
+          {missingContacts.map((contact) => (
+            <div key={contact.id} className="space-y-3 p-3">
+              <div>
+                <p className="font-medium">{contact.name}</p>
+                <p className="text-sm text-muted-foreground">{contact.phone || "No phone on file"}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {contact.orders
+                  .filter(({ textStatus }) => textStatus === "needs" || textStatus === "disputed")
+                  .map(({ row }) => <Badge key={row.cuisine} variant="destructive">{row.cuisine} ×{row.qty}</Badge>)}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {contact.orders
+                  .filter(({ textStatus }) => textStatus === "needs" || textStatus === "disputed")
+                  .map(({ row }) => {
+                    const number = smsNumber(row.phone);
+                    return number ? <SmsTextButton key={row.cuisine} numbers={[number]} body={bodyFor(row)} label={`Text ${row.cuisine}`} /> : null;
+                  })}
+                {contact.phone && (
+                  <Button size="sm" variant="outline" onClick={() => void copyNumber(contact.phone)}>
+                    <Copy className="mr-1.5 h-3.5 w-3.5" /> Copy number
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        <Button size="sm" variant="outline" onClick={downloadNeedsText}>
+          <Download className="mr-1.5 h-3.5 w-3.5" /> Download this needs-text list
+        </Button>
+      </Card>
       <Card className="p-5 space-y-2">
         <div className="flex items-center gap-2">
           <MessageSquare className="w-5 h-5 text-terracotta" />
@@ -454,65 +542,8 @@ function MealTextsPage() {
         </div>
       </Card>
 
-      <Card className="p-5 space-y-4 border-amber-400">
-        <div className="flex items-start gap-2">
-          <AlertTriangle className="mt-1 h-5 w-5 shrink-0 text-amber-700" />
-          <div>
-            <h2 className="font-display text-2xl">Current event meal contacts</h2>
-            <p className="text-sm text-muted-foreground">
-              Everyone with a current in-person meal preorder, after cancellations. Each person appears once with every cuisine they ordered.
-            </p>
-          </div>
-        </div>
-        <div className="grid grid-cols-3 gap-2 text-center text-sm">
-          <div className="rounded-md border border-border p-2"><strong className="block text-lg">{eventContacts.length}</strong>Contacts</div>
-          <div className="rounded-md border border-border p-2"><strong className="block text-lg">{rows.length}</strong>Cuisine orders</div>
-          <div className="rounded-md border border-border p-2"><strong className="block text-lg">{totalMeals}</strong>Plates</div>
-        </div>
-        <p className="text-sm font-medium" aria-live="polite">
-          {missingContacts.length} need a prepay text · {confirmedContactCount} documented sent
-        </p>
-        <p className="text-xs text-muted-foreground">
-          The database documents physical texts today for {todayMarkedContactCount} current contacts, including paid contacts. A disputed mark remains on the needs-text list.
-        </p>
-        <div className="grid grid-cols-2 gap-2" role="group" aria-label="Filter current event meal contacts">
-          <Button size="sm" variant={statusFilter === "needs" ? "default" : "outline"} onClick={() => setStatusFilter("needs")}>Needs text ({missingContacts.length})</Button>
-          <Button size="sm" variant={statusFilter === "all" ? "default" : "outline"} onClick={() => setStatusFilter("all")}>All current ({eventContacts.length})</Button>
-          <Button size="sm" variant={statusFilter === "sent" ? "default" : "outline"} onClick={() => setStatusFilter("sent")}>Documented sent ({confirmedContactCount})</Button>
-          <Button size="sm" variant={statusFilter === "paid" ? "default" : "outline"} onClick={() => setStatusFilter("paid")}>Paid ({eventContacts.filter((contact) => contact.status === "paid").length})</Button>
-          <Button size="sm" variant="outline" onClick={downloadPending}><Download className="mr-1.5 h-3.5 w-3.5" />Export view</Button>
-        </div>
-        <div className="divide-y divide-border rounded-md border border-border">
-          {visibleEventContacts.length === 0 && <p className="p-3 text-sm text-muted-foreground">Nobody is in this view.</p>}
-          {visibleEventContacts.map((contact) => (
-            <div key={contact.id} className="space-y-2 p-3 text-sm">
-              <div className="flex items-start justify-between gap-2">
-                <div><p className="font-medium">{contact.name}</p><p className="text-xs text-muted-foreground">{contact.phone || "No phone on file"} · {contact.inviter}</p></div>
-                <Badge variant={contact.status === "needs" ? "destructive" : "outline"}>
-                  {contact.status === "needs" ? "Needs prepay text" : contact.status === "confirmed" ? "Documented sent" : "Paid — no text needed"}
-                </Badge>
-              </div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {contact.orders.map(({ row, textStatus }) => <Badge key={row.cuisine} variant={textStatus === "needs" || textStatus === "disputed" ? "destructive" : "outline"}>{row.cuisine} · {row.qty} plate{row.qty === 1 ? "" : "s"} · {textStatus === "paid" ? "paid" : textStatus === "confirmed" ? "sent" : "needs text"}</Badge>)}
-              </div>
-              {contact.orders.some(({ textStatus }) => textStatus !== "paid") && (
-                <RecordMealPaymentDialog
-                  preorderId={contact.id}
-                  guestName={contact.name}
-                  orders={contact.orders
-                    .filter(({ textStatus }) => textStatus !== "paid")
-                    .map(({ row }) => ({ cuisine: row.cuisine, qty: row.qty }))}
-                  onRecorded={() => refresh({ keepWording: true })}
-                />
-              )}
-            </div>
-          ))}
-
-        </div>
-      </Card>
-
       {reconciliation && (
-        <Card className="p-5 space-y-4">
+        <Card id="text-mark-accounting" className="p-5 space-y-4">
           <div>
             <h2 className="font-display text-2xl">Text-mark accounting</h2>
             <p className="text-sm text-muted-foreground">
