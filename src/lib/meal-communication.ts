@@ -56,6 +56,12 @@ export type MealCommunicationTotals = {
   update_sent: number;
   exceptions: number;
   reconciles: boolean;
+  /**
+   * True when the headline plate count equals the sum of the per-cuisine plate
+   * counts AND no submitted meal quantity was dropped while parsing. Computed
+   * once here so every screen gets the same check instead of recomputing it.
+   */
+  plates_reconcile: boolean;
 };
 
 type SourcePreorder = {
@@ -192,7 +198,11 @@ export function buildMealCommunicationLedger(input: {
   }
 
   const rows: MealCommunicationRow[] = [];
+  // Any submitted meal quantity the parser could not read is a dropped plate:
+  // it must surface as a visible mismatch, never be silently rounded away.
+  let droppedSubmittedQuantities = 0;
   for (const preorder of input.preorders) {
+    droppedSubmittedQuantities += countDroppedSelections(preorder.selections);
     const quantities = new Map<string, number>();
     for (const selection of parseSelections(preorder.selections)) {
       quantities.set(selection.cuisine, (quantities.get(selection.cuisine) ?? 0) + selection.qty);
@@ -268,6 +278,7 @@ export function buildMealCommunicationLedger(input: {
     update_sent: count("update_sent"),
     exceptions: count("exception"),
     reconciles: false,
+    plates_reconcile: false,
   };
   totals.reconciles =
     totals.message_units ===
@@ -277,7 +288,31 @@ export function buildMealCommunicationLedger(input: {
       totals.update_sent +
       totals.exceptions;
 
+  const byCuisine = new Map<string, number>();
+  for (const row of rows) byCuisine.set(row.cuisine, (byCuisine.get(row.cuisine) ?? 0) + row.qty);
+  const cuisineTotal = Array.from(byCuisine.values()).reduce((sum, qty) => sum + qty, 0);
+  totals.plates_reconcile = droppedSubmittedQuantities === 0 && cuisineTotal === totals.meal_quantity;
+
   return { rows, totals, generated_at: new Date().toISOString() };
+}
+
+/** Submitted selection entries whose quantity could not be read as a real plate count. */
+function countDroppedSelections(selections: unknown) {
+  if (!Array.isArray(selections)) return 0;
+  let dropped = 0;
+  for (const item of selections) {
+    if (!item || typeof item !== "object") {
+      dropped += 1;
+      continue;
+    }
+    const raw = item as { qty?: unknown; quantity?: unknown };
+    const hasQty = raw.qty !== undefined || raw.quantity !== undefined;
+    if (!hasQty) continue; // no quantity submitted at all — nothing was dropped
+    const qty = Number(raw.qty ?? raw.quantity);
+    // A deliberate zero is a cancelled plate, not a dropped one.
+    if (!Number.isFinite(qty) || qty < 0) dropped += 1;
+  }
+  return dropped;
 }
 
 /** True when this order unit still needs the payment update text. */

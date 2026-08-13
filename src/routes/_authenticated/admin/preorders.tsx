@@ -11,6 +11,9 @@ import { performProtectedDelete } from "@/lib/perform-protected-delete";
 import { downloadTextFile } from "@/lib/download-file";
 import { ExportFallbackDialog } from "@/components/export-fallback-dialog";
 import { readAtUtc } from "@/lib/meal-count-labels";
+import { useServerFn } from "@tanstack/react-start";
+import { Badge } from "@/components/ui/badge";
+import { getMealNotifyRollup, type MealNotifyRollup } from "@/lib/meal-notify.functions";
 
 
 export const Route = createFileRoute("/_authenticated/admin/preorders")({
@@ -128,6 +131,16 @@ function PreorderReportPage() {
   const restaurantMeals = totals.reduce((sum, row) => (CUISINES.includes(row.cuisine as (typeof CUISINES)[number]) ? sum + row.qty : sum), 0);
   const unlinkedMeals = unlinkedDetailed.reduce((sum, r) => sum + r.qty, 0);
 
+  // This report builds its own per-restaurant counts, so it also shows the
+  // canonical ledger's reconciliation checks instead of trusting itself.
+  const loadRollup = useServerFn(getMealNotifyRollup);
+  const [canonical, setCanonical] = useState<MealNotifyRollup["totals"] | null>(null);
+  useEffect(() => {
+    void loadRollup()
+      .then((res) => setCanonical(res.totals))
+      .catch(() => setCanonical(null));
+  }, []);
+
   const buildCsv = () => {
     const summaryLines = [
       ["Cuisine", "Total dishes"],
@@ -219,6 +232,23 @@ function PreorderReportPage() {
             <p className="text-xs text-amber-700 mt-2">
               + {unlinkedMeals} meal{unlinkedMeals === 1 ? "" : "s"} needing phone review (not counted)
             </p>
+          )}
+          {canonical && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              <Badge variant={canonical.reconciles ? "outline" : "destructive"}>
+                {canonical.reconciles ? "Order lines all accounted for" : "Order lines don't add up — needs review"}
+              </Badge>
+              <Badge variant={canonical.plates_reconcile ? "outline" : "destructive"}>
+                {canonical.plates_reconcile
+                  ? "Plates match the per-restaurant totals"
+                  : "Plate mismatch — review required"}
+              </Badge>
+              {canonical.meal_quantity !== totalMeals && (
+                <Badge variant="destructive">
+                  This report shows {totalMeals} plates; the ledger has {canonical.meal_quantity}
+                </Badge>
+              )}
+            </div>
           )}
         </Card>
       </div>
