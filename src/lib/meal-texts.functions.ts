@@ -7,6 +7,7 @@ export {
   DEFAULT_ZELLE_UPDATE_TEMPLATE,
   type MealRestaurant,
   type MealTextEvidenceLine,
+  type MealEventContact,
   type MealTextRow,
 } from "@/lib/meal-text-defaults";
 import {
@@ -14,6 +15,7 @@ import {
   DEFAULT_ZELLE_UPDATE_TEMPLATE,
   type MealRestaurant,
   type MealTextEvidenceLine,
+  type MealEventContact,
   type MealTextRow,
 } from "@/lib/meal-text-defaults";
 

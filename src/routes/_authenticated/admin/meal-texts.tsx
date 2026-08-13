@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, Check, Copy, Download, Globe, Loader2, MessageSquare, Phone, RotateCcw, Utensils, Users, X } from "lucide-react";
+import { AlertTriangle, Check, Copy, Download, Globe, Loader2, MessageSquare, Phone, RotateCcw, Utensils, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -98,7 +98,7 @@ function MealTextsPage() {
   const [tplSavedAt, setTplSavedAt] = useState<string | null>(null);
   const [tplError, setTplError] = useState<string | null>(null);
 
-  const [statusFilter, setStatusFilter] = useState<"all" | "needs" | "sent" | "paid">("needs");
+  const [statusFilter, setStatusFilter] = useState<"all" | "needs" | "sent" | "marked" | "paid">("needs");
   const [inviterFilter, setInviterFilter] = useState("all");
   const [busy, setBusy] = useState<string | null>(null);
   const [reconciliation, setReconciliation] = useState<{
@@ -223,38 +223,58 @@ function MealTextsPage() {
     return [...seen.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   }, [needsTextRows]);
 
-  const unpaidContacts = useMemo(() => {
+  const eventContacts = useMemo(() => {
     const marked = new Set(todayEvidence.lines.map((line) => `${line.preorder_id}::${line.cuisine}`));
     const decisions = new Map(todayEvidence.lines.map((line) => [`${line.preorder_id}::${line.cuisine}`, line.decision] as const));
     const byContact = new Map<string, MealTextRow[]>();
     for (const row of rows) {
-      if (isPaidState(row.state)) continue;
       const current = byContact.get(row.id) ?? [];
       current.push(row);
       byContact.set(row.id, current);
     }
-    return [...byContact.values()].map((contact) => ({
-      id: contact[0]?.id ?? "",
-      name: contact[0]?.name ?? "Guest",
-      phone: contact[0]?.phone ?? "",
-      rows: contact,
-      hasMark: contact.some((row) => marked.has(`${row.id}::${row.cuisine}`)),
-      confirmed: contact.every((row) => decisions.get(`${row.id}::${row.cuisine}`) === "confirmed"),
-      disputed: contact.some((row) => decisions.get(`${row.id}::${row.cuisine}`) === "disputed"),
-    })).sort((a, b) => a.name.localeCompare(b.name));
+    return [...byContact.values()].map((contact) => {
+      const orders = contact.map((row) => {
+        const key = `${row.id}::${row.cuisine}`;
+        const decision = decisions.get(key);
+        const textStatus = isPaidState(row.state) ? "paid" as const
+          : decision === "confirmed" ? "confirmed" as const
+          : decision === "disputed" ? "disputed" as const
+          : marked.has(key) ? "marked" as const
+          : "needs" as const;
+        return { row, textStatus };
+      });
+      const status = orders.every((order) => order.textStatus === "paid") ? "paid" as const
+        : orders.some((order) => order.textStatus === "needs" || order.textStatus === "disputed") ? "needs" as const
+        : orders.some((order) => order.textStatus === "marked") ? "marked" as const
+        : "confirmed" as const;
+      return {
+        id: contact[0]?.id ?? "",
+        name: contact[0]?.name ?? "Guest",
+        phone: contact[0]?.phone ?? "",
+        inviter: contact[0]?.inviter ?? "Not linked",
+        totalPlates: contact.reduce((sum, row) => sum + row.qty, 0),
+        orders,
+        status,
+      };
+    }).sort((a, b) => a.name.localeCompare(b.name));
   }, [rows, todayEvidence]);
 
-  const confirmedContactCount = unpaidContacts.filter((contact) => contact.confirmed).length;
-  const missingContacts = unpaidContacts.filter((contact) => !contact.confirmed);
-  const reconciliationReady = confirmedContactCount === 54 && unpaidContacts.length === 62;
+  const visibleEventContacts = eventContacts.filter((contact) => {
+    if (statusFilter === "all") return true;
+    if (statusFilter === "sent") return contact.status === "confirmed";
+    return contact.status === statusFilter;
+  }).filter((contact) => inviterFilter === "all" || contact.inviter === inviterFilter);
+  const confirmedContactCount = eventContacts.filter((contact) => contact.status === "confirmed").length;
+  const markedContactCount = eventContacts.filter((contact) => contact.status === "marked").length;
+  const missingContacts = eventContacts.filter((contact) => contact.status === "needs");
 
-  const reconcileOneContact = async (contact: (typeof unpaidContacts)[number], decision: "confirmed" | "disputed") => {
+  const reconcileOneContact = async (contact: (typeof eventContacts)[number], decision: "confirmed" | "disputed") => {
     const key = `contact::${contact.id}`;
     setBusy(key);
     try {
       await reconcileContact({ data: {
         preorderId: contact.id,
-        cuisines: contact.rows.map((row) => row.cuisine),
+        cuisines: contact.orders.filter((order) => order.textStatus !== "paid").map((order) => order.row.cuisine),
         decision,
       } });
       await refresh({ keepWording: true });
@@ -267,7 +287,7 @@ function MealTextsPage() {
   };
 
   const downloadPending = () => {
-    const pending = needsTextRows;
+    const pending = visibleEventContacts.flatMap((contact) => contact.orders.map(({ row, textStatus }) => ({ ...row, textStatus })));
     if (pending.length === 0) {
       toast.error("Everyone in this list has been texted");
       return;
@@ -277,12 +297,12 @@ function MealTextsPage() {
       return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
     };
     const csv = [
-      ["Guest", "Phone", "Cuisine", "Meals", "Committee member", "Notified"].join(","),
+      ["Guest", "Phone", "Cuisine", "Meals", "Committee member", "Payment/text status"].join(","),
       ...pending.map((r) =>
-        [r.name, r.phone, r.cuisine, r.qty, r.inviter, "Not yet"].map(esc).join(","),
+        [r.name, r.phone, r.cuisine, r.qty, r.inviter, r.textStatus].map(esc).join(","),
       ),
     ].join("\n");
-    const name = `payment-update-pending-${new Date().toISOString().slice(0, 10)}.csv`;
+    const name = `current-event-meal-contacts-${statusFilter}-${new Date().toISOString().slice(0, 10)}.csv`;
     const res = downloadTextFile(name, csv);
     if (res.ok) {
       toast.success("Pending list downloaded");
