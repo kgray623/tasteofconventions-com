@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, Check, Copy, Download, Globe, Loader2, MessageSquare, Phone, RotateCcw, Utensils, Users } from "lucide-react";
+import { Check, Copy, Download, Globe, Loader2, MessageSquare, Phone, RotateCcw, Utensils, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +31,6 @@ import {
 import { SmsTextButton } from "@/components/sms-text-button";
 import { MealTextSelfTest } from "@/components/meal-text-self-test";
 import { OpenOnSiteBanner } from "@/components/open-on-site-banner";
-import { RecordMealPaymentDialog } from "@/components/record-meal-payment-dialog";
 import { isPaidState } from "@/lib/meal-communication";
 
 import {
@@ -266,9 +265,7 @@ function MealTextsPage() {
     if (statusFilter === "sent") return contact.status === "confirmed";
     return contact.status === statusFilter;
   }).filter((contact) => inviterFilter === "all" || contact.inviter === inviterFilter);
-  const confirmedContactCount = eventContacts.filter((contact) => contact.status === "confirmed").length;
   const missingContacts = eventContacts.filter((contact) => contact.status === "needs");
-  const todayMarkedContactCount = new Set(todayEvidence.lines.filter((line) => line.decision !== "disputed").map((line) => line.preorder_id)).size;
 
   const reconcileOneContact = async (contact: (typeof eventContacts)[number], decision: "confirmed" | "disputed") => {
     const key = `contact::${contact.id}`;
