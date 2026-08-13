@@ -785,6 +785,7 @@ function MealTextsPage() {
             const evidenceConfirmed = confirmedEvidenceKeys.has(`${x.id}::${x.cuisine}`);
             if (statusFilter === "needs") return !isPaidState(x.state) && !evidenceConfirmed;
             if (statusFilter === "sent") return evidenceConfirmed;
+            if (statusFilter === "marked") return Boolean(x.zelle_sent_at) && !evidenceConfirmed && !isPaidState(x.state);
             if (statusFilter === "paid") return isPaidState(x.state);
             return true;
           })

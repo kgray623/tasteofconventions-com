@@ -140,6 +140,8 @@ export const getMealTextData = createServerFn({ method: "POST" })
         ? (inviterNameById.get(inviterId) ?? "Committee")
         : "Not linked to a committee member";
       for (const [cuisine, qty] of byCuisine) {
+        const ledgerRow = ledgerByKey.get(`${p.id}::${cuisine}`);
+        if (!ledgerRow) continue;
         rows.push({
           inviter: inviterName,
           id: p.id,
@@ -150,11 +152,11 @@ export const getMealTextData = createServerFn({ method: "POST" })
           sent_at: sentByMeal.get(`${p.id}::${cuisine}`) ?? null,
           zelle_sent_at: zelleByMeal.get(`${p.id}::${cuisine}`) ?? null,
           sent_by: zelleByWhom.get(`${p.id}::${cuisine}`) ?? null,
-          state: ledgerByKey.get(`${p.id}::${cuisine}`)?.state,
-          paid_at: ledgerByKey.get(`${p.id}::${cuisine}`)?.paid_at ?? null,
-          paid_source: ledgerByKey.get(`${p.id}::${cuisine}`)?.paid_source ?? null,
-          paid_note: ledgerByKey.get(`${p.id}::${cuisine}`)?.paid_note ?? null,
-          exception: ledgerByKey.get(`${p.id}::${cuisine}`)?.exception ?? null,
+          state: ledgerRow.state,
+          paid_at: ledgerRow.paid_at ?? null,
+          paid_source: ledgerRow.paid_source ?? null,
+          paid_note: ledgerRow.paid_note ?? null,
+          exception: ledgerRow.exception ?? null,
         });
       }
     }
