@@ -431,6 +431,9 @@ function MealTextsPage() {
                   ? `All ${reconciliation.totals.message_units} order lines reconcile`
                   : "Accounting mismatch — review required"}
               </Badge>
+              {!reconciliation.totals.plates_reconcile && (
+                <Badge variant="destructive">Plate mismatch — review required</Badge>
+              )}
             </>
           )}
         </div>
