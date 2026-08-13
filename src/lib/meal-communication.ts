@@ -198,7 +198,11 @@ export function buildMealCommunicationLedger(input: {
   }
 
   const rows: MealCommunicationRow[] = [];
+  // Any submitted meal quantity the parser could not read is a dropped plate:
+  // it must surface as a visible mismatch, never be silently rounded away.
+  let droppedSubmittedQuantities = 0;
   for (const preorder of input.preorders) {
+    droppedSubmittedQuantities += countDroppedSelections(preorder.selections);
     const quantities = new Map<string, number>();
     for (const selection of parseSelections(preorder.selections)) {
       quantities.set(selection.cuisine, (quantities.get(selection.cuisine) ?? 0) + selection.qty);
