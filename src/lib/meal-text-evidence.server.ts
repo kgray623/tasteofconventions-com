@@ -160,6 +160,51 @@ export async function reconcilePaymentTextContact(
   });
 }
 
+export async function confirmMealInstructionText(
+  supabaseAdmin: any,
+  input: { preorderId: string; cuisine: string; reviewerId: string },
+) {
+  const cuisine = normalizeCuisine(input.cuisine);
+  const { data: preorder, error: preorderError } = await supabaseAdmin
+    .from("cuisine_preorders")
+    .select("id,selections")
+    .eq("id", input.preorderId)
+    .maybeSingle();
+  if (preorderError) throw new Error(preorderError.message);
+  if (!preorder) throw new Error("This meal preorder could not be found");
+  const active = new Set(
+    (Array.isArray(preorder.selections) ? preorder.selections : [])
+      .filter((item: any) => Number(item?.qty) > 0)
+      .map((item: any) => normalizeCuisine(String(item?.cuisine ?? item?.country ?? ""))),
+  );
+  if (!active.has(cuisine)) throw new Error("This cuisine is no longer active on the preorder");
+
+  const eventAt = new Date().toISOString();
+  const { data: event, error } = await supabaseAdmin
+    .from("meal_text_events")
+    .insert({
+      campaign: "payment_update",
+      action: "sent",
+      preorder_id: input.preorderId,
+      cuisine,
+      actor_id: input.reviewerId,
+      event_at: eventAt,
+      evidence_source: "human_reconciliation",
+    })
+    .select("id,preorder_id,cuisine,actor_id,evidence_source")
+    .single();
+  if (error) throw new Error(error.message);
+  if (!event || event.preorder_id !== input.preorderId || normalizeCuisine(event.cuisine) !== cuisine) {
+    throw new Error("The physical-send event could not be verified");
+  }
+  return appendPaymentTextEvidenceReviews(supabaseAdmin, {
+    eventIds: [event.id],
+    reviewerId: input.reviewerId,
+    decision: "confirmed",
+    note: "Reviewer confirms this cuisine instruction text was physically sent",
+  });
+}
+
 export async function appendPaymentTextEvidenceReviews(
   supabaseAdmin: any,
   input: {
