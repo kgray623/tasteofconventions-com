@@ -39,7 +39,6 @@ import {
   getMealTextData,
   markZelleTextSent,
   reconcilePaymentTextContact,
-  reviewPaymentTextEvidence,
   saveMealTextTemplate,
   saveRestaurantContact,
   type MealRestaurant,
@@ -78,7 +77,6 @@ function MealTextsPage() {
   const saveContact = useServerFn(saveRestaurantContact);
   const saveTemplate = useServerFn(saveMealTextTemplate);
   const markZelle = useServerFn(markZelleTextSent);
-  const reviewEvidence = useServerFn(reviewPaymentTextEvidence);
   const reconcileContact = useServerFn(reconcilePaymentTextContact);
 
   const [loading, setLoading] = useState(true);
@@ -225,34 +223,6 @@ function MealTextsPage() {
     return [...seen.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   }, [needsTextRows]);
 
-  const todayReviewContacts = useMemo(() => {
-    const byContact = new Map<string, { id: string; name: string; phone: string; lines: Array<MealTextEvidenceLine & { row?: MealTextRow }> }>();
-    for (const line of todayEvidence.lines) {
-      const row = rows.find((candidate) => candidate.id === line.preorder_id && candidate.cuisine === line.cuisine);
-      const current = byContact.get(line.preorder_id) ?? {
-        id: line.preorder_id,
-        name: row?.name ?? "Unknown meal contact",
-        phone: row?.phone ?? "",
-        lines: [],
-      };
-      current.lines.push({ ...line, row });
-      byContact.set(line.preorder_id, current);
-    }
-    return [...byContact.values()].sort((a, b) => a.name.localeCompare(b.name));
-  }, [rows, todayEvidence]);
-
-  const noMarkTodayContacts = useMemo(() => {
-    const marked = new Set(todayEvidence.lines.map((line) => `${line.preorder_id}::${line.cuisine}`));
-    const byContact = new Map<string, MealTextRow[]>();
-    for (const row of rows) {
-      if (isPaidState(row.state) || marked.has(`${row.id}::${row.cuisine}`)) continue;
-      const current = byContact.get(row.id) ?? [];
-      current.push(row);
-      byContact.set(row.id, current);
-    }
-    return [...byContact.values()].sort((a, b) => (a[0]?.name ?? "").localeCompare(b[0]?.name ?? ""));
-  }, [rows, todayEvidence]);
-
   const unpaidContacts = useMemo(() => {
     const marked = new Set(todayEvidence.lines.map((line) => `${line.preorder_id}::${line.cuisine}`));
     const decisions = new Map(todayEvidence.lines.map((line) => [`${line.preorder_id}::${line.cuisine}`, line.decision] as const));
@@ -295,25 +265,6 @@ function MealTextsPage() {
       setBusy(null);
     }
   };
-
-  const reviewContact = async (eventIds: string[], decision: "confirmed" | "disputed") => {
-    const key = `review::${eventIds[0] ?? decision}`;
-    setBusy(key);
-    try {
-      await reviewEvidence({ data: {
-        eventIds,
-        decision,
-        note: decision === "disputed" ? "Reviewer states this mark does not prove a physically sent text" : "Reviewer confirms the text was physically sent",
-      } });
-      await refresh({ keepWording: true });
-      toast.success(decision === "confirmed" ? "Physical send confirmed" : "Returned to the pending queue");
-    } catch (e) {
-      toast.error("Couldn't save the evidence review", { description: getErrorMessage(e) });
-    } finally {
-      setBusy(null);
-    }
-  };
-
 
   const downloadPending = () => {
     const pending = needsTextRows;
