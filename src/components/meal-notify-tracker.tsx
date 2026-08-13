@@ -147,6 +147,9 @@ export function MealNotifyTracker({ compact = false }: { compact?: boolean }) {
               <Badge variant={data.totals.reconciles ? "outline" : "destructive"}>
                 {data.totals.reconciles ? "Counts reconcile" : "Accounting mismatch"}
               </Badge>
+              {!data.totals.plates_reconcile && (
+                <Badge variant="destructive">Plate mismatch — review required</Badge>
+              )}
             </div>
           </div>
 
