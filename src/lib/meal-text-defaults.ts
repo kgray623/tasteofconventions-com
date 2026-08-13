@@ -95,6 +95,26 @@ export type MealTextEvidenceLine = {
   reviewed_at: string | null;
 };
 
+/** Retained type for the archived committee-text audit helper. Not rendered by the meal-text route. */
+export type CommitteeTextRosterRow = {
+  id: string;
+  name: string;
+  phone: string;
+  sent: boolean;
+  sent_at: string | null;
+  sent_by: string | null;
+  active_contacts: number;
+  outstanding_lines: number;
+  contacts: Array<{
+    id: string;
+    name: string;
+    phone: string;
+    cuisine: string;
+    qty: number;
+    status: "paid" | "confirmed" | "unverified" | "disputed" | "needs";
+  }>;
+};
+
 export type MealEventContact = {
   id: string;
   name: string;
