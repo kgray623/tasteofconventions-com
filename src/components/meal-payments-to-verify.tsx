@@ -64,9 +64,27 @@ export function MealPaymentsToVerify() {
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
+      {rows && rows.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          <Badge variant="outline">
+            {rows.reduce((sum, r) => sum + r.qty, 0)} plates paid, not yet confirmed
+          </Badge>
+          <Badge
+            variant="outline"
+            className={
+              rows.some((r) => ageDays(r.paid_at) >= 3) ? "border-amber-500 text-amber-700" : ""
+            }
+          >
+            Oldest waiting {Math.max(...rows.map((r) => ageDays(r.paid_at)))} day
+            {Math.max(...rows.map((r) => ageDays(r.paid_at))) === 1 ? "" : "s"}
+          </Badge>
+        </div>
+      )}
+
       {rows && rows.length === 0 && (
         <p className="text-sm text-muted-foreground">Nothing waiting for verification.</p>
       )}
+
 
       {rows && rows.length > 0 && (
         <ul className="divide-y divide-border">
