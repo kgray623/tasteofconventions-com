@@ -449,7 +449,7 @@ function MealTextsPage() {
           <div>
             <h1 className="font-display text-2xl">Meal-order contacts you still need to text</h1>
             <p className="text-sm text-muted-foreground">
-              This is the remainder after reconciling your reported 54 physical texts against the chronological meal-order list.
+              Every active meal preorder phone minus the people you explicitly marked sent on August 12.
             </p>
           </div>
         </div>
@@ -458,7 +458,7 @@ function MealTextsPage() {
             {totalHouseholds} total meal-order contacts
           </Badge>
           <Badge variant="outline">
-            {batchReconciliation?.reconstructed_count ?? 0} physically texted
+            {batchReconciliation?.reconstructed_count ?? 0} marked sent August 12
           </Badge>
           <Badge variant={instructionQueue.length === 0 ? "outline" : "destructive"}>
             {instructionQueue.length} remaining
@@ -468,19 +468,6 @@ function MealTextsPage() {
           Paid contacts remain included because payment does not prove they received restaurant instructions. Cancelled meals,
           declines, and Zoom attendees are excluded without deleting their history.
         </div>
-        {batchReconciliation && batchReconciliation.overflow.length > 0 && (
-          <div className="space-y-2 rounded-md border border-border p-3 text-sm">
-            <p className="font-medium">Marks not counted in your reported 54</p>
-            <p className="text-muted-foreground">
-              These later marks remain in the list below until you explicitly confirm the physical text was sent.
-            </p>
-            <ul className="space-y-1">
-              {batchReconciliation.overflow.map((contact) => (
-                <li key={contact.id}>{contact.name} · {contact.phone || "No phone on file"}</li>
-              ))}
-            </ul>
-          </div>
-        )}
         <div className="divide-y divide-border rounded-md border border-border">
           {loading && <p className="p-3 text-sm text-muted-foreground">Loading the current list…</p>}
           {!loading && instructionQueue.length === 0 && <p className="p-3 text-sm text-muted-foreground">No meal-order contacts remain.</p>}
@@ -500,19 +487,14 @@ function MealTextsPage() {
                   })}
                 {contact.phone && <Button size="sm" variant="outline" onClick={() => void copyNumber(contact.phone)}><Copy className="mr-1.5 h-3.5 w-3.5" />Copy number</Button>}
               </div>
-              <div className="flex flex-wrap gap-2">
-                {contact.orders.map((row) => (
-                  <Button
-                    key={`confirm-${row.cuisine}`}
-                    size="sm"
-                    variant="outline"
-                    disabled={busy === `instruction::${row.id}::${row.cuisine}`}
-                    onClick={() => void confirmInstructionSent(row)}
-                  >
-                    <Check className="mr-1.5 h-3.5 w-3.5" /> Confirm {row.cuisine} text sent
-                  </Button>
-                ))}
-              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={contact.orders.some((row) => busy === `instruction::${row.id}::${row.cuisine}`)}
+                onClick={() => void Promise.all(contact.orders.map(confirmInstructionSent))}
+              >
+                Mark sent
+              </Button>
             </div>
           ))}
         </div>
