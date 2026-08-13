@@ -103,6 +103,19 @@ export type MealInstructionQueueContact = {
   orders: MealTextRow[];
 };
 
+export type MealTextBatchReconciliation = {
+  activity_day: string | null;
+  reported_count: number;
+  reconstructed_count: number;
+  reconstructed_contact_ids: string[];
+  overflow: Array<{
+    id: string;
+    name: string;
+    phone: string;
+    first_marked_at: string;
+  }>;
+};
+
 /** Retained type for the archived committee-text audit helper. Not rendered by the meal-text route. */
 export type CommitteeTextRosterRow = {
   id: string;

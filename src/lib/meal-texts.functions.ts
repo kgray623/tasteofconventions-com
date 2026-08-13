@@ -9,6 +9,7 @@ export {
   type MealTextEvidenceLine,
   type MealEventContact,
   type MealInstructionQueueContact,
+  type MealTextBatchReconciliation,
   type MealTextRow,
 } from "@/lib/meal-text-defaults";
 import {
@@ -18,6 +19,7 @@ import {
   type MealTextEvidenceLine,
   type MealEventContact,
   type MealInstructionQueueContact,
+  type MealTextBatchReconciliation,
   type MealTextRow,
 } from "@/lib/meal-text-defaults";
 
@@ -55,7 +57,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
       supabaseAdmin.from("meal_zelle_text_sends").select("preorder_id,cuisine,sent_at,marked_by"),
       supabaseAdmin
         .from("meal_text_events")
-        .select("preorder_id,cuisine,campaign,action,event_at,actor_id,created_at")
+        .select("preorder_id,cuisine,campaign,action,event_at,actor_id,created_at,evidence_source")
         .order("event_at")
         .order("created_at"),
       supabaseAdmin
@@ -174,7 +176,8 @@ export const getMealTextData = createServerFn({ method: "POST" })
       return digits === "8082787562";
     });
 
-    const { buildMealInstructionQueue } = await import("@/lib/meal-instruction-queue");
+    const { buildMealInstructionQueue, reconstructReportedTextBatch } = await import("@/lib/meal-instruction-queue");
+    const batchReconciliation = reconstructReportedTextBatch(rows, (textEvents ?? []) as any[], 54);
 
     return {
       restaurants: ((restaurants ?? []) as any[])
@@ -196,7 +199,12 @@ export const getMealTextData = createServerFn({ method: "POST" })
           order_ready: r.order_ready !== false,
         })) as MealRestaurant[],
       rows,
-      instructionQueue: buildMealInstructionQueue(rows, instructionEvidence.lines) as MealInstructionQueueContact[],
+      instructionQueue: buildMealInstructionQueue(
+        rows,
+        instructionEvidence.lines,
+        batchReconciliation.reconstructed_contact_ids,
+      ) as MealInstructionQueueContact[],
+      batchReconciliation: batchReconciliation as MealTextBatchReconciliation,
       kariTestRows,
       template: (setting?.value as string | undefined) ?? DEFAULT_MEAL_TEXT_TEMPLATE,
       zelleTemplate: (zelleSetting?.value as string | undefined) ?? DEFAULT_ZELLE_UPDATE_TEMPLATE,
