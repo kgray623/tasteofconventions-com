@@ -36,12 +36,14 @@ import { isPaidState } from "@/lib/meal-communication";
 import {
   DEFAULT_MEAL_TEXT_TEMPLATE,
   DEFAULT_ZELLE_UPDATE_TEMPLATE,
+  confirmMealInstructionText,
   getMealTextData,
   markZelleTextSent,
   reconcilePaymentTextContact,
   saveMealTextTemplate,
   saveRestaurantContact,
   type MealRestaurant,
+  type MealInstructionQueueContact,
   type MealTextEvidenceLine,
   type MealTextRow,
 } from "@/lib/meal-texts.functions";
@@ -77,11 +79,13 @@ function MealTextsPage() {
   const saveContact = useServerFn(saveRestaurantContact);
   const saveTemplate = useServerFn(saveMealTextTemplate);
   const markZelle = useServerFn(markZelleTextSent);
+  const confirmInstruction = useServerFn(confirmMealInstructionText);
   const reconcileContact = useServerFn(reconcilePaymentTextContact);
 
   const [loading, setLoading] = useState(true);
   const [restaurants, setRestaurants] = useState<MealRestaurant[]>([]);
   const [rows, setRows] = useState<MealTextRow[]>([]);
+  const [instructionQueue, setInstructionQueue] = useState<MealInstructionQueueContact[]>([]);
   const [todayEvidence, setTodayEvidence] = useState<{ utc_day: string; lines: MealTextEvidenceLine[] }>({ utc_day: "", lines: [] });
   const [kariTestRows, setKariTestRows] = useState<MealTextRow[]>([]);
   // Who is signed in, so the test panel can text the message to yourself.
@@ -148,6 +152,7 @@ function MealTextsPage() {
       const res = await load({ data: {} as never });
       setRestaurants(res.restaurants);
       setRows(res.rows);
+      setInstructionQueue(res.instructionQueue);
       setTodayEvidence(res.todayEvidence);
       setKariTestRows(res.kariTestRows);
       // Prefill the test panel: signed-in phone, else the retained preorder phone.
@@ -268,6 +273,8 @@ function MealTextsPage() {
   }).filter((contact) => inviterFilter === "all" || contact.inviter === inviterFilter);
   const missingContacts = eventContacts.filter((contact) => contact.status === "needs");
 
+  const instructionMessageCount = instructionQueue.reduce((sum, contact) => sum + contact.orders.length, 0);
+
   const reconcileOneContact = async (contact: (typeof eventContacts)[number], decision: "confirmed" | "disputed") => {
     const key = `contact::${contact.id}`;
     setBusy(key);
@@ -287,7 +294,7 @@ function MealTextsPage() {
   };
 
   const downloadPending = () => {
-    const pending = visibleEventContacts.flatMap((contact) => contact.orders.map(({ row, textStatus }) => ({ ...row, textStatus })));
+    const pending = instructionQueue.flatMap((contact) => contact.orders);
     if (pending.length === 0) {
       toast.error("Everyone in this list has been texted");
       return;
@@ -297,12 +304,12 @@ function MealTextsPage() {
       return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
     };
     const csv = [
-      ["Guest", "Phone", "Cuisine", "Meals", "Committee member", "Payment/text status"].join(","),
+      ["Guest", "Phone", "Cuisine", "Meals", "Committee member", "Instruction status"].join(","),
       ...pending.map((r) =>
-        [r.name, r.phone, r.cuisine, r.qty, r.inviter, r.textStatus].map(esc).join(","),
+        [r.name, r.phone, r.cuisine, r.qty, r.inviter, "Needs instruction text"].map(esc).join(","),
       ),
     ].join("\n");
-    const name = `current-event-meal-contacts-${statusFilter}-${new Date().toISOString().slice(0, 10)}.csv`;
+    const name = `needs-meal-instructions-${new Date().toISOString().slice(0, 10)}.csv`;
     const res = downloadTextFile(name, csv);
     if (res.ok) {
       toast.success("Pending list downloaded");
@@ -396,8 +403,8 @@ function MealTextsPage() {
   const needsTextCount = needsTextRows.length;
 
   const downloadNeedsText = () => {
-    if (missingContacts.length === 0) {
-      toast.success("Nobody currently needs the prepay text");
+    if (instructionQueue.length === 0) {
+      toast.success("Everyone has confirmed meal instructions");
       return;
     }
     const esc = (value: unknown) => {
@@ -406,9 +413,8 @@ function MealTextsPage() {
     };
     const csv = [
       ["Guest", "Phone", "Cuisine", "Meals", "Committee member", "Status"].join(","),
-      ...missingContacts.flatMap((contact) => contact.orders
-        .filter(({ textStatus }) => textStatus === "needs" || textStatus === "disputed")
-        .map(({ row }) => [row.name, row.phone, row.cuisine, row.qty, row.inviter, "Needs prepay text"].map(esc).join(","))),
+      ...instructionQueue.flatMap((contact) => contact.orders
+        .map((row) => [row.name, row.phone, row.cuisine, row.qty, row.inviter, "Needs instruction text"].map(esc).join(","))),
     ].join("\n");
     const result = downloadTextFile(`needs-prepay-text-${new Date().toISOString().slice(0, 10)}.csv`, csv);
     if (result.ok) toast.success("Needs-text list downloaded");
@@ -419,6 +425,20 @@ function MealTextsPage() {
     }
   };
 
+  const confirmInstructionSent = async (row: MealTextRow) => {
+    const key = `instruction::${row.id}::${row.cuisine}`;
+    setBusy(key);
+    try {
+      await confirmInstruction({ data: { preorderId: row.id, cuisine: row.cuisine } });
+      await refresh({ keepWording: true });
+      toast.success(`${row.name}’s ${row.cuisine} instruction text confirmed`);
+    } catch (e) {
+      toast.error("Couldn't confirm the physical text", { description: getErrorMessage(e) });
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <OpenOnSiteBanner />
@@ -426,47 +446,61 @@ function MealTextsPage() {
         <div className="flex items-start gap-2">
           <MessageSquare className="mt-1 h-5 w-5 shrink-0 text-terracotta" />
           <div>
-            <h1 className="font-display text-2xl">Text these people now</h1>
+            <h1 className="font-display text-2xl">Everyone who still needs meal instructions</h1>
             <p className="text-sm text-muted-foreground">
-              Current event meal contacts with an unpaid cuisine and no confirmed physical-send evidence.
+              Every active preorder stays here until each cuisine’s instruction text is physically sent and confirmed.
             </p>
           </div>
         </div>
-        <Badge variant={missingContacts.length === 0 ? "outline" : "destructive"}>
-          {missingContacts.length} contact{missingContacts.length === 1 ? "" : "s"} need the prepay text
-        </Badge>
+        <div className="flex flex-wrap gap-2">
+          <Badge variant={instructionQueue.length === 0 ? "outline" : "destructive"}>
+            {instructionQueue.length} contact{instructionQueue.length === 1 ? "" : "s"}
+          </Badge>
+          <Badge variant={instructionMessageCount === 0 ? "outline" : "destructive"}>
+            {instructionMessageCount} cuisine instruction text{instructionMessageCount === 1 ? "" : "s"}
+          </Badge>
+        </div>
         <div className="rounded-md border border-amber-400 bg-amber-50 p-3 text-sm text-amber-950">
-          An old mark does not count as a physical text until it is explicitly confirmed. Paid, cancelled,
-          declined, and Zoom meal lines are excluded without deleting their history.
+          Paid people are included because payment does not prove they received instructions. Old marks do not count
+          until explicitly confirmed. Cancelled meals, declined RSVPs, and Zoom attendees are excluded without deleting history.
         </div>
         <div className="divide-y divide-border rounded-md border border-border">
           {loading && <p className="p-3 text-sm text-muted-foreground">Loading the current list…</p>}
-          {!loading && missingContacts.length === 0 && <p className="p-3 text-sm text-muted-foreground">No active meal contact currently needs the prepay text.</p>}
-          {missingContacts.map((contact) => (
+          {!loading && instructionQueue.length === 0 && <p className="p-3 text-sm text-muted-foreground">Every active preorder has confirmed meal instructions.</p>}
+          {instructionQueue.map((contact) => (
             <div key={contact.id} className="space-y-3 p-3">
               <div>
                 <p className="font-medium">{contact.name}</p>
                 <p className="text-sm text-muted-foreground">{contact.phone || "No phone on file"}</p>
               </div>
               <div className="flex flex-wrap gap-2">
-                {contact.orders
-                  .filter(({ textStatus }) => textStatus === "needs" || textStatus === "disputed")
-                  .map(({ row }) => <Badge key={row.cuisine} variant="destructive">{row.cuisine} ×{row.qty}</Badge>)}
+                {contact.orders.map((row) => <Badge key={row.cuisine} variant="destructive">{row.cuisine} ×{row.qty}</Badge>)}
               </div>
               <div className="flex flex-wrap gap-2">
-                {contact.orders
-                  .filter(({ textStatus }) => textStatus === "needs" || textStatus === "disputed")
-                  .map(({ row }) => {
+                {contact.orders.map((row) => {
                     const number = smsNumber(row.phone);
                     return number ? <SmsTextButton key={row.cuisine} numbers={[number]} body={bodyFor(row)} label={`Text ${row.cuisine}`} /> : null;
                   })}
                 {contact.phone && <Button size="sm" variant="outline" onClick={() => void copyNumber(contact.phone)}><Copy className="mr-1.5 h-3.5 w-3.5" />Copy number</Button>}
               </div>
+              <div className="flex flex-wrap gap-2">
+                {contact.orders.map((row) => (
+                  <Button
+                    key={`confirm-${row.cuisine}`}
+                    size="sm"
+                    variant="outline"
+                    disabled={busy === `instruction::${row.id}::${row.cuisine}`}
+                    onClick={() => void confirmInstructionSent(row)}
+                  >
+                    <Check className="mr-1.5 h-3.5 w-3.5" /> Confirm {row.cuisine} text sent
+                  </Button>
+                ))}
+              </div>
             </div>
           ))}
         </div>
         <Button size="sm" variant="outline" onClick={downloadNeedsText}>
-          <Download className="mr-1.5 h-3.5 w-3.5" /> Download this needs-text list
+          <Download className="mr-1.5 h-3.5 w-3.5" /> Download this instruction list
         </Button>
       </Card>
       <Card className="p-5 space-y-2">
@@ -475,7 +509,7 @@ function MealTextsPage() {
           <h2 className="font-display text-2xl">Meal texts</h2>
         </div>
         <p className="text-sm text-muted-foreground">
-          Every active meal order stays visible. A payment-update text counts as physically sent only after you confirm it in today’s review.
+              Every active meal order stays visible. Payment does not remove anyone from the instruction list.
         </p>
         <div className="space-y-2 pt-2 text-sm">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2">
@@ -527,7 +561,7 @@ function MealTextsPage() {
 
         <div className="pt-1">
           <Button size="sm" variant="outline" onClick={downloadPending}>
-            <Download className="w-3.5 h-3.5 mr-1.5" /> Download pending list (CSV)
+              <Download className="w-3.5 h-3.5 mr-1.5" /> Download instruction list (CSV)
           </Button>
         </div>
       </Card>
@@ -776,7 +810,7 @@ function MealTextsPage() {
               variant={statusFilter === "paid" ? "default" : "outline"}
               onClick={() => setStatusFilter("paid")}
             >
-              Paid — no text needed ({paidCount})
+              Paid — instructions still required until confirmed ({paidCount})
             </Button>
           </div>
         </div>
@@ -819,7 +853,7 @@ function MealTextsPage() {
         const visible = list
           .filter((x) => {
             const evidenceConfirmed = confirmedEvidenceKeys.has(`${x.id}::${x.cuisine}`);
-            if (statusFilter === "needs") return !isPaidState(x.state) && !evidenceConfirmed;
+            if (statusFilter === "needs") return !evidenceConfirmed;
             if (statusFilter === "sent") return evidenceConfirmed;
             if (statusFilter === "paid") return isPaidState(x.state);
             return true;
@@ -893,8 +927,8 @@ function MealTextsPage() {
                       {isPaidState(row.state) ? (
                         <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 text-[10px]">
                           {row.state === "paid_confirmed"
-                            ? "Paid — restaurant confirmed · no text needed"
-                            : "Paid — reported, awaiting confirmation · no text needed"}
+                            ? "Paid — restaurant confirmed · instructions still required"
+                            : "Paid — reported · instructions still required"}
                         </Badge>
                       ) : confirmedEvidenceKeys.has(`${row.id}::${row.cuisine}`) ? (
                         <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 text-[10px]">
@@ -918,7 +952,7 @@ function MealTextsPage() {
                       </p>
                     )}
                     <div className="flex flex-wrap gap-2">
-                      {num && !onHold && !isPaidState(row.state) && (
+                      {num && !onHold && !confirmedEvidenceKeys.has(`${row.id}::${row.cuisine}`) && (
                         <SmsTextButton
                           numbers={[num]}
                           body={body}
@@ -931,15 +965,7 @@ function MealTextsPage() {
                       <Button size="sm" variant="outline" onClick={() => void copy(body)}>
                         <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy
                       </Button>
-                      {isPaidState(row.state) ? (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setPreview({ title: `${row.name} — ${cuisineLabel(row.cuisine)}`, body })}
-                        >
-                          Preview only — already paid
-                        </Button>
-                      ) : confirmedEvidenceKeys.has(`${row.id}::${row.cuisine}`) ? (
+                      {confirmedEvidenceKeys.has(`${row.id}::${row.cuisine}`) ? (
                         <Button
                           size="sm"
                           variant="ghost"
