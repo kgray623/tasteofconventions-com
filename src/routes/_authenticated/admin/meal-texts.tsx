@@ -269,6 +269,7 @@ function MealTextsPage() {
   const confirmedContactCount = eventContacts.filter((contact) => contact.status === "confirmed").length;
   const markedContactCount = eventContacts.filter((contact) => contact.status === "marked").length;
   const missingContacts = eventContacts.filter((contact) => contact.status === "needs");
+  const todayMarkedContactCount = new Set(todayEvidence.lines.map((line) => line.preorder_id)).size;
 
   const reconcileOneContact = async (contact: (typeof eventContacts)[number], decision: "confirmed" | "disputed") => {
     const key = `contact::${contact.id}`;
@@ -468,6 +469,9 @@ function MealTextsPage() {
         </div>
         <p className="text-sm font-medium" aria-live="polite">
           {missingContacts.length} need a prepay text · {confirmedContactCount} documented sent · {markedContactCount} marked but not verified
+        </p>
+        <p className="text-xs text-muted-foreground">
+          The database has marks today for {todayMarkedContactCount} current contacts, including paid contacts. You reported 54 physical texts; marks are not treated as proof until reviewed.
         </p>
         <div className="grid grid-cols-2 gap-2" role="group" aria-label="Filter current event meal contacts">
           <Button size="sm" variant={statusFilter === "needs" ? "default" : "outline"} onClick={() => setStatusFilter("needs")}>Needs text ({missingContacts.length})</Button>
