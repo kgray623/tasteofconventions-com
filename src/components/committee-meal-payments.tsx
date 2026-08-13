@@ -97,6 +97,15 @@ export function CommitteeMealPayments({
                   {r.exception && (
                     <span className="text-xs text-muted-foreground">{r.exception}</span>
                   )}
+                  <RecordMealPaymentDialog
+                    preorderId={r.id}
+                    guestName={r.name}
+                    orders={[{ cuisine: r.cuisine, qty: r.qty }]}
+                    onRecorded={onRecorded}
+                    label="They already paid"
+                    variant="ghost"
+                  />
+
                 </li>
               ))}
             </ul>
