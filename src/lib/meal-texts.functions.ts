@@ -41,6 +41,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
       { data: zelleSetting },
       ledger,
       todayEvidence,
+      instructionEvidence,
     ] = await Promise.all([
       supabaseAdmin.from("restaurants").select("id,name,cuisine,phone,website,order_ready,active,venmo_handle,zelle_name,zelle_phone,zelle_qr_url,zelle_pay_link,chicken_price,beef_price,price_note").order("name"),
       supabaseAdmin
@@ -64,6 +65,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
         .maybeSingle(),
       loadMealNotifyRollup(supabaseAdmin),
       (await import("@/lib/meal-text-evidence.server")).loadTodayPaymentTextEvidence(supabaseAdmin, context.userId),
+      (await import("@/lib/meal-text-evidence.server")).loadConfirmedInstructionEvidence(supabaseAdmin),
     ]);
 
     // Every payment-update mark is attributable to the person who tapped it.
@@ -194,7 +196,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
           order_ready: r.order_ready !== false,
         })) as MealRestaurant[],
       rows,
-      instructionQueue: buildMealInstructionQueue(rows, todayEvidence.lines) as MealInstructionQueueContact[],
+      instructionQueue: buildMealInstructionQueue(rows, instructionEvidence.lines) as MealInstructionQueueContact[],
       kariTestRows,
       template: (setting?.value as string | undefined) ?? DEFAULT_MEAL_TEXT_TEMPLATE,
       zelleTemplate: (zelleSetting?.value as string | undefined) ?? DEFAULT_ZELLE_UPDATE_TEMPLATE,

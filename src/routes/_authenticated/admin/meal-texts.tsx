@@ -271,8 +271,6 @@ function MealTextsPage() {
     if (statusFilter === "sent") return contact.status === "confirmed";
     return contact.status === statusFilter;
   }).filter((contact) => inviterFilter === "all" || contact.inviter === inviterFilter);
-  const missingContacts = eventContacts.filter((contact) => contact.status === "needs");
-
   const instructionMessageCount = instructionQueue.reduce((sum, contact) => sum + contact.orders.length, 0);
 
   const reconcileOneContact = async (contact: (typeof eventContacts)[number], decision: "confirmed" | "disputed") => {
@@ -416,7 +414,7 @@ function MealTextsPage() {
       ...instructionQueue.flatMap((contact) => contact.orders
         .map((row) => [row.name, row.phone, row.cuisine, row.qty, row.inviter, "Needs instruction text"].map(esc).join(","))),
     ].join("\n");
-    const result = downloadTextFile(`needs-prepay-text-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+    const result = downloadTextFile(`needs-meal-instructions-${new Date().toISOString().slice(0, 10)}.csv`, csv);
     if (result.ok) toast.success("Needs-text list downloaded");
     else {
       const tab = openTextInNewTab(csv);
