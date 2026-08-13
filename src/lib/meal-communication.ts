@@ -309,7 +309,8 @@ function countDroppedSelections(selections: unknown) {
     const hasQty = raw.qty !== undefined || raw.quantity !== undefined;
     if (!hasQty) continue; // no quantity submitted at all — nothing was dropped
     const qty = Number(raw.qty ?? raw.quantity);
-    if (!Number.isFinite(qty) || qty <= 0) dropped += 1;
+    // A deliberate zero is a cancelled plate, not a dropped one.
+    if (!Number.isFinite(qty) || qty < 0) dropped += 1;
   }
   return dropped;
 }
