@@ -246,7 +246,6 @@ function MealTextsPage() {
       });
       const status = orders.every((order) => order.textStatus === "paid") ? "paid" as const
         : orders.some((order) => order.textStatus === "needs" || order.textStatus === "disputed") ? "needs" as const
-        : orders.some((order) => order.textStatus === "marked") ? "marked" as const
         : "confirmed" as const;
       return {
         id: contact[0]?.id ?? "",
@@ -266,7 +265,6 @@ function MealTextsPage() {
     return contact.status === statusFilter;
   }).filter((contact) => inviterFilter === "all" || contact.inviter === inviterFilter);
   const confirmedContactCount = eventContacts.filter((contact) => contact.status === "confirmed").length;
-  const markedContactCount = eventContacts.filter((contact) => contact.status === "marked").length;
   const missingContacts = eventContacts.filter((contact) => contact.status === "needs");
   const todayMarkedContactCount = new Set(todayEvidence.lines.filter((line) => line.decision !== "disputed").map((line) => line.preorder_id)).size;
 
@@ -467,7 +465,7 @@ function MealTextsPage() {
           <div className="rounded-md border border-border p-2"><strong className="block text-lg">{totalMeals}</strong>Plates</div>
         </div>
         <p className="text-sm font-medium" aria-live="polite">
-          {missingContacts.length} need a prepay text · {confirmedContactCount} documented sent · {markedContactCount} marked but not verified
+          {missingContacts.length} need a prepay text · {confirmedContactCount} documented sent
         </p>
         <p className="text-xs text-muted-foreground">
           The database documents physical texts today for {todayMarkedContactCount} current contacts, including paid contacts. A disputed mark remains on the needs-text list.
@@ -476,7 +474,7 @@ function MealTextsPage() {
           <Button size="sm" variant={statusFilter === "needs" ? "default" : "outline"} onClick={() => setStatusFilter("needs")}>Needs text ({missingContacts.length})</Button>
           <Button size="sm" variant={statusFilter === "all" ? "default" : "outline"} onClick={() => setStatusFilter("all")}>All current ({eventContacts.length})</Button>
           <Button size="sm" variant={statusFilter === "sent" ? "default" : "outline"} onClick={() => setStatusFilter("sent")}>Documented sent ({confirmedContactCount})</Button>
-          <Button size="sm" variant={statusFilter === "marked" ? "default" : "outline"} onClick={() => setStatusFilter("marked")}>Verify marks ({markedContactCount})</Button>
+          <Button size="sm" variant={statusFilter === "marked" ? "default" : "outline"} onClick={() => setStatusFilter("marked")}>Legacy marks</Button>
           <Button size="sm" variant={statusFilter === "paid" ? "default" : "outline"} onClick={() => setStatusFilter("paid")}>Paid ({eventContacts.filter((contact) => contact.status === "paid").length})</Button>
           <Button size="sm" variant="outline" onClick={downloadPending}><Download className="mr-1.5 h-3.5 w-3.5" />Export view</Button>
         </div>
@@ -487,13 +485,12 @@ function MealTextsPage() {
               <div className="flex items-start justify-between gap-2">
                 <div><p className="font-medium">{contact.name}</p><p className="text-xs text-muted-foreground">{contact.phone || "No phone on file"} · {contact.inviter}</p></div>
                 <Badge variant={contact.status === "needs" ? "destructive" : "outline"}>
-                  {contact.status === "needs" ? "Needs prepay text" : contact.status === "marked" ? "Mark needs verification" : contact.status === "confirmed" ? "Documented sent" : "Paid — no text needed"}
+                  {contact.status === "needs" ? "Needs prepay text" : contact.status === "confirmed" ? "Documented sent" : "Paid — no text needed"}
                 </Badge>
               </div>
               <div className="mt-2 flex flex-wrap gap-2">
-                {contact.orders.map(({ row, textStatus }) => <Badge key={row.cuisine} variant={textStatus === "needs" || textStatus === "disputed" ? "destructive" : "outline"}>{row.cuisine} · {row.qty} plate{row.qty === 1 ? "" : "s"} · {textStatus === "paid" ? "paid" : textStatus === "confirmed" ? "sent" : textStatus === "marked" ? "verify" : "needs text"}</Badge>)}
+                {contact.orders.map(({ row, textStatus }) => <Badge key={row.cuisine} variant={textStatus === "needs" || textStatus === "disputed" ? "destructive" : "outline"}>{row.cuisine} · {row.qty} plate{row.qty === 1 ? "" : "s"} · {textStatus === "paid" ? "paid" : textStatus === "confirmed" ? "sent" : "needs text"}</Badge>)}
               </div>
-              {contact.status === "marked" && <Button size="sm" variant="outline" disabled={busy === `contact::${contact.id}`} onClick={() => void reconcileOneContact(contact, "confirmed")}><Check className="mr-1.5 h-3.5 w-3.5" /> Confirm physically sent</Button>}
             </div>
           ))}
         </div>
