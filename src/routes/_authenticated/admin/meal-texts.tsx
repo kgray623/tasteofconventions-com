@@ -38,6 +38,7 @@ import {
   DEFAULT_ZELLE_UPDATE_TEMPLATE,
   getMealTextData,
   markZelleTextSent,
+  reconcilePaymentTextContact,
   reviewPaymentTextEvidence,
   saveMealTextTemplate,
   saveRestaurantContact,
@@ -78,6 +79,7 @@ function MealTextsPage() {
   const saveTemplate = useServerFn(saveMealTextTemplate);
   const markZelle = useServerFn(markZelleTextSent);
   const reviewEvidence = useServerFn(reviewPaymentTextEvidence);
+  const reconcileContact = useServerFn(reconcilePaymentTextContact);
 
   const [loading, setLoading] = useState(true);
   const [restaurants, setRestaurants] = useState<MealRestaurant[]>([]);
@@ -250,6 +252,49 @@ function MealTextsPage() {
     }
     return [...byContact.values()].sort((a, b) => (a[0]?.name ?? "").localeCompare(b[0]?.name ?? ""));
   }, [rows, todayEvidence]);
+
+  const unpaidContacts = useMemo(() => {
+    const marked = new Set(todayEvidence.lines.map((line) => `${line.preorder_id}::${line.cuisine}`));
+    const decisions = new Map(todayEvidence.lines.map((line) => [`${line.preorder_id}::${line.cuisine}`, line.decision] as const));
+    const byContact = new Map<string, MealTextRow[]>();
+    for (const row of rows) {
+      if (isPaidState(row.state)) continue;
+      const current = byContact.get(row.id) ?? [];
+      current.push(row);
+      byContact.set(row.id, current);
+    }
+    return [...byContact.values()].map((contact) => ({
+      id: contact[0]?.id ?? "",
+      name: contact[0]?.name ?? "Guest",
+      phone: contact[0]?.phone ?? "",
+      rows: contact,
+      hasMark: contact.some((row) => marked.has(`${row.id}::${row.cuisine}`)),
+      confirmed: contact.every((row) => decisions.get(`${row.id}::${row.cuisine}`) === "confirmed"),
+      disputed: contact.some((row) => decisions.get(`${row.id}::${row.cuisine}`) === "disputed"),
+    })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [rows, todayEvidence]);
+
+  const confirmedContactCount = unpaidContacts.filter((contact) => contact.confirmed).length;
+  const missingContacts = unpaidContacts.filter((contact) => !contact.confirmed);
+  const reconciliationReady = confirmedContactCount === 54 && unpaidContacts.length === 62;
+
+  const reconcileOneContact = async (contact: (typeof unpaidContacts)[number], decision: "confirmed" | "disputed") => {
+    const key = `contact::${contact.id}`;
+    setBusy(key);
+    try {
+      await reconcileContact({ data: {
+        preorderId: contact.id,
+        cuisines: contact.rows.map((row) => row.cuisine),
+        decision,
+      } });
+      await refresh({ keepWording: true });
+      toast.success(decision === "confirmed" ? "Physical send confirmed" : "Contact remains on the missing list");
+    } catch (e) {
+      toast.error("Couldn't save the contact review", { description: getErrorMessage(e) });
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const reviewContact = async (eventIds: string[], decision: "confirmed" | "disputed") => {
     const key = `review::${eventIds[0] ?? decision}`;
@@ -437,64 +482,40 @@ function MealTextsPage() {
         <div className="flex items-start gap-2">
           <AlertTriangle className="mt-1 h-5 w-5 shrink-0 text-amber-700" />
           <div>
-            <h2 className="font-display text-2xl">No payment-update mark on {todayEvidence.utc_day || "the latest activity day"}</h2>
+            <h2 className="font-display text-2xl">Complete unpaid-contact reconciliation</h2>
             <p className="text-sm text-muted-foreground">
-              {noMarkTodayContacts.length} unpaid contacts have no send mark today. They remain visible until every cuisine message is explicitly confirmed.
+              Confirm the 54 people you physically texted. Database marks are shown only as reference and do not count as proof.
             </p>
           </div>
         </div>
+        <div className="grid grid-cols-3 gap-2 text-center text-sm">
+          <div className="rounded-md border border-border p-2"><strong className="block text-lg">{unpaidContacts.length}</strong>Unpaid</div>
+          <div className="rounded-md border border-border p-2"><strong className="block text-lg">{confirmedContactCount}</strong>Confirmed</div>
+          <div className="rounded-md border border-border p-2"><strong className="block text-lg">{missingContacts.length}</strong>Missing</div>
+        </div>
+        <p className="text-sm font-medium" aria-live="polite">
+          {reconciliationReady
+            ? "Reconciled: 54 confirmed sent · 8 missing · 62 unpaid contacts"
+            : `${Math.max(54 - confirmedContactCount, 0)} more people must be identified before the exact 8-person missing list is proven.`}
+        </p>
         <div className="divide-y divide-border rounded-md border border-border">
-          {noMarkTodayContacts.map((contact) => (
-            <div key={contact[0]?.id} className="p-3 text-sm">
-              <p className="font-medium">{contact[0]?.name}</p>
-              <p className="text-xs text-muted-foreground">{contact[0]?.phone || "No phone on file"}</p>
+          {unpaidContacts.map((contact) => (
+            <div key={contact.id} className="space-y-2 p-3 text-sm">
+              <div className="flex items-start justify-between gap-2">
+                <div><p className="font-medium">{contact.name}</p><p className="text-xs text-muted-foreground">{contact.phone || "No phone on file"}</p></div>
+                <Badge variant={contact.confirmed ? "outline" : contact.disputed ? "destructive" : "secondary"}>
+                  {contact.confirmed ? "Physically sent" : contact.disputed ? "Not sent" : contact.hasMark ? "Mark only — verify" : "No mark"}
+                </Badge>
+              </div>
               <div className="mt-2 flex flex-wrap gap-2">
-                {contact.map((row) => <Badge key={row.cuisine} variant="outline">{row.cuisine} · {row.qty} plate{row.qty === 1 ? "" : "s"}</Badge>)}
+                {contact.rows.map((row) => <Badge key={row.cuisine} variant="outline">{row.cuisine} · {row.qty} plate{row.qty === 1 ? "" : "s"}</Badge>)}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Button size="sm" variant="outline" disabled={busy === `contact::${contact.id}`} onClick={() => void reconcileOneContact(contact, "confirmed")}><Check className="mr-1.5 h-3.5 w-3.5" /> Physically sent</Button>
+                <Button size="sm" variant="outline" disabled={busy === `contact::${contact.id}` || !contact.hasMark} onClick={() => void reconcileOneContact(contact, "disputed")}><X className="mr-1.5 h-3.5 w-3.5" /> Not sent</Button>
               </div>
             </div>
           ))}
-          {noMarkTodayContacts.length === 0 && <p className="p-3 text-sm text-muted-foreground">Every unpaid cuisine line has at least one mark to review.</p>}
-        </div>
-      </Card>
-
-      <Card className="p-5 space-y-4">
-        <div>
-          <h2 className="font-display text-2xl">Texts marked {todayEvidence.utc_day || "on the latest activity day"} — verify physical sends</h2>
-          <p className="text-sm text-muted-foreground">
-            {todayReviewContacts.length} contacts have marks dated {todayEvidence.utc_day || "today"}. Confirm only texts you physically sent; dispute any incorrect mark to return it to pending.
-          </p>
-        </div>
-        <div className="divide-y divide-border rounded-md border border-border">
-          {todayReviewContacts.map((contact) => {
-            const decisions = new Set(contact.lines.map((line) => line.decision));
-            const decision = decisions.size === 1 ? contact.lines[0]?.decision : null;
-            const eventIds = contact.lines.map((line) => line.event_id);
-            const reviewKey = `review::${eventIds[0] ?? ""}`;
-            return (
-              <div key={contact.id} className="space-y-2 p-3 text-sm">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="font-medium">{contact.name}</p>
-                    <p className="text-xs text-muted-foreground">{contact.phone || "No phone on file"}</p>
-                  </div>
-                  <Badge variant={decision === "confirmed" ? "outline" : decision === "disputed" ? "destructive" : "secondary"}>
-                    {decision === "confirmed" ? "Confirmed sent" : decision === "disputed" ? "Disputed — pending" : "Needs review"}
-                  </Badge>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {contact.lines.map((line) => <Badge key={line.event_id} variant="outline">{line.cuisine} · {new Date(line.event_at).toISOString().slice(11, 16)} UTC</Badge>)}
-                </div>
-                <div className="grid grid-cols-2 gap-2 sm:flex">
-                  <Button size="sm" variant="outline" disabled={busy === reviewKey} onClick={() => void reviewContact(eventIds, "confirmed")}>
-                    <Check className="mr-1.5 h-3.5 w-3.5" /> Confirm sent
-                  </Button>
-                  <Button size="sm" variant="outline" disabled={busy === reviewKey} onClick={() => void reviewContact(eventIds, "disputed")}>
-                    <X className="mr-1.5 h-3.5 w-3.5" /> Not sent
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
         </div>
       </Card>
 

@@ -258,6 +258,28 @@ export const reviewPaymentTextEvidence = createServerFn({ method: "POST" })
     });
   });
 
+export const reconcilePaymentTextContact = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      preorderId: z.string().uuid(),
+      cuisines: z.array(z.string().min(1).max(80)).min(1).max(10),
+      decision: z.enum(["confirmed", "disputed"]),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { assertMealStaff } = await import("@/lib/meal-text-tracking.server");
+    await assertMealStaff(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const evidence = await import("@/lib/meal-text-evidence.server");
+    return evidence.reconcilePaymentTextContact(supabaseAdmin, {
+      preorderId: data.preorderId,
+      cuisines: data.cuisines,
+      reviewerId: context.userId,
+      decision: data.decision,
+    });
+  });
+
 export const saveRestaurantContact = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>

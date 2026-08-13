@@ -1,5 +1,13 @@
 export type MealTextEvidenceDecision = "confirmed" | "disputed";
 
+const normalizeCuisine = (raw: string) => {
+  const lower = raw.toLowerCase();
+  if (lower.includes("myanmar") || lower.includes("burmese")) return "Myanmar";
+  if (lower.includes("africa") || lower.includes("mozambique")) return "African";
+  if (lower.includes("indonesia")) return "Indonesian";
+  return raw.trim();
+};
+
 export async function loadTodayPaymentTextEvidence(supabaseAdmin: any, actorId: string) {
   const { data: latestEvents, error: latestError } = await supabaseAdmin
     .from("meal_text_events")
@@ -7,6 +15,7 @@ export async function loadTodayPaymentTextEvidence(supabaseAdmin: any, actorId: 
     .eq("campaign", "payment_update")
     .eq("action", "sent")
     .eq("actor_id", actorId)
+    .neq("evidence_source", "human_reconciliation")
     .order("event_at", { ascending: false })
     .limit(1);
   if (latestError) throw new Error(latestError.message);
@@ -26,11 +35,30 @@ export async function loadTodayPaymentTextEvidence(supabaseAdmin: any, actorId: 
     .order("event_at", { ascending: false });
   if (eventsError) throw new Error(eventsError.message);
 
-  const eventIds = ((events ?? []) as any[]).map((event) => event.id as string);
+  const { data: reviewerReviews, error: reviewerError } = await supabaseAdmin
+    .from("meal_text_evidence_reviews")
+    .select("id,meal_text_event_id,decision,note,reviewed_at,reviewer_id,created_at")
+    .eq("reviewer_id", actorId)
+    .order("reviewed_at", { ascending: false })
+    .order("created_at", { ascending: false });
+  if (reviewerError) throw new Error(reviewerError.message);
+  const reviewedEventIds = [...new Set(((reviewerReviews ?? []) as any[]).map((review) => review.meal_text_event_id as string))];
+  const reviewedEvents = reviewedEventIds.length > 0
+    ? await supabaseAdmin
+        .from("meal_text_events")
+        .select("id,preorder_id,cuisine,event_at,actor_id")
+        .in("id", reviewedEventIds)
+        .eq("campaign", "payment_update")
+    : { data: [], error: null };
+  if (reviewedEvents.error) throw new Error(reviewedEvents.error.message);
+  const allEvents = new Map<string, any>();
+  for (const event of [...((events ?? []) as any[]), ...((reviewedEvents.data ?? []) as any[])]) allEvents.set(event.id, event);
+  const eventIds = [...allEvents.keys()];
   const reviews = eventIds.length > 0
     ? await supabaseAdmin
         .from("meal_text_evidence_reviews")
-        .select("id,meal_text_event_id,decision,note,reviewed_at,reviewer_id")
+        .select("id,meal_text_event_id,decision,note,reviewed_at,reviewer_id,created_at")
+        .eq("reviewer_id", actorId)
         .in("meal_text_event_id", eventIds)
         .order("reviewed_at", { ascending: false })
         .order("created_at", { ascending: false })
@@ -46,7 +74,7 @@ export async function loadTodayPaymentTextEvidence(supabaseAdmin: any, actorId: 
 
   return {
     utc_day: activityDay,
-    lines: ((events ?? []) as any[]).map((event) => {
+    lines: [...allEvents.values()].map((event) => {
       const review = latestReview.get(event.id);
       return {
         event_id: event.id as string,
@@ -59,6 +87,79 @@ export async function loadTodayPaymentTextEvidence(supabaseAdmin: any, actorId: 
       };
     }),
   };
+}
+
+export async function reconcilePaymentTextContact(
+  supabaseAdmin: any,
+  input: {
+    preorderId: string;
+    cuisines: string[];
+    reviewerId: string;
+    decision: MealTextEvidenceDecision;
+  },
+) {
+  const cuisines = [...new Set(input.cuisines.map(normalizeCuisine).filter(Boolean))];
+  const { data: preorder, error: preorderError } = await supabaseAdmin
+    .from("cuisine_preorders")
+    .select("id,selections")
+    .eq("id", input.preorderId)
+    .maybeSingle();
+  if (preorderError) throw new Error(preorderError.message);
+  if (!preorder) throw new Error("This meal contact could not be found");
+  const active = new Set(
+    (Array.isArray(preorder.selections) ? preorder.selections : [])
+      .filter((item: any) => Number(item?.qty) > 0)
+      .map((item: any) => normalizeCuisine(String(item?.cuisine ?? item?.country ?? ""))),
+  );
+  if (cuisines.length === 0 || cuisines.some((cuisine) => !active.has(cuisine))) {
+    throw new Error("This confirmation does not match the current meal order");
+  }
+
+  const [{ data: payments, error: paymentError }, { data: confirmations, error: confirmationError }] = await Promise.all([
+    supabaseAdmin.from("meal_payments").select("cuisine").eq("preorder_id", input.preorderId).is("cancelled_meal_at", null),
+    supabaseAdmin.from("meal_order_status").select("cuisine,confirmed").eq("preorder_id", input.preorderId).eq("confirmed", true),
+  ]);
+  if (paymentError) throw new Error(paymentError.message);
+  if (confirmationError) throw new Error(confirmationError.message);
+  const paid = new Set([...(payments ?? []), ...(confirmations ?? [])].map((row: any) => normalizeCuisine(String(row.cuisine ?? ""))));
+  if (cuisines.some((cuisine) => paid.has(cuisine))) throw new Error("Payment status changed; refresh before reconciling this contact");
+
+  const evidence = await loadTodayPaymentTextEvidence(supabaseAdmin, input.reviewerId);
+  const existingByCuisine = new Map(
+    evidence.lines
+      .filter((line) => line.preorder_id === input.preorderId)
+      .map((line) => [normalizeCuisine(line.cuisine), line.event_id]),
+  );
+  const missing = cuisines.filter((cuisine) => !existingByCuisine.has(cuisine));
+  if (input.decision === "confirmed" && missing.length > 0) {
+    const eventAt = new Date().toISOString();
+    const { data: inserted, error } = await supabaseAdmin
+      .from("meal_text_events")
+      .insert(missing.map((cuisine) => ({
+        campaign: "payment_update",
+        action: "sent",
+        preorder_id: input.preorderId,
+        cuisine,
+        actor_id: input.reviewerId,
+        event_at: eventAt,
+        evidence_source: "human_reconciliation",
+      })))
+      .select("id,cuisine,actor_id,evidence_source");
+    if (error) throw new Error(error.message);
+    if ((inserted ?? []).length !== missing.length) throw new Error("The reconciliation event write could not be verified");
+    for (const event of inserted ?? []) existingByCuisine.set(normalizeCuisine(event.cuisine), event.id);
+  }
+  const eventIds = cuisines.map((cuisine) => existingByCuisine.get(cuisine)).filter((id): id is string => Boolean(id));
+  if (eventIds.length === 0) throw new Error("There is no send mark to dispute for this contact");
+  if (input.decision === "confirmed" && eventIds.length !== cuisines.length) throw new Error("Not every cuisine message could be confirmed");
+  return appendPaymentTextEvidenceReviews(supabaseAdmin, {
+    eventIds,
+    reviewerId: input.reviewerId,
+    decision: input.decision,
+    note: input.decision === "confirmed"
+      ? "Reviewer confirms this contact physically received the payment update"
+      : "Reviewer states this mark does not prove a physically sent text",
+  });
 }
 
 export async function appendPaymentTextEvidenceReviews(
