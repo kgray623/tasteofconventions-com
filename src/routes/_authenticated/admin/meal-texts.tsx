@@ -865,7 +865,7 @@ function MealTextsPage() {
                       ) : confirmedEvidenceKeys.has(`${row.id}::${row.cuisine}`) ? (
                         <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 text-[10px]">
                           Physical send confirmed{" "}
-                          {new Date(row.zelle_sent_at).toLocaleDateString()} ·{" "}
+                          {row.zelle_sent_at ? new Date(row.zelle_sent_at).toLocaleDateString() : "reviewed today"} ·{" "}
                           {cuisineLabel(row.cuisine)}
                           {row.sent_by ? ` · by ${row.sent_by}` : ""}
                         </Badge>
