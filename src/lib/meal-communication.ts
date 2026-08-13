@@ -56,6 +56,12 @@ export type MealCommunicationTotals = {
   update_sent: number;
   exceptions: number;
   reconciles: boolean;
+  /**
+   * True when the headline plate count equals the sum of the per-cuisine plate
+   * counts AND no submitted meal quantity was dropped while parsing. Computed
+   * once here so every screen gets the same check instead of recomputing it.
+   */
+  plates_reconcile: boolean;
 };
 
 type SourcePreorder = {
