@@ -6,7 +6,6 @@ import { AlertTriangle, Check, Copy, Download, Globe, Loader2, MessageSquare, Ph
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MealCountBadges } from "@/components/meal-counts";
 import { readAtUtc } from "@/lib/meal-count-labels";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -99,7 +98,7 @@ function MealTextsPage() {
   const [tplSavedAt, setTplSavedAt] = useState<string | null>(null);
   const [tplError, setTplError] = useState<string | null>(null);
 
-  const [statusFilter, setStatusFilter] = useState<"all" | "needs" | "sent" | "paid">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "needs" | "sent" | "paid">("needs");
   const [inviterFilter, setInviterFilter] = useState("all");
   const [busy, setBusy] = useState<string | null>(null);
   const [reconciliation, setReconciliation] = useState<{
@@ -785,8 +784,9 @@ function MealTextsPage() {
         const kariMock = kariMockByCuisine.get(cuisine);
         const visible = list
           .filter((x) => {
-            if (statusFilter === "needs") return x.state === "needs_update" || x.state === "exception";
-            if (statusFilter === "sent") return x.state === "update_sent";
+            const evidenceConfirmed = confirmedEvidenceKeys.has(`${x.id}::${x.cuisine}`);
+            if (statusFilter === "needs") return !isPaidState(x.state) && !evidenceConfirmed;
+            if (statusFilter === "sent") return evidenceConfirmed;
             if (statusFilter === "paid") return isPaidState(x.state);
             return true;
           })
@@ -798,7 +798,7 @@ function MealTextsPage() {
                 <h3 className="font-display text-xl">
                   {cuisine === "Myanmar" ? "Myanmar (Burmese)" : cuisine}
                 </h3>
-                <Badge variant="outline">{list.length} households</Badge>
+                <Badge variant="outline">{list.length} meal contacts</Badge>
                 <Badge variant="outline">
                   {list.reduce((s, x) => s + x.qty, 0)} meals
                 </Badge>
@@ -862,9 +862,9 @@ function MealTextsPage() {
                             ? "Paid — restaurant confirmed · no text needed"
                             : "Paid — reported, awaiting confirmation · no text needed"}
                         </Badge>
-                      ) : row.zelle_sent_at ? (
+                      ) : confirmedEvidenceKeys.has(`${row.id}::${row.cuisine}`) ? (
                         <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 text-[10px]">
-                          Payment update sent{" "}
+                          Physical send confirmed{" "}
                           {new Date(row.zelle_sent_at).toLocaleDateString()} ·{" "}
                           {cuisineLabel(row.cuisine)}
                           {row.sent_by ? ` · by ${row.sent_by}` : ""}
@@ -905,7 +905,7 @@ function MealTextsPage() {
                         >
                           Preview only — already paid
                         </Button>
-                      ) : row.zelle_sent_at ? (
+                      ) : confirmedEvidenceKeys.has(`${row.id}::${row.cuisine}`) ? (
                         <Button
                           size="sm"
                           variant="ghost"
