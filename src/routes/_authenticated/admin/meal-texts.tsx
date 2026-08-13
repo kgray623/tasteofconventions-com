@@ -2,11 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Check, Copy, Download, Globe, Loader2, MessageSquare, Phone, RotateCcw, Utensils, Users } from "lucide-react";
+import { AlertTriangle, Check, Copy, Download, Globe, Loader2, MessageSquare, Phone, RotateCcw, Utensils, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MealCountBadges } from "@/components/meal-counts";
 import { readAtUtc } from "@/lib/meal-count-labels";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,9 +38,11 @@ import {
   DEFAULT_ZELLE_UPDATE_TEMPLATE,
   getMealTextData,
   markZelleTextSent,
+  reviewPaymentTextEvidence,
   saveMealTextTemplate,
   saveRestaurantContact,
   type MealRestaurant,
+  type MealTextEvidenceLine,
   type MealTextRow,
 } from "@/lib/meal-texts.functions";
 
@@ -76,10 +77,12 @@ function MealTextsPage() {
   const saveContact = useServerFn(saveRestaurantContact);
   const saveTemplate = useServerFn(saveMealTextTemplate);
   const markZelle = useServerFn(markZelleTextSent);
+  const reviewEvidence = useServerFn(reviewPaymentTextEvidence);
 
   const [loading, setLoading] = useState(true);
   const [restaurants, setRestaurants] = useState<MealRestaurant[]>([]);
   const [rows, setRows] = useState<MealTextRow[]>([]);
+  const [todayEvidence, setTodayEvidence] = useState<{ utc_day: string; lines: MealTextEvidenceLine[] }>({ utc_day: "", lines: [] });
   const [kariTestRows, setKariTestRows] = useState<MealTextRow[]>([]);
   // Who is signed in, so the test panel can text the message to yourself.
   const [self, setSelf] = useState<{ name: string; phone: string }>({ name: "", phone: "" });
@@ -95,7 +98,7 @@ function MealTextsPage() {
   const [tplSavedAt, setTplSavedAt] = useState<string | null>(null);
   const [tplError, setTplError] = useState<string | null>(null);
 
-  const [statusFilter, setStatusFilter] = useState<"all" | "needs" | "sent" | "paid">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "needs" | "sent" | "paid">("needs");
   const [inviterFilter, setInviterFilter] = useState("all");
   const [busy, setBusy] = useState<string | null>(null);
   const [reconciliation, setReconciliation] = useState<{
@@ -144,6 +147,7 @@ function MealTextsPage() {
       const res = await load({ data: {} as never });
       setRestaurants(res.restaurants);
       setRows(res.rows);
+      setTodayEvidence(res.todayEvidence);
       setKariTestRows(res.kariTestRows);
       // Prefill the test panel: signed-in phone, else the retained preorder phone.
       setSelf({
@@ -177,9 +181,13 @@ function MealTextsPage() {
         (cuisine === "Myanmar" && r.name.toLowerCase().includes("burmese")),
     );
 
+  const confirmedEvidenceKeys = useMemo(
+    () => new Set(todayEvidence.lines.filter((line) => line.decision === "confirmed").map((line) => `${line.preorder_id}::${line.cuisine}`)),
+    [todayEvidence],
+  );
   const needsTextRows = useMemo(
-    () => rows.filter((r) => r.state === "needs_update" || r.state === "exception"),
-    [rows],
+    () => rows.filter((r) => !isPaidState(r.state) && !confirmedEvidenceKeys.has(`${r.id}::${r.cuisine}`)),
+    [confirmedEvidenceKeys, rows],
   );
   const textSentRows = useMemo(() => rows.filter((r) => r.state === "update_sent"), [rows]);
   const paidRows = useMemo(() => rows.filter((r) => isPaidState(r.state)), [rows]);
@@ -194,7 +202,7 @@ function MealTextsPage() {
     const map = new Map<string, MealTextRow[]>();
     for (const r of rows) {
       if (!map.has(r.cuisine)) map.set(r.cuisine, []);
-      map.get(r.cuisine)!.push(r);
+      map.get(r.cuisine)?.push(r);
     }
     for (const cuisine of kariMockByCuisine.keys()) {
       if (!map.has(cuisine)) map.set(cuisine, []);
@@ -214,6 +222,52 @@ function MealTextsPage() {
     }
     return [...seen.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   }, [needsTextRows]);
+
+  const todayReviewContacts = useMemo(() => {
+    const byContact = new Map<string, { id: string; name: string; phone: string; lines: Array<MealTextEvidenceLine & { row?: MealTextRow }> }>();
+    for (const line of todayEvidence.lines) {
+      const row = rows.find((candidate) => candidate.id === line.preorder_id && candidate.cuisine === line.cuisine);
+      const current = byContact.get(line.preorder_id) ?? {
+        id: line.preorder_id,
+        name: row?.name ?? "Unknown meal contact",
+        phone: row?.phone ?? "",
+        lines: [],
+      };
+      current.lines.push({ ...line, row });
+      byContact.set(line.preorder_id, current);
+    }
+    return [...byContact.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [rows, todayEvidence]);
+
+  const noMarkTodayContacts = useMemo(() => {
+    const marked = new Set(todayEvidence.lines.map((line) => `${line.preorder_id}::${line.cuisine}`));
+    const byContact = new Map<string, MealTextRow[]>();
+    for (const row of rows) {
+      if (isPaidState(row.state) || marked.has(`${row.id}::${row.cuisine}`)) continue;
+      const current = byContact.get(row.id) ?? [];
+      current.push(row);
+      byContact.set(row.id, current);
+    }
+    return [...byContact.values()].sort((a, b) => (a[0]?.name ?? "").localeCompare(b[0]?.name ?? ""));
+  }, [rows, todayEvidence]);
+
+  const reviewContact = async (eventIds: string[], decision: "confirmed" | "disputed") => {
+    const key = `review::${eventIds[0] ?? decision}`;
+    setBusy(key);
+    try {
+      await reviewEvidence({ data: {
+        eventIds,
+        decision,
+        note: decision === "disputed" ? "Reviewer states this mark does not prove a physically sent text" : "Reviewer confirms the text was physically sent",
+      } });
+      await refresh({ keepWording: true });
+      toast.success(decision === "confirmed" ? "Physical send confirmed" : "Returned to the pending queue");
+    } catch (e) {
+      toast.error("Couldn't save the evidence review", { description: getErrorMessage(e) });
+    } finally {
+      setBusy(null);
+    }
+  };
 
 
   const downloadPending = () => {
@@ -310,6 +364,8 @@ function MealTextsPage() {
   const totalOrders = reconciliation?.totals.message_units ?? rows.length;
   const totalHouseholds = reconciliation?.totals.households ?? new Set(rows.map((r) => r.id)).size;
   const totalMeals = reconciliation?.totals.meal_quantity ?? rows.reduce((s, r) => s + r.qty, 0);
+  const paidContacts = new Set(paidRows.map((row) => row.id)).size;
+  const pendingContacts = new Set(needsTextRows.map((row) => row.id)).size;
   const sentCount = textSentRows.length;
   const paidCount = paidRows.length;
   const needsTextCount = needsTextRows.length;
@@ -323,19 +379,22 @@ function MealTextsPage() {
           <h2 className="font-display text-2xl">Meal texts</h2>
         </div>
         <p className="text-sm text-muted-foreground">
-          Every active meal order stays visible in this accounting list. Paid guests are labeled “no
-          text needed”; a text is recorded only when you explicitly check it after sending.
+          Every active meal order stays visible. A payment-update text counts as physically sent only after you confirm it in today’s review.
         </p>
         <div className="space-y-2 pt-2 text-sm">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2">
             <strong>Total orders</strong>
-            <MealCountBadges plates={totalMeals} households={totalHouseholds} lines={totalOrders} />
+            <div className="flex flex-wrap justify-end gap-2">
+              <Badge variant="outline">{totalMeals} plates</Badge>
+              <Badge variant="outline">{totalHouseholds} meal preorder contacts</Badge>
+              <Badge variant="outline">{totalOrders} cuisine messages</Badge>
+            </div>
           </div>
           {reconciliation && (
             <>
               <div className="flex items-center justify-between gap-3">
                 <span>Payment status</span>
-                <strong>{reconciliation.totals.paid_meal_quantity} paid plates · {reconciliation.totals.unpaid_meal_quantity} unpaid plates</strong>
+                <strong>{paidContacts} paid contacts · {reconciliation.totals.paid_meal_quantity} paid plates</strong>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span>Original meal texts</span>
@@ -347,7 +406,7 @@ function MealTextsPage() {
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span>Still needs payment update</span>
-                <Badge variant={needsTextCount === 0 ? "outline" : "destructive"}>{needsTextCount} order lines</Badge>
+                <Badge variant={needsTextCount === 0 ? "outline" : "destructive"}>{pendingContacts} contacts · {needsTextCount} cuisine messages</Badge>
               </div>
               <Badge variant={reconciliation.totals.reconciles ? "outline" : "destructive"}>
                 {reconciliation.totals.reconciles
@@ -371,6 +430,71 @@ function MealTextsPage() {
           <Button size="sm" variant="outline" onClick={downloadPending}>
             <Download className="w-3.5 h-3.5 mr-1.5" /> Download pending list (CSV)
           </Button>
+        </div>
+      </Card>
+
+      <Card className="p-5 space-y-4 border-amber-400">
+        <div className="flex items-start gap-2">
+          <AlertTriangle className="mt-1 h-5 w-5 shrink-0 text-amber-700" />
+          <div>
+            <h2 className="font-display text-2xl">No payment-update mark on {todayEvidence.utc_day || "the latest activity day"}</h2>
+            <p className="text-sm text-muted-foreground">
+              {noMarkTodayContacts.length} unpaid contacts have no send mark today. They remain visible until every cuisine message is explicitly confirmed.
+            </p>
+          </div>
+        </div>
+        <div className="divide-y divide-border rounded-md border border-border">
+          {noMarkTodayContacts.map((contact) => (
+            <div key={contact[0]?.id} className="p-3 text-sm">
+              <p className="font-medium">{contact[0]?.name}</p>
+              <p className="text-xs text-muted-foreground">{contact[0]?.phone || "No phone on file"}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {contact.map((row) => <Badge key={row.cuisine} variant="outline">{row.cuisine} · {row.qty} plate{row.qty === 1 ? "" : "s"}</Badge>)}
+              </div>
+            </div>
+          ))}
+          {noMarkTodayContacts.length === 0 && <p className="p-3 text-sm text-muted-foreground">Every unpaid cuisine line has at least one mark to review.</p>}
+        </div>
+      </Card>
+
+      <Card className="p-5 space-y-4">
+        <div>
+          <h2 className="font-display text-2xl">Texts marked {todayEvidence.utc_day || "on the latest activity day"} — verify physical sends</h2>
+          <p className="text-sm text-muted-foreground">
+            {todayReviewContacts.length} contacts have marks dated {todayEvidence.utc_day || "today"}. Confirm only texts you physically sent; dispute any incorrect mark to return it to pending.
+          </p>
+        </div>
+        <div className="divide-y divide-border rounded-md border border-border">
+          {todayReviewContacts.map((contact) => {
+            const decisions = new Set(contact.lines.map((line) => line.decision));
+            const decision = decisions.size === 1 ? contact.lines[0]?.decision : null;
+            const eventIds = contact.lines.map((line) => line.event_id);
+            const reviewKey = `review::${eventIds[0] ?? ""}`;
+            return (
+              <div key={contact.id} className="space-y-2 p-3 text-sm">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <p className="font-medium">{contact.name}</p>
+                    <p className="text-xs text-muted-foreground">{contact.phone || "No phone on file"}</p>
+                  </div>
+                  <Badge variant={decision === "confirmed" ? "outline" : decision === "disputed" ? "destructive" : "secondary"}>
+                    {decision === "confirmed" ? "Confirmed sent" : decision === "disputed" ? "Disputed — pending" : "Needs review"}
+                  </Badge>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {contact.lines.map((line) => <Badge key={line.event_id} variant="outline">{line.cuisine} · {new Date(line.event_at).toISOString().slice(11, 16)} UTC</Badge>)}
+                </div>
+                <div className="grid grid-cols-2 gap-2 sm:flex">
+                  <Button size="sm" variant="outline" disabled={busy === reviewKey} onClick={() => void reviewContact(eventIds, "confirmed")}>
+                    <Check className="mr-1.5 h-3.5 w-3.5" /> Confirm sent
+                  </Button>
+                  <Button size="sm" variant="outline" disabled={busy === reviewKey} onClick={() => void reviewContact(eventIds, "disputed")}>
+                    <X className="mr-1.5 h-3.5 w-3.5" /> Not sent
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </Card>
 
@@ -660,8 +784,9 @@ function MealTextsPage() {
         const kariMock = kariMockByCuisine.get(cuisine);
         const visible = list
           .filter((x) => {
-            if (statusFilter === "needs") return x.state === "needs_update" || x.state === "exception";
-            if (statusFilter === "sent") return x.state === "update_sent";
+            const evidenceConfirmed = confirmedEvidenceKeys.has(`${x.id}::${x.cuisine}`);
+            if (statusFilter === "needs") return !isPaidState(x.state) && !evidenceConfirmed;
+            if (statusFilter === "sent") return evidenceConfirmed;
             if (statusFilter === "paid") return isPaidState(x.state);
             return true;
           })
@@ -673,7 +798,7 @@ function MealTextsPage() {
                 <h3 className="font-display text-xl">
                   {cuisine === "Myanmar" ? "Myanmar (Burmese)" : cuisine}
                 </h3>
-                <Badge variant="outline">{list.length} households</Badge>
+                <Badge variant="outline">{list.length} meal contacts</Badge>
                 <Badge variant="outline">
                   {list.reduce((s, x) => s + x.qty, 0)} meals
                 </Badge>
@@ -737,10 +862,10 @@ function MealTextsPage() {
                             ? "Paid — restaurant confirmed · no text needed"
                             : "Paid — reported, awaiting confirmation · no text needed"}
                         </Badge>
-                      ) : row.zelle_sent_at ? (
+                      ) : confirmedEvidenceKeys.has(`${row.id}::${row.cuisine}`) ? (
                         <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 text-[10px]">
-                          Payment update sent{" "}
-                          {new Date(row.zelle_sent_at).toLocaleDateString()} ·{" "}
+                          Physical send confirmed{" "}
+                          {row.zelle_sent_at ? new Date(row.zelle_sent_at).toLocaleDateString() : "reviewed today"} ·{" "}
                           {cuisineLabel(row.cuisine)}
                           {row.sent_by ? ` · by ${row.sent_by}` : ""}
                         </Badge>
@@ -780,7 +905,7 @@ function MealTextsPage() {
                         >
                           Preview only — already paid
                         </Button>
-                      ) : row.zelle_sent_at ? (
+                      ) : confirmedEvidenceKeys.has(`${row.id}::${row.cuisine}`) ? (
                         <Button
                           size="sm"
                           variant="ghost"
