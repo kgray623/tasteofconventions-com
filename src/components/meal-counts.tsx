@@ -69,9 +69,9 @@ export function MealCountsCard() {
   for (const row of data?.rows ?? []) {
     byCuisine.set(row.cuisine, (byCuisine.get(row.cuisine) ?? 0) + row.qty);
   }
-  const cuisineTotal = Array.from(byCuisine.values()).reduce((a, b) => a + b, 0);
   const plates = data?.totals.meal_quantity ?? 0;
-  const platesReconcile = plates === cuisineTotal;
+  // The plate check is computed once, server-side, in the canonical ledger.
+  const platesReconcile = data?.totals.plates_reconcile ?? true;
 
   return (
     <Card className="p-5 space-y-2">
