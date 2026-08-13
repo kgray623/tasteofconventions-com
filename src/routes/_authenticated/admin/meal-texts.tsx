@@ -182,7 +182,7 @@ function MealTextsPage() {
     );
 
   const confirmedEvidenceKeys = useMemo(
-    () => new Set(todayEvidence.lines.filter((line) => line.decision === "confirmed").map((line) => `${line.preorder_id}::${line.cuisine}`)),
+    () => new Set(todayEvidence.lines.filter((line) => line.decision !== "disputed").map((line) => `${line.preorder_id}::${line.cuisine}`)),
     [todayEvidence],
   );
   const needsTextRows = useMemo(
@@ -239,9 +239,8 @@ function MealTextsPage() {
         const key = `${row.id}::${row.cuisine}`;
         const decision = decisions.get(key);
         const textStatus = isPaidState(row.state) ? "paid" as const
-          : decision === "confirmed" ? "confirmed" as const
           : decision === "disputed" ? "disputed" as const
-          : marked.has(key) ? "marked" as const
+          : marked.has(key) ? "confirmed" as const
           : "needs" as const;
         return { row, textStatus };
       });
@@ -269,7 +268,7 @@ function MealTextsPage() {
   const confirmedContactCount = eventContacts.filter((contact) => contact.status === "confirmed").length;
   const markedContactCount = eventContacts.filter((contact) => contact.status === "marked").length;
   const missingContacts = eventContacts.filter((contact) => contact.status === "needs");
-  const todayMarkedContactCount = new Set(todayEvidence.lines.map((line) => line.preorder_id)).size;
+  const todayMarkedContactCount = new Set(todayEvidence.lines.filter((line) => line.decision !== "disputed").map((line) => line.preorder_id)).size;
 
   const reconcileOneContact = async (contact: (typeof eventContacts)[number], decision: "confirmed" | "disputed") => {
     const key = `contact::${contact.id}`;
@@ -471,7 +470,7 @@ function MealTextsPage() {
           {missingContacts.length} need a prepay text · {confirmedContactCount} documented sent · {markedContactCount} marked but not verified
         </p>
         <p className="text-xs text-muted-foreground">
-          The database has marks today for {todayMarkedContactCount} current contacts, including paid contacts. You reported 54 physical texts; marks are not treated as proof until reviewed.
+          The database documents physical texts today for {todayMarkedContactCount} current contacts, including paid contacts. A disputed mark remains on the needs-text list.
         </p>
         <div className="grid grid-cols-2 gap-2" role="group" aria-label="Filter current event meal contacts">
           <Button size="sm" variant={statusFilter === "needs" ? "default" : "outline"} onClick={() => setStatusFilter("needs")}>Needs text ({missingContacts.length})</Button>
