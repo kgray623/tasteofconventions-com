@@ -84,3 +84,13 @@ export type MealTextRow = {
   paid_note?: string | null;
   exception?: string | null;
 };
+
+export type MealTextEvidenceLine = {
+  event_id: string;
+  preorder_id: string;
+  cuisine: string;
+  event_at: string;
+  decision: "confirmed" | "disputed" | null;
+  note: string | null;
+  reviewed_at: string | null;
+};

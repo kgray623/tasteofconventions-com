@@ -6,12 +6,14 @@ export {
   DEFAULT_MEAL_TEXT_TEMPLATE,
   DEFAULT_ZELLE_UPDATE_TEMPLATE,
   type MealRestaurant,
+  type MealTextEvidenceLine,
   type MealTextRow,
 } from "@/lib/meal-text-defaults";
 import {
   DEFAULT_MEAL_TEXT_TEMPLATE,
   DEFAULT_ZELLE_UPDATE_TEMPLATE,
   type MealRestaurant,
+  type MealTextEvidenceLine,
   type MealTextRow,
 } from "@/lib/meal-text-defaults";
 
@@ -34,6 +36,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
       { data: textEvents },
       { data: zelleSetting },
       ledger,
+      todayEvidence,
     ] = await Promise.all([
       supabaseAdmin.from("restaurants").select("id,name,cuisine,phone,website,order_ready,active,venmo_handle,zelle_name,zelle_phone,zelle_qr_url,zelle_pay_link,chicken_price,beef_price,price_note").order("name"),
       supabaseAdmin
@@ -56,6 +59,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
         .eq("key", "meal_zelle_text_template")
         .maybeSingle(),
       loadMealNotifyRollup(supabaseAdmin),
+      (await import("@/lib/meal-text-evidence.server")).loadTodayPaymentTextEvidence(supabaseAdmin, context.userId),
     ]);
 
     // Every payment-update mark is attributable to the person who tapped it.
@@ -192,6 +196,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
         committee_orders: ledger.committee_orders,
         committee_totals: ledger.committee_totals,
       },
+      todayEvidence: todayEvidence as { utc_day: string; lines: MealTextEvidenceLine[] },
       // Who is signed in, so the test panel can text the message to themselves.
       // Read-only: nothing about the tester is written anywhere.
       self: await (async () => {
@@ -229,6 +234,28 @@ export const getMealTextData = createServerFn({ method: "POST" })
         return { name, phone };
       })(),
     };
+  });
+
+export const reviewPaymentTextEvidence = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      eventIds: z.array(z.string().uuid()).min(1).max(20),
+      decision: z.enum(["confirmed", "disputed"]),
+      note: z.string().trim().max(500).nullable().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { assertMealStaff } = await import("@/lib/meal-text-tracking.server");
+    await assertMealStaff(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { appendPaymentTextEvidenceReviews } = await import("@/lib/meal-text-evidence.server");
+    return appendPaymentTextEvidenceReviews(supabaseAdmin, {
+      eventIds: data.eventIds,
+      reviewerId: context.userId,
+      decision: data.decision,
+      note: data.note?.trim() || null,
+    });
   });
 
 export const saveRestaurantContact = createServerFn({ method: "POST" })
