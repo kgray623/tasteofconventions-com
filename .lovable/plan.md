@@ -9,6 +9,7 @@
 - The visible controls labeled “Confirm Indonesian text sent” and “Confirm Myanmar text sent” are actions the user can tap after sending; they are not checked states. The leading check icons make them look like proof that the texts were already sent.
 - The server currently reconstructs 54 “physically texted” contacts from chronological legacy marks and removes those contacts from the queue. Those timestamps do not prove which messages exist on Kari’s phone.
 - The latest retained evidence-review state currently proves **zero confirmed contacts**; the only reviewed cuisine line is disputed.
+- Kari’s uploaded Google Messages screenshots provide additional phone-level evidence of Wednesday “IMPORTANT UPDATE” conversations. They also show explicit **“Not delivered yet”** messages, which cannot be counted as successfully sent.
 
 ## Changes
 
@@ -18,14 +19,17 @@
 4. Replace misleading check-styled action buttons with unmistakable neutral actions such as **“Mark Indonesian sent”** and **“Mark Myanmar sent.”** Do not show a checkmark until confirmation has actually been saved and read back.
 5. After a successful confirmation, read the appended event/review back from the database, then remove only that confirmed cuisine line. If another cuisine remains unconfirmed, keep the contact visible with the remaining cuisine.
 6. Remove the unproven “54 physically texted” and subtraction-based “remaining” claims from the top of the screen. Show only counts derived from active preorder lines and explicit human confirmations.
-7. Make both meal-instruction CSV controls export exactly the same complete visible unsent list.
-8. Preserve every preorder, RSVP, payment, legacy mark, dispute, and historical text record. This changes interpretation and presentation only; it does not delete or overwrite submitted information.
+7. Reconcile the uploaded phone screenshots against active preorder phone numbers. Count a screenshot as supporting evidence only when the visible number uniquely matches one active preorder and the conversation visibly shows Kari’s Wednesday “IMPORTANT UPDATE”; do not count “Not delivered yet,” group threads, ambiguous names, cropped entries, or unmatched numbers.
+8. Present screenshot matches for Kari to review before they become retained human confirmations. The screenshots must never silently or automatically remove a person from the list.
+9. Make both meal-instruction CSV controls export exactly the same complete visible unsent list.
+10. Preserve every preorder, RSVP, payment, legacy mark, dispute, screenshot match, and historical text record. This changes interpretation and presentation only; it does not delete or overwrite submitted information.
 
 ## Technical details
 
 - Make `buildMealInstructionQueue` depend only on active ledger rows plus latest explicit cuisine-level evidence; remove `reconstructedSentContactIds` from its filtering contract.
 - Keep the server-function module thin and perform queue calculation in the imported queue helper.
 - Treat the latest append-only review as authoritative so a later dispute restores a cuisine to the unsent list without deleting prior history.
+- Match screenshot evidence through canonical last-10-digit phone normalization. A contact with multiple cuisines remains unresolved per cuisine until Kari confirms which cuisine-specific instruction was sent.
 - Add regression coverage proving legacy marks never hide a contact, multi-cuisine contacts remain until every cuisine is confirmed, and a checkmark/status is rendered only after verified read-back.
 
 ## Verification before any completion claim
@@ -33,7 +37,8 @@
 1. Read the backend immediately before testing and reconcile active contacts, cuisine lines, explicit confirmations, disputes, cancellations, declines, and Zoom exclusions.
 2. Sign in as Kari/admin and test `/admin/meal-texts` at **384×681**.
 3. Search for Rick & Maddie Madrid and verify their name, phone, Indonesian ×1, and Myanmar ×1 are visible with no checked/confirmed appearance.
-4. Open both Text actions and verify the exact recipient and cuisine-specific message in the phone SMS composer; confirm that merely opening Messages changes no database row.
-5. Explicitly mark one controlled cuisine sent, read back the new append-only event and review, reload, and verify only that cuisine leaves the unsent list while the other remains.
-6. Verify the visible counts and both CSV exports match the database-derived unsent contacts and cuisine lines exactly.
-7. Read the backend again and prove that no preorder, RSVP, payment, guest, legacy mark, or historical review was deleted or overwritten.
+4. Produce a line-by-line screenshot reconciliation: uniquely matched successful conversations, failed/not-delivered messages, ambiguous or cropped entries, group threads, and numbers with no active preorder match. Verify none are silently treated as sent.
+5. Open both Rick & Maddie Text actions and verify the exact recipient and cuisine-specific message in the phone SMS composer; confirm that merely opening Messages changes no database row.
+6. Explicitly mark one controlled cuisine sent, read back the new append-only event and review, reload, and verify only that cuisine leaves the unsent list while the other remains.
+7. Verify the visible counts and both CSV exports match the database-derived unsent contacts and cuisine lines exactly.
+8. Read the backend again and prove that no preorder, RSVP, payment, guest, legacy mark, screenshot match, or historical review was deleted or overwritten.
