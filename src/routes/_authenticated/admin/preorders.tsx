@@ -128,6 +128,16 @@ function PreorderReportPage() {
   const restaurantMeals = totals.reduce((sum, row) => (CUISINES.includes(row.cuisine as (typeof CUISINES)[number]) ? sum + row.qty : sum), 0);
   const unlinkedMeals = unlinkedDetailed.reduce((sum, r) => sum + r.qty, 0);
 
+  // This report builds its own per-restaurant counts, so it also shows the
+  // canonical ledger's reconciliation checks instead of trusting itself.
+  const loadRollup = useServerFn(getMealNotifyRollup);
+  const [canonical, setCanonical] = useState<MealNotifyRollup["totals"] | null>(null);
+  useEffect(() => {
+    void loadRollup()
+      .then((res) => setCanonical(res.totals))
+      .catch(() => setCanonical(null));
+  }, []);
+
   const buildCsv = () => {
     const summaryLines = [
       ["Cuisine", "Total dishes"],
