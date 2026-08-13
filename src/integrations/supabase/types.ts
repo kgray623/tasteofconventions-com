@@ -189,6 +189,44 @@ export type Database = {
         }
         Relationships: []
       }
+      committee_text_events: {
+        Row: {
+          action: string
+          actor_id: string
+          actor_label: string
+          created_at: string
+          event_at: string
+          id: string
+          inviter_id: string
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          actor_label: string
+          created_at?: string
+          event_at?: string
+          id?: string
+          inviter_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          actor_label?: string
+          created_at?: string
+          event_at?: string
+          id?: string
+          inviter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "committee_text_events_inviter_id_fkey"
+            columns: ["inviter_id"]
+            isOneToOne: false
+            referencedRelation: "inviters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cuisine_preorders: {
         Row: {
           created_at: string

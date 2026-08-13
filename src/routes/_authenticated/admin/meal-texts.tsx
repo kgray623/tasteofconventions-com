@@ -38,12 +38,14 @@ import {
   DEFAULT_ZELLE_UPDATE_TEMPLATE,
   getMealTextData,
   markZelleTextSent,
+  markCommitteeTextSent,
   reconcilePaymentTextContact,
   saveMealTextTemplate,
   saveRestaurantContact,
   type MealRestaurant,
   type MealTextEvidenceLine,
   type MealTextRow,
+  type CommitteeTextRosterRow,
 } from "@/lib/meal-texts.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/meal-texts")({
@@ -77,6 +79,7 @@ function MealTextsPage() {
   const saveContact = useServerFn(saveRestaurantContact);
   const saveTemplate = useServerFn(saveMealTextTemplate);
   const markZelle = useServerFn(markZelleTextSent);
+  const markCommittee = useServerFn(markCommitteeTextSent);
   const reconcileContact = useServerFn(reconcilePaymentTextContact);
 
   const [loading, setLoading] = useState(true);
@@ -84,6 +87,8 @@ function MealTextsPage() {
   const [rows, setRows] = useState<MealTextRow[]>([]);
   const [todayEvidence, setTodayEvidence] = useState<{ utc_day: string; lines: MealTextEvidenceLine[] }>({ utc_day: "", lines: [] });
   const [kariTestRows, setKariTestRows] = useState<MealTextRow[]>([]);
+  const [committeeRoster, setCommitteeRoster] = useState<CommitteeTextRosterRow[]>([]);
+  const [committeeTotals, setCommitteeTotals] = useState({ active_members: 0, sent: 0, pending: 0, missing_phone: 0 });
   // Who is signed in, so the test panel can text the message to yourself.
   const [self, setSelf] = useState<{ name: string; phone: string }>({ name: "", phone: "" });
   // Read-only look at any guest's exact message. Opening it records nothing.
@@ -150,6 +155,8 @@ function MealTextsPage() {
       setRows(res.rows);
       setTodayEvidence(res.todayEvidence);
       setKariTestRows(res.kariTestRows);
+      setCommitteeRoster(res.committeeRoster.rows);
+      setCommitteeTotals(res.committeeRoster.totals);
       // Prefill the test panel: signed-in phone, else the retained preorder phone.
       setSelf({
         name: res.self?.name || res.kariTestRows[0]?.name || "",
@@ -183,7 +190,7 @@ function MealTextsPage() {
     );
 
   const confirmedEvidenceKeys = useMemo(
-    () => new Set(todayEvidence.lines.filter((line) => line.decision !== "disputed").map((line) => `${line.preorder_id}::${line.cuisine}`)),
+    () => new Set(todayEvidence.lines.filter((line) => line.decision === "confirmed").map((line) => `${line.preorder_id}::${line.cuisine}`)),
     [todayEvidence],
   );
   const needsTextRows = useMemo(
@@ -241,7 +248,8 @@ function MealTextsPage() {
         const decision = decisions.get(key);
         const textStatus = isPaidState(row.state) ? "paid" as const
           : decision === "disputed" ? "disputed" as const
-          : marked.has(key) ? "confirmed" as const
+          : decision === "confirmed" ? "confirmed" as const
+          : marked.has(key) ? "needs" as const
           : "needs" as const;
         return { row, textStatus };
       });
@@ -418,6 +426,48 @@ function MealTextsPage() {
     }
   };
 
+  const committeeMessage = (member: CommitteeTextRosterRow) => {
+    const followUp = member.outstanding_lines === 0
+      ? "There are currently no unpaid guest meal messages assigned to you."
+      : `Please follow up with your assigned meal guests. ${member.active_contacts} active meal contact${member.active_contacts === 1 ? " is" : "s are"} assigned to you, with ${member.outstanding_lines} cuisine message${member.outstanding_lines === 1 ? "" : "s"} still needing confirmed follow-up.`;
+    return `Hi ${member.name} — IMPORTANT Taste of Conventions catered meal update: ${followUp} Please check your committee workspace for the names and meal details. Thank you!`;
+  };
+
+  const setCommitteeSent = async (member: CommitteeTextRosterRow, sent: boolean) => {
+    const key = `committee::${member.id}`;
+    setBusy(key);
+    try {
+      await markCommittee({ data: { inviterId: member.id, sent } });
+      await refresh({ keepWording: true });
+      toast.success(sent ? "Committee text confirmed" : "Committee member returned to the texting list");
+    } catch (e) {
+      toast.error("Couldn't update the committee text", { description: getErrorMessage(e) });
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const downloadCommitteeList = (details = false) => {
+    const esc = (value: unknown) => {
+      const text = String(value ?? "");
+      return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    };
+    const csv = details
+      ? [
+          ["Committee member", "Committee phone", "Guest", "Guest phone", "Cuisine", "Meals", "Follow-up status"].join(","),
+          ...committeeRoster.flatMap((member) => member.contacts.map((contact) =>
+            [member.name, member.phone, contact.name, contact.phone, contact.cuisine, contact.qty, contact.status].map(esc).join(","),
+          )),
+        ].join("\n")
+      : [
+          ["Committee member", "Phone", "Assigned active meal contacts", "Outstanding cuisine messages", "Committee text status"].join(","),
+          ...committeeRoster.map((member) => [member.name, member.phone, member.active_contacts, member.outstanding_lines, member.sent ? "Confirmed sent" : "Needs committee text"].map(esc).join(",")),
+        ].join("\n");
+    const result = downloadTextFile(`${details ? "committee-guest-follow-up" : "committee-text-list"}-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+    if (result.ok) toast.success(details ? "Guest follow-up details downloaded" : "Committee text list downloaded");
+    else toast.error("Couldn't download the list", { description: result.reason });
+  };
+
   return (
     <div className="space-y-6">
       <OpenOnSiteBanner />
@@ -425,59 +475,44 @@ function MealTextsPage() {
         <div className="flex items-start gap-2">
           <MessageSquare className="mt-1 h-5 w-5 shrink-0 text-terracotta" />
           <div>
-            <h1 className="font-display text-2xl">Text these people now</h1>
+            <h1 className="font-display text-2xl">Text every committee member</h1>
             <p className="text-sm text-muted-foreground">
-              Current event meal contacts who still have an unpaid cuisine without confirmed physical-send evidence.
+              You text the committee. Each committee member follows up with their assigned meal guests.
             </p>
           </div>
         </div>
-        <Badge variant={missingContacts.length === 0 ? "outline" : "destructive"}>
-          {missingContacts.length} contact{missingContacts.length === 1 ? "" : "s"} need the prepay text
-        </Badge>
+        <div className="flex flex-wrap gap-2">
+          <Badge variant={committeeTotals.pending === 0 ? "outline" : "destructive"}>{committeeTotals.pending} of {committeeTotals.active_members} still need your committee text</Badge>
+          <Badge variant="outline">{committeeTotals.sent} explicitly confirmed sent</Badge>
+          {committeeTotals.missing_phone > 0 && <Badge variant="destructive">{committeeTotals.missing_phone} missing phone</Badge>}
+        </div>
         <div className="rounded-md border border-amber-400 bg-amber-50 p-3 text-sm text-amber-950">
-          Recorded send marks exceed the 54 physical texts reported. This list includes every currently identifiable missing contact; review the retained marks below to identify any others without guessing.
-          <Button
-            className="mt-2 w-full sm:w-auto"
-            size="sm"
-            variant="outline"
-            onClick={() => document.getElementById("text-mark-accounting")?.scrollIntoView({ behavior: "smooth" })}
-          >
-            Review text marks
-          </Button>
+          Unreviewed guest marks do not count as physical texts. Every active committee member stays here, even with no personal meal order or no assigned meal guests.
         </div>
         <div className="divide-y divide-border rounded-md border border-border">
-          {loading && <p className="p-3 text-sm text-muted-foreground">Loading the current list…</p>}
-          {!loading && missingContacts.length === 0 && <p className="p-3 text-sm text-muted-foreground">Nobody is currently identifiable as needing the prepay text.</p>}
-          {missingContacts.map((contact) => (
-            <div key={contact.id} className="space-y-3 p-3">
-              <div>
-                <p className="font-medium">{contact.name}</p>
-                <p className="text-sm text-muted-foreground">{contact.phone || "No phone on file"}</p>
+          {loading && <p className="p-3 text-sm text-muted-foreground">Loading all committee members…</p>}
+          {committeeRoster.map((member) => {
+            const number = smsNumber(member.phone);
+            return <div key={member.id} className="space-y-3 p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div><p className="font-medium">{member.name}</p><p className="text-sm text-muted-foreground">{member.phone || "No phone on file"}</p></div>
+                <Badge variant={member.sent ? "outline" : "destructive"}>{member.sent ? "Confirmed sent" : "Needs your text"}</Badge>
               </div>
+              <div className="flex flex-wrap gap-2 text-xs">
+                <Badge variant="outline">{member.active_contacts} assigned meal contacts</Badge>
+                <Badge variant={member.outstanding_lines > 0 ? "destructive" : "outline"}>{member.outstanding_lines} guest cuisine messages need follow-up</Badge>
+              </div>
+              {member.contacts.length > 0 && <details className="text-sm"><summary className="cursor-pointer font-medium">View assigned guest details</summary><div className="mt-2 space-y-2 border-l border-border pl-3">{member.contacts.map((contact) => <div key={`${contact.id}-${contact.cuisine}`}><span className="font-medium">{contact.name}</span> · {contact.cuisine} ×{contact.qty} · <span className="text-muted-foreground">{contact.status === "paid" ? "Paid" : contact.status === "confirmed" ? "Physical send confirmed" : contact.status === "unverified" ? "Legacy mark unverified" : contact.status === "disputed" ? "Mark disputed" : "Needs follow-up"}</span></div>)}</div></details>}
               <div className="flex flex-wrap gap-2">
-                {contact.orders
-                  .filter(({ textStatus }) => textStatus === "needs" || textStatus === "disputed")
-                  .map(({ row }) => <Badge key={row.cuisine} variant="destructive">{row.cuisine} ×{row.qty}</Badge>)}
+                {number && !member.sent && <SmsTextButton numbers={[number]} body={committeeMessage(member)} label="Text committee member" />}
+                {!member.sent ? <Button size="sm" onClick={() => void setCommitteeSent(member, true)} disabled={busy === `committee::${member.id}`}><Check className="mr-1.5 h-3.5 w-3.5" />I sent this</Button> : <Button size="sm" variant="outline" onClick={() => void setCommitteeSent(member, false)} disabled={busy === `committee::${member.id}`}><RotateCcw className="mr-1.5 h-3.5 w-3.5" />Reverse mark</Button>}
+                {member.phone && <Button size="sm" variant="outline" onClick={() => void copyNumber(member.phone)}><Copy className="mr-1.5 h-3.5 w-3.5" />Copy number</Button>}
               </div>
-              <div className="flex flex-wrap gap-2">
-                {contact.orders
-                  .filter(({ textStatus }) => textStatus === "needs" || textStatus === "disputed")
-                  .map(({ row }) => {
-                    const number = smsNumber(row.phone);
-                    return number ? <SmsTextButton key={row.cuisine} numbers={[number]} body={bodyFor(row)} label={`Text ${row.cuisine}`} /> : null;
-                  })}
-                {contact.phone && (
-                  <Button size="sm" variant="outline" onClick={() => void copyNumber(contact.phone)}>
-                    <Copy className="mr-1.5 h-3.5 w-3.5" /> Copy number
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
+              {member.sent_at && <p className="text-xs text-muted-foreground">Confirmed {new Date(member.sent_at).toLocaleString()} by {member.sent_by}</p>}
+            </div>;
+          })}
         </div>
-        <Button size="sm" variant="outline" onClick={downloadNeedsText}>
-          <Download className="mr-1.5 h-3.5 w-3.5" /> Download this needs-text list
-        </Button>
+        <div className="flex flex-wrap gap-2"><Button size="sm" variant="outline" onClick={() => downloadCommitteeList(false)}><Download className="mr-1.5 h-3.5 w-3.5" />Download committee list</Button><Button size="sm" variant="outline" onClick={() => downloadCommitteeList(true)}><Download className="mr-1.5 h-3.5 w-3.5" />Download guest follow-up details</Button></div>
       </Card>
       <Card className="p-5 space-y-2">
         <div className="flex items-center gap-2">
