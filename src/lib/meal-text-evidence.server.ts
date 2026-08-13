@@ -1,8 +1,20 @@
 export type MealTextEvidenceDecision = "confirmed" | "disputed";
 
 export async function loadTodayPaymentTextEvidence(supabaseAdmin: any, actorId: string) {
-  const now = new Date();
-  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString();
+  const { data: latestEvents, error: latestError } = await supabaseAdmin
+    .from("meal_text_events")
+    .select("event_at")
+    .eq("campaign", "payment_update")
+    .eq("action", "sent")
+    .eq("actor_id", actorId)
+    .order("event_at", { ascending: false })
+    .limit(1);
+  if (latestError) throw new Error(latestError.message);
+  const latestAt = (latestEvents?.[0]?.event_at as string | undefined) ?? new Date().toISOString();
+  const activityDay = latestAt.slice(0, 10);
+  const start = `${activityDay}T00:00:00.000Z`;
+  const endDate = new Date(`${activityDay}T00:00:00.000Z`);
+  endDate.setUTCDate(endDate.getUTCDate() + 1);
   const { data: events, error: eventsError } = await supabaseAdmin
     .from("meal_text_events")
     .select("id,preorder_id,cuisine,event_at,actor_id")
@@ -10,6 +22,7 @@ export async function loadTodayPaymentTextEvidence(supabaseAdmin: any, actorId: 
     .eq("action", "sent")
     .eq("actor_id", actorId)
     .gte("event_at", start)
+    .lt("event_at", endDate.toISOString())
     .order("event_at", { ascending: false });
   if (eventsError) throw new Error(eventsError.message);
 
@@ -32,7 +45,7 @@ export async function loadTodayPaymentTextEvidence(supabaseAdmin: any, actorId: 
   }
 
   return {
-    utc_day: start.slice(0, 10),
+    utc_day: activityDay,
     lines: ((events ?? []) as any[]).map((event) => {
       const review = latestReview.get(event.id);
       return {

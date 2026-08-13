@@ -437,7 +437,7 @@ function MealTextsPage() {
         <div className="flex items-start gap-2">
           <AlertTriangle className="mt-1 h-5 w-5 shrink-0 text-amber-700" />
           <div>
-            <h2 className="font-display text-2xl">No payment-update mark today</h2>
+            <h2 className="font-display text-2xl">No payment-update mark on {todayEvidence.utc_day || "the latest activity day"}</h2>
             <p className="text-sm text-muted-foreground">
               {noMarkTodayContacts.length} unpaid contacts have no send mark today. They remain visible until every cuisine message is explicitly confirmed.
             </p>
@@ -459,7 +459,7 @@ function MealTextsPage() {
 
       <Card className="p-5 space-y-4">
         <div>
-          <h2 className="font-display text-2xl">Texts marked today — verify physical sends</h2>
+          <h2 className="font-display text-2xl">Texts marked {todayEvidence.utc_day || "on the latest activity day"} — verify physical sends</h2>
           <p className="text-sm text-muted-foreground">
             {todayReviewContacts.length} contacts have marks dated {todayEvidence.utc_day || "today"}. Confirm only texts you physically sent; dispute any incorrect mark to return it to pending.
           </p>
