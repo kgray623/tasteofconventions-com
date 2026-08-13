@@ -13,9 +13,11 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
     }
     console.error(error);
 
-    // Server-function calls expect a machine-readable body. Returning the HTML
-    // error page here made the client throw while parsing the response, which
-    // surfaced as a blank screen instead of the component's own error state.
+    // Server-function calls normally use TanStack's serialized response type.
+    // Do not label an un-serialized failure as JSON: the client fetcher treats
+    // JSON error responses as successful return values before checking status.
+    // Plain text preserves the 500 as a thrown Error so client middleware can
+    // recover a tab whose build-specific server-function IDs became stale.
     let isServerFn = false;
     try {
       const request = getRequest();
@@ -27,9 +29,9 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
 
     if (isServerFn) {
       const message = error instanceof Error ? error.message : "Server request failed.";
-      return new Response(JSON.stringify({ error: message }), {
+      return new Response(message, {
         status: 500,
-        headers: { "content-type": "application/json; charset=utf-8" },
+        headers: { "content-type": "text/plain; charset=utf-8" },
       });
     }
 

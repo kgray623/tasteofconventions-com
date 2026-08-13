@@ -16,6 +16,7 @@ import {
 // call 500s until the page reloads, which looked like a blank screen. Reload
 // the tab once so the fresh bundle takes over instead of failing forever.
 const STALE_RELOAD_KEY = "tss-stale-serverfn-reload";
+const STALE_RELOAD_WINDOW_MS = 15_000;
 
 function isStaleServerFnError(error: unknown): boolean {
   const message =
@@ -31,15 +32,17 @@ function isStaleServerFnError(error: unknown): boolean {
   return message.includes("Invalid server function ID");
 }
 
-function recoverFromStaleServerFn(): void {
-  if (typeof window === "undefined") return;
+function recoverFromStaleServerFn(): boolean {
+  if (typeof window === "undefined") return false;
   try {
-    if (window.sessionStorage.getItem(STALE_RELOAD_KEY)) return;
+    const previous = Number(window.sessionStorage.getItem(STALE_RELOAD_KEY) ?? 0);
+    if (Date.now() - previous < STALE_RELOAD_WINDOW_MS) return false;
     window.sessionStorage.setItem(STALE_RELOAD_KEY, String(Date.now()));
   } catch {
     // sessionStorage unavailable — still attempt a single reload below.
   }
   window.location.reload();
+  return true;
 }
 
 export const attachSupabaseAuth = createMiddleware({ type: "function" }).client(
@@ -48,7 +51,11 @@ export const attachSupabaseAuth = createMiddleware({ type: "function" }).client(
       try {
         return await next({ headers });
       } catch (error) {
-        if (isStaleServerFnError(error)) recoverFromStaleServerFn();
+        if (isStaleServerFnError(error) && recoverFromStaleServerFn()) {
+          // Keep the rejected request from reaching a route error boundary
+          // during the brief interval before the browser unloads this bundle.
+          return await new Promise<never>(() => undefined);
+        }
         throw error;
       }
     };
