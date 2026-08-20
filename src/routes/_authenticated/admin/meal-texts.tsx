@@ -168,7 +168,7 @@ function MealTextsPage() {
         {!loading && excluded.length > 0 && (
           <p className="text-sm text-destructive">
             {excluded.length} more cuisine {excluded.length === 1 ? "order is" : "orders are"} excluded from these
-            counts because the RSVP is not yes — listed at the bottom of this page.
+            counts because the RSVP is a decline, Zoom-only, or missing — listed at the bottom of this page.
           </p>
         )}
         <Button size="sm" variant="outline" onClick={downloadRoster} disabled={loading}>
@@ -213,7 +213,7 @@ function ExcludedSection({ rows }: { rows: MealTextExcludedRow[] }) {
   return (
     <section className="space-y-3 border-t border-border pt-4">
       <div>
-        <h2 className="font-display text-xl">Excluded — meal on file but RSVP is not yes</h2>
+        <h2 className="font-display text-xl">Excluded — meal on file but not attending in person</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Kept exactly as submitted, never deleted. These orders are not counted above and nobody here is chased
           for payment.
