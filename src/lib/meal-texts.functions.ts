@@ -169,9 +169,12 @@ export const getMealTextData = createServerFn({ method: "POST" })
         const ledgerRow = ledgerByKey.get(`${p.id}::${cuisine}`);
         if (!ledgerRow) {
           // Kept, never deleted: the order exists but is outside the payment
-          // chase because the RSVP is not "yes". Surface it read-only.
+          // chase (RSVP "no", Zoom attendance, or no RSVP at all). Read-only.
           const status = p.invitation_id
             ? (rsvpStatusByInvitation.get(p.invitation_id) ?? "none")
+            : "none";
+          const mode = p.invitation_id
+            ? (rsvpModeByInvitation.get(p.invitation_id) ?? "none")
             : "none";
           excluded.push({
             id: p.id,
@@ -181,11 +184,16 @@ export const getMealTextData = createServerFn({ method: "POST" })
             qty,
             inviter: inviterName,
             rsvp_status: status,
+            attendance_mode: mode,
             reason: !p.invitation_id
               ? "Meal on file but not linked to any invitation."
               : status === "none"
                 ? "Meal on file but this guest has no RSVP record."
-                : `Meal on file while the RSVP is "${status}".`,
+                : status === "no"
+                  ? "Meal on file while the RSVP is a decline (no)."
+                  : mode === "zoom"
+                    ? "Meal on file but this guest is attending on Zoom, not in person."
+                    : `Meal on file while the RSVP is "${status}" (${mode}).`,
             sent_at: sentByMeal.get(`${p.id}::${cuisine}`) ?? null,
             zelle_sent_at: zelleByMeal.get(`${p.id}::${cuisine}`) ?? null,
             paid: paidKeys.has(`${p.id}::${cuisine}`),
