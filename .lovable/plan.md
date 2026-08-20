@@ -1,20 +1,19 @@
-# Texts sent / left + unpaid guests by committee member
+# Reconcile your text log + unpaid guests by committee member
 
-## Live numbers (read from the database 2026-08-20 18:53 UTC)
+## Getting your data to me
 
-Counting only orders that are attending in person with RSVP "yes" (the chase list):
+The paperclip upload isn't landing on my side, so we'll skip it: paste the rows straight into the chat as text (name, phone, cuisine, plates, whatever columns you have — header row included is helpful, but not required). Text paste always reaches me. If it's long, send it in a few messages and tell me when it's the last one.
+
+I will not touch any code until your rows are in, so nothing gets built against guesses.
+
+## Live numbers as of 2026-08-20 18:53 UTC
+
+RSVP "yes", attending in person (the payment-chase list):
 
 - 120 cuisine order lines · 152 plates
 - Payment texts marked sent: 95 order lines
-- Payment texts still to send: 25 order lines
-  - of those, 5 are both unpaid and never texted (the "5 orders still needing a payment text" figure)
-  - the other 20 already have a payment recorded, so they need no text
-- Paid/reported: 42 order lines
-- Unpaid: 78 order lines · 101 plates
-
-Short answer: 95 texts sent, 25 not yet marked sent, and only 5 of those actually still need to go out.
-
-The header on the page says 119 orders / 151 plates / 45 paid because it also counts a couple of rows differently after last night's corrections; part of this work is making the header read from the same single query as the export so the two can never disagree.
+- Not marked sent: 25 order lines — 20 of those already have a payment recorded, so only 5 still actually need a text
+- Paid/reported: 42 lines · Unpaid: 78 lines / 101 plates
 
 ## Unpaid plates by committee member (live)
 
@@ -32,22 +31,21 @@ The header on the page says 119 orders / 151 plates / 45 paid because it also co
 | Dixie Frahm | 1 | 2 |
 | Jamy Elker | 1 | 1 |
 
-## What I will build
+## What I will do once your rows are pasted
 
-1. **A document you can send out** — an XLSX saved to your documents folder with:
-   - one sheet per committee member, listing every unpaid guest: guest name, phone, cuisine, plates, amount owed, whether a payment text was marked sent and on what date
-   - a summary sheet with the table above plus dollar totals
-   - a sheet of unpaid orders with no committee owner, so nobody is dropped
+1. **Line-by-line comparison** of your pasted list against the database, reported back as three explicit groups: in your list and in the database, in your list but missing/mismatched in the database, and in the database but not in your list. No summarizing away differences.
 
-2. **The same list inside the app** (so it stays current without spending credits): a new section on `/admin/meal-texts` called "Unpaid guests by committee member" with a per-member breakdown and a CSV download button. Committee members already see only their own guests on their own page; this admin view shows all of them.
+2. **Fix the mismatches in the database**, with each correction named: missing sent-marks added, wrong phone numbers corrected, missing preorders inserted. Nothing existing is deleted or overwritten — corrections are additive and the originals stay visible.
 
-3. **One source of truth for the counts** — the header metrics and the export both come from the same server read, and I will state the exact numbers back to you after verifying them on the live page at 384x681.
+3. **A spreadsheet you can send to the committee** — one sheet per committee member listing every unpaid guest: name, phone, cuisine, plates, amount owed, and whether a payment text was marked sent and on what date. Plus a summary sheet with the table above and dollar totals, and a sheet for unpaid orders with no committee owner so nobody is dropped.
 
-Nothing is deleted, hidden, or overwritten; excluded (declined / Zoom) orders stay visible in their existing read-only section.
+4. **The same list inside the app** so it stays current without spending credits: a new "Unpaid guests by committee member" section on `/admin/meal-texts` with a per-member breakdown and a CSV download button. Committee members keep seeing only their own guests on their own page.
+
+5. **One source of truth for the counts** — the page header metrics and the export both read from the same server query, so they can never disagree again. I will verify the finished page on your phone-size view (384x681) and report the exact numbers back with a UTC timestamp.
 
 ## Technical notes
 
-- New server function in `src/lib/meal-texts.functions.ts` returning unpaid rows grouped by `invitations.inviter_id -> inviters.name`, reusing the existing ledger so payment/text state matches the rest of the page.
-- New presentational component `src/components/unpaid-by-committee.tsx`, rendered on `src/routes/_authenticated/admin/meal-texts.tsx`, using the existing CSV download helper in `src/lib/download-file.ts`.
-- Amount owed uses the stored meal pricing in `src/lib/meal-pricing.ts` ($20 chicken / $25 beef style per-cuisine pricing), not hardcoded numbers.
-- The XLSX is generated from a live database read at build time and written to your documents folder.
+- New server function in `src/lib/meal-texts.functions.ts` returning unpaid rows grouped by `invitations.inviter_id -> inviters.name`, reusing the existing ledger so text/payment state matches the rest of the page.
+- New presentational component `src/components/unpaid-by-committee.tsx`, rendered on `src/routes/_authenticated/admin/meal-texts.tsx`, using the existing CSV helper in `src/lib/download-file.ts`.
+- Amounts come from `src/lib/meal-pricing.ts`, not hardcoded numbers.
+- Any pasted-row corrections go in as a migration plus inserts, with the before/after row counts stated.
