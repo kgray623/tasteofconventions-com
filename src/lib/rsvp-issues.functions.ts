@@ -202,7 +202,8 @@ export const listRsvpIssues = createServerFn({ method: "POST" })
       .from("invitations")
       .select("id,guest_name,guest_phone,rsvps(status,party_size,attendance_mode)");
 
-    const byName = new Map<string, typeof allInvitations extends null ? never : NonNullable<typeof allInvitations>>();
+    type InvitationRow = NonNullable<typeof allInvitations>[number];
+    const byName = new Map<string, InvitationRow[]>();
     for (const inv of allInvitations ?? []) {
       const key = (inv.guest_name ?? "").trim().toLowerCase().replace(/\s+/g, " ");
       if (!key) continue;
