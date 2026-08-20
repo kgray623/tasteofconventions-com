@@ -85,6 +85,29 @@ export type MealTextRow = {
   exception?: string | null;
 };
 
+/**
+ * A meal order that exists in the database but is NOT part of the payment-chase
+ * groups, because the RSVP is not "yes" (declined, pending, or no invitation
+ * link at all). Nothing is deleted or hidden — these are shown read-only so the
+ * on-screen counts can never look like the whole picture.
+ */
+export type MealTextExcludedRow = {
+  id: string;
+  name: string;
+  phone: string;
+  cuisine: string;
+  qty: number;
+  inviter: string;
+  /** "no" | "pending" | "maybe" | "waitlist" | "none" (no RSVP row) */
+  rsvp_status: string;
+  /** "in_person" | "zoom" | "none" */
+  attendance_mode: string;
+  reason: string;
+  sent_at: string | null;
+  zelle_sent_at: string | null;
+  paid: boolean;
+};
+
 export type MealTextEvidenceLine = {
   event_id: string;
   preorder_id: string;

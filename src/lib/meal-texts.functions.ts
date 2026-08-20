@@ -11,6 +11,7 @@ export {
   type MealInstructionQueueContact,
   type MealTextBatchReconciliation,
   type MealTextRow,
+  type MealTextExcludedRow,
 } from "@/lib/meal-text-defaults";
 import {
   DEFAULT_MEAL_TEXT_TEMPLATE,
@@ -21,6 +22,7 @@ import {
   type MealInstructionQueueContact,
   type MealTextBatchReconciliation,
   type MealTextRow,
+  type MealTextExcludedRow,
 } from "@/lib/meal-text-defaults";
 
 export const getMealTextData = createServerFn({ method: "POST" })
@@ -51,7 +53,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
         .select("id,name,phone,selections,invitation_id")
         .order("name"),
       supabaseAdmin.from("app_settings").select("value").eq("key", "meal_text_template").maybeSingle(),
-      supabaseAdmin.from("invitations").select("id,inviter_id"),
+      supabaseAdmin.from("invitations").select("id,inviter_id,rsvps(status,attendance_mode)"),
       supabaseAdmin.from("inviters").select("id,name"),
       supabaseAdmin.from("meal_text_sends").select("preorder_id,cuisine,sent_at"),
       supabaseAdmin.from("meal_zelle_text_sends").select("preorder_id,cuisine,sent_at,marked_by"),
@@ -117,12 +119,30 @@ export const getMealTextData = createServerFn({ method: "POST" })
     const inviterIdByInvitation = new Map<string, string | null>(
       ((invitationRows ?? []) as any[]).map((r) => [r.id as string, (r.inviter_id as string) ?? null]),
     );
-
+    // RSVP status per invitation, so orders excluded from the chase groups can
+    // still be listed with the exact reason they are excluded.
+    const rsvpStatusByInvitation = new Map<string, string>();
+    const rsvpModeByInvitation = new Map<string, string>();
+    for (const r of ((invitationRows ?? []) as any[])) {
+      const rsvps = Array.isArray(r.rsvps) ? r.rsvps : r.rsvps ? [r.rsvps] : [];
+      rsvpStatusByInvitation.set(r.id as string, (rsvps[0]?.status as string | undefined) ?? "none");
+      rsvpModeByInvitation.set(r.id as string, (rsvps[0]?.attendance_mode as string | undefined) ?? "none");
+    }
+    // Payments read directly, because the ledger only covers attending rows.
+    const { data: paymentRows } = await supabaseAdmin
+      .from("meal_payments")
+      .select("preorder_id,cuisine,cancelled_meal_at");
+    const paidKeys = new Set(
+      ((paymentRows ?? []) as any[])
+        .filter((r) => !r.cancelled_meal_at)
+        .map((r) => `${r.preorder_id}::${String(r.cuisine ?? "")}`),
+    );
 
     const ledgerByKey = new Map(
       ledger.rows.map((row) => [`${row.id}::${row.cuisine}`, row] as const),
     );
     const rows: MealTextRow[] = [];
+    const excluded: MealTextExcludedRow[] = [];
     for (const p of (preorders ?? []) as any[]) {
       const sel = Array.isArray(p.selections) ? p.selections : [];
       const byCuisine = new Map<string, number>();
@@ -147,7 +167,39 @@ export const getMealTextData = createServerFn({ method: "POST" })
         : "Not linked to a committee member";
       for (const [cuisine, qty] of byCuisine) {
         const ledgerRow = ledgerByKey.get(`${p.id}::${cuisine}`);
-        if (!ledgerRow) continue;
+        if (!ledgerRow) {
+          // Kept, never deleted: the order exists but is outside the payment
+          // chase (RSVP "no", Zoom attendance, or no RSVP at all). Read-only.
+          const status = p.invitation_id
+            ? (rsvpStatusByInvitation.get(p.invitation_id) ?? "none")
+            : "none";
+          const mode = p.invitation_id
+            ? (rsvpModeByInvitation.get(p.invitation_id) ?? "none")
+            : "none";
+          excluded.push({
+            id: p.id,
+            name: (p.name ?? "").trim() || "Guest",
+            phone: (p.phone ?? "").trim(),
+            cuisine,
+            qty,
+            inviter: inviterName,
+            rsvp_status: status,
+            attendance_mode: mode,
+            reason: !p.invitation_id
+              ? "Meal on file but not linked to any invitation."
+              : status === "none"
+                ? "Meal on file but this guest has no RSVP record."
+                : status === "no"
+                  ? "Meal on file while the RSVP is a decline (no)."
+                  : mode === "zoom"
+                    ? "Meal on file but this guest is attending on Zoom, not in person."
+                    : `Meal on file while the RSVP is "${status}" (${mode}).`,
+            sent_at: sentByMeal.get(`${p.id}::${cuisine}`) ?? null,
+            zelle_sent_at: zelleByMeal.get(`${p.id}::${cuisine}`) ?? null,
+            paid: paidKeys.has(`${p.id}::${cuisine}`),
+          });
+          continue;
+        }
         rows.push({
           inviter: inviterName,
           id: p.id,
@@ -199,6 +251,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
           order_ready: r.order_ready !== false,
         })) as MealRestaurant[],
       rows,
+      excluded,
       instructionQueue: buildMealInstructionQueue(
         rows,
         instructionEvidence.lines,

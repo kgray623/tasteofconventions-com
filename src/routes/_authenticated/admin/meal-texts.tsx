@@ -24,6 +24,7 @@ import {
   getMealTextData,
   markZelleTextSent,
   type MealRestaurant,
+  type MealTextExcludedRow,
   type MealTextRow,
 } from "@/lib/meal-texts.functions";
 
@@ -60,6 +61,7 @@ function MealTextsPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [rows, setRows] = useState<MealTextRow[]>([]);
+  const [excluded, setExcluded] = useState<MealTextExcludedRow[]>([]);
   const [restaurants, setRestaurants] = useState<MealRestaurant[]>([]);
   const [template, setTemplate] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
@@ -70,6 +72,7 @@ function MealTextsPage() {
     try {
       const result = await load({ data: {} as never });
       setRows(result.rows);
+      setExcluded(result.excluded);
       setRestaurants(result.restaurants);
       setTemplate(result.zelleTemplate);
       setIsAdmin(result.isAdmin);
@@ -162,6 +165,12 @@ function MealTextsPage() {
             <Metric value={paidPlates} label="Plates paid/reported" />
           </div>
         )}
+        {!loading && excluded.length > 0 && (
+          <p className="text-sm text-destructive">
+            {excluded.length} more cuisine {excluded.length === 1 ? "order is" : "orders are"} excluded from these
+            counts because the RSVP is a decline, Zoom-only, or missing — listed at the bottom of this page.
+          </p>
+        )}
         <Button size="sm" variant="outline" onClick={downloadRoster} disabled={loading}>
           <Download className="mr-2 h-4 w-4" /> Download exact bookkeeping
         </Button>
@@ -174,6 +183,7 @@ function MealTextsPage() {
           <RosterSection title="Text sent — payment still due" description="The payment instructions were marked sent, but payment is still not recorded." rows={textedDue} tone="waiting" bodyFor={bodyFor} busy={busy} onMark={updateTextMark} isAdmin={isAdmin} onRefresh={refresh} />
           <RosterSection title="Reported paid — awaiting restaurant confirmation" description="A guest or team member reported payment. These people are not chased for payment." rows={paidReported} tone="paid" bodyFor={bodyFor} busy={busy} onMark={updateTextMark} isAdmin={isAdmin} onRefresh={refresh} />
           <RosterSection title="Restaurant confirmed paid" description="Payment is confirmed by the restaurant." rows={paidConfirmed} tone="paid" bodyFor={bodyFor} busy={busy} onMark={updateTextMark} isAdmin={isAdmin} onRefresh={refresh} />
+          <ExcludedSection rows={excluded} />
         </>
       )}
     </main>
@@ -182,6 +192,64 @@ function MealTextsPage() {
 
 function Metric({ value, label }: { value: number; label: string }) {
   return <div className="border-b border-r border-border p-3 sm:border-b-0"><strong className="block text-xl">{value}</strong><span className="text-xs text-muted-foreground">{label}</span></div>;
+}
+
+/**
+ * Read-only evidence list. These meal orders are kept in the database exactly as
+ * submitted, but they sit outside the payment chase because the RSVP is not
+ * "yes". No Text / Mark sent / Already paid buttons here on purpose.
+ */
+function ExcludedSection({ rows }: { rows: MealTextExcludedRow[] }) {
+  if (rows.length === 0) return null;
+  const groups = [...CUISINE_ORDER, "Other"]
+    .map((cuisine) => ({
+      cuisine,
+      rows: rows.filter((row) =>
+        cuisine === "Other" ? !CUISINE_ORDER.includes(row.cuisine) : row.cuisine === cuisine,
+      ),
+    }))
+    .filter((group) => group.rows.length > 0);
+
+  return (
+    <section className="space-y-3 border-t border-border pt-4">
+      <div>
+        <h2 className="font-display text-xl">Excluded — meal on file but not attending in person</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Kept exactly as submitted, never deleted. These orders are not counted above and nobody here is chased
+          for payment.
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">{rows.length} cuisine orders</p>
+      </div>
+      {groups.map((group) => (
+        <div key={group.cuisine} className="space-y-2">
+          <h3 className="text-sm font-semibold">
+            {group.cuisine === "Other" ? "Other" : cuisineLabel(group.cuisine)} · {group.rows.length}
+          </h3>
+          {group.rows.map((row) => (
+            <div key={`${row.id}-${row.cuisine}`} className="rounded-md border border-border p-3 text-sm">
+              <div className="flex flex-wrap items-center gap-2">
+                <strong>{row.name}</strong>
+                <Badge variant="outline">RSVP {row.rsvp_status}</Badge>
+                {row.attendance_mode === "zoom" && <Badge variant="outline">Zoom</Badge>}
+                {row.paid && <Badge variant="outline">Payment recorded</Badge>}
+              </div>
+              <div className="text-muted-foreground">{formatPhone(row.phone)}</div>
+              <div className="text-muted-foreground">Invited by {row.inviter}</div>
+              <div className="mt-1">
+                {row.qty} {row.qty === 1 ? "plate" : "plates"} · {cuisineLabel(row.cuisine)}
+              </div>
+              <div className="mt-1 text-destructive">{row.reason}</div>
+              <div className="mt-1 text-xs text-muted-foreground">
+                Payment text {row.zelle_sent_at ? `marked sent ${new Date(row.zelle_sent_at).toLocaleDateString()}` : "never marked sent"}
+                {" · "}
+                Order text {row.sent_at ? `marked sent ${new Date(row.sent_at).toLocaleDateString()}` : "never marked sent"}
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
+    </section>
+  );
 }
 
 function RosterSection({ title, description, rows, tone, bodyFor, busy, onMark, isAdmin, onRefresh }: {
