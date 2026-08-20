@@ -11,6 +11,7 @@ export {
   type MealInstructionQueueContact,
   type MealTextBatchReconciliation,
   type MealTextRow,
+  type MealTextExcludedRow,
 } from "@/lib/meal-text-defaults";
 import {
   DEFAULT_MEAL_TEXT_TEMPLATE,
@@ -21,6 +22,7 @@ import {
   type MealInstructionQueueContact,
   type MealTextBatchReconciliation,
   type MealTextRow,
+  type MealTextExcludedRow,
 } from "@/lib/meal-text-defaults";
 
 export const getMealTextData = createServerFn({ method: "POST" })
