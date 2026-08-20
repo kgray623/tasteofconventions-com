@@ -241,6 +241,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
           order_ready: r.order_ready !== false,
         })) as MealRestaurant[],
       rows,
+      excluded,
       instructionQueue: buildMealInstructionQueue(
         rows,
         instructionEvidence.lines,
