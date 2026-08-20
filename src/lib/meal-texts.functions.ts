@@ -117,12 +117,28 @@ export const getMealTextData = createServerFn({ method: "POST" })
     const inviterIdByInvitation = new Map<string, string | null>(
       ((invitationRows ?? []) as any[]).map((r) => [r.id as string, (r.inviter_id as string) ?? null]),
     );
-
+    // RSVP status per invitation, so orders excluded from the chase groups can
+    // still be listed with the exact reason they are excluded.
+    const rsvpStatusByInvitation = new Map<string, string>();
+    for (const r of ((invitationRows ?? []) as any[])) {
+      const rsvps = Array.isArray(r.rsvps) ? r.rsvps : r.rsvps ? [r.rsvps] : [];
+      rsvpStatusByInvitation.set(r.id as string, (rsvps[0]?.status as string | undefined) ?? "none");
+    }
+    // Payments read directly, because the ledger only covers attending rows.
+    const { data: paymentRows } = await supabaseAdmin
+      .from("meal_payments")
+      .select("preorder_id,cuisine,cancelled_meal_at");
+    const paidKeys = new Set(
+      ((paymentRows ?? []) as any[])
+        .filter((r) => !r.cancelled_meal_at)
+        .map((r) => `${r.preorder_id}::${String(r.cuisine ?? "")}`),
+    );
 
     const ledgerByKey = new Map(
       ledger.rows.map((row) => [`${row.id}::${row.cuisine}`, row] as const),
     );
     const rows: MealTextRow[] = [];
+    const excluded: MealTextExcludedRow[] = [];
     for (const p of (preorders ?? []) as any[]) {
       const sel = Array.isArray(p.selections) ? p.selections : [];
       const byCuisine = new Map<string, number>();
