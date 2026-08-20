@@ -61,6 +61,7 @@ function MealTextsPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [rows, setRows] = useState<MealTextRow[]>([]);
+  const [excluded, setExcluded] = useState<MealTextExcludedRow[]>([]);
   const [restaurants, setRestaurants] = useState<MealRestaurant[]>([]);
   const [template, setTemplate] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
@@ -71,6 +72,7 @@ function MealTextsPage() {
     try {
       const result = await load({ data: {} as never });
       setRows(result.rows);
+      setExcluded(result.excluded);
       setRestaurants(result.restaurants);
       setTemplate(result.zelleTemplate);
       setIsAdmin(result.isAdmin);
