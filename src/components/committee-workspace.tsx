@@ -861,14 +861,22 @@ export function CommitteeWorkspace() {
 
   return (
     <div className="space-y-6">
-      <Button
-        asChild
-        className="sticky top-3 z-20 w-full bg-terracotta text-cream hover:bg-terracotta/90 justify-center h-14 text-base shadow-lg"
-      >
-        <Link to="/admin/upload" search={{ view: "committee" }}>
-          <Upload className="w-4 h-4" /> Upload guest list
-        </Link>
-      </Button>
+      <div className="sticky top-3 z-20 space-y-1">
+        <Button
+          asChild
+          className="w-full bg-terracotta text-cream hover:bg-terracotta/90 justify-center h-14 text-base shadow-lg"
+        >
+          <Link to="/admin/upload" search={{ view: "committee" }}>
+            <Upload className="w-4 h-4" /> Add guests
+          </Link>
+        </Button>
+        <p className="text-xs text-center text-muted-foreground">
+          Paste names and phone numbers, or upload a screenshot.
+        </p>
+      </div>
+
+      <QuickAddGuests inviterId={myInviterIds[0] ?? null} />
+
 
       <div className="grid gap-3 sm:grid-cols-2">
         <Button asChild className="bg-ink text-cream hover:bg-ink/90 justify-start h-14">
