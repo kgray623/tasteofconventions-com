@@ -36,6 +36,14 @@ export async function recordMealPayment(supabaseAdmin: any, input: MealPaymentRe
   if (!ordered) throw new Error(`No ${cuisine} meal is on this order.`);
   const qty = Math.min(Math.max(1, Math.round(input.qty || 1)), ordered.qty);
 
+  const { data: restaurant, error: restaurantErr } = await supabaseAdmin
+    .from("restaurants")
+    .select("id")
+    .eq("cuisine", cuisine)
+    .maybeSingle();
+  if (restaurantErr) throw new Error(restaurantErr.message);
+  if (!restaurant) throw new Error(`No restaurant is configured for ${cuisine}.`);
+
   const { data: existing, error: existingErr } = await supabaseAdmin
     .from("meal_payments")
     .select("id,source,qty_paid,paid_at,verified_at")
@@ -50,6 +58,7 @@ export async function recordMealPayment(supabaseAdmin: any, input: MealPaymentRe
 
   const payload = {
     preorder_id: input.preorder_id,
+    restaurant_id: restaurant.id,
     cuisine,
     qty_paid: qty,
     paid_at: input.paid_at,
@@ -60,6 +69,7 @@ export async function recordMealPayment(supabaseAdmin: any, input: MealPaymentRe
     reported_note: input.note?.slice(0, 500) ?? null,
     updated_at: new Date().toISOString(),
   };
+
 
   const { error } = existing
     ? await supabaseAdmin.from("meal_payments").update(payload).eq("id", existing.id)
