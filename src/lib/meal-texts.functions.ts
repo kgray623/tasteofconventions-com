@@ -27,7 +27,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { assertMealStaff } = await import("@/lib/meal-text-tracking.server");
-    await assertMealStaff(context.supabase, context.userId);
+    const staff = await assertMealStaff(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { loadMealNotifyRollup } = await import("@/lib/meal-notify.server");
 
@@ -252,6 +252,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
         }
         return { name, phone };
       })(),
+      isAdmin: staff.isAdmin,
     };
   });
 

@@ -9,6 +9,8 @@ export async function assertMealStaff(supabase: any, userId: string) {
     .eq("user_id", userId)
     .in("role", ["admin", "team"]);
   if (error || !data?.length) throw new Error("Forbidden");
+  const roles = (data ?? []).map((row: { role?: string | null }) => row.role);
+  return { isAdmin: roles.includes("admin"), isTeam: roles.includes("team") || roles.includes("admin") };
 }
 
 export async function appendMealTextEvents(

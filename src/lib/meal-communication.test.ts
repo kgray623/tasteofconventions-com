@@ -75,4 +75,40 @@ describe("meal communication accounting", () => {
     });
     expect(ledger.rows.find((row) => row.cuisine === "African")?.state).toBe("needs_update");
   });
+
+  it("keeps unpaid orders in separate not-texted and texted-payment-due states", () => {
+    const notTexted = buildMealCommunicationLedger(base);
+    expect(notTexted.rows.find((row) => row.cuisine === "African")?.state).toBe("needs_update");
+
+    const texted = buildMealCommunicationLedger({
+      ...base,
+      textEvents: [
+        { preorder_id: "p1", cuisine: "African", campaign: "payment_update", action: "sent", event_at: "2026-08-19T10:00:00Z", created_at: "2026-08-19T10:00:00Z" },
+      ],
+    });
+    expect(texted.rows.find((row) => row.cuisine === "African")?.state).toBe("update_sent");
+  });
+
+  it("removes reported and confirmed payments from both unpaid queues", () => {
+    const reported = buildMealCommunicationLedger({
+      ...base,
+      payments: [{ preorder_id: "p1", cuisine: "African", paid_at: "2026-08-19T11:00:00Z", source: "guest_reported" }],
+    });
+    expect(reported.rows.find((row) => row.cuisine === "African")?.state).toBe("paid_reported");
+
+    const confirmed = buildMealCommunicationLedger({
+      ...base,
+      confirmations: [{ preorder_id: "p1", cuisine: "African", confirmed: true, confirmed_at: "2026-08-19T12:00:00Z" }],
+    });
+    expect(confirmed.rows.find((row) => row.cuisine === "African")?.state).toBe("paid_confirmed");
+  });
+
+  it("does not let payment for one cuisine hide another cuisine", () => {
+    const ledger = buildMealCommunicationLedger({
+      ...base,
+      payments: [{ preorder_id: "p1", cuisine: "African", paid_at: "2026-08-19T11:00:00Z", source: "restaurant", verified_at: "2026-08-19T11:00:00Z" }],
+    });
+    expect(ledger.rows.find((row) => row.cuisine === "African")?.state).toBe("paid_confirmed");
+    expect(ledger.rows.find((row) => row.cuisine === "Myanmar")?.state).toBe("needs_update");
+  });
 });
