@@ -100,6 +100,8 @@ export type MealTextExcludedRow = {
   inviter: string;
   /** "no" | "pending" | "maybe" | "waitlist" | "none" (no RSVP row) */
   rsvp_status: string;
+  /** "in_person" | "zoom" | "none" */
+  attendance_mode: string;
   reason: string;
   sent_at: string | null;
   zelle_sent_at: string | null;
