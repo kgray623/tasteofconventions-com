@@ -11,7 +11,7 @@ import { UnpaidByCommittee } from "@/components/unpaid-by-committee";
 
 import { getErrorMessage } from "@/lib/async-safety";
 import { downloadTextFile, openTextInNewTab } from "@/lib/download-file";
-import { isPaidState } from "@/lib/meal-communication";
+import { isPaidState, type OrphanSentMark } from "@/lib/meal-communication";
 import {
   cuisineLabel,
   matchRestaurant,
@@ -64,6 +64,7 @@ function MealTextsPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [rows, setRows] = useState<MealTextRow[]>([]);
   const [excluded, setExcluded] = useState<MealTextExcludedRow[]>([]);
+  const [orphanMarks, setOrphanMarks] = useState<OrphanSentMark[]>([]);
   const [restaurants, setRestaurants] = useState<MealRestaurant[]>([]);
   const [template, setTemplate] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
@@ -75,6 +76,7 @@ function MealTextsPage() {
       const result = await load({ data: {} as never });
       setRows(result.rows);
       setExcluded(result.excluded);
+      setOrphanMarks((result.orphanMarks ?? []) as OrphanSentMark[]);
       setRestaurants(result.restaurants);
       setTemplate(result.zelleTemplate);
       setIsAdmin(result.isAdmin);
@@ -187,6 +189,7 @@ function MealTextsPage() {
           <RosterSection title="Restaurant confirmed paid" description="Payment is confirmed by the restaurant." rows={paidConfirmed} tone="paid" bodyFor={bodyFor} busy={busy} onMark={updateTextMark} isAdmin={isAdmin} onRefresh={refresh} />
           <UnpaidByCommittee rows={rows} generatedAt={generatedAt} />
           <ExcludedSection rows={excluded} />
+          <OrphanMarksSection rows={orphanMarks} />
 
         </>
       )}
@@ -197,6 +200,43 @@ function MealTextsPage() {
 function Metric({ value, label }: { value: number; label: string }) {
   return <div className="border-b border-r border-border p-3 sm:border-b-0"><strong className="block text-xl">{value}</strong><span className="text-xs text-muted-foreground">{label}</span></div>;
 }
+
+/**
+ * Text marks that are real human actions but whose cuisine is no longer on the
+ * guest's order. Kept visible on purpose so no sent text is ever lost.
+ */
+function OrphanMarksSection({ rows }: { rows: OrphanSentMark[] }) {
+  if (rows.length === 0) return null;
+  return (
+    <section className="space-y-3 border-t border-border pt-4">
+      <div>
+        <h2 className="font-display text-xl">Texts sent for a cuisine no longer on the order</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          These marks are kept exactly as recorded. The guest changed or removed that cuisine after the text was
+          sent, so the mark has no current order line above.
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">{rows.length} recorded {rows.length === 1 ? "mark" : "marks"}</p>
+      </div>
+      <div className="divide-y divide-border border border-border">
+        {rows.map((row) => (
+          <div key={`${row.preorder_id}-${row.cuisine}`} className="px-3 py-2 text-sm">
+            <div className="flex flex-wrap items-center gap-2">
+              <strong>{row.name}</strong>
+              <span className="font-mono text-xs">{formatPhone(row.phone)}</span>
+              <Badge variant="outline">{cuisineLabel(row.cuisine)}</Badge>
+            </div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              Payment text {row.update_sent_at ? `marked sent ${new Date(row.update_sent_at).toLocaleDateString()}` : "never marked sent"}
+              {" · "}
+              Order text {row.original_sent_at ? `marked sent ${new Date(row.original_sent_at).toLocaleDateString()}` : "never marked sent"}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 
 /**
  * Read-only evidence list. These meal orders are kept in the database exactly as

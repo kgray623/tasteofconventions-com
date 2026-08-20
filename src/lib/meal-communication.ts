@@ -371,3 +371,57 @@ function countDroppedSelections(selections: unknown) {
 /** True when this order unit still needs the payment update text. */
 export const isPaidState = (state: MealCommunicationState | undefined) =>
   state === "paid_confirmed" || state === "paid_reported";
+
+/**
+ * A recorded text mark whose cuisine is no longer on the guest's order.
+ *
+ * These marks are real human actions and are NEVER deleted or hidden. They just
+ * have no current order line to render on, so they are reported separately so
+ * the team can see "we did text this person, for a cuisine they later changed".
+ */
+export type OrphanSentMark = {
+  preorder_id: string;
+  name: string;
+  phone: string;
+  cuisine: string;
+  original_sent_at: string | null;
+  update_sent_at: string | null;
+};
+
+export function findOrphanSentMarks(input: {
+  preorders: SourcePreorder[];
+  marks: MealSentMarks;
+}): OrphanSentMark[] {
+  const currentKeys = new Set<string>();
+  const preorderById = new Map<string, SourcePreorder>();
+  for (const preorder of input.preorders) {
+    preorderById.set(preorder.id, preorder);
+    for (const selection of parseSelections(preorder.selections)) {
+      currentKeys.add(keyFor(preorder.id, selection.cuisine));
+    }
+  }
+
+  const orphanKeys = new Set<string>();
+  for (const key of input.marks.original.keys()) if (!currentKeys.has(key)) orphanKeys.add(key);
+  for (const key of input.marks.update.keys()) if (!currentKeys.has(key)) orphanKeys.add(key);
+
+  const out: OrphanSentMark[] = [];
+  for (const key of orphanKeys) {
+    const separator = key.lastIndexOf("::");
+    const preorderId = key.slice(0, separator);
+    const cuisine = key.slice(separator + 2);
+    const preorder = preorderById.get(preorderId);
+    // Marks for a preorder that no longer exists at all are still real history,
+    // so they are reported with whatever identity is available.
+    out.push({
+      preorder_id: preorderId,
+      name: preorder?.name?.trim() || "Guest",
+      phone: preorder?.phone?.trim() || "",
+      cuisine,
+      original_sent_at: input.marks.original.get(key) ?? null,
+      update_sent_at: input.marks.update.get(key) ?? null,
+    });
+  }
+  return out.sort((a, b) => a.name.localeCompare(b.name) || a.cuisine.localeCompare(b.cuisine));
+}
+

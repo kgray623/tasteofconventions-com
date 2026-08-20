@@ -75,7 +75,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
     // ONE source of truth for sent marks: meal_text_events is canonical, the
     // legacy send tables are read-only fallback, and every cuisine string is
     // normalized inside the resolver so no mark can miss its row.
-    const { resolveMealSentMarks } = await import("@/lib/meal-communication");
+    const { resolveMealSentMarks, findOrphanSentMarks } = await import("@/lib/meal-communication");
     const marks = resolveMealSentMarks({
       originalSends: (sends ?? []) as any[],
       updateSends: (zelleSends ?? []) as any[],
@@ -83,6 +83,10 @@ export const getMealTextData = createServerFn({ method: "POST" })
     });
     const sentByMeal = marks.original;
     const zelleByMeal = marks.update;
+    // Real text marks for cuisines no longer on the order: kept, never dropped,
+    // and reported so the team can see the whole texting history.
+    const orphanMarks = findOrphanSentMarks({ preorders: (preorders ?? []) as any[], marks });
+
 
     // Every payment-update mark is attributable to the person who tapped it.
     const markerIds = [...new Set([...marks.updateActorId.values()].filter(Boolean))] as string[];
@@ -241,6 +245,8 @@ export const getMealTextData = createServerFn({ method: "POST" })
         })) as MealRestaurant[],
       rows,
       excluded,
+      orphanMarks,
+
       instructionQueue: buildMealInstructionQueue(
         rows,
         instructionEvidence.lines,
