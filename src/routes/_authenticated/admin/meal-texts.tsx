@@ -194,6 +194,63 @@ function Metric({ value, label }: { value: number; label: string }) {
   return <div className="border-b border-r border-border p-3 sm:border-b-0"><strong className="block text-xl">{value}</strong><span className="text-xs text-muted-foreground">{label}</span></div>;
 }
 
+/**
+ * Read-only evidence list. These meal orders are kept in the database exactly as
+ * submitted, but they sit outside the payment chase because the RSVP is not
+ * "yes". No Text / Mark sent / Already paid buttons here on purpose.
+ */
+function ExcludedSection({ rows }: { rows: MealTextExcludedRow[] }) {
+  if (rows.length === 0) return null;
+  const groups = [...CUISINE_ORDER, "Other"]
+    .map((cuisine) => ({
+      cuisine,
+      rows: rows.filter((row) =>
+        cuisine === "Other" ? !CUISINE_ORDER.includes(row.cuisine) : row.cuisine === cuisine,
+      ),
+    }))
+    .filter((group) => group.rows.length > 0);
+
+  return (
+    <section className="space-y-3 border-t border-border pt-4">
+      <div>
+        <h2 className="font-display text-xl">Excluded — meal on file but RSVP is not yes</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Kept exactly as submitted, never deleted. These orders are not counted above and nobody here is chased
+          for payment.
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">{rows.length} cuisine orders</p>
+      </div>
+      {groups.map((group) => (
+        <div key={group.cuisine} className="space-y-2">
+          <h3 className="text-sm font-semibold">
+            {group.cuisine === "Other" ? "Other" : cuisineLabel(group.cuisine)} · {group.rows.length}
+          </h3>
+          {group.rows.map((row) => (
+            <div key={`${row.id}-${row.cuisine}`} className="rounded-md border border-border p-3 text-sm">
+              <div className="flex flex-wrap items-center gap-2">
+                <strong>{row.name}</strong>
+                <Badge variant="outline">RSVP {row.rsvp_status}</Badge>
+                {row.paid && <Badge variant="outline">Payment recorded</Badge>}
+              </div>
+              <div className="text-muted-foreground">{formatPhone(row.phone)}</div>
+              <div className="text-muted-foreground">Invited by {row.inviter}</div>
+              <div className="mt-1">
+                {row.qty} {row.qty === 1 ? "plate" : "plates"} · {cuisineLabel(row.cuisine)}
+              </div>
+              <div className="mt-1 text-destructive">{row.reason}</div>
+              <div className="mt-1 text-xs text-muted-foreground">
+                Payment text {row.zelle_sent_at ? `marked sent ${new Date(row.zelle_sent_at).toLocaleDateString()}` : "never marked sent"}
+                {" · "}
+                Order text {row.sent_at ? `marked sent ${new Date(row.sent_at).toLocaleDateString()}` : "never marked sent"}
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
+    </section>
+  );
+}
+
 function RosterSection({ title, description, rows, tone, bodyFor, busy, onMark, isAdmin, onRefresh }: {
   title: string;
   description: string;
