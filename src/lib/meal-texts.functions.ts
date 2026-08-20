@@ -51,7 +51,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
         .select("id,name,phone,selections,invitation_id")
         .order("name"),
       supabaseAdmin.from("app_settings").select("value").eq("key", "meal_text_template").maybeSingle(),
-      supabaseAdmin.from("invitations").select("id,inviter_id"),
+      supabaseAdmin.from("invitations").select("id,inviter_id,rsvps(status)"),
       supabaseAdmin.from("inviters").select("id,name"),
       supabaseAdmin.from("meal_text_sends").select("preorder_id,cuisine,sent_at"),
       supabaseAdmin.from("meal_zelle_text_sends").select("preorder_id,cuisine,sent_at,marked_by"),
