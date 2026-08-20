@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildMealCommunicationLedger } from "@/lib/meal-communication";
+import { buildMealCommunicationLedger, resolveMealSentMarks } from "@/lib/meal-communication";
 
 const base = {
   preorders: [
@@ -110,5 +110,78 @@ describe("meal communication accounting", () => {
     });
     expect(ledger.rows.find((row) => row.cuisine === "African")?.state).toBe("paid_confirmed");
     expect(ledger.rows.find((row) => row.cuisine === "Myanmar")?.state).toBe("needs_update");
+  });
+});
+describe("single source of truth for sent marks and confirmations", () => {
+  it("treats an event-only sent mark as sent, with no legacy row", () => {
+    const marks = resolveMealSentMarks({
+      originalSends: [],
+      updateSends: [],
+      textEvents: [
+        {
+          preorder_id: "p1",
+          cuisine: "Burmese",
+          campaign: "payment_update",
+          action: "sent",
+          event_at: "2026-08-19T10:00:00Z",
+          created_at: "2026-08-19T10:00:00Z",
+          actor_id: "u1",
+        },
+      ],
+    });
+    // "Burmese" and "Myanmar" must resolve to the same key.
+    expect(marks.update.get("p1::Myanmar")).toBe("2026-08-19T10:00:00Z");
+    expect(marks.updateActorId.get("p1::Myanmar")).toBe("u1");
+  });
+
+  it("lets the newest event reverse a legacy sent row", () => {
+    const marks = resolveMealSentMarks({
+      updateSends: [{ preorder_id: "p1", cuisine: "Myanmar", sent_at: "2026-08-10T00:00:00Z" }],
+      textEvents: [
+        {
+          preorder_id: "p1",
+          cuisine: "myanmar",
+          campaign: "payment_update",
+          action: "reversed",
+          event_at: "2026-08-12T00:00:00Z",
+          created_at: "2026-08-12T00:00:00Z",
+        },
+      ],
+    });
+    expect(marks.update.has("p1::Myanmar")).toBe(false);
+  });
+
+  it("shows an event-only sent mark as update_sent in the ledger", () => {
+    const ledger = buildMealCommunicationLedger({
+      ...base,
+      textEvents: [
+        {
+          preorder_id: "p1",
+          cuisine: "Burmese",
+          campaign: "payment_update",
+          action: "sent",
+          event_at: "2026-08-19T10:00:00Z",
+          created_at: "2026-08-19T10:00:00Z",
+        },
+      ],
+    });
+    const myanmar = ledger.rows.find((row) => row.cuisine === "Myanmar");
+    expect(myanmar?.state).toBe("update_sent");
+    expect(myanmar?.update_sent_at).toBe("2026-08-19T10:00:00Z");
+  });
+
+  it("counts a restaurant confirmation with no verified payment as confirmed paid", () => {
+    const ledger = buildMealCommunicationLedger({
+      ...base,
+      payments: [
+        { preorder_id: "p1", cuisine: "African", paid_at: "2026-08-08T00:00:00Z", source: "guest_reported", verified_at: null },
+      ],
+      confirmations: [
+        { preorder_id: "p1", cuisine: "African", confirmed: true, confirmed_at: "2026-08-13T00:00:00Z" },
+      ],
+    });
+    const african = ledger.rows.find((row) => row.cuisine === "African");
+    expect(african?.state).toBe("paid_confirmed");
+    expect(african?.verified_at).toBe("2026-08-13T00:00:00Z");
   });
 });

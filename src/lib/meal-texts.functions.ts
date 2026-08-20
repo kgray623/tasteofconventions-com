@@ -72,10 +72,20 @@ export const getMealTextData = createServerFn({ method: "POST" })
       (await import("@/lib/meal-text-evidence.server")).loadConfirmedInstructionEvidence(supabaseAdmin),
     ]);
 
+    // ONE source of truth for sent marks: meal_text_events is canonical, the
+    // legacy send tables are read-only fallback, and every cuisine string is
+    // normalized inside the resolver so no mark can miss its row.
+    const { resolveMealSentMarks } = await import("@/lib/meal-communication");
+    const marks = resolveMealSentMarks({
+      originalSends: (sends ?? []) as any[],
+      updateSends: (zelleSends ?? []) as any[],
+      textEvents: (textEvents ?? []) as any[],
+    });
+    const sentByMeal = marks.original;
+    const zelleByMeal = marks.update;
+
     // Every payment-update mark is attributable to the person who tapped it.
-    const markerIds = [
-      ...new Set(((zelleSends ?? []) as any[]).map((s) => s.marked_by).filter(Boolean)),
-    ] as string[];
+    const markerIds = [...new Set([...marks.updateActorId.values()].filter(Boolean))] as string[];
     const markerNames = new Map<string, string>();
     if (markerIds.length > 0) {
       const { data: profileRows } = await supabaseAdmin
@@ -86,32 +96,11 @@ export const getMealTextData = createServerFn({ method: "POST" })
         markerNames.set(p.id as string, (p.display_name as string) ?? "");
       }
     }
-
-    const zelleByMeal = new Map<string, string>();
     const zelleByWhom = new Map<string, string | null>();
-    for (const s of ((zelleSends ?? []) as any[])) {
-      const key = `${s.preorder_id}::${String(s.cuisine ?? "")}`;
-      zelleByMeal.set(key, s.sent_at);
-      zelleByWhom.set(key, (s.marked_by ? markerNames.get(s.marked_by) : null) || null);
+    for (const [key, actorId] of marks.updateActorId) {
+      zelleByWhom.set(key, (actorId ? markerNames.get(actorId) : null) || null);
     }
 
-    const sentByMeal = new Map<string, string>();
-    for (const s of ((sends ?? []) as any[])) {
-      sentByMeal.set(`${s.preorder_id}::${String(s.cuisine ?? "")}`, s.sent_at);
-    }
-    for (const event of ((textEvents ?? []) as any[])) {
-      const key = `${event.preorder_id}::${String(event.cuisine ?? "")}`;
-      const target = event.campaign === "original" ? sentByMeal : zelleByMeal;
-      if (event.action === "sent") target.set(key, event.event_at);
-      else target.delete(key);
-      if (event.campaign === "payment_update") {
-        if (event.action === "sent") {
-          zelleByWhom.set(key, event.actor_id ? markerNames.get(event.actor_id) || null : null);
-        } else {
-          zelleByWhom.delete(key);
-        }
-      }
-    }
 
     const inviterNameById = new Map<string, string>(
       ((inviterRows ?? []) as any[]).map((r) => [r.id as string, (r.name as string) ?? "Committee"]),

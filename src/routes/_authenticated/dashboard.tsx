@@ -41,7 +41,9 @@ type Invite = {
   rsvps?: { status: string; party_size: number; attendance_mode: string | null } | null;
 };
 type RsvpAction = "inperson1" | "inperson2" | "inperson3" | "inperson4" | "zoom1" | "zoom2" | "zoom3" | "zoom4" | "no" | "clear";
-type Flag = { id: string; invitation_a: string; invitation_b: string; match_type: string };
+/** One row per unique invitation pair (duplicate_flag_pairs view), so a pair
+ *  matched on both phone and name is never counted twice. */
+type Flag = { invitation_a: string; invitation_b: string; match_types: string[] };
 type EventRow = { id: string; title: string; starts_at: string; location: string | null };
 type MyCategory = { id: string; name: string; description: string | null };
 type ProfileRow = { id: string; display_name: string | null };
@@ -80,12 +82,12 @@ function Dashboard() {
     const [{ data: e }, { data: i }, { data: f }, { data: p }] = await Promise.all([
       supabase.from("events").select("id,title,starts_at,location").order("starts_at"),
       supabase.from("invitations").select("id,event_id,guest_name,guest_phone,rsvp_token,created_at,host_id,invite_sent_at,is_committee,rsvps(status,party_size,attendance_mode)").order("guest_name", { ascending: true }),
-      supabase.from("duplicate_flags").select("*"),
+      supabase.from("duplicate_flag_pairs").select("invitation_a,invitation_b,match_types"),
       supabase.from("profiles").select("id,display_name"),
     ]);
     setEvents(e ?? []);
     setInvites((i as unknown as Invite[]) ?? []);
-    setFlags(f ?? []);
+    setFlags((f ?? []) as Flag[]);
     setProfiles((p ?? []) as ProfileRow[]);
     if (user?.id) await loadVolunteerChats(user.id);
   };
@@ -322,9 +324,9 @@ function Dashboard() {
                   const b = invites.find((i) => i.id === f.invitation_b);
                   if (!a || !b) return null;
                   return (
-                    <div key={f.id} className="flex flex-wrap items-center gap-2 text-sm bg-card border border-border rounded-md px-3 py-2">
+                    <div key={`${f.invitation_a}-${f.invitation_b}`} className="flex flex-wrap items-center gap-2 text-sm bg-card border border-border rounded-md px-3 py-2">
                       <Badge variant="outline" className="border-terracotta text-terracotta">
-                        {f.match_type} match
+                        {(f.match_types ?? []).join(" + ")} match
                       </Badge>
                       {duplicateGuestButton(a)}
                       <span className="text-muted-foreground">↔</span>

@@ -76,16 +76,25 @@ export async function loadMealNotifyRollup(supabaseAdmin: any) {
     return raw.trim();
   };
   const activeKeys = new Set(ledger.rows.map((row) => `${row.id}::${row.cuisine}`));
-  const summarize = (source: any[]) => {
-    const active = source.filter((row) => activeKeys.has(`${row.preorder_id}::${normalizeCuisine(String(row.cuisine ?? ""))}`));
+  // Counts come from the canonical resolver (events first, legacy fallback), so
+  // this rollup can never disagree with the screens.
+  const { resolveMealSentMarks } = await import("@/lib/meal-communication");
+  const resolved = resolveMealSentMarks({
+    originalSends: (originalRows ?? []) as any[],
+    updateSends: (updateRows ?? []) as any[],
+    textEvents: (textEvents ?? []) as any[],
+  });
+  const summarize = (keys: Map<string, string>, legacyRows: any[]) => {
+    const active = [...keys.keys()].filter((key) => activeKeys.has(key));
     return {
-      active_lines: new Set(active.map((row) => `${row.preorder_id}::${normalizeCuisine(String(row.cuisine ?? ""))}`)).size,
-      active_households: new Set(active.map((row) => row.preorder_id)).size,
-      live_rows: source.length,
+      active_lines: active.length,
+      active_households: new Set(active.map((key) => key.split("::")[0])).size,
+      live_rows: legacyRows.length,
     };
   };
-  const originalSummary = summarize((originalRows ?? []) as any[]);
-  const updateSummary = summarize((updateRows ?? []) as any[]);
+  const originalSummary = summarize(resolved.original, (originalRows ?? []) as any[]);
+  const updateSummary = summarize(resolved.update, (updateRows ?? []) as any[]);
+
   const deletedOriginal = ((auditRows ?? []) as any[]).filter((row) => row.target_type === "meal_text_sends").length;
   const deletedUpdates = ((auditRows ?? []) as any[]).filter((row) => row.target_type === "meal_zelle_text_sends").length;
 
@@ -178,15 +187,16 @@ export async function loadMealNotifyRollup(supabaseAdmin: any) {
     ),
     text_accounting: {
       original: {
-        ...summarize(effectiveOriginal),
+        ...originalSummary,
         historical_deletes: deletedOriginal,
         retained_events: ((textEvents ?? []) as any[]).filter((event) => event.campaign === "original").length,
       },
       payment_update: {
-        ...summarize(effectiveUpdates),
+        ...updateSummary,
         historical_deletes: deletedUpdates,
         retained_events: ((textEvents ?? []) as any[]).filter((event) => event.campaign === "payment_update").length,
       },
+
       actors: [...actors.values()]
         .map((actor) => ({
           actor_id: actor.actor_id,

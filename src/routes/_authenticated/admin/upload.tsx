@@ -1256,8 +1256,8 @@ function UploadPage() {
       let dupeNames: string[] = [];
       if (insertedIds.length) {
         const { data: flags } = await supabase
-          .from("duplicate_flags")
-          .select("invitation_a,invitation_b,match_type")
+          .from("duplicate_flag_pairs")
+          .select("invitation_a,invitation_b,match_types")
           .or(
             insertedIds
               .map((id) => `invitation_a.eq.${id},invitation_b.eq.${id}`)
@@ -1265,9 +1265,12 @@ function UploadPage() {
           );
         const dupeIdSet = new Set<string>();
         for (const f of flags ?? []) {
-          if (insertedIds.includes(f.invitation_a)) dupeIdSet.add(f.invitation_a);
-          if (insertedIds.includes(f.invitation_b)) dupeIdSet.add(f.invitation_b);
+          const a = f.invitation_a ?? "";
+          const b = f.invitation_b ?? "";
+          if (a && insertedIds.includes(a)) dupeIdSet.add(a);
+          if (b && insertedIds.includes(b)) dupeIdSet.add(b);
         }
+
         dupeNames = insertedNames.filter((_, i) => dupeIdSet.has(insertedIds[i]));
       }
 
