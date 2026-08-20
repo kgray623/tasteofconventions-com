@@ -24,6 +24,7 @@ import {
   getMealTextData,
   markZelleTextSent,
   type MealRestaurant,
+  type MealTextExcludedRow,
   type MealTextRow,
 } from "@/lib/meal-texts.functions";
 
