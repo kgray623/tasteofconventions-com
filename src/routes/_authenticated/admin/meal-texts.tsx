@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RecordMealPaymentDialog } from "@/components/record-meal-payment-dialog";
 import { SmsTextButton } from "@/components/sms-text-button";
+import { UnpaidByCommittee } from "@/components/unpaid-by-committee";
+
 import { getErrorMessage } from "@/lib/async-safety";
 import { downloadTextFile, openTextInNewTab } from "@/lib/download-file";
 import { isPaidState } from "@/lib/meal-communication";
