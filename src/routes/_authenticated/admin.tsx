@@ -32,7 +32,7 @@ const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boole
   { to: "/admin/reconcile", label: "Reconcile list", icon: ListChecks, group: "main" },
   { to: "/admin/rsvp-issues", label: "Replies that didn't stick", icon: ListChecks, group: "main" },
 
-  { to: "/admin/meal-texts", label: "Meal texts", icon: MessageSquare, group: "main" },
+  { to: "/admin/meal-texts", label: "Event payment texts", icon: MessageSquare, team: true, teamLabel: "Event payment texts", group: "main" },
   { to: "/admin/meal-texts-mine", label: "My meal texts", icon: MessageSquare, team: true, teamLabel: "My meal texts", group: "committee" },
 
   { to: "/admin/invitation", label: "Invitation page", icon: Mail, group: "main" },
@@ -49,7 +49,7 @@ const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boole
 ];
 
 
-const teamAllowedPrefixes = ["/admin/subcommittee", "/admin/guests", "/admin/upload", "/admin/inviters", "/admin/categories", "/admin/chat", "/admin/my-volunteer-chats", "/admin/my-rsvp", "/admin/preorders", "/admin/meal-texts-mine"];
+const teamAllowedPrefixes = ["/admin/subcommittee", "/admin/guests", "/admin/upload", "/admin/inviters", "/admin/categories", "/admin/chat", "/admin/my-volunteer-chats", "/admin/my-rsvp", "/admin/preorders", "/admin/meal-texts", "/admin/meal-texts-mine"];
 const isTeamAllowedPath = (path: string) =>
   path === "/admin" || teamAllowedPrefixes.some((p) => path === p || path.startsWith(p + "/"));
 

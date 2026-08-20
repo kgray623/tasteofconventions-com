@@ -1,38 +1,45 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
-import { Download, Loader2, MessageSquare } from "lucide-react";
+import { Check, Download, Loader2, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { RecordMealPaymentDialog } from "@/components/record-meal-payment-dialog";
+import { SmsTextButton } from "@/components/sms-text-button";
 import { getErrorMessage } from "@/lib/async-safety";
 import { downloadTextFile, openTextInNewTab } from "@/lib/download-file";
+import { isPaidState } from "@/lib/meal-communication";
+import {
+  cuisineLabel,
+  matchRestaurant,
+  mealOrderText,
+  mealPhotosLine,
+  paymentLines,
+  renderMealTemplate,
+  smsNumber,
+  zelleQrLinkLine,
+} from "@/lib/meal-text-message";
 import {
   getMealTextData,
-  type MealTextBatchReconciliation,
+  markZelleTextSent,
+  type MealRestaurant,
   type MealTextRow,
 } from "@/lib/meal-texts.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/meal-texts")({
   head: () => ({
     meta: [
-      { title: "Meal text status — A Taste of Special Conventions" },
-      {
-        name: "description",
-        content: "Read-only August 12 meal instruction text status by cuisine.",
-      },
-      { property: "og:title", content: "Meal text status" },
-      {
-        property: "og:description",
-        content: "Sent and not-sent meal instruction contacts organized by cuisine.",
-      },
+      { title: "Event payment texts — Taste of Conventions" },
+      { name: "description", content: "Event-wide catered-meal payment outreach and payment status." },
+      { property: "og:title", content: "Event payment texts" },
+      { property: "og:description", content: "Unpaid and paid catered-meal orders for the event team." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
   }),
   component: MealTextsPage,
 });
-
-type StatusRow = MealTextRow & { sent: boolean };
 
 const CUISINE_ORDER = ["African", "Indonesian", "Myanmar"];
 
@@ -49,164 +56,185 @@ const csvEscape = (value: unknown) => {
 
 function MealTextsPage() {
   const load = useServerFn(getMealTextData);
+  const markSent = useServerFn(markZelleTextSent);
   const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState<string | null>(null);
   const [rows, setRows] = useState<MealTextRow[]>([]);
-  const [batch, setBatch] = useState<MealTextBatchReconciliation | null>(null);
+  const [restaurants, setRestaurants] = useState<MealRestaurant[]>([]);
+  const [template, setTemplate] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [generatedAt, setGeneratedAt] = useState<string | null>(null);
 
-  useEffect(() => {
-    let active = true;
-    const run = async () => {
-      try {
-        const result = await load({ data: {} as never });
-        if (!active) return;
-        setRows(result.rows);
-        setBatch(result.batchReconciliation);
-      } catch (error) {
-        toast.error("Couldn't load the meal text status", {
-          description: getErrorMessage(error),
-        });
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-    void run();
-    return () => {
-      active = false;
-    };
-  }, [load]);
+  const refresh = async () => {
+    setLoading(true);
+    try {
+      const result = await load({ data: {} as never });
+      setRows(result.rows);
+      setRestaurants(result.restaurants);
+      setTemplate(result.zelleTemplate);
+      setIsAdmin(result.isAdmin);
+      setGeneratedAt(result.reconciliation.generated_at);
+    } catch (error) {
+      toast.error("Couldn't load event payment bookkeeping", { description: getErrorMessage(error) });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const sentContactIds = useMemo(
-    () => new Set(batch?.reconstructed_contact_ids ?? []),
-    [batch],
-  );
+  useEffect(() => { void refresh(); }, [load]);
 
-  const statusRows = useMemo<StatusRow[]>(
-    () => rows.map((row) => ({ ...row, sent: sentContactIds.has(row.id) })),
-    [rows, sentContactIds],
-  );
+  const needsText = useMemo(() => rows.filter((row) => row.state === "needs_update" || row.state === "exception"), [rows]);
+  const textedDue = useMemo(() => rows.filter((row) => row.state === "update_sent"), [rows]);
+  const paidReported = useMemo(() => rows.filter((row) => row.state === "paid_reported"), [rows]);
+  const paidConfirmed = useMemo(() => rows.filter((row) => row.state === "paid_confirmed"), [rows]);
+  const unpaid = [...needsText, ...textedDue];
+  const totalPlates = rows.reduce((sum, row) => sum + row.qty, 0);
+  const unpaidPlates = unpaid.reduce((sum, row) => sum + row.qty, 0);
+  const paidPlates = totalPlates - unpaidPlates;
 
-  const cuisines = useMemo(
-    () => CUISINE_ORDER.map((cuisine) => ({
-      cuisine,
-      sent: statusRows
-        .filter((row) => row.cuisine === cuisine && row.sent)
-        .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" })),
-      notSent: statusRows
-        .filter((row) => row.cuisine === cuisine && !row.sent)
-        .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" })),
-    })),
-    [statusRows],
-  );
+  const bodyFor = (row: MealTextRow) => {
+    const restaurant = matchRestaurant(restaurants, row.cuisine);
+    return renderMealTemplate(template, {
+      ...paymentLines(restaurant),
+      firstName: row.name.split(/\s+/)[0] ?? row.name,
+      restaurantName: restaurant?.name ?? row.cuisine,
+      restaurantCuisine: cuisineLabel(restaurant?.cuisine?.trim() || row.cuisine),
+      restaurantPhone: restaurant?.phone?.trim() || "[restaurant phone unavailable]",
+      restaurantWebsite: restaurant?.website?.trim() || "",
+      order: mealOrderText(row.qty, row.cuisine),
+      mealPhotos: mealPhotosLine(row.cuisine),
+      zelleQrLink: zelleQrLinkLine(row.cuisine, restaurant),
+      zelleLink: "",
+    });
+  };
 
-  const uniqueContacts = new Set(rows.map((row) => row.id)).size;
-  const sentContacts = new Set(statusRows.filter((row) => row.sent).map((row) => row.id)).size;
-  const notSentContacts = uniqueContacts - sentContacts;
+  const updateTextMark = async (row: MealTextRow, sent: boolean) => {
+    const key = `${row.id}::${row.cuisine}`;
+    setBusy(key);
+    try {
+      await markSent({ data: { marks: [{ preorderId: row.id, cuisine: row.cuisine }], sent } });
+      await refresh();
+    } catch (error) {
+      toast.error("Couldn't update the payment-text mark", { description: getErrorMessage(error) });
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const downloadRoster = () => {
+    const status = (row: MealTextRow) => row.state === "paid_confirmed"
+      ? "PAID — RESTAURANT CONFIRMED"
+      : row.state === "paid_reported"
+        ? "PAID REPORTED — AWAITING CONFIRMATION"
+        : row.state === "update_sent"
+          ? "TEXT SENT — PAYMENT STILL DUE"
+          : "NEEDS PAYMENT TEXT";
     const csv = [
-      ["Cuisine", "Status", "Sent date", "Name", "Phone", "Meals"].join(","),
-      ...cuisines.flatMap(({ cuisine, sent, notSent }) => [
-        ...sent.map((row) => [cuisine, "SENT", "August 12, 2026", row.name, formatPhone(row.phone), row.qty]),
-        ...notSent.map((row) => [cuisine, "NOT SENT", "", row.name, formatPhone(row.phone), row.qty]),
-      ]).map((record) => record.map(csvEscape).join(",")),
+      ["Payment status", "Text status", "Cuisine", "Name", "Phone", "Inviter", "Plates", "Paid date"].join(","),
+      ...rows.map((row) => [
+        status(row), row.zelle_sent_at ? "SENT" : "NOT SENT", row.cuisine, row.name,
+        formatPhone(row.phone), row.inviter, row.qty, row.paid_at ?? "",
+      ].map(csvEscape).join(",")),
     ].join("\n");
-    const result = downloadTextFile("meal-text-status-2026-08-12.csv", csv);
-    if (result.ok) {
-      toast.success("Meal text status downloaded");
-      return;
-    }
-    const fallback = openTextInNewTab(csv);
-    if (fallback.ok) toast.success("Meal text status opened in a new tab");
-    else toast.error("Couldn't download the meal text status", { description: fallback.reason });
+    const result = downloadTextFile(`event-meal-payment-bookkeeping-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+    if (result.ok) toast.success("Event payment bookkeeping downloaded");
+    else if (openTextInNewTab(csv).ok) toast.success("Event payment bookkeeping opened in a new tab");
+    else toast.error("Couldn't export the event payment bookkeeping");
   };
 
   return (
-    <main className="mx-auto w-full max-w-5xl space-y-6 px-3 py-4 sm:px-6 sm:py-8">
-      <header className="space-y-3 border-b border-border pb-5">
+    <main className="space-y-6">
+      <header className="space-y-4 border-b border-border pb-5">
         <div className="flex items-start gap-3">
           <MessageSquare className="mt-1 h-6 w-6 shrink-0 text-terracotta" aria-hidden="true" />
           <div>
-            <h1 className="font-display text-3xl">Meal text status</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Read-only record of who was marked sent on August 12, 2026 and who was not.
-            </p>
+            <h1 className="font-display text-3xl">Event payment texts</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Everyone with an active catered-meal preorder, compared directly with recorded payments.</p>
           </div>
         </div>
-
         {loading ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading exact status…
-          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Reading current payments…</div>
         ) : (
-          <div className="grid grid-cols-3 divide-x divide-border border-y border-border py-3 text-center">
-            <div>
-              <strong className="block text-xl">{uniqueContacts}</strong>
-              <span className="text-xs text-muted-foreground">Total contacts</span>
-            </div>
-            <div>
-              <strong className="block text-xl text-emerald-700">{sentContacts}</strong>
-              <span className="text-xs text-muted-foreground">Sent Aug 12</span>
-            </div>
-            <div>
-              <strong className="block text-xl text-brand-red">{notSentContacts}</strong>
-              <span className="text-xs text-muted-foreground">Not sent</span>
-            </div>
+          <div className="grid grid-cols-2 border-y border-border text-center sm:grid-cols-4">
+            <Metric value={rows.length} label="Cuisine orders" />
+            <Metric value={totalPlates} label="Plates ordered" />
+            <Metric value={unpaidPlates} label="Plates still to pay" />
+            <Metric value={paidPlates} label="Plates paid/reported" />
           </div>
         )}
-
         <Button size="sm" variant="outline" onClick={downloadRoster} disabled={loading}>
-          <Download className="mr-2 h-4 w-4" /> Download this exact roster
+          <Download className="mr-2 h-4 w-4" /> Download exact bookkeeping
         </Button>
+        {generatedAt && <p className="text-xs text-muted-foreground">Database read: {new Date(generatedAt).toISOString().replace("T", " ").slice(0, 16)} UTC</p>}
       </header>
 
-      {!loading && cuisines.map(({ cuisine, sent, notSent }) => (
-        <section key={cuisine} className="space-y-4" aria-labelledby={`${cuisine}-heading`}>
-          <div className="border-b-2 border-foreground pb-2">
-            <h2 id={`${cuisine}-heading`} className="font-display text-2xl">
-              {cuisine === "Myanmar" ? "Myanmar (Burmese)" : cuisine}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {sent.length} sent · {notSent.length} not sent
-            </p>
-          </div>
-
-          <StatusSection title="NOT SENT" rows={notSent} sent={false} />
-          <StatusSection title="SENT — AUGUST 12, 2026" rows={sent} sent />
-        </section>
-      ))}
+      {!loading && (
+        <>
+          <RosterSection title="Needs payment text" description="No payment is recorded and no payment text is marked sent." rows={needsText} tone="urgent" bodyFor={bodyFor} busy={busy} onMark={updateTextMark} isAdmin={isAdmin} onRefresh={refresh} />
+          <RosterSection title="Text sent — payment still due" description="The payment instructions were marked sent, but payment is still not recorded." rows={textedDue} tone="waiting" bodyFor={bodyFor} busy={busy} onMark={updateTextMark} isAdmin={isAdmin} onRefresh={refresh} />
+          <RosterSection title="Reported paid — awaiting restaurant confirmation" description="A guest or team member reported payment. These people are not chased for payment." rows={paidReported} tone="paid" bodyFor={bodyFor} busy={busy} onMark={updateTextMark} isAdmin={isAdmin} onRefresh={refresh} />
+          <RosterSection title="Restaurant confirmed paid" description="Payment is confirmed by the restaurant." rows={paidConfirmed} tone="paid" bodyFor={bodyFor} busy={busy} onMark={updateTextMark} isAdmin={isAdmin} onRefresh={refresh} />
+        </>
+      )}
     </main>
   );
 }
 
-function StatusSection({ title, rows, sent }: { title: string; rows: StatusRow[]; sent: boolean }) {
+function Metric({ value, label }: { value: number; label: string }) {
+  return <div className="border-b border-r border-border p-3 sm:border-b-0"><strong className="block text-xl">{value}</strong><span className="text-xs text-muted-foreground">{label}</span></div>;
+}
+
+function RosterSection({ title, description, rows, tone, bodyFor, busy, onMark, isAdmin, onRefresh }: {
+  title: string;
+  description: string;
+  rows: MealTextRow[];
+  tone: "urgent" | "waiting" | "paid";
+  bodyFor: (row: MealTextRow) => string;
+  busy: string | null;
+  onMark: (row: MealTextRow, sent: boolean) => Promise<void>;
+  isAdmin: boolean;
+  onRefresh: () => Promise<void>;
+}) {
+  const groups = CUISINE_ORDER.map((cuisine) => ({ cuisine, rows: rows.filter((row) => row.cuisine === cuisine) }))
+    .filter((group) => group.rows.length > 0);
   return (
-    <div className="overflow-hidden border border-border">
-      <h3 className={sent
-        ? "bg-emerald-100 px-3 py-2 text-sm font-bold text-emerald-900"
-        : "bg-destructive px-3 py-2 text-sm font-bold text-destructive-foreground"
-      }>
-        {title} ({rows.length})
-      </h3>
-      {rows.length === 0 ? (
-        <p className="px-3 py-4 text-sm text-muted-foreground">No one in this section.</p>
-      ) : (
-        <div className="divide-y divide-border">
-          {rows.map((row) => (
-            <div key={`${row.id}-${row.cuisine}`} className="grid grid-cols-[1fr_auto] gap-3 px-3 py-3">
-              <div className="min-w-0">
-                <p className="font-semibold leading-tight">{row.name}</p>
-                <p className="mt-1 font-mono text-sm">{formatPhone(row.phone)}</p>
-              </div>
-              <div className="text-right">
-                <p className="font-semibold">{row.qty} meal{row.qty === 1 ? "" : "s"}</p>
-                <p className={sent ? "text-xs font-bold text-emerald-700" : "text-xs font-bold text-brand-red"}>
-                  {sent ? "SENT AUG 12" : "NOT SENT"}
-                </p>
-              </div>
-            </div>
-          ))}
+    <section className="space-y-4" aria-label={title}>
+      <div className="border-b-2 border-foreground pb-2">
+        <div className="flex flex-wrap items-center gap-2"><h2 className="font-display text-2xl">{title}</h2><Badge variant="outline">{rows.length} cuisine orders</Badge></div>
+        <p className="text-sm text-muted-foreground">{description}</p>
+      </div>
+      {rows.length === 0 && <p className="border border-border p-4 text-sm text-muted-foreground">No one is in this section.</p>}
+      {groups.map(({ cuisine, rows: cuisineRows }) => (
+        <div key={cuisine} className="border border-border">
+          <h3 className="border-b border-border px-3 py-2 font-semibold">{cuisineLabel(cuisine)} · {cuisineRows.length}</h3>
+          <div className="divide-y divide-border">
+            {cuisineRows.map((row) => {
+              const number = smsNumber(row.phone);
+              const key = `${row.id}::${row.cuisine}`;
+              return (
+                <div key={key} className="space-y-3 px-3 py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0"><p className="font-semibold">{row.name}</p><p className="font-mono text-sm">{formatPhone(row.phone)}</p><p className="text-xs text-muted-foreground">Invited by {row.inviter}</p></div>
+                    <div className="shrink-0 text-right"><p className="font-semibold">{row.qty} plate{row.qty === 1 ? "" : "s"}</p><p className="text-xs text-muted-foreground">{cuisineLabel(row.cuisine)}</p></div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {tone === "urgent" && number && <SmsTextButton numbers={[number]} body={bodyFor(row)} label={`Text ${row.name.split(/\s+/)[0]}`} />}
+                    {tone === "urgent" && (
+                      <Button size="sm" variant="outline" disabled={busy === key} onClick={() => void onMark(row, true)}><Check className="mr-1.5 h-3.5 w-3.5" /> Check after text is sent</Button>
+                    )}
+                    {tone === "waiting" && (
+                      <Button size="sm" variant="ghost" disabled={busy === key} onClick={() => void onMark(row, false)}>Undo sent mark</Button>
+                    )}
+                    {!isPaidState(row.state) && isAdmin && <RecordMealPaymentDialog preorderId={row.id} guestName={row.name} orders={[{ cuisine: row.cuisine, qty: row.qty }]} onRecorded={onRefresh} label="They already paid" variant="ghost" />}
+                    {tone === "paid" && <Badge variant="outline">{row.state === "paid_confirmed" ? "Restaurant confirmed" : "Reported paid"}{row.paid_at ? ` · ${new Date(row.paid_at).toLocaleDateString()}` : ""}</Badge>}
+                    {row.exception && <span className="text-xs font-medium text-destructive">{row.exception}</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      )}
-    </div>
+      ))}
+    </section>
   );
 }
