@@ -165,7 +165,31 @@ export const getMealTextData = createServerFn({ method: "POST" })
         : "Not linked to a committee member";
       for (const [cuisine, qty] of byCuisine) {
         const ledgerRow = ledgerByKey.get(`${p.id}::${cuisine}`);
-        if (!ledgerRow) continue;
+        if (!ledgerRow) {
+          // Kept, never deleted: the order exists but is outside the payment
+          // chase because the RSVP is not "yes". Surface it read-only.
+          const status = p.invitation_id
+            ? (rsvpStatusByInvitation.get(p.invitation_id) ?? "none")
+            : "none";
+          excluded.push({
+            id: p.id,
+            name: (p.name ?? "").trim() || "Guest",
+            phone: (p.phone ?? "").trim(),
+            cuisine,
+            qty,
+            inviter: inviterName,
+            rsvp_status: status,
+            reason: !p.invitation_id
+              ? "Meal on file but not linked to any invitation."
+              : status === "none"
+                ? "Meal on file but this guest has no RSVP record."
+                : `Meal on file while the RSVP is "${status}".`,
+            sent_at: sentByMeal.get(`${p.id}::${cuisine}`) ?? null,
+            zelle_sent_at: zelleByMeal.get(`${p.id}::${cuisine}`) ?? null,
+            paid: paidKeys.has(`${p.id}::${cuisine}`),
+          });
+          continue;
+        }
         rows.push({
           inviter: inviterName,
           id: p.id,
