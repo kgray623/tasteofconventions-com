@@ -139,7 +139,9 @@ function RsvpIssuesPage() {
                 ? "Meal / RSVP mismatch"
                 : issue.kind === "owner_without_account"
                   ? "Committee account link missing"
-                  : "Meal invitation link missing"}
+                  : issue.kind === "duplicate_invitation"
+                    ? "Duplicate invitation records"
+                    : "Meal invitation link missing"}
             </div>
           </Card>
         ))}
