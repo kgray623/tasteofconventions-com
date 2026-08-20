@@ -37,7 +37,11 @@ export type RsvpNeedsReferrer = {
 };
 
 export type RsvpIntegrityIssue = {
-  kind: "meal_without_attending_rsvp" | "owner_without_account" | "orphan_preorder";
+  kind:
+    | "meal_without_attending_rsvp"
+    | "owner_without_account"
+    | "orphan_preorder"
+    | "duplicate_invitation";
   invitation_id: string | null;
   guest_name: string;
   detail: string;
