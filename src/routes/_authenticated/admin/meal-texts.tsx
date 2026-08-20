@@ -165,6 +165,12 @@ function MealTextsPage() {
             <Metric value={paidPlates} label="Plates paid/reported" />
           </div>
         )}
+        {!loading && excluded.length > 0 && (
+          <p className="text-sm text-destructive">
+            {excluded.length} more cuisine {excluded.length === 1 ? "order is" : "orders are"} excluded from these
+            counts because the RSVP is not yes — listed at the bottom of this page.
+          </p>
+        )}
         <Button size="sm" variant="outline" onClick={downloadRoster} disabled={loading}>
           <Download className="mr-2 h-4 w-4" /> Download exact bookkeeping
         </Button>
@@ -177,6 +183,7 @@ function MealTextsPage() {
           <RosterSection title="Text sent — payment still due" description="The payment instructions were marked sent, but payment is still not recorded." rows={textedDue} tone="waiting" bodyFor={bodyFor} busy={busy} onMark={updateTextMark} isAdmin={isAdmin} onRefresh={refresh} />
           <RosterSection title="Reported paid — awaiting restaurant confirmation" description="A guest or team member reported payment. These people are not chased for payment." rows={paidReported} tone="paid" bodyFor={bodyFor} busy={busy} onMark={updateTextMark} isAdmin={isAdmin} onRefresh={refresh} />
           <RosterSection title="Restaurant confirmed paid" description="Payment is confirmed by the restaurant." rows={paidConfirmed} tone="paid" bodyFor={bodyFor} busy={busy} onMark={updateTextMark} isAdmin={isAdmin} onRefresh={refresh} />
+          <ExcludedSection rows={excluded} />
         </>
       )}
     </main>
