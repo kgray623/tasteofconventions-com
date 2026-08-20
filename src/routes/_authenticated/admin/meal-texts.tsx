@@ -185,7 +185,9 @@ function MealTextsPage() {
           <RosterSection title="Text sent — payment still due" description="The payment instructions were marked sent, but payment is still not recorded." rows={textedDue} tone="waiting" bodyFor={bodyFor} busy={busy} onMark={updateTextMark} isAdmin={isAdmin} onRefresh={refresh} />
           <RosterSection title="Reported paid — awaiting restaurant confirmation" description="A guest or team member reported payment. These people are not chased for payment." rows={paidReported} tone="paid" bodyFor={bodyFor} busy={busy} onMark={updateTextMark} isAdmin={isAdmin} onRefresh={refresh} />
           <RosterSection title="Restaurant confirmed paid" description="Payment is confirmed by the restaurant." rows={paidConfirmed} tone="paid" bodyFor={bodyFor} busy={busy} onMark={updateTextMark} isAdmin={isAdmin} onRefresh={refresh} />
+          <UnpaidByCommittee rows={rows} generatedAt={generatedAt} />
           <ExcludedSection rows={excluded} />
+
         </>
       )}
     </main>
