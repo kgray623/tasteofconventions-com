@@ -101,7 +101,29 @@ export async function listReportedMealPayments(supabaseAdmin: any) {
     .order("paid_at", { ascending: false });
   if (error) throw new Error(error.message);
 
-  const ids = [...new Set((data ?? []).map((r: any) => r.preorder_id))];
+  // A restaurant confirmation on its own checklist counts as confirmed too, so
+  // a guest the restaurant already confirmed never sits in the verify queue.
+  const { data: confirmedRows, error: confErr } = await supabaseAdmin
+    .from("meal_order_status")
+    .select("preorder_id,cuisine,confirmed")
+    .eq("confirmed", true);
+  if (confErr) throw new Error(confErr.message);
+  const normalize = (raw: string) => {
+    const lower = String(raw ?? "").toLowerCase();
+    if (lower.includes("myanmar") || lower.includes("burmese")) return "Myanmar";
+    if (lower.includes("africa") || lower.includes("mozambique")) return "African";
+    if (lower.includes("indonesia")) return "Indonesian";
+    return String(raw ?? "").trim();
+  };
+  const confirmedKeys = new Set(
+    ((confirmedRows ?? []) as any[]).map((r) => `${r.preorder_id}::${normalize(r.cuisine)}`),
+  );
+  const pending = ((data ?? []) as any[]).filter(
+    (r) => !confirmedKeys.has(`${r.preorder_id}::${normalize(r.cuisine)}`),
+  );
+
+  const ids = [...new Set(pending.map((r: any) => r.preorder_id))];
+
   const guests = new Map<string, { name: string; phone: string }>();
   if (ids.length) {
     const { data: preorders, error: pErr } = await supabaseAdmin
@@ -115,7 +137,7 @@ export async function listReportedMealPayments(supabaseAdmin: any) {
   }
 
   return {
-    rows: (data ?? []).map((r: any) => ({
+    rows: pending.map((r: any) => ({
       id: r.id as string,
       preorder_id: r.preorder_id as string,
       guest: guests.get(r.preorder_id)?.name ?? "Guest",

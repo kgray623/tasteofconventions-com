@@ -72,15 +72,22 @@ type SourcePreorder = {
   selections: unknown;
 };
 
-type SourceSend = { preorder_id: string; cuisine: string; sent_at: string };
+type SourceSend = {
+  preorder_id: string;
+  cuisine: string;
+  sent_at: string;
+  marked_by?: string | null;
+};
 type SourceTextEvent = {
   preorder_id: string;
   cuisine: string;
   campaign: "original" | "payment_update";
   action: "sent" | "reversed";
   event_at: string;
-  created_at: string;
+  created_at?: string;
+  actor_id?: string | null;
 };
+
 type SourcePayment = {
   preorder_id: string;
   cuisine: string;
@@ -115,6 +122,80 @@ const normalizeCuisine = (raw: string) => parseSelections([{ cuisine: raw, qty: 
 const normalizeSource = (raw: string | null | undefined): MealPaymentSource =>
   raw === "guest_reported" || raw === "committee_recorded" ? raw : "restaurant";
 
+export const mealSentMarkKey = (preorderId: string, cuisine: string) => {
+  const normalized = normalizeCuisine(cuisine);
+  return normalized ? keyFor(preorderId, normalized) : null;
+};
+
+export type MealSentMarks = {
+  /** preorder_id::normalized cuisine -> sent_at for the original meal message. */
+  original: Map<string, string>;
+  /** preorder_id::normalized cuisine -> sent_at for the payment-instructions message. */
+  update: Map<string, string>;
+  /** preorder_id::normalized cuisine -> actor_id who recorded the current payment-update mark. */
+  updateActorId: Map<string, string | null>;
+};
+
+/**
+ * SINGLE SOURCE OF TRUTH for "was this text marked sent?".
+ *
+ * `meal_text_events` is canonical: it is append-only, immutable, carries the
+ * actor and the evidence source, and holds more current marks than the legacy
+ * tables. `meal_text_sends` / `meal_zelle_text_sends` are read-only legacy
+ * history and are consulted ONLY for a key that has no event at all.
+ *
+ * Every cuisine string is normalized here, once, so a row stored as "Burmese"
+ * can never miss a row keyed as "Myanmar" and render as NOT SENT.
+ */
+export function resolveMealSentMarks(input: {
+  originalSends?: SourceSend[];
+  updateSends?: SourceSend[];
+  textEvents?: SourceTextEvent[];
+}): MealSentMarks {
+  const original = new Map<string, string>();
+  const update = new Map<string, string>();
+  const updateActorId = new Map<string, string | null>();
+
+  const latestEvents = new Map<string, SourceTextEvent>();
+  for (const event of input.textEvents ?? []) {
+    const key = mealSentMarkKey(event.preorder_id, event.cuisine);
+    if (!key) continue;
+    const eventKey = `${event.campaign}::${key}`;
+    const existing = latestEvents.get(eventKey);
+    if (
+      !existing ||
+      event.event_at > existing.event_at ||
+      (event.event_at === existing.event_at && (event.created_at ?? "") > (existing.created_at ?? ""))
+    ) {
+      latestEvents.set(eventKey, event);
+    }
+  }
+
+  for (const row of input.originalSends ?? []) {
+    const key = mealSentMarkKey(row.preorder_id, row.cuisine);
+    if (key) original.set(key, row.sent_at);
+  }
+  for (const row of input.updateSends ?? []) {
+    const key = mealSentMarkKey(row.preorder_id, row.cuisine);
+    if (key) {
+      update.set(key, row.sent_at);
+      if (row.marked_by !== undefined) updateActorId.set(key, row.marked_by ?? null);
+    }
+  }
+  for (const [eventKey, event] of latestEvents) {
+    const key = eventKey.slice(`${event.campaign}::`.length);
+    const target = event.campaign === "original" ? original : update;
+    if (event.action === "sent") target.set(key, event.event_at);
+    else target.delete(key);
+    if (event.campaign === "payment_update") {
+      if (event.action === "sent") updateActorId.set(key, event.actor_id ?? null);
+      else updateActorId.delete(key);
+    }
+  }
+
+  return { original, update, updateActorId };
+}
+
 export function buildMealCommunicationLedger(input: {
   preorders: SourcePreorder[];
   invitations: SourceInvitation[];
@@ -127,40 +208,12 @@ export function buildMealCommunicationLedger(input: {
 }) {
   const inviterByInvitation = new Map(input.invitations.map((row) => [row.id, row.inviter_id]));
   const inviterNameById = new Map(input.inviters.map((row) => [row.id, row.name?.trim() || "Committee"]));
-  const originalByKey = new Map<string, string>();
-  const updateByKey = new Map<string, string>();
   const paidByKey = new Map<string, PaymentFact>();
 
-  const latestEvents = new Map<string, SourceTextEvent>();
-  for (const event of input.textEvents ?? []) {
-    const cuisine = normalizeCuisine(event.cuisine);
-    if (!cuisine) continue;
-    const key = `${event.campaign}::${keyFor(event.preorder_id, cuisine)}`;
-    const existing = latestEvents.get(key);
-    if (
-      !existing ||
-      event.event_at > existing.event_at ||
-      (event.event_at === existing.event_at && event.created_at > existing.created_at)
-    ) {
-      latestEvents.set(key, event);
-    }
-  }
+  const marks = resolveMealSentMarks(input);
+  const originalByKey = marks.original;
+  const updateByKey = marks.update;
 
-  for (const row of input.originalSends) {
-    const cuisine = normalizeCuisine(row.cuisine);
-    if (cuisine) originalByKey.set(keyFor(row.preorder_id, cuisine), row.sent_at);
-  }
-  for (const row of input.updateSends) {
-    const cuisine = normalizeCuisine(row.cuisine);
-    if (cuisine) updateByKey.set(keyFor(row.preorder_id, cuisine), row.sent_at);
-  }
-  for (const [eventKey, event] of latestEvents) {
-    const prefix = `${event.campaign}::`;
-    const key = eventKey.slice(prefix.length);
-    const target = event.campaign === "original" ? originalByKey : updateByKey;
-    if (event.action === "sent") target.set(key, event.event_at);
-    else target.delete(key);
-  }
   for (const row of input.payments ?? []) {
     const cuisine = normalizeCuisine(row.cuisine);
     if (!cuisine) continue;

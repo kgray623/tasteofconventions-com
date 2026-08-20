@@ -75,7 +75,7 @@ export async function loadPortalData(restaurantId: string): Promise<PortalData> 
       .order("name"),
     supabaseAdmin
       .from("meal_payments")
-      .select("preorder_id,cuisine,qty_paid,paid_at,source,reported_note"),
+      .select("preorder_id,cuisine,qty_paid,paid_at,source,reported_note,verified_at"),
     supabaseAdmin.from("meal_order_status").select("preorder_id,cuisine,confirmed,confirmed_at"),
   ]);
 
@@ -99,6 +99,7 @@ export async function loadPortalData(restaurantId: string): Promise<PortalData> 
       paidAt: string | null;
       source: "restaurant" | "guest_reported" | "committee_recorded" | null;
       note: string | null;
+      verifiedAt: string | null;
     }
   >();
   for (const p of (payments ?? []) as Array<{
@@ -108,12 +109,14 @@ export async function loadPortalData(restaurantId: string): Promise<PortalData> 
     paid_at: string;
     source: string | null;
     reported_note: string | null;
+    verified_at: string | null;
   }>) {
     paidMap.set(`${p.preorder_id}|${normalizeCuisine(p.cuisine)}`, {
       qty: Number(p.qty_paid ?? 0),
       paidAt: p.paid_at ?? null,
       source: (p.source ?? "restaurant") as "restaurant",
       note: p.reported_note ?? null,
+      verifiedAt: p.verified_at ?? null,
     });
   }
 
@@ -155,8 +158,10 @@ export async function loadPortalData(restaurantId: string): Promise<PortalData> 
         paidSource: paidEntry?.source ?? null,
         paidNote: paidEntry?.note ?? null,
         qtyPaid: paidEntry?.qty ?? 0,
-        confirmed: statusEntry?.confirmed ?? false,
-        confirmedAt: statusEntry?.confirmedAt ?? null,
+        // Confirmation agrees with the money record: either the restaurant's own
+        // checklist row or a verified payment makes this line confirmed.
+        confirmed: (statusEntry?.confirmed ?? false) || !!paidEntry?.verifiedAt,
+        confirmedAt: statusEntry?.confirmedAt ?? paidEntry?.verifiedAt ?? null,
       });
     }
   }
@@ -210,8 +215,33 @@ export async function setConfirmed(opts: {
     { onConflict: "preorder_id,cuisine" },
   );
   if (error) throw new Error(error.message);
+
+  // Keep meal_payments (the source of truth for money) in step: when the
+  // restaurant confirms a line that already has a recorded payment, that
+  // payment becomes restaurant-verified. A confirmation never invents a
+  // payment, and un-confirming never erases one.
+  if (opts.confirmed) {
+    const { data: payment } = await supabaseAdmin
+      .from("meal_payments")
+      .select("id,verified_at")
+      .eq("preorder_id", opts.preorderId)
+      .eq("cuisine", row.cuisine)
+      .maybeSingle();
+    if (payment && !payment.verified_at) {
+      const { error: verifyErr } = await supabaseAdmin
+        .from("meal_payments")
+        .update({
+          source: "restaurant",
+          verified_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", payment.id);
+      if (verifyErr) throw new Error(verifyErr.message);
+    }
+  }
   return loadPortalData(opts.restaurantId);
 }
+
 
 /**
  * Restaurant adjusts the meal count for their own cuisine only.
