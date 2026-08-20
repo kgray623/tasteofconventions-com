@@ -196,6 +196,39 @@ export const listRsvpIssues = createServerFn({ method: "POST" })
       }
     }
 
+    // Duplicate invitation records for the same person. Nothing is merged or
+    // hidden — both rows stay visible so the organizer can decide.
+    const { data: allInvitations } = await supabaseAdmin
+      .from("invitations")
+      .select("id,guest_name,guest_phone,rsvps(status,party_size,attendance_mode)");
+
+    const byName = new Map<string, typeof allInvitations extends null ? never : NonNullable<typeof allInvitations>>();
+    for (const inv of allInvitations ?? []) {
+      const key = (inv.guest_name ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+      if (!key) continue;
+      const bucket = byName.get(key) ?? [];
+      bucket.push(inv);
+      byName.set(key, bucket);
+    }
+    for (const bucket of byName.values()) {
+      if (bucket.length < 2) continue;
+      const describe = bucket
+        .map((inv) => {
+          const rows = Array.isArray(inv.rsvps) ? inv.rsvps : inv.rsvps ? [inv.rsvps] : [];
+          const status = rows[0]?.status ?? "pending";
+          const phone = inv.guest_phone?.trim() || "no phone on file";
+          return `${phone} → RSVP ${status}`;
+        })
+        .join(" · ");
+      integrity.push({
+        kind: "duplicate_invitation",
+        invitation_id: bucket[0]!.id,
+        guest_name: bucket[0]!.guest_name,
+        detail: `${bucket.length} invitation records exist for this name: ${describe}. Both records are kept — organizer review required.`,
+      });
+    }
+
+
     return {
       failures,
       needsReferrer,
