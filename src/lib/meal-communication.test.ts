@@ -185,3 +185,76 @@ describe("single source of truth for sent marks and confirmations", () => {
     expect(african?.verified_at).toBe("2026-08-13T00:00:00Z");
   });
 });
+
+describe("orphan sent marks", () => {
+  const marksFor = (textEvents: any[]) =>
+    resolveMealSentMarks({ originalSends: [], updateSends: [], textEvents });
+
+  it("reports a sent mark whose cuisine was removed from the order", async () => {
+    const { findOrphanSentMarks } = await import("@/lib/meal-communication");
+    const marks = marksFor([
+      {
+        preorder_id: "p1",
+        cuisine: "Indonesian",
+        campaign: "payment_update",
+        action: "sent",
+        event_at: "2026-08-12T10:00:00Z",
+        created_at: "2026-08-12T10:00:00Z",
+      },
+    ]);
+    const orphans = findOrphanSentMarks({ preorders: base.preorders, marks });
+    expect(orphans).toHaveLength(1);
+    expect(orphans[0]).toMatchObject({
+      preorder_id: "p1",
+      name: "Guest One",
+      cuisine: "Indonesian",
+      update_sent_at: "2026-08-12T10:00:00Z",
+    });
+  });
+
+  it("does not report marks for cuisines still on the order, including alias spellings", async () => {
+    const { findOrphanSentMarks } = await import("@/lib/meal-communication");
+    const marks = marksFor([
+      {
+        preorder_id: "p1",
+        cuisine: "burmese",
+        campaign: "payment_update",
+        action: "sent",
+        event_at: "2026-08-12T10:00:00Z",
+        created_at: "2026-08-12T10:00:00Z",
+      },
+      {
+        preorder_id: "p1",
+        cuisine: "AFRICAN",
+        campaign: "original",
+        action: "sent",
+        event_at: "2026-08-01T10:00:00Z",
+        created_at: "2026-08-01T10:00:00Z",
+      },
+    ]);
+    expect(findOrphanSentMarks({ preorders: base.preorders, marks })).toEqual([]);
+  });
+
+  it("does not report a reversed mark as orphan history", async () => {
+    const { findOrphanSentMarks } = await import("@/lib/meal-communication");
+    const marks = marksFor([
+      {
+        preorder_id: "p1",
+        cuisine: "Indonesian",
+        campaign: "payment_update",
+        action: "sent",
+        event_at: "2026-08-12T10:00:00Z",
+        created_at: "2026-08-12T10:00:00Z",
+      },
+      {
+        preorder_id: "p1",
+        cuisine: "Indonesian",
+        campaign: "payment_update",
+        action: "reversed",
+        event_at: "2026-08-12T11:00:00Z",
+        created_at: "2026-08-12T11:00:00Z",
+      },
+    ]);
+    expect(findOrphanSentMarks({ preorders: base.preorders, marks })).toEqual([]);
+  });
+});
