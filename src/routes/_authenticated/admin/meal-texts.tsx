@@ -230,6 +230,7 @@ function ExcludedSection({ rows }: { rows: MealTextExcludedRow[] }) {
               <div className="flex flex-wrap items-center gap-2">
                 <strong>{row.name}</strong>
                 <Badge variant="outline">RSVP {row.rsvp_status}</Badge>
+                {row.attendance_mode === "zoom" && <Badge variant="outline">Zoom</Badge>}
                 {row.paid && <Badge variant="outline">Payment recorded</Badge>}
               </div>
               <div className="text-muted-foreground">{formatPhone(row.phone)}</div>
