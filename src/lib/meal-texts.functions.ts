@@ -122,9 +122,11 @@ export const getMealTextData = createServerFn({ method: "POST" })
     // RSVP status per invitation, so orders excluded from the chase groups can
     // still be listed with the exact reason they are excluded.
     const rsvpStatusByInvitation = new Map<string, string>();
+    const rsvpModeByInvitation = new Map<string, string>();
     for (const r of ((invitationRows ?? []) as any[])) {
       const rsvps = Array.isArray(r.rsvps) ? r.rsvps : r.rsvps ? [r.rsvps] : [];
       rsvpStatusByInvitation.set(r.id as string, (rsvps[0]?.status as string | undefined) ?? "none");
+      rsvpModeByInvitation.set(r.id as string, (rsvps[0]?.attendance_mode as string | undefined) ?? "none");
     }
     // Payments read directly, because the ledger only covers attending rows.
     const { data: paymentRows } = await supabaseAdmin
