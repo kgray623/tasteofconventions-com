@@ -71,7 +71,7 @@ export async function loadPortalData(restaurantId: string): Promise<PortalData> 
   const [{ data: preorders }, { data: payments }, { data: statuses }] = await Promise.all([
     supabaseAdmin
       .from("cuisine_preorders")
-      .select("id,name,phone,selections,invitation_id,invitations(rsvps(status))")
+      .select("id,name,phone,selections,invitation_id,invitations(rsvps(status,attendance_mode))")
       .order("name"),
     supabaseAdmin
       .from("meal_payments")
