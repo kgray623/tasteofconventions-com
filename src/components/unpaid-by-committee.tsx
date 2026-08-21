@@ -209,9 +209,7 @@ export function UnpaidByCommittee({
                   ) : (
                     <span className="text-muted-foreground">No phone on file</span>
                   )}
-                  <Badge variant="outline">
-                    ${(row.qty * 20).toLocaleString()}–${(row.qty * 25).toLocaleString()} owed
-                  </Badge>
+                  {owedLabel(row) && <Badge variant="outline">{owedLabel(row)}</Badge>}
                   <Badge variant="outline">
                     {row.zelle_sent_at
                       ? `Payment text sent ${new Date(row.zelle_sent_at).toLocaleDateString()}`
