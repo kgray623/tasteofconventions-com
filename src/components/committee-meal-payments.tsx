@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { RecordMealPaymentDialog } from "@/components/record-meal-payment-dialog";
 import { isPaidState } from "@/lib/meal-communication";
 import { cuisineLabel } from "@/lib/meal-text-message";
-import { MEAL_PRICE_LINE } from "@/lib/meal-pricing";
+import { MEAL_PRICE_SUMMARY } from "@/lib/meal-pricing";
 import type { CommitteeMealTextRow } from "@/lib/committee-meal-texts.functions";
 
 
@@ -53,7 +53,7 @@ export function CommitteeMealPayments({
         <h2 className="font-display text-2xl text-ink">My guests' meal payments</h2>
         <p className="text-sm text-muted-foreground">
           Who has pre-paid the restaurant and who still needs a follow-up from you.{" "}
-          {MEAL_PRICE_LINE}.
+          {MEAL_PRICE_SUMMARY}
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
           <Badge variant="outline">

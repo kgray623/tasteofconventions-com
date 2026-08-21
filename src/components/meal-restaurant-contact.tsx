@@ -20,7 +20,12 @@ import {
 } from "@/components/ui/dialog";
 
 import { normalizeCuisine } from "@/lib/preorder-math";
-import { MEAL_PAY_DEADLINE_LINE, MEAL_PRICE_DISCLAIMER, MEAL_PRICE_LINE } from "@/lib/meal-pricing";
+import {
+  MEAL_PAY_DEADLINE_LINE,
+  allMealPriceLines,
+  mealPriceLine,
+  mealPricesForCuisine,
+} from "@/lib/meal-pricing";
 
 type RestaurantRow = {
   id: string;
@@ -72,12 +77,32 @@ export function findRestaurantForCuisine(
   );
 }
 
-/** Price line + payment deadline. Always safe to show, even without a match. */
-export function MealPriceNote({ className = "" }: { className?: string }) {
+/**
+ * Exact, tax-included price line for one cuisine's restaurant. With no cuisine
+ * given it lists all three restaurants, since prices differ per restaurant.
+ */
+export function MealPriceNote({
+  className = "",
+  cuisineKey,
+  rows,
+}: {
+  className?: string;
+  cuisineKey?: string | null;
+  rows?: RestaurantRow[] | undefined;
+}) {
+  const single = cuisineKey ? mealPriceLine(mealPricesForCuisine(cuisineKey, rows)) : null;
+  const lines = single ? [single] : allMealPriceLines(rows);
+  if (lines.length === 0) return null;
   return (
     <div className={`text-sm ${className}`}>
-      <p className="font-medium text-ink">{MEAL_PRICE_LINE}</p>
-      <p className="text-xs text-muted-foreground">{MEAL_PRICE_DISCLAIMER}</p>
+      {lines.map((line) => (
+        <p key={line} className="font-medium text-ink">
+          {line}
+        </p>
+      ))}
+      <p className="text-xs text-muted-foreground">
+        Prices are set by each restaurant and include tax. You pay the restaurant direct.
+      </p>
     </div>
   );
 }

@@ -6,7 +6,12 @@ import { Button } from "@/components/ui/button";
 import { downloadTextFile, openTextInNewTab } from "@/lib/download-file";
 import { isPaidState } from "@/lib/meal-communication";
 import { cuisineLabel } from "@/lib/meal-text-message";
-import { MEAL_PAY_DEADLINE_LINE, MEAL_PRICE_LINE } from "@/lib/meal-pricing";
+import {
+  MEAL_PAY_DEADLINE_LINE,
+  MEAL_PRICE_SUMMARY,
+  formatMealMoney,
+  mealPricesForCuisine,
+} from "@/lib/meal-pricing";
 import type { MealTextRow } from "@/lib/meal-texts.functions";
 
 /**
@@ -29,14 +34,65 @@ const csvEscape = (value: unknown) => {
   return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 };
 
+type RestaurantLike = {
+  name?: string | null;
+  cuisine?: string | null;
+  chicken_price?: number | string | null;
+  beef_price?: number | string | null;
+  price_note?: string | null;
+};
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
 export function UnpaidByCommittee({
   rows,
   generatedAt,
+  restaurants,
 }: {
   rows: MealTextRow[];
   generatedAt?: string | null;
+  restaurants?: RestaurantLike[] | undefined;
 }) {
   const unpaid = useMemo(() => rows.filter((row) => !isPaidState(row.state)), [rows]);
+
+  /**
+   * Amount owed for one order line, using that guest's own restaurant prices
+   * (tax included). Protein isn't captured yet, so it stays a chicken–beef
+   * range — but the range is now restaurant-specific, not a flat placeholder.
+   */
+  const owedFor = (row: MealTextRow) => {
+    const prices = mealPricesForCuisine(row.cuisine, restaurants);
+    const low = prices?.chicken ?? null;
+    const high = prices?.beef ?? null;
+    return {
+      low: low === null ? null : round2(low * row.qty),
+      high: high === null ? null : round2(high * row.qty),
+      unit: prices,
+    };
+  };
+
+  const owedLabel = (row: MealTextRow) => {
+    const { low, high } = owedFor(row);
+    const lowText = formatMealMoney(low);
+    const highText = formatMealMoney(high);
+    if (!lowText || !highText) return null;
+    return lowText === highText ? `${lowText} owed` : `${lowText}–${highText} owed`;
+  };
+
+  const sumOwed = (list: MealTextRow[]) =>
+    list.reduce(
+      (acc, row) => {
+        const { low, high } = owedFor(row);
+        return { low: acc.low + (low ?? 0), high: acc.high + (high ?? 0) };
+      },
+      { low: 0, high: 0 },
+    );
+
+  const rangeLabel = (list: MealTextRow[]) => {
+    const { low, high } = sumOwed(list);
+    if (!low && !high) return null;
+    return `${formatMealMoney(round2(low))}–${formatMealMoney(round2(high))}`;
+  };
 
   const groups = useMemo(() => {
     const map = new Map<string, MealTextRow[]>();
@@ -61,21 +117,38 @@ export function UnpaidByCommittee({
 
   const downloadCsv = () => {
     const csv = [
-      ["Committee member", "Guest", "Phone", "Cuisine", "Plates", "Owed at $20", "Owed at $25", "Payment text sent", "Paid?"].join(","),
+      [
+        "Committee member",
+        "Guest",
+        "Phone",
+        "Cuisine",
+        "Restaurant",
+        "Plates",
+        "Chicken price (tax incl.)",
+        "Beef price (tax incl.)",
+        "Owed if chicken",
+        "Owed if beef",
+        "Payment text sent",
+        "Paid?",
+      ].join(","),
       ...groups.flatMap((group) =>
-        group.rows.map((row) =>
-          [
+        group.rows.map((row) => {
+          const { low, high, unit } = owedFor(row);
+          return [
             group.member,
             row.name,
             formatPhone(row.phone),
             cuisineLabel(row.cuisine),
+            unit?.restaurant ?? "",
             row.qty,
-            row.qty * 20,
-            row.qty * 25,
+            formatMealMoney(unit?.chicken) ?? "",
+            formatMealMoney(unit?.beef) ?? "",
+            formatMealMoney(low) ?? "",
+            formatMealMoney(high) ?? "",
             row.zelle_sent_at ? new Date(row.zelle_sent_at).toISOString().slice(0, 10) : "NOT SENT",
             "NOT PAID",
-          ].map(csvEscape).join(","),
-        ),
+          ].map(csvEscape).join(",");
+        }),
       ),
     ].join("\n");
     const name = `unpaid-meals-by-committee-${new Date().toISOString().slice(0, 10)}.csv`;
@@ -91,15 +164,16 @@ export function UnpaidByCommittee({
       <div className="space-y-1">
         <h2 className="font-display text-2xl">Unpaid guests by committee member</h2>
         <p className="text-sm text-muted-foreground">
-          Every order still unpaid, grouped by who brought the guest. {MEAL_PRICE_LINE}. Protein is chosen at
-          the restaurant, so the amount owed is shown as a range. {MEAL_PAY_DEADLINE_LINE}
+          Every order still unpaid, grouped by who brought the guest. {MEAL_PRICE_SUMMARY} Protein is
+          chosen at the restaurant, so each amount owed is shown as a chicken–beef range at that
+          guest's own restaurant prices. {MEAL_PAY_DEADLINE_LINE}
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
           <Badge variant="outline">{unpaid.length} unpaid orders</Badge>
           <Badge variant="outline">{totalPlates} unpaid plates</Badge>
-          <Badge variant="outline">
-            ${(totalPlates * 20).toLocaleString()}–${(totalPlates * 25).toLocaleString()} outstanding
-          </Badge>
+          {rangeLabel(unpaid) && (
+            <Badge variant="outline">{rangeLabel(unpaid)} outstanding</Badge>
+          )}
         </div>
         <div className="pt-2">
           <Button size="sm" variant="outline" onClick={downloadCsv}>
@@ -114,7 +188,7 @@ export function UnpaidByCommittee({
             <h3 className="font-semibold">{group.member}</h3>
             <p className="text-xs text-muted-foreground">
               {group.rows.length} unpaid {group.rows.length === 1 ? "order" : "orders"} · {group.plates} plates
-              · ${(group.plates * 20).toLocaleString()}–${(group.plates * 25).toLocaleString()}
+              {rangeLabel(group.rows) ? ` · ${rangeLabel(group.rows)}` : ""}
               {group.notTexted > 0 ? ` · ${group.notTexted} with no payment text sent` : ""}
             </p>
           </div>
@@ -135,9 +209,7 @@ export function UnpaidByCommittee({
                   ) : (
                     <span className="text-muted-foreground">No phone on file</span>
                   )}
-                  <Badge variant="outline">
-                    ${(row.qty * 20).toLocaleString()}–${(row.qty * 25).toLocaleString()} owed
-                  </Badge>
+                  {owedLabel(row) && <Badge variant="outline">{owedLabel(row)}</Badge>}
                   <Badge variant="outline">
                     {row.zelle_sent_at
                       ? `Payment text sent ${new Date(row.zelle_sent_at).toLocaleDateString()}`

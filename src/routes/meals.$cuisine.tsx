@@ -80,7 +80,7 @@ function MealPhotosPage() {
       </div>
 
       <Card className="p-4 space-y-3">
-        <MealPriceNote />
+        <MealPriceNote cuisineKey={set.cuisine} rows={rows} />
         <MealRestaurantContact cuisineKey={set.cuisine} rows={rows} />
       </Card>
 
