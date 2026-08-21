@@ -168,7 +168,7 @@ function PreorderPage() {
                     <div key={stop.country} className="p-4 space-y-3">
                       <div className="min-w-0 space-y-2">
                         <Label htmlFor={qtyId} className="font-display text-lg text-ink block">{cuisineLabel(stop.country)}</Label>
-                        <MealPriceNote />
+                        <MealPriceNote cuisineKey={stop.country} rows={restaurants} />
                         <MealRestaurantContact cuisineKey={stop.country} rows={restaurants} />
                       </div>
                       <div className="flex items-center gap-2">
