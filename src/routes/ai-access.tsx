@@ -87,29 +87,6 @@ function AiAccessPage() {
         setLoadError(err instanceof Error ? err.message : "Access denied.");
       });
   }, [key, listAccounts]);
-  const signIn = useServerFn(signInAsAiRole);
-  const navigate = useNavigate();
-  const [busy, setBusy] = useState<RoleKey | null>(null);
-  const [origin, setOrigin] = useState("");
-  const [accounts, setAccounts] = useState<AccessAccount[] | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setOrigin(window.location.origin);
-  }, []);
-
-  useEffect(() => {
-    if (!key) {
-      setLoadError("Missing access key. Append ?key=YOUR_SECRET to this URL.");
-      return;
-    }
-    listAccounts({ data: { key } })
-      .then((res) => setAccounts(res))
-      .catch((err) =>
-        setLoadError(err instanceof Error ? err.message : "Access denied."),
-      );
-  }, [key, listAccounts]);
-
   const handleSignIn = async (role: RoleKey) => {
     if (!key) return;
     setBusy(role);
