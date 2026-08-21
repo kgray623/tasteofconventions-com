@@ -240,6 +240,8 @@ function MyMealTextsPage() {
         </div>
       </Card>
 
+      {/* NEW: unmistakable top summary of the current member's unpaid guests */}
+      {!loading && <MyUnpaidGuestsSummary rows={rows} restaurants={restaurants} />}
 
       {!loading && (
         <CommitteeMealPayments
