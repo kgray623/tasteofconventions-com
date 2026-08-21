@@ -18,6 +18,16 @@ import {
 const STALE_RELOAD_KEY = "tss-stale-serverfn-reload";
 const STALE_RELOAD_WINDOW_MS = 15_000;
 
+// Stale IDs surface two ways: an explicit "Invalid server function ID", or a
+// 500 from the framework handler dereferencing the missing action
+// ("Cannot read properties of undefined (reading 'method')").
+const STALE_PATTERNS = [
+  "invalid server function id",
+  "reading 'method'",
+  'reading "method"',
+  "of undefined (reading 'method')",
+];
+
 function isStaleServerFnError(error: unknown): boolean {
   const message =
     error instanceof Error
@@ -29,8 +39,10 @@ function isStaleServerFnError(error: unknown): boolean {
             const value = maybe?.message ?? maybe?.error;
             return typeof value === "string" ? value : "";
           })();
-  return message.includes("Invalid server function ID");
+  const lower = message.toLowerCase();
+  return STALE_PATTERNS.some((p) => lower.includes(p));
 }
+
 
 function recoverFromStaleServerFn(): boolean {
   if (typeof window === "undefined") return false;
