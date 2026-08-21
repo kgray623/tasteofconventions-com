@@ -188,7 +188,7 @@ export function UnpaidByCommittee({
             <h3 className="font-semibold">{group.member}</h3>
             <p className="text-xs text-muted-foreground">
               {group.rows.length} unpaid {group.rows.length === 1 ? "order" : "orders"} · {group.plates} plates
-              · ${(group.plates * 20).toLocaleString()}–${(group.plates * 25).toLocaleString()}
+              {rangeLabel(group.rows) ? ` · ${rangeLabel(group.rows)}` : ""}
               {group.notTexted > 0 ? ` · ${group.notTexted} with no payment text sent` : ""}
             </p>
           </div>
