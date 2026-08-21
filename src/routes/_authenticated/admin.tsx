@@ -15,6 +15,7 @@ import { NewBadge } from "@/components/new-badge";
 import { useChatUnread } from "@/hooks/use-chat-unread";
 import { Badge } from "@/components/ui/badge";
 import { GuestSearchBar } from "@/components/guest-search-bar";
+import { useMyUnpaidMeals } from "@/hooks/use-my-unpaid-meals";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — A Taste of Special Conventions" }] }),
@@ -76,6 +77,7 @@ function AdminLayout() {
   const clearRememberedLogin = useServerFn(clearPhoneLoginCookie);
   const [displayName, setDisplayName] = useState<string>("");
   const chatUnread = useChatUnread();
+  const unpaidMeals = useMyUnpaidMeals();
   const committeeSearch = isAdmin ? { view: undefined } : { view: "committee" as const };
 
   useEffect(() => {
