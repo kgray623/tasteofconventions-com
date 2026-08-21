@@ -1,0 +1,1 @@
+select public.admin_delete_rows('invitations', 'id', 'ab7991c7-2453-4d6e-ab3c-f86f36cb4f2e'::uuid, 'Temporary QuickAdd verification row', '00651c0f-c5e3-45b1-8979-960f3f752c74'::uuid);
