@@ -67,6 +67,82 @@ function escapeCsv(value: string | number | null | undefined) {
   return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+const formatPhone = (value: string) => {
+  const digits = value.replace(/\D/g, "").replace(/^1(?=\d{10}$)/, "");
+  if (digits.length !== 10) return value || "No phone on file";
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+};
+
+function owedLabelForRow(
+  row: { cuisine: string; qty: number },
+  restaurants: { name?: string | null; cuisine?: string | null; chicken_price?: number | string | null; beef_price?: number | string | null; price_note?: string | null }[],
+) {
+  const prices = mealPricesForCuisine(row.cuisine, restaurants);
+  const low = prices?.chicken ?? null;
+  const high = prices?.beef ?? null;
+  if (low === null || high === null) return null;
+  const lowText = formatMealMoney(round2(low * row.qty));
+  const highText = formatMealMoney(round2(high * row.qty));
+  if (!lowText || !highText) return null;
+  return lowText === highText ? `${lowText} owed` : `${lowText}–${highText} owed`;
+}
+
+function MyUnpaidGuestsSummary({
+  rows,
+  restaurants,
+}: {
+  rows: CommitteeMealTextRow[];
+  restaurants: MealRestaurant[];
+}) {
+  const unpaid = useMemo(() => rows.filter((r) => !isPaidState(r.state)).sort((a, b) => a.name.localeCompare(b.name) || a.cuisine.localeCompare(b.cuisine)), [rows]);
+
+  if (unpaid.length === 0) {
+    return (
+      <Card className="p-5">
+        <h2 className="font-display text-xl">Your guests who haven't paid yet</h2>
+        <p className="mt-1 text-sm text-muted-foreground">All of your guests who ordered a meal are already paid — nothing to chase here.</p>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="p-5 space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="font-display text-xl">Your guests who haven't paid yet</h2>
+        <Badge variant="outline">{unpaid.length} unpaid {unpaid.length === 1 ? "order" : "orders"}</Badge>
+      </div>
+      <ul className="divide-y divide-border rounded-md border border-border">
+        {unpaid.map((row) => {
+          const owedLabel = owedLabelForRow(row, restaurants);
+          return (
+            <li key={`${row.id}::${row.cuisine}`} className="space-y-1 px-3 py-3 text-sm">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <span className="font-semibold">{row.name}</span>
+                <span className="text-xs text-muted-foreground">{row.qty} {row.qty === 1 ? "plate" : "plates"} · {cuisineLabel(row.cuisine)}</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {row.phone ? (
+                  <a href={`sms:${row.phone.replace(/\D/g, "")}`} className="font-mono underline">
+                    {formatPhone(row.phone)}
+                  </a>
+                ) : (
+                  <span className="text-muted-foreground">No phone on file</span>
+                )}
+                {owedLabel && <Badge variant="outline">{owedLabel}</Badge>}
+                <Badge variant="outline">
+                  {row.zelle_sent_at ? "Payment text sent" : "Payment text NOT sent"}
+                </Badge>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </Card>
+  );
+}
+
 function MyMealTextsPage() {
   const load = useServerFn(getMyMealTexts);
   const markZelle = useServerFn(markMyZelleTextSent);
