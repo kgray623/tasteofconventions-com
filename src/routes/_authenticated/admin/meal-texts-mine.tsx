@@ -15,6 +15,7 @@ import { SmsTextButton } from "@/components/sms-text-button";
 import { OpenOnSiteBanner } from "@/components/open-on-site-banner";
 import { isPaidState } from "@/lib/meal-communication";
 import { CommitteeMealPayments } from "@/components/committee-meal-payments";
+import { formatMealMoney, mealPricesForCuisine } from "@/lib/meal-pricing";
 import {
   cuisineLabel,
   matchRestaurant,
@@ -26,6 +27,7 @@ import {
 
   smsNumber,
 } from "@/lib/meal-text-message";
+
 
 
 import {
