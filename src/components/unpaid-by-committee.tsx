@@ -171,9 +171,9 @@ export function UnpaidByCommittee({
         <div className="flex flex-wrap gap-2 pt-1">
           <Badge variant="outline">{unpaid.length} unpaid orders</Badge>
           <Badge variant="outline">{totalPlates} unpaid plates</Badge>
-          <Badge variant="outline">
-            ${(totalPlates * 20).toLocaleString()}–${(totalPlates * 25).toLocaleString()} outstanding
-          </Badge>
+          {rangeLabel(unpaid) && (
+            <Badge variant="outline">{rangeLabel(unpaid)} outstanding</Badge>
+          )}
         </div>
         <div className="pt-2">
           <Button size="sm" variant="outline" onClick={downloadCsv}>
