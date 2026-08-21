@@ -56,6 +56,8 @@ export async function findRestaurantByName(name: string) {
 
 }
 
+type RsvpLite = { status: string | null; attendance_mode?: string | null };
+
 export async function loadPortalData(restaurantId: string): Promise<PortalData> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: restaurant, error: rErr } = await supabaseAdmin
