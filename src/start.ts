@@ -28,7 +28,11 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
     }
 
     if (isServerFn) {
-      const message = error instanceof Error ? error.message : "Server request failed.";
+      const raw = error instanceof Error ? error.message : "Server request failed.";
+      // A tab holding server-function IDs from a previous build makes the
+      // framework dereference a missing action. Report it as a stale ID so the
+      // client middleware reloads the tab instead of surfacing a blank screen.
+      const message = raw.includes("reading 'method'") ? "Invalid server function ID" : raw;
       return new Response(message, {
         status: 500,
         headers: { "content-type": "text/plain; charset=utf-8" },
