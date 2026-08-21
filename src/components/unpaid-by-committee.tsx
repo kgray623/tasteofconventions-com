@@ -34,14 +34,65 @@ const csvEscape = (value: unknown) => {
   return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 };
 
+type RestaurantLike = {
+  name?: string | null;
+  cuisine?: string | null;
+  chicken_price?: number | string | null;
+  beef_price?: number | string | null;
+  price_note?: string | null;
+};
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
 export function UnpaidByCommittee({
   rows,
   generatedAt,
+  restaurants,
 }: {
   rows: MealTextRow[];
   generatedAt?: string | null;
+  restaurants?: RestaurantLike[] | undefined;
 }) {
   const unpaid = useMemo(() => rows.filter((row) => !isPaidState(row.state)), [rows]);
+
+  /**
+   * Amount owed for one order line, using that guest's own restaurant prices
+   * (tax included). Protein isn't captured yet, so it stays a chicken–beef
+   * range — but the range is now restaurant-specific, not a flat placeholder.
+   */
+  const owedFor = (row: MealTextRow) => {
+    const prices = mealPricesForCuisine(row.cuisine, restaurants);
+    const low = prices?.chicken ?? null;
+    const high = prices?.beef ?? null;
+    return {
+      low: low === null ? null : round2(low * row.qty),
+      high: high === null ? null : round2(high * row.qty),
+      unit: prices,
+    };
+  };
+
+  const owedLabel = (row: MealTextRow) => {
+    const { low, high } = owedFor(row);
+    const lowText = formatMealMoney(low);
+    const highText = formatMealMoney(high);
+    if (!lowText || !highText) return null;
+    return lowText === highText ? `${lowText} owed` : `${lowText}–${highText} owed`;
+  };
+
+  const sumOwed = (list: MealTextRow[]) =>
+    list.reduce(
+      (acc, row) => {
+        const { low, high } = owedFor(row);
+        return { low: acc.low + (low ?? 0), high: acc.high + (high ?? 0) };
+      },
+      { low: 0, high: 0 },
+    );
+
+  const rangeLabel = (list: MealTextRow[]) => {
+    const { low, high } = sumOwed(list);
+    if (!low && !high) return null;
+    return `${formatMealMoney(round2(low))}–${formatMealMoney(round2(high))}`;
+  };
 
   const groups = useMemo(() => {
     const map = new Map<string, MealTextRow[]>();
@@ -66,21 +117,38 @@ export function UnpaidByCommittee({
 
   const downloadCsv = () => {
     const csv = [
-      ["Committee member", "Guest", "Phone", "Cuisine", "Plates", "Owed at $20", "Owed at $25", "Payment text sent", "Paid?"].join(","),
+      [
+        "Committee member",
+        "Guest",
+        "Phone",
+        "Cuisine",
+        "Restaurant",
+        "Plates",
+        "Chicken price (tax incl.)",
+        "Beef price (tax incl.)",
+        "Owed if chicken",
+        "Owed if beef",
+        "Payment text sent",
+        "Paid?",
+      ].join(","),
       ...groups.flatMap((group) =>
-        group.rows.map((row) =>
-          [
+        group.rows.map((row) => {
+          const { low, high, unit } = owedFor(row);
+          return [
             group.member,
             row.name,
             formatPhone(row.phone),
             cuisineLabel(row.cuisine),
+            unit?.restaurant ?? "",
             row.qty,
-            row.qty * 20,
-            row.qty * 25,
+            formatMealMoney(unit?.chicken) ?? "",
+            formatMealMoney(unit?.beef) ?? "",
+            formatMealMoney(low) ?? "",
+            formatMealMoney(high) ?? "",
             row.zelle_sent_at ? new Date(row.zelle_sent_at).toISOString().slice(0, 10) : "NOT SENT",
             "NOT PAID",
-          ].map(csvEscape).join(","),
-        ),
+          ].map(csvEscape).join(",");
+        }),
       ),
     ].join("\n");
     const name = `unpaid-meals-by-committee-${new Date().toISOString().slice(0, 10)}.csv`;
