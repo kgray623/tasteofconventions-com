@@ -39,7 +39,7 @@ const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boole
   { to: "/admin/donations", label: "Donations", icon: HandCoins, group: "main" },
   { to: "/admin/my-rsvp", label: "My RSVP", icon: Ticket, team: true, group: "main" },
   { to: "/admin/restaurants", label: "Restaurants", icon: UtensilsCrossed, group: "main" },
-  { to: "/admin/upload", label: "Add guests", icon: Upload, team: true, teamLabel: "Guest list", group: "committee" },
+  { to: "/admin/upload", label: "Add guests", icon: Upload, team: true, teamLabel: "Add guests", group: "committee" },
   { to: "/admin/committee-message", label: "Committee SMS", icon: MessageSquare, group: "committee" },
   { to: "/admin/categories", label: "Volunteer", icon: ListChecks, team: true, teamLabel: "Volunteer", group: "committee" },
   { to: "/admin/team", label: "Add committee", icon: Users, group: "committee" },

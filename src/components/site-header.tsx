@@ -34,14 +34,24 @@ export function SiteHeader() {
               <NewBadge target="header:bell-check-it" />
               <NotificationBell />
               {loading ? null : isTeam ? (
-                location.pathname.startsWith("/admin") ? null : (
+                <>
+                  {/* Always reachable: committee members kept asking where to add contacts. */}
                   <Link
-                    to={isCommitteeView ? "/admin/subcommittee" : "/admin"}
-                    className="px-3 py-2 rounded-md hover:bg-secondary transition"
+                    to="/admin/upload"
+                    search={isAdmin && !isCommitteeView ? { view: undefined } : { view: "committee" }}
+                    className="px-3 py-2 rounded-md bg-terracotta text-cream hover:bg-terracotta/90 transition"
                   >
-                    {isAdmin && !isCommitteeView ? "Admin" : "Steering Committee"}
+                    Add guests
                   </Link>
-                )
+                  {location.pathname.startsWith("/admin") ? null : (
+                    <Link
+                      to={isCommitteeView ? "/admin/subcommittee" : "/admin"}
+                      className="px-3 py-2 rounded-md hover:bg-secondary transition"
+                    >
+                      {isAdmin && !isCommitteeView ? "Admin" : "Steering Committee"}
+                    </Link>
+                  )}
+                </>
               ) : (
                 <Link to="/my-rsvp" className="px-3 py-2 rounded-md hover:bg-secondary transition">
                   My RSVP

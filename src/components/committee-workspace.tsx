@@ -54,6 +54,7 @@ import { useAdminView } from "@/hooks/use-admin-view";
 import { useChatUnread } from "@/hooks/use-chat-unread";
 import { CategoryChat } from "@/components/CategoryChat";
 import { RsvpTotalsCard } from "@/components/rsvp-totals-card";
+import { QuickAddGuests } from "@/components/quick-add-guests";
 import { toast } from "sonner";
 import { NewBadge } from "@/components/new-badge";
 import { markSeen } from "@/lib/whats-new";
