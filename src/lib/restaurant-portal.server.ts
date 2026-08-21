@@ -56,6 +56,8 @@ export async function findRestaurantByName(name: string) {
 
 }
 
+type RsvpLite = { status: string | null; attendance_mode?: string | null };
+
 export async function loadPortalData(restaurantId: string): Promise<PortalData> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: restaurant, error: rErr } = await supabaseAdmin
@@ -71,7 +73,7 @@ export async function loadPortalData(restaurantId: string): Promise<PortalData> 
   const [{ data: preorders }, { data: payments }, { data: statuses }] = await Promise.all([
     supabaseAdmin
       .from("cuisine_preorders")
-      .select("id,name,phone,selections,invitation_id,invitations(rsvps(status))")
+      .select("id,name,phone,selections,invitation_id,invitations(rsvps(status,attendance_mode))")
       .order("name"),
     supabaseAdmin
       .from("meal_payments")
@@ -128,8 +130,8 @@ export async function loadPortalData(restaurantId: string): Promise<PortalData> 
     selections: unknown;
     invitation_id: string | null;
     invitations:
-      | { rsvps: { status: string | null } | Array<{ status: string | null }> | null }
-      | Array<{ rsvps: { status: string | null } | Array<{ status: string | null }> | null }>
+      | { rsvps: RsvpLite | Array<RsvpLite> | null }
+      | Array<{ rsvps: RsvpLite | Array<RsvpLite> | null }>
       | null;
   }>) {
     const invitation = Array.isArray(p.invitations) ? p.invitations[0] : p.invitations;
@@ -141,8 +143,13 @@ export async function loadPortalData(restaurantId: string): Promise<PortalData> 
           : []
       : [];
     // Preserve the preorder in the database and admin integrity review, but do
-    // not send a declined/pending guest's meal to a restaurant as an active order.
-    if (!p.invitation_id || !rsvps.some((r) => r.status === "yes")) continue;
+    // not send a declined/pending/Zoom-only guest's meal to a restaurant as an
+    // active order. Same rule as the meal-communication ledger.
+    if (
+      !p.invitation_id ||
+      !rsvps.some((r) => r.status === "yes" && r.attendance_mode !== "zoom")
+    )
+      continue;
     for (const sel of parseSelections(p.selections)) {
       if (sel.cuisine !== cuisine) continue;
       const paidEntry = paidMap.get(`${p.id}|${sel.cuisine}`);
