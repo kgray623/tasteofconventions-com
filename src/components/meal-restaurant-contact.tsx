@@ -20,7 +20,12 @@ import {
 } from "@/components/ui/dialog";
 
 import { normalizeCuisine } from "@/lib/preorder-math";
-import { MEAL_PAY_DEADLINE_LINE, MEAL_PRICE_DISCLAIMER, MEAL_PRICE_LINE } from "@/lib/meal-pricing";
+import {
+  MEAL_PAY_DEADLINE_LINE,
+  allMealPriceLines,
+  mealPriceLine,
+  mealPricesForCuisine,
+} from "@/lib/meal-pricing";
 
 type RestaurantRow = {
   id: string;
