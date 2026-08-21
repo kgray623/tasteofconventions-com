@@ -305,7 +305,7 @@ function PreviewPage() {
                     className="rounded-md border border-border bg-card p-4 space-y-3"
                   >
                     <h3 className="font-display text-2xl text-ink font-bold">{cuisine.label}</h3>
-                    <MealPriceNote />
+                    <MealPriceNote cuisineKey={cuisine.key} rows={restaurants} />
                     <MealRestaurantContact cuisineKey={cuisine.key} rows={restaurants} />
                     {cuisine.photos && (
                       <div className="grid grid-cols-3 gap-2">
