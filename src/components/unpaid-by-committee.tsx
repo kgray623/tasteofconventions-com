@@ -6,7 +6,12 @@ import { Button } from "@/components/ui/button";
 import { downloadTextFile, openTextInNewTab } from "@/lib/download-file";
 import { isPaidState } from "@/lib/meal-communication";
 import { cuisineLabel } from "@/lib/meal-text-message";
-import { MEAL_PAY_DEADLINE_LINE, MEAL_PRICE_LINE } from "@/lib/meal-pricing";
+import {
+  MEAL_PAY_DEADLINE_LINE,
+  MEAL_PRICE_SUMMARY,
+  formatMealMoney,
+  mealPricesForCuisine,
+} from "@/lib/meal-pricing";
 import type { MealTextRow } from "@/lib/meal-texts.functions";
 
 /**
