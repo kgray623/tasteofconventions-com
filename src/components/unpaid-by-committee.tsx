@@ -164,8 +164,9 @@ export function UnpaidByCommittee({
       <div className="space-y-1">
         <h2 className="font-display text-2xl">Unpaid guests by committee member</h2>
         <p className="text-sm text-muted-foreground">
-          Every order still unpaid, grouped by who brought the guest. {MEAL_PRICE_LINE}. Protein is chosen at
-          the restaurant, so the amount owed is shown as a range. {MEAL_PAY_DEADLINE_LINE}
+          Every order still unpaid, grouped by who brought the guest. {MEAL_PRICE_SUMMARY} Protein is
+          chosen at the restaurant, so each amount owed is shown as a chicken–beef range at that
+          guest's own restaurant prices. {MEAL_PAY_DEADLINE_LINE}
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
           <Badge variant="outline">{unpaid.length} unpaid orders</Badge>
