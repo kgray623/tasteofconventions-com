@@ -38,8 +38,10 @@ const DESCRIPTIONS: Record<RoleKey, string> = {
   guest: "Guest RSVP dashboard — view invitation, RSVP, pre-order cuisine.",
 };
 
+const KEY_STORAGE = "toc.ai_access_key";
+
 function AiAccessPage() {
-  const { key } = Route.useSearch();
+  const { key: urlKey } = Route.useSearch();
   const listAccounts = useServerFn(listAiAccessAccounts);
   const signIn = useServerFn(signInAsAiRole);
   const navigate = useNavigate();
@@ -47,23 +49,44 @@ function AiAccessPage() {
   const [origin, setOrigin] = useState("");
   const [accounts, setAccounts] = useState<AccessAccount[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [key, setKey] = useState(urlKey);
 
   useEffect(() => {
     setOrigin(window.location.origin);
-  }, []);
-
-  useEffect(() => {
-    if (!key) {
-      setLoadError("Missing access key. Append ?key=YOUR_SECRET to this URL.");
+    if (urlKey) {
+      setKey(urlKey);
       return;
     }
-    listAccounts({ data: { key } })
-      .then((res) => setAccounts(res))
-      .catch((err) =>
-        setLoadError(err instanceof Error ? err.message : "Access denied."),
-      );
-  }, [key, listAccounts]);
+    try {
+      const remembered = window.localStorage.getItem(KEY_STORAGE);
+      if (remembered) setKey(remembered);
+      else setLoadError("Missing access key. Append ?key=YOUR_SECRET to this URL.");
+    } catch {
+      setLoadError("Missing access key. Append ?key=YOUR_SECRET to this URL.");
+    }
+  }, [urlKey]);
 
+  useEffect(() => {
+    if (!key) return;
+    setLoadError(null);
+    listAccounts({ data: { key } })
+      .then((res) => {
+        setAccounts(res);
+        try {
+          window.localStorage.setItem(KEY_STORAGE, key);
+        } catch {
+          /* ignore */
+        }
+      })
+      .catch((err) => {
+        try {
+          window.localStorage.removeItem(KEY_STORAGE);
+        } catch {
+          /* ignore */
+        }
+        setLoadError(err instanceof Error ? err.message : "Access denied.");
+      });
+  }, [key, listAccounts]);
   const handleSignIn = async (role: RoleKey) => {
     if (!key) return;
     setBusy(role);
