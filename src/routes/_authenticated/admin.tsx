@@ -25,10 +25,21 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminLayout,
 });
 
-const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boolean; team?: boolean; teamLabel?: string; group: "main" | "committee" }[] = [
+const tabs: { id?: string; to: string; label: string; icon: typeof ShieldCheck; exact?: boolean; team?: boolean; teamLabel?: string; group: "main" | "committee"; extraSearch?: Record<string, unknown> }[] = [
   { to: "/admin", label: "Overview", icon: ShieldCheck, exact: true, group: "main" },
   { to: "/admin/guests", label: "Guests", icon: UserCheck, team: true, teamLabel: "My guests", group: "main" },
+  {
+    id: "unpaid-guests",
+    to: "/admin/guests",
+    label: "Unpaid guests",
+    icon: HandCoins,
+    team: true,
+    teamLabel: "Unpaid guests",
+    group: "main",
+    extraSearch: { unpaid: true },
+  },
   { to: "/admin/inviters", label: "Committee Guests", icon: UserPlus, team: true, teamLabel: "Committee Guests", group: "main" },
+
   { to: "/admin/reconcile", label: "Reconcile list", icon: ListChecks, group: "main" },
   { to: "/admin/rsvp-issues", label: "Replies that didn't stick", icon: ListChecks, group: "main" },
 
