@@ -172,7 +172,7 @@ export const listAiAccessAccounts = createServerFn({ method: "POST" })
   .inputValidator((d) => KeyOnly.parse(d))
   .handler(async ({ data }) => {
     assertAccessKey(data.key);
-    return (Object.keys(ROLE_CONFIG) as RoleKey[]).map((role) => ({
+    return EXPOSED_ROLES.map((role) => ({
       role,
       displayName: ROLE_CONFIG[role].displayName,
       phone: ROLE_CONFIG[role].phoneE164,
