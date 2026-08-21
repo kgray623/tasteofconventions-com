@@ -142,8 +142,11 @@ function assertAccessKey(providedKey: string | undefined | null) {
   }
 }
 
+// Permanent AI access is admin-only.
+const EXPOSED_ROLES: RoleKey[] = ["admin"];
+
 const RoleInput = z.object({
-  role: z.enum(["admin", "committee", "guest"]),
+  role: z.enum(["admin"]),
   key: z.string().min(1),
 });
 
