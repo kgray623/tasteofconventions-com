@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { downloadTextFile } from "@/lib/download-file";
 import { ExportFallbackDialog } from "@/components/export-fallback-dialog";
 import { GuestEditDialog, type GuestEditTarget } from "@/components/guest-edit-dialog";
+import { useMyUnpaidMeals } from "@/hooks/use-my-unpaid-meals";
+import { phoneTail } from "@/lib/phone";
 
 
 const GUEST_LOAD_TIMEOUT_MS = 20_000;
@@ -44,6 +46,7 @@ export const Route = createFileRoute("/_authenticated/admin/guests")({
       audience: z.enum(["all", "guest", "committee"]).optional(),
       sort: z.enum(["alpha", "newest", "oldest", "replied"]).optional(),
       inviter: z.string().optional(),
+      unpaid: z.coerce.boolean().optional(),
     }).parse(s),
   component: GuestsPage,
 });
@@ -130,6 +133,7 @@ type GuestSearchState = {
   audience?: "all" | "guest" | "committee";
   sort?: SortMode;
   inviter?: string;
+  unpaid?: boolean;
 };
 
 const cleanGuestSearch = (search: GuestSearchState): GuestSearchState => ({
@@ -139,10 +143,13 @@ const cleanGuestSearch = (search: GuestSearchState): GuestSearchState => ({
   // "replied" (latest reply first) is the default, so it stays out of the URL.
   sort: search.sort && search.sort !== "replied" ? search.sort : undefined,
   inviter: search.inviter && search.inviter !== "all" ? search.inviter : undefined,
+  unpaid: search.unpaid ? true : undefined,
 });
 
 function GuestsPage() {
-  const { status, mode, audience, sort, inviter } = Route.useSearch();
+  const { status, mode, audience, sort, inviter, unpaid } = Route.useSearch();
+  const unpaidMeals = useMyUnpaidMeals();
+  const unpaidOnly = Boolean(unpaid);
   const navigate = useNavigate({ from: "/admin/guests" });
   const fetchRows = useServerFn(getReconciliationRows);
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -232,6 +239,7 @@ function GuestsPage() {
     };
     const qNameNorm = q.replace(/[^a-z]/g, "");
     return rows.filter((r) => {
+      if (unpaidOnly && !unpaidMeals.unpaidPhoneTails.has(phoneTail(r.phone))) return false;
       if (activeStatus !== "all" && statusOfRow(r) !== activeStatus) return false;
       if (mode && r.attendance_mode !== mode) return false;
       if (activeAudience === "guest" && r.is_committee) return false;
@@ -266,7 +274,7 @@ function GuestsPage() {
       }
       return a.name.localeCompare(b.name);
     });
-  }, [rows, activeStatus, activeAudience, mode, query, activeSort, activeInviter]);
+  }, [rows, activeStatus, activeAudience, mode, query, activeSort, activeInviter, unpaidOnly, unpaidMeals.unpaidPhoneTails]);
 
   const inviterOptions = useMemo(() => {
     const map = new Map<string, { id: string; name: string; count: number }>();
@@ -346,6 +354,7 @@ function GuestsPage() {
     audience: activeAudience,
     sort: activeSort,
     inviter: activeInviter,
+    unpaid: unpaidOnly ? true : undefined,
   });
 
   useEffect(() => {
@@ -360,6 +369,7 @@ function GuestsPage() {
     currentCleanSearch.audience,
     currentCleanSearch.sort,
     currentCleanSearch.inviter,
+    currentCleanSearch.unpaid,
   ]);
 
   return (
@@ -385,6 +395,26 @@ function GuestsPage() {
           </p>
         </div>
       </div>
+
+      {unpaidOnly && (
+        <Card className="p-3 border-terracotta/40 bg-terracotta/5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm">
+              <strong>Unpaid guests only.</strong>{" "}
+              {unpaidMeals.loading
+                ? "Checking payments…"
+                : `${unpaidMeals.count} of your guests still owe for a meal (${unpaidMeals.plates} plates). Guests who declined or are Zoom-only are excluded.`}
+            </p>
+            <Link
+              to="/admin/guests"
+              search={cleanGuestSearch({ ...currentCleanSearch, unpaid: undefined })}
+              className="text-sm underline"
+            >
+              Show all my guests
+            </Link>
+          </div>
+        </Card>
+      )}
 
       {scope === "mine" && (
         <p className="text-xs text-muted-foreground">

@@ -15,6 +15,7 @@ import { NewBadge } from "@/components/new-badge";
 import { useChatUnread } from "@/hooks/use-chat-unread";
 import { Badge } from "@/components/ui/badge";
 import { GuestSearchBar } from "@/components/guest-search-bar";
+import { useMyUnpaidMeals } from "@/hooks/use-my-unpaid-meals";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — A Taste of Special Conventions" }] }),
@@ -25,10 +26,21 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminLayout,
 });
 
-const tabs: { to: string; label: string; icon: typeof ShieldCheck; exact?: boolean; team?: boolean; teamLabel?: string; group: "main" | "committee" }[] = [
+const tabs: { id?: string; to: string; label: string; icon: typeof ShieldCheck; exact?: boolean; team?: boolean; teamLabel?: string; group: "main" | "committee"; extraSearch?: Record<string, unknown> }[] = [
   { to: "/admin", label: "Overview", icon: ShieldCheck, exact: true, group: "main" },
   { to: "/admin/guests", label: "Guests", icon: UserCheck, team: true, teamLabel: "My guests", group: "main" },
+  {
+    id: "unpaid-guests",
+    to: "/admin/guests",
+    label: "Unpaid guests",
+    icon: HandCoins,
+    team: true,
+    teamLabel: "Unpaid guests",
+    group: "main",
+    extraSearch: { unpaid: true },
+  },
   { to: "/admin/inviters", label: "Committee Guests", icon: UserPlus, team: true, teamLabel: "Committee Guests", group: "main" },
+
   { to: "/admin/reconcile", label: "Reconcile list", icon: ListChecks, group: "main" },
   { to: "/admin/rsvp-issues", label: "Replies that didn't stick", icon: ListChecks, group: "main" },
 
@@ -65,6 +77,7 @@ function AdminLayout() {
   const clearRememberedLogin = useServerFn(clearPhoneLoginCookie);
   const [displayName, setDisplayName] = useState<string>("");
   const chatUnread = useChatUnread();
+  const unpaidMeals = useMyUnpaidMeals();
   const committeeSearch = isAdmin ? { view: undefined } : { view: "committee" as const };
 
   useEffect(() => {
@@ -173,7 +186,12 @@ function AdminLayout() {
             className={`flex flex-wrap gap-1 border-b border-border ${group === "main" ? "mb-2" : "mb-8"}`}
           >
             {groupTabs.map((t) => {
-              const active = t.exact ? path === t.to : path.startsWith(t.to);
+              const isUnpaid = t.id === "unpaid-guests";
+              const active = isUnpaid
+                ? path === "/admin/guests" && Boolean((search as { unpaid?: boolean }).unpaid)
+                : t.exact
+                  ? path === t.to
+                  : path.startsWith(t.to) && !(t.to === "/admin/guests" && Boolean((search as { unpaid?: boolean }).unpaid));
               const label = !isAdmin && t.teamLabel ? t.teamLabel : t.label;
               const isVolChats = t.to === "/admin/my-volunteer-chats";
               const volUnread = isVolChats
@@ -181,9 +199,12 @@ function AdminLayout() {
                 : 0;
               return (
                 <Link
-                  key={t.to}
+                  key={t.id ?? t.to}
                   to={t.to}
-                  search={previewCommittee ? { view: "committee" } : { view: undefined }}
+                  search={{
+                    ...(previewCommittee ? { view: "committee" } : { view: undefined }),
+                    ...(t.extraSearch ?? {}),
+                  }}
                   className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm border-b-2 -mb-px transition ${
                     active
                       ? "border-terracotta text-ink font-medium"
@@ -191,6 +212,11 @@ function AdminLayout() {
                   }`}
                 >
                   <t.icon className="w-4 h-4" /> {label}
+                  {isUnpaid && (
+                    <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-terracotta text-cream text-[10px] font-semibold inline-flex items-center justify-center tabular-nums">
+                      {unpaidMeals.loading ? "…" : unpaidMeals.count}
+                    </span>
+                  )}
                   {isVolChats && volUnread > 0 && (
                     <Badge className="bg-terracotta text-cream hover:bg-terracotta text-[10px] px-1.5 py-0">
                       {volUnread}
@@ -202,6 +228,7 @@ function AdminLayout() {
                 </Link>
               );
             })}
+
           </nav>
         );
       })}
