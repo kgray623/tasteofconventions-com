@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -51,6 +52,16 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 
 function UnpaidGuestsPage() {
   const unpaid = useMyUnpaidMeals();
+  // The shared admin tab strip wraps to several rows on a phone, so landing at
+  // scroll 0 would show only navigation. Bring the list into view immediately.
+  const topRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const id = window.setTimeout(
+      () => topRef.current?.scrollIntoView({ behavior: "instant", block: "start" }),
+      0,
+    );
+    return () => window.clearTimeout(id);
+  }, []);
   const restaurants = unpaid.restaurants ?? undefined;
 
   const owedFor = (cuisine: string, qty: number) => {
@@ -84,7 +95,7 @@ function UnpaidGuestsPage() {
 
   return (
     <div className="space-y-4 pb-16">
-      <Card className="p-3 border-terracotta/40 bg-terracotta/5">
+      <Card ref={topRef} className="p-3 border-terracotta/40 bg-terracotta/5 scroll-mt-2">
         <h1 className="font-display text-2xl">Unpaid guests</h1>
         <p className="text-sm text-muted-foreground pt-1">
           {unpaid.loading
