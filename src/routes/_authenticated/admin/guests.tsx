@@ -568,8 +568,19 @@ function GuestsPage() {
       )}
 
 
-      <div className="space-y-2">
-        {filtered.map((r) => {
+      <div className="space-y-6">
+        {displayGroups.map((group) => (
+          <div key={group.key} className="space-y-2">
+            {group.label && (
+              <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border pb-1">
+                <h3 className="font-display text-lg">{group.label}</h3>
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {group.rows.length} unpaid guest{group.rows.length === 1 ? "" : "s"}
+                </span>
+              </div>
+            )}
+            {group.rows.map((r) => {
+
           const s = statusOfRow(r);
           return (
             <Card key={r.invitation_id} className="p-3 sm:p-4">
