@@ -1,4 +1,3 @@
-import { useEffect, useRef } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -52,20 +51,6 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 
 function UnpaidGuestsPage() {
   const unpaid = useMyUnpaidMeals();
-  // The shared admin tab strip wraps to several rows on a phone, so landing at
-  // scroll 0 would show only navigation. Bring the list into view immediately.
-  const topRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    // Re-assert after the router's own scroll restoration and after the list
-    // finishes loading, so the banner is what the user sees on arrival.
-    const ids = [0, 120, 400, 900].map((delay) =>
-      window.setTimeout(
-        () => topRef.current?.scrollIntoView({ behavior: "instant", block: "start" }),
-        delay,
-      ),
-    );
-    return () => ids.forEach((id) => window.clearTimeout(id));
-  }, [unpaid.loading]);
   const restaurants = unpaid.restaurants ?? undefined;
 
   const owedFor = (cuisine: string, qty: number) => {
@@ -99,7 +84,7 @@ function UnpaidGuestsPage() {
 
   return (
     <div className="space-y-4 pb-16">
-      <Card ref={topRef} className="p-3 border-terracotta/40 bg-terracotta/5 scroll-mt-2">
+      <Card className="p-3 border-terracotta/40 bg-terracotta/5">
         <h1 className="font-display text-2xl">Unpaid guests</h1>
         <p className="text-sm text-muted-foreground pt-1">
           {unpaid.loading
