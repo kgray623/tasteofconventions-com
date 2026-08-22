@@ -301,6 +301,46 @@ function GuestsPage() {
     [rows],
   );
 
+  // In the admin-wide unpaid view, group guests under the committee member who
+  // owns them (label comes straight from the shared ledger rows).
+  const displayGroups = useMemo((): { key: string; label: string | null; rows: Row[] }[] => {
+    const grouped = unpaidOnly && unpaidMeals.isAdminScope;
+    if (!grouped) return [{ key: "all", label: null, rows: filtered }];
+    const labelFor = (r: Row) => {
+      const byId = r.invitation_id
+        ? unpaidMeals.inviterByInvitationId.get(r.invitation_id)
+        : undefined;
+      if (byId) return byId;
+      const tail = phoneTail(r.phone);
+      const byPhone = tail.length >= 7 ? unpaidMeals.inviterByPhoneTail.get(tail) : undefined;
+      if (byPhone) return byPhone;
+      return (
+        unpaidMeals.inviterByName.get(normalizeUnpaidName(r.name)) ??
+        "No committee member recorded"
+      );
+    };
+    const map = new Map<string, { key: string; label: string | null; rows: Row[] }>();
+    for (const r of filtered) {
+      const label = labelFor(r);
+      const entry = map.get(label) ?? { key: label, label, rows: [] };
+      entry.rows.push(r);
+      map.set(label, entry);
+    }
+    return Array.from(map.values()).sort((a, b) => {
+      const aNone = a.label === "No committee member recorded";
+      const bNone = b.label === "No committee member recorded";
+      if (aNone !== bNone) return aNone ? 1 : -1;
+      return (a.label ?? "").localeCompare(b.label ?? "", undefined, { sensitivity: "base" });
+    });
+  }, [
+    filtered,
+    unpaidOnly,
+    unpaidMeals.isAdminScope,
+    unpaidMeals.inviterByInvitationId,
+    unpaidMeals.inviterByPhoneTail,
+    unpaidMeals.inviterByName,
+  ]);
+
 
   const filteredCounts = useMemo(() => {
     const rollup = rollupRows(filtered);
@@ -415,6 +455,8 @@ function GuestsPage() {
                 ? "Checking payments…"
                 : unpaidMeals.error
                 ? `Could not load payment status: ${unpaidMeals.error}`
+                : unpaidMeals.isAdminScope
+                ? `${unpaidMeals.count} guests across the whole committee still owe for a meal (${unpaidMeals.plates} plates), grouped by committee member. Guests who declined or are Zoom-only are excluded.`
                 : `${unpaidMeals.count} of your guests still owe for a meal (${unpaidMeals.plates} plates). Guests who declined or are Zoom-only are excluded.`}
             </p>
             <Link
@@ -422,11 +464,12 @@ function GuestsPage() {
               search={cleanGuestSearch({ ...currentCleanSearch, unpaid: undefined })}
               className="text-sm underline"
             >
-              Show all my guests
+              {unpaidMeals.isAdminScope ? "Show all guests" : "Show all my guests"}
             </Link>
           </div>
         </Card>
       )}
+
 
       {scope === "mine" && (
         <p className="text-xs text-muted-foreground">
@@ -565,8 +608,19 @@ function GuestsPage() {
       )}
 
 
-      <div className="space-y-2">
-        {filtered.map((r) => {
+      <div className="space-y-6">
+        {displayGroups.map((group) => (
+          <div key={group.key} className="space-y-2">
+            {group.label && (
+              <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border pb-1">
+                <h3 className="font-display text-lg">{group.label}</h3>
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {group.rows.length} unpaid guest{group.rows.length === 1 ? "" : "s"}
+                </span>
+              </div>
+            )}
+            {group.rows.map((r) => {
+
           const s = statusOfRow(r);
           return (
             <Card key={r.invitation_id} className="p-3 sm:p-4">
@@ -643,9 +697,12 @@ function GuestsPage() {
                 </div>
               </div>
             </Card>
-          );
-        })}
+              );
+            })}
+          </div>
+        ))}
       </div>
+
 
       <GuestEditDialog
         guest={editing}

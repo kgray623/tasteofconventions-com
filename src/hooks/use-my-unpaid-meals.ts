@@ -7,26 +7,40 @@ import {
 } from "@/lib/committee-meal-texts.functions";
 import { isPaidState } from "@/lib/meal-communication";
 import { phoneTail } from "@/lib/phone";
+import { useRoles } from "@/hooks/use-roles";
 
 const normName = (value: string | null | undefined) =>
   (value ?? "").toLowerCase().replace(/[^a-z]/g, "");
 
+export type UnpaidGroup = {
+  inviterId: string | null;
+  inviterName: string;
+  rows: CommitteeMealTextRow[];
+  guests: number;
+  plates: number;
+};
+
 /**
- * Read-only view of "my guests who still owe for their meal".
+ * Read-only view of guests who still owe for their meal.
  *
  * No new calculation: it reuses the same server ledger (`getMyMealTexts`) and
  * the same canonical `isPaidState` used by the admin meal-payment screens.
  * The ledger already drops guests who RSVP'd "no" or are Zoom-only, so those
  * exclusions stay consistent with the rest of the app.
  *
- * Shared through the TanStack Query cache so the nav badge and the filtered
- * guest list always read the exact same ledger result.
+ * Scope: admins get every committee member's guests ("all"); committee members
+ * keep their own list ("mine"). Shared through the TanStack Query cache so the
+ * nav badge and the filtered guest list always read the same ledger result.
  */
 export function useMyUnpaidMeals() {
+  const { isAdmin, loading: rolesLoading } = useRoles();
   const load = useServerFn(getMyMealTexts);
+  const scope: "mine" | "all" = isAdmin ? "all" : "mine";
   const query = useQuery({
-    queryKey: ["my-unpaid-meals"],
-    queryFn: async () => (await load({ data: {} })).rows as CommitteeMealTextRow[],
+    queryKey: ["my-unpaid-meals", scope],
+    queryFn: async () =>
+      (await load({ data: { scope } })).rows as CommitteeMealTextRow[],
+    enabled: !rolesLoading,
     staleTime: 60_000,
     retry: 1,
   });
@@ -39,17 +53,54 @@ export function useMyUnpaidMeals() {
     const tails = new Set<string>();
     const invitationIds = new Set<string>();
     const names = new Set<string>();
+    const inviterByInvitationId = new Map<string, string>();
+    const inviterByPhoneTail = new Map<string, string>();
+    const inviterByName = new Map<string, string>();
     for (const row of unpaid) {
       const tail = phoneTail(row.phone);
-      if (tail.length >= 7) tails.add(tail);
-      if (row.invitationId) invitationIds.add(row.invitationId);
+      const label = row.inviterName || "No committee member recorded";
+      if (tail.length >= 7) {
+        tails.add(tail);
+        if (!inviterByPhoneTail.has(tail)) inviterByPhoneTail.set(tail, label);
+      }
+      if (row.invitationId) {
+        invitationIds.add(row.invitationId);
+        if (!inviterByInvitationId.has(row.invitationId))
+          inviterByInvitationId.set(row.invitationId, label);
+      }
       for (const candidate of [row.guestName, row.name]) {
         const n = normName(candidate);
-        if (n.length >= 4) names.add(n);
+        if (n.length >= 4) {
+          names.add(n);
+          if (!inviterByName.has(n)) inviterByName.set(n, label);
+        }
       }
     }
+
+    const groupMap = new Map<string, UnpaidGroup>();
+    for (const row of unpaid) {
+      const key = row.inviterId ?? "__none__";
+      const group =
+        groupMap.get(key) ??
+        {
+          inviterId: row.inviterId ?? null,
+          inviterName: row.inviterName || "No committee member recorded",
+          rows: [],
+          guests: 0,
+          plates: 0,
+        };
+      group.rows.push(row);
+      group.plates += row.qty;
+      groupMap.set(key, group);
+    }
+    const groups = Array.from(groupMap.values())
+      .map((g) => ({ ...g, guests: new Set(g.rows.map((r) => r.id)).size }))
+      .sort((a, b) => a.inviterName.localeCompare(b.inviterName, undefined, { sensitivity: "base" }));
+
     return {
-      loading: query.isPending,
+      scope,
+      isAdminScope: scope === "all",
+      loading: rolesLoading || query.isPending,
       error,
       unpaidRows: unpaid,
       /** Distinct guests (households) with at least one unpaid meal. */
@@ -59,8 +110,12 @@ export function useMyUnpaidMeals() {
       unpaidPhoneTails: tails,
       unpaidInvitationIds: invitationIds,
       unpaidNames: names,
+      groups,
+      inviterByInvitationId,
+      inviterByPhoneTail,
+      inviterByName,
     };
-  }, [rows, error, query.isPending]);
+  }, [rows, error, query.isPending, rolesLoading, scope]);
 }
 
 export const normalizeUnpaidName = normName;

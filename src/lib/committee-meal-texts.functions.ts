@@ -11,7 +11,11 @@ export const getMyMealTexts = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
     z
-      .object({ actingForInviterId: z.string().uuid().nullable().optional() })
+      .object({
+        actingForInviterId: z.string().uuid().nullable().optional(),
+        // "all" is honoured for admins only (enforced server-side).
+        scope: z.enum(["mine", "all"]).optional(),
+      })
       .parse(d ?? {}),
   )
   .handler(async ({ data, context }) => {
@@ -20,8 +24,10 @@ export const getMyMealTexts = createServerFn({ method: "POST" })
       context.supabase,
       context.userId,
       data.actingForInviterId ?? null,
+      { scope: data.scope ?? "mine" },
     );
   });
+
 
 export const markMyMealTextSent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

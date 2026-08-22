@@ -35,7 +35,11 @@ export type CommitteeMealTextRow = {
   paid_source: MealPaymentSource | null;
   paid_note: string | null;
   exception: string | null;
+  /** Committee member (inviter) this guest belongs to. */
+  inviterId: string | null;
+  inviterName: string;
 };
+
 
 export type CommitteeMealTextsResult = {
   restaurants: MealRestaurant[];
@@ -80,6 +84,7 @@ export async function loadCommitteeMealTexts(
   supabase: any,
   userId: string,
   actingForInviterId: string | null,
+  options?: { scope?: "mine" | "all" },
 ): Promise<CommitteeMealTextsResult> {
   const identity = await resolveIdentity(supabase, userId);
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -96,6 +101,9 @@ export async function loadCommitteeMealTexts(
     name: string | null;
     active: boolean | null;
   }>;
+  const inviterNameById = new Map(
+    inviters.map((r) => [r.id, (r.name ?? "").trim() || "Committee member"] as const),
+  );
 
   const mine = new Set<string>();
   for (const r of inviters) {
@@ -106,6 +114,10 @@ export async function loadCommitteeMealTexts(
       (!!identity.myName && normName(r.name) === identity.myName);
     if (isMine && r.id) mine.add(r.id);
   }
+
+  // Admin-wide scope: every committee member's guests at once (plus guests with
+  // no committee member recorded), so admins are never limited to their own list.
+  const allScope = options?.scope === "all" && identity.isAdmin && !actingForInviterId;
 
   let actingFor: { id: string; name: string } | null = null;
   let targetInviterIds = Array.from(mine);
@@ -118,6 +130,8 @@ export async function loadCommitteeMealTexts(
   }
 
   if (!identity.isStaff && mine.size === 0) throw new Error("Forbidden");
+
+
 
   const committee = identity.isAdmin
     ? inviters
@@ -170,13 +184,17 @@ export async function loadCommitteeMealTexts(
   const base = { template, zelleTemplate, restaurants: restaurantList, isAdmin: identity.isAdmin, actingFor, committee };
 
   const eventId = events?.[0]?.id as string | undefined;
-  if (!eventId || targetInviterIds.length === 0) return { ...base, rows: [], totals: emptyTotals };
+  if (!eventId || (!allScope && targetInviterIds.length === 0))
+    return { ...base, rows: [], totals: emptyTotals };
 
-  const { data: invitations } = await supabaseAdmin
+  const invitationQuery = supabaseAdmin
     .from("invitations")
     .select("id,guest_name,guest_phone,inviter_id")
-    .eq("event_id", eventId)
-    .in("inviter_id", targetInviterIds);
+    .eq("event_id", eventId);
+  const { data: invitations } = allScope
+    ? await invitationQuery
+    : await invitationQuery.in("inviter_id", targetInviterIds);
+
 
   const invRows = (invitations ?? []) as Array<{
     id: string;
@@ -258,8 +276,12 @@ export async function loadCommitteeMealTexts(
         paid_source: communication.paid_source,
         paid_note: communication.paid_note,
         exception: communication.exception,
-
+        inviterId: linked.inviter_id ?? null,
+        inviterName: linked.inviter_id
+          ? (inviterNameById.get(linked.inviter_id) ?? "Committee member")
+          : "No committee member recorded",
       });
+
     }
   }
 
