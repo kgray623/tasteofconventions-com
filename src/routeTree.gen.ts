@@ -37,6 +37,7 @@ import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authentic
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
 import { Route as AuthenticatedInvitationsNewRouteImport } from './routes/_authenticated/invitations.new'
 import { Route as AuthenticatedAdminUploadRouteImport } from './routes/_authenticated/admin/upload'
+import { Route as AuthenticatedAdminUnpaidRouteImport } from './routes/_authenticated/admin/unpaid'
 import { Route as AuthenticatedAdminTeamRouteImport } from './routes/_authenticated/admin/team'
 import { Route as AuthenticatedAdminSubcommitteeRouteImport } from './routes/_authenticated/admin/subcommittee'
 import { Route as AuthenticatedAdminRsvpIssuesRouteImport } from './routes/_authenticated/admin/rsvp-issues'
@@ -207,6 +208,12 @@ const AuthenticatedAdminUploadRoute =
   AuthenticatedAdminUploadRouteImport.update({
     id: '/upload',
     path: '/upload',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminUnpaidRoute =
+  AuthenticatedAdminUnpaidRouteImport.update({
+    id: '/unpaid',
+    path: '/unpaid',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
 const AuthenticatedAdminTeamRoute = AuthenticatedAdminTeamRouteImport.update({
@@ -419,6 +426,7 @@ export interface FileRoutesByFullPath {
   '/admin/rsvp-issues': typeof AuthenticatedAdminRsvpIssuesRoute
   '/admin/subcommittee': typeof AuthenticatedAdminSubcommitteeRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
+  '/admin/unpaid': typeof AuthenticatedAdminUnpaidRoute
   '/admin/upload': typeof AuthenticatedAdminUploadRoute
   '/invitations/new': typeof AuthenticatedInvitationsNewRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
@@ -475,6 +483,7 @@ export interface FileRoutesByTo {
   '/admin/rsvp-issues': typeof AuthenticatedAdminRsvpIssuesRoute
   '/admin/subcommittee': typeof AuthenticatedAdminSubcommitteeRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
+  '/admin/unpaid': typeof AuthenticatedAdminUnpaidRoute
   '/admin/upload': typeof AuthenticatedAdminUploadRoute
   '/invitations/new': typeof AuthenticatedInvitationsNewRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
@@ -534,6 +543,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/rsvp-issues': typeof AuthenticatedAdminRsvpIssuesRoute
   '/_authenticated/admin/subcommittee': typeof AuthenticatedAdminSubcommitteeRoute
   '/_authenticated/admin/team': typeof AuthenticatedAdminTeamRoute
+  '/_authenticated/admin/unpaid': typeof AuthenticatedAdminUnpaidRoute
   '/_authenticated/admin/upload': typeof AuthenticatedAdminUploadRoute
   '/_authenticated/invitations/new': typeof AuthenticatedInvitationsNewRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
@@ -593,6 +603,7 @@ export interface FileRouteTypes {
     | '/admin/rsvp-issues'
     | '/admin/subcommittee'
     | '/admin/team'
+    | '/admin/unpaid'
     | '/admin/upload'
     | '/invitations/new'
     | '/lovable/email/suppression'
@@ -649,6 +660,7 @@ export interface FileRouteTypes {
     | '/admin/rsvp-issues'
     | '/admin/subcommittee'
     | '/admin/team'
+    | '/admin/unpaid'
     | '/admin/upload'
     | '/invitations/new'
     | '/lovable/email/suppression'
@@ -707,6 +719,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/rsvp-issues'
     | '/_authenticated/admin/subcommittee'
     | '/_authenticated/admin/team'
+    | '/_authenticated/admin/unpaid'
     | '/_authenticated/admin/upload'
     | '/_authenticated/invitations/new'
     | '/lovable/email/suppression'
@@ -948,6 +961,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminUploadRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/unpaid': {
+      id: '/_authenticated/admin/unpaid'
+      path: '/unpaid'
+      fullPath: '/admin/unpaid'
+      preLoaderRoute: typeof AuthenticatedAdminUnpaidRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/team': {
       id: '/_authenticated/admin/team'
       path: '/team'
@@ -1169,6 +1189,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminRsvpIssuesRoute: typeof AuthenticatedAdminRsvpIssuesRoute
   AuthenticatedAdminSubcommitteeRoute: typeof AuthenticatedAdminSubcommitteeRoute
   AuthenticatedAdminTeamRoute: typeof AuthenticatedAdminTeamRoute
+  AuthenticatedAdminUnpaidRoute: typeof AuthenticatedAdminUnpaidRoute
   AuthenticatedAdminUploadRoute: typeof AuthenticatedAdminUploadRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
@@ -1198,6 +1219,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminRsvpIssuesRoute: AuthenticatedAdminRsvpIssuesRoute,
   AuthenticatedAdminSubcommitteeRoute: AuthenticatedAdminSubcommitteeRoute,
   AuthenticatedAdminTeamRoute: AuthenticatedAdminTeamRoute,
+  AuthenticatedAdminUnpaidRoute: AuthenticatedAdminUnpaidRoute,
   AuthenticatedAdminUploadRoute: AuthenticatedAdminUploadRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }

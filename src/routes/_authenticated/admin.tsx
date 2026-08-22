@@ -31,13 +31,12 @@ const tabs: { id?: string; to: string; label: string; icon: typeof ShieldCheck; 
   { to: "/admin/guests", label: "Guests", icon: UserCheck, team: true, teamLabel: "My guests", group: "main" },
   {
     id: "unpaid-guests",
-    to: "/admin/guests",
+    to: "/admin/unpaid",
     label: "Unpaid guests",
     icon: HandCoins,
     team: true,
     teamLabel: "Unpaid guests",
     group: "main",
-    extraSearch: { unpaid: true },
   },
   { to: "/admin/inviters", label: "Committee Guests", icon: UserPlus, team: true, teamLabel: "Committee Guests", group: "main" },
 
@@ -61,7 +60,7 @@ const tabs: { id?: string; to: string; label: string; icon: typeof ShieldCheck; 
 ];
 
 
-const teamAllowedPrefixes = ["/admin/subcommittee", "/admin/guests", "/admin/upload", "/admin/inviters", "/admin/categories", "/admin/chat", "/admin/my-volunteer-chats", "/admin/my-rsvp", "/admin/preorders", "/admin/meal-texts", "/admin/meal-texts-mine"];
+const teamAllowedPrefixes = ["/admin/subcommittee", "/admin/guests", "/admin/upload", "/admin/inviters", "/admin/categories", "/admin/chat", "/admin/my-volunteer-chats", "/admin/my-rsvp", "/admin/preorders", "/admin/meal-texts", "/admin/meal-texts-mine", "/admin/unpaid"];
 const isTeamAllowedPath = (path: string) =>
   path === "/admin" || teamAllowedPrefixes.some((p) => path === p || path.startsWith(p + "/"));
 
@@ -164,6 +163,22 @@ function AdminLayout() {
     ? "Admin"
     : `Welcome${displayName ? `, ${displayName}` : ""}`;
 
+  // "Unpaid guests" is one dedicated page: no heading block, no guest search,
+  // no tab strip above it, so the list is the first thing on screen on a phone.
+  if (path === "/admin/unpaid") {
+    return (
+      <div className="mx-auto max-w-6xl px-4 pt-4 pb-[calc(8rem+env(safe-area-inset-bottom))] md:pb-8">
+        <Link
+          to={previewCommittee || !isAdmin ? "/admin/subcommittee" : "/admin"}
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-ink mb-3"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back
+        </Link>
+        <Outlet />
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-6xl px-6 pt-8 pb-[calc(8rem+env(safe-area-inset-bottom))] md:pb-8">
       <div className="mb-6 grid grid-cols-1 items-center gap-4 sm:grid-cols-[minmax(0,1fr)_auto]">
@@ -187,11 +202,7 @@ function AdminLayout() {
           >
             {groupTabs.map((t) => {
               const isUnpaid = t.id === "unpaid-guests";
-              const active = isUnpaid
-                ? path === "/admin/guests" && Boolean((search as { unpaid?: boolean }).unpaid)
-                : t.exact
-                  ? path === t.to
-                  : path.startsWith(t.to) && !(t.to === "/admin/guests" && Boolean((search as { unpaid?: boolean }).unpaid));
+              const active = t.exact ? path === t.to : path.startsWith(t.to);
               const label = !isAdmin && t.teamLabel ? t.teamLabel : t.label;
               const isVolChats = t.to === "/admin/my-volunteer-chats";
               const volUnread = isVolChats

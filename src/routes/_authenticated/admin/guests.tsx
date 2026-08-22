@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { useServerFn } from "@tanstack/react-start";
@@ -48,6 +48,11 @@ export const Route = createFileRoute("/_authenticated/admin/guests")({
       inviter: z.string().optional(),
       unpaid: z.coerce.boolean().optional(),
     }).parse(s),
+  // The unpaid list now lives on its own single page shared by admins and
+  // committee members; keep old links/bookmarks working.
+  beforeLoad: ({ search }) => {
+    if (search.unpaid) throw redirect({ to: "/admin/unpaid" });
+  },
   component: GuestsPage,
 });
 

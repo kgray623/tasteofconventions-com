@@ -13,7 +13,7 @@ export const getMyMealTexts = createServerFn({ method: "POST" })
     z
       .object({
         actingForInviterId: z.string().uuid().nullable().optional(),
-        // "all" is honoured for admins only (enforced server-side).
+        // "all" is honoured for admins and committee (team) members (enforced server-side).
         scope: z.enum(["mine", "all"]).optional(),
       })
       .parse(d ?? {}),
