@@ -415,6 +415,8 @@ function GuestsPage() {
                 ? "Checking payments…"
                 : unpaidMeals.error
                 ? `Could not load payment status: ${unpaidMeals.error}`
+                : unpaidMeals.isAdminScope
+                ? `${unpaidMeals.count} guests across the whole committee still owe for a meal (${unpaidMeals.plates} plates), grouped by committee member. Guests who declined or are Zoom-only are excluded.`
                 : `${unpaidMeals.count} of your guests still owe for a meal (${unpaidMeals.plates} plates). Guests who declined or are Zoom-only are excluded.`}
             </p>
             <Link
@@ -422,11 +424,12 @@ function GuestsPage() {
               search={cleanGuestSearch({ ...currentCleanSearch, unpaid: undefined })}
               className="text-sm underline"
             >
-              Show all my guests
+              {unpaidMeals.isAdminScope ? "Show all guests" : "Show all my guests"}
             </Link>
           </div>
         </Card>
       )}
+
 
       {scope === "mine" && (
         <p className="text-xs text-muted-foreground">
