@@ -239,7 +239,17 @@ function GuestsPage() {
     };
     const qNameNorm = q.replace(/[^a-z]/g, "");
     return rows.filter((r) => {
-      if (unpaidOnly && !unpaidMeals.unpaidPhoneTails.has(phoneTail(r.phone))) return false;
+      if (unpaidOnly) {
+        // Wait for the ledger before hiding anyone; otherwise the first render
+        // pass filters every row out and the list looks empty.
+        if (unpaidMeals.loading) return false;
+        const byId = r.invitation_id && unpaidMeals.unpaidInvitationIds.has(r.invitation_id);
+        const tail = phoneTail(r.phone);
+        const byPhone = tail.length >= 7 && unpaidMeals.unpaidPhoneTails.has(tail);
+        const byName = unpaidMeals.unpaidNames.has(normalizeUnpaidName(r.name));
+        if (!byId && !byPhone && !byName) return false;
+      }
+
       if (activeStatus !== "all" && statusOfRow(r) !== activeStatus) return false;
       if (mode && r.attendance_mode !== mode) return false;
       if (activeAudience === "guest" && r.is_committee) return false;
