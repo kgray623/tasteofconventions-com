@@ -301,6 +301,46 @@ function GuestsPage() {
     [rows],
   );
 
+  // In the admin-wide unpaid view, group guests under the committee member who
+  // owns them (label comes straight from the shared ledger rows).
+  const displayGroups = useMemo((): { key: string; label: string | null; rows: Row[] }[] => {
+    const grouped = unpaidOnly && unpaidMeals.isAdminScope;
+    if (!grouped) return [{ key: "all", label: null, rows: filtered }];
+    const labelFor = (r: Row) => {
+      const byId = r.invitation_id
+        ? unpaidMeals.inviterByInvitationId.get(r.invitation_id)
+        : undefined;
+      if (byId) return byId;
+      const tail = phoneTail(r.phone);
+      const byPhone = tail.length >= 7 ? unpaidMeals.inviterByPhoneTail.get(tail) : undefined;
+      if (byPhone) return byPhone;
+      return (
+        unpaidMeals.inviterByName.get(normalizeUnpaidName(r.name)) ??
+        "No committee member recorded"
+      );
+    };
+    const map = new Map<string, { key: string; label: string | null; rows: Row[] }>();
+    for (const r of filtered) {
+      const label = labelFor(r);
+      const entry = map.get(label) ?? { key: label, label, rows: [] };
+      entry.rows.push(r);
+      map.set(label, entry);
+    }
+    return Array.from(map.values()).sort((a, b) => {
+      const aNone = a.label === "No committee member recorded";
+      const bNone = b.label === "No committee member recorded";
+      if (aNone !== bNone) return aNone ? 1 : -1;
+      return (a.label ?? "").localeCompare(b.label ?? "", undefined, { sensitivity: "base" });
+    });
+  }, [
+    filtered,
+    unpaidOnly,
+    unpaidMeals.isAdminScope,
+    unpaidMeals.inviterByInvitationId,
+    unpaidMeals.inviterByPhoneTail,
+    unpaidMeals.inviterByName,
+  ]);
+
 
   const filteredCounts = useMemo(() => {
     const rollup = rollupRows(filtered);
