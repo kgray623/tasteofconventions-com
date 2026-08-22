@@ -184,13 +184,17 @@ export async function loadCommitteeMealTexts(
   const base = { template, zelleTemplate, restaurants: restaurantList, isAdmin: identity.isAdmin, actingFor, committee };
 
   const eventId = events?.[0]?.id as string | undefined;
-  if (!eventId || targetInviterIds.length === 0) return { ...base, rows: [], totals: emptyTotals };
+  if (!eventId || (!allScope && targetInviterIds.length === 0))
+    return { ...base, rows: [], totals: emptyTotals };
 
-  const { data: invitations } = await supabaseAdmin
+  const invitationQuery = supabaseAdmin
     .from("invitations")
     .select("id,guest_name,guest_phone,inviter_id")
-    .eq("event_id", eventId)
-    .in("inviter_id", targetInviterIds);
+    .eq("event_id", eventId);
+  const { data: invitations } = allScope
+    ? await invitationQuery
+    : await invitationQuery.in("inviter_id", targetInviterIds);
+
 
   const invRows = (invitations ?? []) as Array<{
     id: string;
