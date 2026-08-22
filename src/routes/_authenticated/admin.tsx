@@ -163,6 +163,22 @@ function AdminLayout() {
     ? "Admin"
     : `Welcome${displayName ? `, ${displayName}` : ""}`;
 
+  // "Unpaid guests" is one dedicated page: no heading block, no guest search,
+  // no tab strip above it, so the list is the first thing on screen on a phone.
+  if (path === "/admin/unpaid") {
+    return (
+      <div className="mx-auto max-w-6xl px-4 pt-4 pb-[calc(8rem+env(safe-area-inset-bottom))] md:pb-8">
+        <Link
+          to={previewCommittee || !isAdmin ? "/admin/subcommittee" : "/admin"}
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-ink mb-3"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back
+        </Link>
+        <Outlet />
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-6xl px-6 pt-8 pb-[calc(8rem+env(safe-area-inset-bottom))] md:pb-8">
       <div className="mb-6 grid grid-cols-1 items-center gap-4 sm:grid-cols-[minmax(0,1fr)_auto]">
