@@ -646,9 +646,12 @@ function GuestsPage() {
                 </div>
               </div>
             </Card>
-          );
-        })}
+              );
+            })}
+          </div>
+        ))}
       </div>
+
 
       <GuestEditDialog
         guest={editing}
