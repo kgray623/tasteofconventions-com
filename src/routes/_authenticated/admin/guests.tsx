@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { downloadTextFile } from "@/lib/download-file";
 import { ExportFallbackDialog } from "@/components/export-fallback-dialog";
 import { GuestEditDialog, type GuestEditTarget } from "@/components/guest-edit-dialog";
-import { useMyUnpaidMeals } from "@/hooks/use-my-unpaid-meals";
+import { useMyUnpaidMeals, normalizeUnpaidName } from "@/hooks/use-my-unpaid-meals";
 import { phoneTail } from "@/lib/phone";
 
 
@@ -284,7 +284,7 @@ function GuestsPage() {
       }
       return a.name.localeCompare(b.name);
     });
-  }, [rows, activeStatus, activeAudience, mode, query, activeSort, activeInviter, unpaidOnly, unpaidMeals.unpaidPhoneTails]);
+  }, [rows, activeStatus, activeAudience, mode, query, activeSort, activeInviter, unpaidOnly, unpaidMeals.loading, unpaidMeals.unpaidPhoneTails, unpaidMeals.unpaidInvitationIds, unpaidMeals.unpaidNames]);
 
   const inviterOptions = useMemo(() => {
     const map = new Map<string, { id: string; name: string; count: number }>();
@@ -413,6 +413,8 @@ function GuestsPage() {
               <strong>Unpaid guests only.</strong>{" "}
               {unpaidMeals.loading
                 ? "Checking payments…"
+                : unpaidMeals.error
+                ? `Could not load payment status: ${unpaidMeals.error}`
                 : `${unpaidMeals.count} of your guests still owe for a meal (${unpaidMeals.plates} plates). Guests who declined or are Zoom-only are excluded.`}
             </p>
             <Link
