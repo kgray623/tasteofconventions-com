@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { downloadTextFile } from "@/lib/download-file";
 import { ExportFallbackDialog } from "@/components/export-fallback-dialog";
 import { GuestEditDialog, type GuestEditTarget } from "@/components/guest-edit-dialog";
-import { useMyUnpaidMeals } from "@/hooks/use-my-unpaid-meals";
+import { useMyUnpaidMeals, normalizeUnpaidName } from "@/hooks/use-my-unpaid-meals";
 import { phoneTail } from "@/lib/phone";
 
 
@@ -239,7 +239,17 @@ function GuestsPage() {
     };
     const qNameNorm = q.replace(/[^a-z]/g, "");
     return rows.filter((r) => {
-      if (unpaidOnly && !unpaidMeals.unpaidPhoneTails.has(phoneTail(r.phone))) return false;
+      if (unpaidOnly) {
+        // Wait for the ledger before hiding anyone; otherwise the first render
+        // pass filters every row out and the list looks empty.
+        if (unpaidMeals.loading) return false;
+        const byId = r.invitation_id && unpaidMeals.unpaidInvitationIds.has(r.invitation_id);
+        const tail = phoneTail(r.phone);
+        const byPhone = tail.length >= 7 && unpaidMeals.unpaidPhoneTails.has(tail);
+        const byName = unpaidMeals.unpaidNames.has(normalizeUnpaidName(r.name));
+        if (!byId && !byPhone && !byName) return false;
+      }
+
       if (activeStatus !== "all" && statusOfRow(r) !== activeStatus) return false;
       if (mode && r.attendance_mode !== mode) return false;
       if (activeAudience === "guest" && r.is_committee) return false;
@@ -274,7 +284,7 @@ function GuestsPage() {
       }
       return a.name.localeCompare(b.name);
     });
-  }, [rows, activeStatus, activeAudience, mode, query, activeSort, activeInviter, unpaidOnly, unpaidMeals.unpaidPhoneTails]);
+  }, [rows, activeStatus, activeAudience, mode, query, activeSort, activeInviter, unpaidOnly, unpaidMeals.loading, unpaidMeals.unpaidPhoneTails, unpaidMeals.unpaidInvitationIds, unpaidMeals.unpaidNames]);
 
   const inviterOptions = useMemo(() => {
     const map = new Map<string, { id: string; name: string; count: number }>();
@@ -403,6 +413,8 @@ function GuestsPage() {
               <strong>Unpaid guests only.</strong>{" "}
               {unpaidMeals.loading
                 ? "Checking payments…"
+                : unpaidMeals.error
+                ? `Could not load payment status: ${unpaidMeals.error}`
                 : `${unpaidMeals.count} of your guests still owe for a meal (${unpaidMeals.plates} plates). Guests who declined or are Zoom-only are excluded.`}
             </p>
             <Link
@@ -544,9 +556,14 @@ function GuestsPage() {
 
       {rows && filtered.length === 0 && (
         <Card className="p-6 text-center text-sm text-muted-foreground">
-          No guests match this filter.
+          {unpaidOnly && unpaidMeals.loading
+            ? "Checking who still owes for a meal…"
+            : unpaidOnly && unpaidMeals.error
+              ? `Could not load payment status: ${unpaidMeals.error}`
+              : "No guests match this filter."}
         </Card>
       )}
+
 
       <div className="space-y-2">
         {filtered.map((r) => {

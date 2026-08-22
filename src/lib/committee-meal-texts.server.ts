@@ -21,6 +21,8 @@ function normalizeCuisine(raw: string) {
 
 export type CommitteeMealTextRow = {
   id: string;
+  /** Invitation row this preorder is linked to (empty when unmatched). */
+  invitationId: string;
   name: string;
   guestName: string;
   phone: string;
@@ -243,6 +245,7 @@ export async function loadCommitteeMealTexts(
       if (!communication) continue;
       rows.push({
         id: p.id as string,
+        invitationId: linked.id,
         name: (p.name ?? "").trim() || linked.guest_name || "Guest",
         guestName: linked.guest_name,
         phone: ((p.phone ?? "") as string).trim() || (linked.guest_phone ?? ""),
