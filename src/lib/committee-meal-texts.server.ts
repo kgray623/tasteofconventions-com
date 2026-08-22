@@ -35,7 +35,11 @@ export type CommitteeMealTextRow = {
   paid_source: MealPaymentSource | null;
   paid_note: string | null;
   exception: string | null;
+  /** Committee member (inviter) this guest belongs to. */
+  inviterId: string | null;
+  inviterName: string;
 };
+
 
 export type CommitteeMealTextsResult = {
   restaurants: MealRestaurant[];
