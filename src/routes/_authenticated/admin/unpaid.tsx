@@ -56,12 +56,16 @@ function UnpaidGuestsPage() {
   // scroll 0 would show only navigation. Bring the list into view immediately.
   const topRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    const id = window.setTimeout(
-      () => topRef.current?.scrollIntoView({ behavior: "instant", block: "start" }),
-      0,
+    // Re-assert after the router's own scroll restoration and after the list
+    // finishes loading, so the banner is what the user sees on arrival.
+    const ids = [0, 120, 400, 900].map((delay) =>
+      window.setTimeout(
+        () => topRef.current?.scrollIntoView({ behavior: "instant", block: "start" }),
+        delay,
+      ),
     );
-    return () => window.clearTimeout(id);
-  }, []);
+    return () => ids.forEach((id) => window.clearTimeout(id));
+  }, [unpaid.loading]);
   const restaurants = unpaid.restaurants ?? undefined;
 
   const owedFor = (cuisine: string, qty: number) => {
