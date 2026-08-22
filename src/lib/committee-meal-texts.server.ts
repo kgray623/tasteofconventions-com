@@ -276,8 +276,12 @@ export async function loadCommitteeMealTexts(
         paid_source: communication.paid_source,
         paid_note: communication.paid_note,
         exception: communication.exception,
-
+        inviterId: linked.inviter_id ?? null,
+        inviterName: linked.inviter_id
+          ? (inviterNameById.get(linked.inviter_id) ?? "Committee member")
+          : "No committee member recorded",
       });
+
     }
   }
 
