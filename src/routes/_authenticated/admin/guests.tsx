@@ -556,9 +556,14 @@ function GuestsPage() {
 
       {rows && filtered.length === 0 && (
         <Card className="p-6 text-center text-sm text-muted-foreground">
-          No guests match this filter.
+          {unpaidOnly && unpaidMeals.loading
+            ? "Checking who still owes for a meal…"
+            : unpaidOnly && unpaidMeals.error
+              ? `Could not load payment status: ${unpaidMeals.error}`
+              : "No guests match this filter."}
         </Card>
       )}
+
 
       <div className="space-y-2">
         {filtered.map((r) => {
