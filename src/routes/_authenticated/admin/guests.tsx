@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { useServerFn } from "@tanstack/react-start";
 import { getReconciliationRows } from "@/lib/admin-audit.functions";
@@ -150,6 +150,18 @@ function GuestsPage() {
   const { status, mode, audience, sort, inviter, unpaid } = Route.useSearch();
   const unpaidMeals = useMyUnpaidMeals();
   const unpaidOnly = Boolean(unpaid);
+  // Mobile: the admin tab strip wraps to ~600px tall, so arriving at
+  // ?unpaid=true leaves the list far below the fold and the tap looks like it
+  // did nothing. Bring the unpaid section into view once it mounts.
+  const unpaidCardRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!unpaidOnly) return;
+    const id = window.setTimeout(() => {
+      unpaidCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+    return () => window.clearTimeout(id);
+  }, [unpaidOnly]);
+
   const navigate = useNavigate({ from: "/admin/guests" });
   const fetchRows = useServerFn(getReconciliationRows);
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -447,7 +459,8 @@ function GuestsPage() {
       </div>
 
       {unpaidOnly && (
-        <Card className="p-3 border-terracotta/40 bg-terracotta/5">
+        <Card ref={unpaidCardRef} className="p-3 border-terracotta/40 bg-terracotta/5 scroll-mt-4">
+
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm">
               <strong>Unpaid guests only.</strong>{" "}
