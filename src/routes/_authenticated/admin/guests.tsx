@@ -150,6 +150,18 @@ function GuestsPage() {
   const { status, mode, audience, sort, inviter, unpaid } = Route.useSearch();
   const unpaidMeals = useMyUnpaidMeals();
   const unpaidOnly = Boolean(unpaid);
+  // Mobile: the admin tab strip wraps to ~600px tall, so arriving at
+  // ?unpaid=true leaves the list far below the fold and the tap looks like it
+  // did nothing. Bring the unpaid section into view once it mounts.
+  const unpaidCardRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!unpaidOnly) return;
+    const id = window.setTimeout(() => {
+      unpaidCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+    return () => window.clearTimeout(id);
+  }, [unpaidOnly]);
+
   const navigate = useNavigate({ from: "/admin/guests" });
   const fetchRows = useServerFn(getReconciliationRows);
   const [rows, setRows] = useState<Row[] | null>(null);
