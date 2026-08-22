@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   getMyMealTexts,
@@ -7,6 +8,9 @@ import {
 import { isPaidState } from "@/lib/meal-communication";
 import { phoneTail } from "@/lib/phone";
 
+const normName = (value: string | null | undefined) =>
+  (value ?? "").toLowerCase().replace(/[^a-z]/g, "");
+
 /**
  * Read-only view of "my guests who still owe for their meal".
  *
@@ -14,41 +18,38 @@ import { phoneTail } from "@/lib/phone";
  * the same canonical `isPaidState` used by the admin meal-payment screens.
  * The ledger already drops guests who RSVP'd "no" or are Zoom-only, so those
  * exclusions stay consistent with the rest of the app.
+ *
+ * Shared through the TanStack Query cache so the nav badge and the filtered
+ * guest list always read the exact same ledger result.
  */
 export function useMyUnpaidMeals() {
   const load = useServerFn(getMyMealTexts);
-  const [rows, setRows] = useState<CommitteeMealTextRow[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const query = useQuery({
+    queryKey: ["my-unpaid-meals"],
+    queryFn: async () => (await load({ data: {} })).rows as CommitteeMealTextRow[],
+    staleTime: 60_000,
+    retry: 1,
+  });
 
-  useEffect(() => {
-    let alive = true;
-    void (async () => {
-      try {
-        const res = await load({ data: {} });
-        if (alive) setRows(res.rows);
-      } catch (e) {
-        if (alive) {
-          setRows([]);
-          setError(e instanceof Error ? e.message : "Could not load unpaid guests");
-        }
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-    // Load once per mount; the wrapped server fn identity changes each render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const rows = query.data ?? null;
+  const error = query.error instanceof Error ? query.error.message : null;
 
   return useMemo(() => {
     const unpaid = (rows ?? []).filter((row) => !isPaidState(row.state));
     const tails = new Set<string>();
+    const invitationIds = new Set<string>();
+    const names = new Set<string>();
     for (const row of unpaid) {
       const tail = phoneTail(row.phone);
       if (tail.length >= 7) tails.add(tail);
+      if (row.invitationId) invitationIds.add(row.invitationId);
+      for (const candidate of [row.guestName, row.name]) {
+        const n = normName(candidate);
+        if (n.length >= 4) names.add(n);
+      }
     }
     return {
-      loading: rows === null,
+      loading: query.isPending,
       error,
       unpaidRows: unpaid,
       /** Distinct guests (households) with at least one unpaid meal. */
@@ -56,6 +57,10 @@ export function useMyUnpaidMeals() {
       orderLines: unpaid.length,
       plates: unpaid.reduce((sum, row) => sum + row.qty, 0),
       unpaidPhoneTails: tails,
+      unpaidInvitationIds: invitationIds,
+      unpaidNames: names,
     };
-  }, [rows, error]);
+  }, [rows, error, query.isPending]);
 }
+
+export const normalizeUnpaidName = normName;
