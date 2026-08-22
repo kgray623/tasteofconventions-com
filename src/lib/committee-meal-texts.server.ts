@@ -84,6 +84,7 @@ export async function loadCommitteeMealTexts(
   supabase: any,
   userId: string,
   actingForInviterId: string | null,
+  options?: { scope?: "mine" | "all" },
 ): Promise<CommitteeMealTextsResult> {
   const identity = await resolveIdentity(supabase, userId);
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -100,6 +101,9 @@ export async function loadCommitteeMealTexts(
     name: string | null;
     active: boolean | null;
   }>;
+  const inviterNameById = new Map(
+    inviters.map((r) => [r.id, (r.name ?? "").trim() || "Committee member"] as const),
+  );
 
   const mine = new Set<string>();
   for (const r of inviters) {
@@ -110,6 +114,10 @@ export async function loadCommitteeMealTexts(
       (!!identity.myName && normName(r.name) === identity.myName);
     if (isMine && r.id) mine.add(r.id);
   }
+
+  // Admin-wide scope: every committee member's guests at once (plus guests with
+  // no committee member recorded), so admins are never limited to their own list.
+  const allScope = options?.scope === "all" && identity.isAdmin && !actingForInviterId;
 
   let actingFor: { id: string; name: string } | null = null;
   let targetInviterIds = Array.from(mine);
@@ -122,6 +130,8 @@ export async function loadCommitteeMealTexts(
   }
 
   if (!identity.isStaff && mine.size === 0) throw new Error("Forbidden");
+
+
 
   const committee = identity.isAdmin
     ? inviters
