@@ -150,15 +150,14 @@ function GuestsPage() {
   const { status, mode, audience, sort, inviter, unpaid } = Route.useSearch();
   const unpaidMeals = useMyUnpaidMeals();
   const unpaidOnly = Boolean(unpaid);
-  // Mobile: the admin tab strip wraps to ~600px tall, so arriving at
-  // ?unpaid=true leaves the list far below the fold and the tap looks like it
-  // did nothing. Bring the unpaid section into view once it mounts.
+  // The shared admin navigation wraps on mobile. Move the dedicated unpaid
+  // experience to the top of the viewport as soon as this route is selected.
   const unpaidCardRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (!unpaidOnly) return;
     const id = window.setTimeout(() => {
-      unpaidCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 120);
+      unpaidCardRef.current?.scrollIntoView({ behavior: "instant", block: "start" });
+    }, 0);
     return () => window.clearTimeout(id);
   }, [unpaidOnly]);
 
@@ -436,7 +435,7 @@ function GuestsPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-start gap-3">
+      {!unpaidOnly && <div className="flex items-start gap-3">
         <div className="rounded-lg bg-terracotta/10 p-3 text-terracotta">
           <Users className="w-6 h-6" />
         </div>
@@ -456,7 +455,7 @@ function GuestsPage() {
             }
           </p>
         </div>
-      </div>
+      </div>}
 
       {unpaidOnly && (
         <Card ref={unpaidCardRef} className="p-3 border-terracotta/40 bg-terracotta/5 scroll-mt-4">
@@ -484,13 +483,13 @@ function GuestsPage() {
       )}
 
 
-      {scope === "mine" && (
+      {!unpaidOnly && scope === "mine" && (
         <p className="text-xs text-muted-foreground">
           You're seeing the guests on your own list. You can update their RSVP on their behalf.
         </p>
       )}
 
-      <Card className="p-3">
+      {!unpaidOnly && <Card className="p-3">
         <div className="flex flex-wrap gap-1.5">
           {tabs.map((t) => {
             const active = activeStatus === t;
@@ -541,9 +540,9 @@ function GuestsPage() {
           (<strong>{counts.modePeople.in_person}</strong> in-person · <strong>{counts.modePeople.zoom}</strong> Zoom);
           declined <strong>{counts.people.declined}</strong> people; pending <strong>{counts.people.pending}</strong> people.
         </p>
-      </Card>
+      </Card>}
 
-      <div className="flex flex-wrap items-center gap-2">
+      {!unpaidOnly && <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
@@ -597,7 +596,7 @@ function GuestsPage() {
         <Button variant="outline" onClick={exportCsv} disabled={filtered.length === 0}>
           <Download className="w-4 h-4 mr-2" /> Export CSV ({filtered.length})
         </Button>
-      </div>
+      </div>}
 
 
       {error && (
