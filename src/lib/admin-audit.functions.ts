@@ -195,15 +195,35 @@ export const getReconciliationRows = createServerFn({ method: "GET" })
     const isAdmin = roleRows.some((r) => r.role === "admin");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Committee members see only the guests on their own list.
+    // Committee members see only the guests on their own list. Identity is
+    // resolved the same way the meal ledger resolves it (host_id, phone tail,
+    // or display name) so the "Unpaid guests" badge and this roster can never
+    // disagree about which inviter rows belong to the signed-in member.
     let ownInviterIds: string[] = [];
     if (!isAdmin) {
-      const { data: mine } = await supabaseAdmin
-        .from("inviters")
-        .select("id")
-        .eq("host_id", context.userId);
-      ownInviterIds = (mine ?? []).map((r) => r.id);
+      const { phoneTail } = await import("@/lib/phone");
+      const { normName } = await import("@/lib/committee-meal-texts.server");
+      const { data: authUser } = await context.supabase.auth.getUser();
+      const myTail = phoneTail(authUser?.user?.phone);
+      const { data: prof } = await context.supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", context.userId)
+        .maybeSingle();
+      const myName = normName(prof?.display_name);
+      const { data: mine } = await supabaseAdmin.from("inviters").select("id,host_id,phone,name");
+      ownInviterIds = ((mine ?? []) as Array<{ id: string; host_id: string | null; phone: string | null; name: string | null }>)
+        .filter((r) => {
+          const tail = phoneTail(r.phone);
+          return (
+            r.host_id === context.userId ||
+            (!!myTail && !!tail && tail === myTail) ||
+            (!!myName && normName(r.name) === myName)
+          );
+        })
+        .map((r) => r.id);
     }
+
 
     const [invRes, rsvpRes, preRes, inviterRes] = await Promise.all([
       supabaseAdmin
