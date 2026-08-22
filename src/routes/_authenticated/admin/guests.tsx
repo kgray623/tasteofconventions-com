@@ -447,7 +447,8 @@ function GuestsPage() {
       </div>
 
       {unpaidOnly && (
-        <Card className="p-3 border-terracotta/40 bg-terracotta/5">
+        <Card ref={unpaidCardRef} className="p-3 border-terracotta/40 bg-terracotta/5 scroll-mt-4">
+
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm">
               <strong>Unpaid guests only.</strong>{" "}
