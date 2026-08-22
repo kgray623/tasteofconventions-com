@@ -33,19 +33,21 @@ export type UnpaidGroup = {
  * nav badge and the filtered guest list always read the same ledger result.
  */
 export function useMyUnpaidMeals() {
-  const { isAdmin, loading: rolesLoading } = useRoles();
+  const { isTeam, isAdmin, loading: rolesLoading } = useRoles();
   const load = useServerFn(getMyMealTexts);
-  const scope: "mine" | "all" = isAdmin ? "all" : "mine";
+  // Admins and committee members all read the same committee-wide ledger so the
+  // shared "Unpaid guests" page and its badge can never disagree.
+  const scope: "mine" | "all" = isTeam || isAdmin ? "all" : "mine";
   const query = useQuery({
     queryKey: ["my-unpaid-meals", scope],
-    queryFn: async () =>
-      (await load({ data: { scope } })).rows as CommitteeMealTextRow[],
+    queryFn: async () => await load({ data: { scope } }),
     enabled: !rolesLoading,
     staleTime: 60_000,
     retry: 1,
   });
 
-  const rows = query.data ?? null;
+  const rows = (query.data?.rows ?? null) as CommitteeMealTextRow[] | null;
+  const restaurants = query.data?.restaurants ?? null;
   const error = query.error instanceof Error ? query.error.message : null;
 
   return useMemo(() => {
@@ -100,6 +102,7 @@ export function useMyUnpaidMeals() {
     return {
       scope,
       isAdminScope: scope === "all",
+      restaurants,
       loading: rolesLoading || query.isPending,
       error,
       unpaidRows: unpaid,
@@ -115,7 +118,7 @@ export function useMyUnpaidMeals() {
       inviterByPhoneTail,
       inviterByName,
     };
-  }, [rows, error, query.isPending, rolesLoading, scope]);
+  }, [rows, restaurants, error, query.isPending, rolesLoading, scope]);
 }
 
 export const normalizeUnpaidName = normName;
