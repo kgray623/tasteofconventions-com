@@ -31,13 +31,12 @@ const tabs: { id?: string; to: string; label: string; icon: typeof ShieldCheck; 
   { to: "/admin/guests", label: "Guests", icon: UserCheck, team: true, teamLabel: "My guests", group: "main" },
   {
     id: "unpaid-guests",
-    to: "/admin/guests",
+    to: "/admin/unpaid",
     label: "Unpaid guests",
     icon: HandCoins,
     team: true,
     teamLabel: "Unpaid guests",
     group: "main",
-    extraSearch: { unpaid: true },
   },
   { to: "/admin/inviters", label: "Committee Guests", icon: UserPlus, team: true, teamLabel: "Committee Guests", group: "main" },
 
@@ -61,7 +60,7 @@ const tabs: { id?: string; to: string; label: string; icon: typeof ShieldCheck; 
 ];
 
 
-const teamAllowedPrefixes = ["/admin/subcommittee", "/admin/guests", "/admin/upload", "/admin/inviters", "/admin/categories", "/admin/chat", "/admin/my-volunteer-chats", "/admin/my-rsvp", "/admin/preorders", "/admin/meal-texts", "/admin/meal-texts-mine"];
+const teamAllowedPrefixes = ["/admin/subcommittee", "/admin/guests", "/admin/upload", "/admin/inviters", "/admin/categories", "/admin/chat", "/admin/my-volunteer-chats", "/admin/my-rsvp", "/admin/preorders", "/admin/meal-texts", "/admin/meal-texts-mine", "/admin/unpaid"];
 const isTeamAllowedPath = (path: string) =>
   path === "/admin" || teamAllowedPrefixes.some((p) => path === p || path.startsWith(p + "/"));
 
@@ -187,11 +186,7 @@ function AdminLayout() {
           >
             {groupTabs.map((t) => {
               const isUnpaid = t.id === "unpaid-guests";
-              const active = isUnpaid
-                ? path === "/admin/guests" && Boolean((search as { unpaid?: boolean }).unpaid)
-                : t.exact
-                  ? path === t.to
-                  : path.startsWith(t.to) && !(t.to === "/admin/guests" && Boolean((search as { unpaid?: boolean }).unpaid));
+              const active = t.exact ? path === t.to : path.startsWith(t.to);
               const label = !isAdmin && t.teamLabel ? t.teamLabel : t.label;
               const isVolChats = t.to === "/admin/my-volunteer-chats";
               const volUnread = isVolChats
