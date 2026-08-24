@@ -1,0 +1,2 @@
+REVOKE EXECUTE ON FUNCTION public.save_meal_order(uuid, text, text, jsonb, text[], text) FROM anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.guard_preorders_closed() FROM PUBLIC, anon, authenticated;
