@@ -1,10 +1,15 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   getMyMealTexts,
   type CommitteeMealTextRow,
 } from "@/lib/committee-meal-texts.functions";
+import {
+  listMealFollowUpNotes,
+  saveMealFollowUpNote,
+  type MealFollowUpNote,
+} from "@/lib/meal-follow-up-notes.functions";
 import { isPaidState } from "@/lib/meal-communication";
 import { phoneTail } from "@/lib/phone";
 import { useRoles } from "@/hooks/use-roles";
