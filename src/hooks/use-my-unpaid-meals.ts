@@ -40,6 +40,7 @@ export type UnpaidGroup = {
 export function useMyUnpaidMeals() {
   const { isTeam, isAdmin, loading: rolesLoading } = useRoles();
   const load = useServerFn(getMyMealTexts);
+  const loadNotes = useServerFn(listMealFollowUpNotes);
   // Admins and committee members all read the same committee-wide ledger so the
   // shared "Unpaid guests" page and its badge can never disagree.
   const scope: "mine" | "all" = isTeam || isAdmin ? "all" : "mine";
@@ -47,6 +48,13 @@ export function useMyUnpaidMeals() {
     queryKey: ["my-unpaid-meals", scope],
     queryFn: async () => await load({ data: { scope } }),
     enabled: !rolesLoading,
+    staleTime: 60_000,
+    retry: 1,
+  });
+  const notesQuery = useQuery({
+    queryKey: ["meal-follow-up-notes"],
+    queryFn: async () => await loadNotes({ data: {} }),
+    enabled: !rolesLoading && (isTeam || isAdmin),
     staleTime: 60_000,
     retry: 1,
   });
