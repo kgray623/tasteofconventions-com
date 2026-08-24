@@ -62,6 +62,15 @@ export function useMyUnpaidMeals() {
   const rows = (query.data?.rows ?? null) as CommitteeMealTextRow[] | null;
   const restaurants = query.data?.restaurants ?? null;
   const error = query.error instanceof Error ? query.error.message : null;
+  const notesError = notesQuery.error instanceof Error ? notesQuery.error.message : null;
+  const notes = (notesQuery.data ?? []) as MealFollowUpNote[];
+  const notesByKey = useMemo(() => {
+    const map = new Map<string, MealFollowUpNote>();
+    for (const n of notes) {
+      map.set(`${n.preorder_id}::${n.cuisine}`, n);
+    }
+    return map;
+  }, [notes]);
 
   return useMemo(() => {
     const unpaid = (rows ?? []).filter((row) => !isPaidState(row.state));
