@@ -660,138 +660,38 @@ function RsvpPage() {
         />
 
         {status === "yes" && attendanceMode === "in_person" && (
-          <Card className="p-7 space-y-5">
-            <div>
-              <h2 className="font-display text-2xl">
-                Order your catered cultural meal
-              </h2>
-              {mealStatuses.length > 0 && (
-                <div className="mt-3 rounded-lg border-2 border-terracotta bg-terracotta/10 p-3">
-                  <p className="font-medium text-ink text-sm">
-                    Confirmed by the restaurant
-                  </p>
-                  <ul className="mt-1 space-y-0.5 text-sm text-terracotta">
-                    {mealStatuses.map((m) => (
-                      <li key={m.cuisine}>
-                        {m.cuisine} — confirmed
-                        {m.confirmed_at
-                          ? ` · ${new Date(m.confirmed_at).toLocaleDateString()}`
-                          : ""}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              <p className="text-sm text-muted-foreground mt-1">{MEAL_INTRO_COPY}</p>
-
-            </div>
-            <div className="space-y-3">
-              {cuisines.map((cuisine) => {
-                const qty = cuisineCounts[cuisine.key] ?? 0;
-                const choice = cuisineChoice[cuisine.key];
-                const isYes = choice === "yes" || qty > 0;
-                const isNo = choice === "no";
-                return (
-                  <div
-                    key={cuisine.key}
-                    className="rounded-md border border-border bg-card p-4 space-y-3"
-                  >
-                    <h3 className="font-display text-2xl text-ink font-bold">{cuisine.label}</h3>
-                    <MealPriceNote cuisineKey={cuisine.key} rows={restaurants} />
-                    {cuisine.photos && (
-                      <div className="grid grid-cols-3 gap-2">
-                        {cuisine.photos.map((src, i) => (
-                          <button
-                            key={src}
-                            type="button"
-                            onClick={() => setLightbox(src)}
-                            className="relative aspect-square overflow-hidden rounded-md border border-border bg-muted"
-                            aria-label={`${cuisine.label} meal photo ${i + 1}`}
-                          >
-                            <img src={src} alt={`${cuisine.label} meal ${i + 1}`} className="h-full w-full object-cover" />
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {cuisine.note && (
-                      <p className="text-sm italic text-muted-foreground">{cuisine.note}</p>
-                    )}
-                    <MealRestaurantContact cuisineKey={cuisine.key} rows={restaurants} />
-                    <div className="flex items-center justify-between gap-3">
-                      <Label className="text-base font-display text-ink">{cuisine.label}</Label>
-                      <div className="grid grid-cols-2 gap-2 w-36">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setCuisineChoice({ ...cuisineChoice, [cuisine.key]: "yes" });
-                            setCuisineQty(cuisine.key, qty > 0 ? qty : 1);
-                          }}
-                          className={`rounded-md border-2 px-3 py-2 text-sm font-medium transition ${
-                            isYes
-                              ? "border-terracotta bg-terracotta text-cream"
-                              : "border-border bg-card hover:border-terracotta/40"
-                          }`}
-                        >
-                          Yes
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setCuisineChoice({ ...cuisineChoice, [cuisine.key]: "no" });
-                            setCuisineQty(cuisine.key, 0);
-                          }}
-                          className={`rounded-md border-2 px-3 py-2 text-sm font-medium transition ${
-                            isNo
-                              ? "border-ink bg-ink text-cream"
-                              : "border-border bg-card hover:border-ink/40"
-                          }`}
-                        >
-                          No
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-sm text-muted-foreground">
-                        How many meals do you want?
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          onClick={() => setCuisineQty(cuisine.key, qty - 1)}
-                          aria-label={`Fewer ${cuisine.label} meals`}
-                        >
-                          <Minus className="w-3 h-3" />
-                        </Button>
-                        <span className="w-10 text-center font-display text-2xl text-ink">
-                          {qty}
-                        </span>
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          onClick={() => setCuisineQty(cuisine.key, qty + 1)}
-                          aria-label={`More ${cuisine.label} meals`}
-                        >
-                          <Plus className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <span className="font-display text-2xl">Total meals: {preorderTotal}</span>
-              <Button
-                onClick={handleCuisineOrder}
-                disabled={savingMeals}
-                className="bg-terracotta text-cream hover:bg-terracotta/90"
-              >
-                {savingMeals ? "Saving…" : "Save meal order"}
-              </Button>
-            </div>
-          </Card>
+          <>
+            {(savedMeals.length > 0 || mealStatuses.length > 0) && (
+              <Card className="p-7 space-y-3">
+                <h2 className="font-display text-2xl">Your catered meal order</h2>
+                <ul className="divide-y divide-border">
+                  {savedMeals.map((m) => (
+                    <li key={m.cuisine} className="py-2 text-sm flex items-center gap-3">
+                      <span className="font-display text-lg w-8 text-terracotta">{m.qty}×</span>
+                      <span className="flex-1 text-ink">{m.cuisine}</span>
+                      {mealStatuses.some((s) => s.cuisine === m.cuisine) && (
+                        <span className="text-terracotta">Confirmed by the restaurant</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-xs text-muted-foreground">
+                  Numbers are locked in with the restaurants. To change anything, reply to the
+                  person who invited you.
+                </p>
+              </Card>
+            )}
+            <MealWaitingListRequest
+              token={token}
+              defaultName={guestName}
+              defaultPhone={guestPhone}
+              cuisines={cuisines}
+              restaurants={restaurants}
+              onPhotoClick={setLightbox}
+            />
+          </>
         )}
+
 
         <Card className="p-5 space-y-4 border-terracotta/30 bg-card">
           <Button
