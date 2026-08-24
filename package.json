@@ -101,14 +101,14 @@
     "workbox-window": "^7.4.1"
   },
   "overrides": {
-    "seroval": "^1.6.0",
-    "seroval-plugins": "^1.6.0"
+    "seroval": "^1.6.3",
+    "seroval-plugins": "^1.6.3"
   },
   "pnpm": {
     "overrides": {
       "entities": "4.5.0",
-      "seroval": "^1.6.0",
-      "seroval-plugins": "^1.6.0"
+      "seroval": "^1.6.3",
+      "seroval-plugins": "^1.6.3"
     }
   }
 }
