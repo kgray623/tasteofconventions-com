@@ -403,7 +403,7 @@ function RsvpPage() {
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
             <span className="inline-flex items-center gap-2">
               <Calendar className="w-4 h-4 text-gold" />
-              {new Date(ev.starts_at).toLocaleString()}
+              {formatEventDateRange(ev.starts_at, ev.ends_at)}
             </span>
             {ev.location && (
               <span className="inline-flex items-center gap-2">
