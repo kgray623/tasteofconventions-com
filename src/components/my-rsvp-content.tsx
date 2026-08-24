@@ -30,6 +30,7 @@ import myanmarMeal1 from "@/assets/myanmar-meal-1.jpg.asset.json";
 import myanmarMeal2 from "@/assets/myanmar-meal-2.jpg.asset.json";
 import myanmarMeal3 from "@/assets/myanmar-meal-3.jpg.asset.json";
 import myanmarMeal4 from "@/assets/myanmar-meal-4.jpg.asset.json";
+import { formatEventDateRange } from "@/lib/event-time";
 
 const africanPhotos = [africanMeal1.url, africanMeal2.url, africanMeal3.url];
 const indonesianPhotos = [indonesianMeal1.url, indonesianMeal2.url, indonesianMeal3.url];
@@ -42,7 +43,7 @@ type MyRsvpData = {
     rsvp_token: string;
     guest_name: string;
     guest_phone?: string | null;
-    events: { title: string; starts_at: string; location?: string | null };
+    events: { title: string; starts_at: string; ends_at?: string | null; location?: string | null };
   };
   rsvp?: {
     responded_at?: string | null;
@@ -469,7 +470,7 @@ export function MyRsvpContent() {
           <div className="grid gap-3 text-sm text-ink">
             <span className="inline-flex items-center gap-2">
               <Calendar className="w-4 h-4 text-gold" />
-              {new Date(ev.starts_at).toLocaleString()}
+              {formatEventDateRange(ev.starts_at, ev.ends_at)}
             </span>
             {ev.location && (
               <span className="inline-flex items-center gap-2">
