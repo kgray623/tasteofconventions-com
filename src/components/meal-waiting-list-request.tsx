@@ -65,7 +65,9 @@ export function MealWaitingListRequest({
       return;
     }
     if (!chosen) {
-      toast.error("Choose how you paid the restaurant — payment is required to join the waiting list.");
+      toast.error(
+        "Choose how you paid the restaurant — payment is required to join the waiting list.",
+      );
       return;
     }
     setBusy(cuisine);
@@ -83,7 +85,9 @@ export function MealWaitingListRequest({
       });
       setSubmitted((cur) => [...cur, { cuisine, qty: count }]);
       setOpenFor(null);
-      toast.success("Payment reported — you're on the waiting list. We'll confirm with the restaurant.");
+      toast.success(
+        "Payment reported — you're on the waiting list. We'll confirm with the restaurant.",
+      );
     } catch (e: unknown) {
       toast.error(getErrorMessage(e, "Could not save your request."));
     } finally {
@@ -117,7 +121,12 @@ export function MealWaitingListRequest({
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="wl-name">Your name</Label>
-          <Input id="wl-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} />
+          <Input
+            id="wl-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={120}
+          />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="wl-phone">Mobile number</Label>
@@ -137,7 +146,10 @@ export function MealWaitingListRequest({
           const count = qty[cuisine.key] ?? 1;
           const open = openFor === cuisine.key;
           return (
-            <div key={cuisine.key} className="rounded-md border border-border bg-card p-4 space-y-3">
+            <div
+              key={cuisine.key}
+              className="rounded-md border border-border bg-card p-4 space-y-3"
+            >
               <h3 className="font-display text-2xl text-ink font-bold">{cuisine.label}</h3>
               <MealPriceNote cuisineKey={cuisine.key} rows={restaurants} />
               {cuisine.photos && cuisine.photos.length > 0 && (
@@ -160,16 +172,14 @@ export function MealWaitingListRequest({
                   ))}
                 </div>
               )}
-              {cuisine.note && <p className="text-sm italic text-muted-foreground">{cuisine.note}</p>}
+              {cuisine.note && (
+                <p className="text-sm italic text-muted-foreground">{cuisine.note}</p>
+              )}
 
               <MealRestaurantContact cuisineKey={cuisine.key} rows={restaurants} />
 
               {!open ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setOpenFor(cuisine.key)}
-                >
+                <Button type="button" variant="outline" onClick={() => setOpenFor(cuisine.key)}>
                   Request {cuisine.label} — I'll pay now
                 </Button>
               ) : (
@@ -186,7 +196,9 @@ export function MealWaitingListRequest({
                       >
                         <Minus className="w-3 h-3" />
                       </Button>
-                      <span className="w-10 text-center font-display text-2xl text-ink">{count}</span>
+                      <span className="w-10 text-center font-display text-2xl text-ink">
+                        {count}
+                      </span>
                       <Button
                         type="button"
                         size="icon"
