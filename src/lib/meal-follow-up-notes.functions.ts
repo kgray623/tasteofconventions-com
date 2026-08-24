@@ -63,7 +63,12 @@ export const saveMealFollowUpNote = createServerFn({ method: "POST" })
       .eq("id", context.userId)
       .maybeSingle();
 
-    return saveMealFollowUpNote(supabaseAdmin, data, {
+    return saveMealFollowUpNote(supabaseAdmin, {
+      preorder_id: data.preorder_id,
+      cuisine: data.cuisine,
+      invitation_id: data.invitation_id ?? null,
+      note: data.note,
+    }, {
       user_id: context.userId,
       label: profile?.display_name ?? null,
     });
