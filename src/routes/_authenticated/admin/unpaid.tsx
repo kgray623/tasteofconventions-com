@@ -120,8 +120,16 @@ function UnpaidGuestsPage() {
           note: draftNote.trim(),
         },
       });
+      // Refetch the shared notes ledger so the saved note is visible right away
+      // instead of disappearing until the 60s staleTime expires.
+      await queryClient.invalidateQueries({ queryKey: ["meal-follow-up-notes"] });
       setEditingKey(null);
       setDraftNote("");
+      toast.success("Follow-up note saved.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? `Could not save note: ${error.message}` : "Could not save note.",
+      );
     } finally {
       setSaving(false);
     }
