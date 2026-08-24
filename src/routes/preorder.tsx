@@ -1,24 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { submitStandaloneCuisinePreorder } from "@/lib/invitations.functions";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
 import { ArrowLeft, UtensilsCrossed } from "lucide-react";
-import { MEAL_INTRO_COPY } from "@/lib/meal-pricing";
-import { MealPriceNote, MealRestaurantContact, useMealRestaurants } from "@/components/meal-restaurant-contact";
+import { useMealRestaurants } from "@/components/meal-restaurant-contact";
+import { MealWaitingListRequest } from "@/components/meal-waiting-list-request";
 
 export const Route = createFileRoute("/preorder")({
   head: () => ({
     meta: [
-      { title: "Order your catered meal · A Taste of Special Conventions" },
-      { name: "description", content: "Tell us how many meals you'd like from each cultural cuisine so we can plan with the restaurants for August 30, 2026." },
-      { property: "og:title", content: "Order your catered meal · A Taste of Special Conventions" },
-      { property: "og:description", content: "Reserve meals from each cultural cuisine for the August 30, 2026 evening at Eagle's Landing." },
+      { title: "Catered meal requests · A Taste of Special Conventions" },
+      { name: "description", content: "Meal preordering is closed. You can still pay a restaurant directly and ask to be added to the catered meal waiting list for August 30, 2026." },
+      { property: "og:title", content: "Catered meal requests · A Taste of Special Conventions" },
+      { property: "og:description", content: "Meal preordering is closed — pay now to join the catered meal waiting list for the August 30, 2026 evening at Eagle's Landing." },
     ],
   }),
   component: PreorderPage,
@@ -34,7 +29,6 @@ export const Route = createFileRoute("/preorder")({
 type Stop = { country: string; when?: string; note?: string; restaurant?: string | null };
 
 function PreorderPage() {
-  const savePreorder = useServerFn(submitStandaloneCuisinePreorder);
   const { data: content } = useQuery({
     queryKey: ["invitation_content_preorder"],
     queryFn: async () => {
@@ -61,51 +55,8 @@ function PreorderPage() {
     return country;
   };
 
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [counts, setCounts] = useState<Record<string, number>>({});
   const { data: restaurants } = useMealRestaurants();
-  const [submitting, setSubmitting] = useState(false);
 
-  const setCount = (country: string, value: number) => {
-    setCounts((c) => ({ ...c, [country]: Math.max(0, Math.min(50, value || 0)) }));
-  };
-
-  const total = Object.values(counts).reduce((a, b) => a + (b || 0), 0);
-
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim() || !phone.trim()) {
-      toast.error("Please add your name and phone number.");
-      return;
-    }
-    if (total === 0) {
-      toast.error("Add at least one meal to order.");
-      return;
-    }
-    setSubmitting(true);
-    const selections = Object.entries(counts)
-      .filter(([, qty]) => qty > 0)
-      .map(([country, qty]) => ({ cuisine: country, qty }));
-    try {
-      await savePreorder({
-        data: {
-          name: name.trim().slice(0, 120),
-          phone: phone.trim().slice(0, 40),
-          selections,
-        },
-      });
-    } catch (error) {
-      setSubmitting(false);
-      toast.error(error instanceof Error ? error.message : "Could not save meal choices");
-      return;
-    }
-    setSubmitting(false);
-    toast.success("Thanks! We'll be in touch with the menu soon.");
-    setName("");
-    setPhone("");
-    setCounts({});
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -116,111 +67,20 @@ function PreorderPage() {
 
         <div className="text-center mb-8">
           <p className="text-xs uppercase tracking-[0.4em] text-magenta mb-3 inline-flex items-center gap-2 justify-center">
-            <UtensilsCrossed className="w-4 h-4" /> Catered meal order
+            <UtensilsCrossed className="w-4 h-4" /> Catered meals
           </p>
-          <h1 className="font-display text-4xl sm:text-5xl text-ink">Order your catered meal</h1>
-          <p className="mt-4 text-muted-foreground">
-            {MEAL_INTRO_COPY} Enter the same mobile number used on your attending RSVP so your meal choices stay connected to your RSVP.
-          </p>
+          <h1 className="font-display text-4xl sm:text-5xl text-ink">Catered meal requests</h1>
         </div>
 
-        <form
-          onSubmit={onSubmit}
-          className="rounded-3xl border border-border bg-card shadow-elegant p-6 sm:p-8 space-y-6"
-        >
-          <section className="space-y-4">
-            <h2 className="font-display text-xl text-ink">Your contact details</h2>
-            <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                maxLength={120}
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="phone">Phone</Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                maxLength={40}
-                required
-              />
-            </div>
-            </div>
-          </section>
-
-          <section className="space-y-3">
-            <h2 className="font-display text-xl text-ink">How many meals of each cuisine?</h2>
-            {cuisines.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Cuisines will appear here once the itinerary is set.</p>
-            ) : (
-              <div className="divide-y divide-border rounded-xl border border-border">
-                {cuisines.map((stop) => {
-                  const qty = counts[stop.country] ?? 0;
-                  const qtyId = `qty-${stop.country.replace(/\s+/g, "-").toLowerCase()}`;
-                  return (
-                    <div key={stop.country} className="p-4 space-y-3">
-                      <div className="min-w-0 space-y-2">
-                        <Label htmlFor={qtyId} className="font-display text-lg text-ink block">{cuisineLabel(stop.country)}</Label>
-                        <MealPriceNote cuisineKey={stop.country} rows={restaurants} />
-                        <MealRestaurantContact cuisineKey={stop.country} rows={restaurants} />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => setCount(stop.country, qty - 1)}
-                          aria-label={`Decrease ${stop.country}`}
-                        >
-                          −
-                        </Button>
-                        <Input
-                          id={qtyId}
-                          aria-label={`${stop.country} quantity`}
-                          type="number"
-                          inputMode="numeric"
-                          min={0}
-                          max={50}
-                          value={qty}
-                          onChange={(e) => setCount(stop.country, parseInt(e.target.value, 10))}
-                          className="w-16 text-center"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => setCount(stop.country, qty + 1)}
-                          aria-label={`Increase ${stop.country}`}
-                        >
-                          +
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">Total meals: <span className="font-semibold text-ink">{total}</span></p>
-            <Button
-              type="submit"
-              disabled={submitting}
-              className="bg-gradient-sunset text-white hover:opacity-90 border-0 shadow-glow"
-            >
-              {submitting ? "Submitting…" : "Submit meal order"}
-            </Button>
-          </div>
-        </form>
+        <MealWaitingListRequest
+          cuisines={cuisines.map((stop) => ({
+            key: stop.country,
+            label: cuisineLabel(stop.country),
+          }))}
+          restaurants={restaurants}
+        />
       </main>
     </div>
   );
 }
+
