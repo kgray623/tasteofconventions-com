@@ -57,6 +57,31 @@ function recoverFromStaleServerFn(): boolean {
   return true;
 }
 
+// A signed-out guest (e.g. opening /rsvp/<token>) has no session and never
+// will during this call. Waiting 25 * 200ms + a refreshSession() round trip
+// made public pages appear to hang on "Loading…". Only wait when there is
+// actually a stored Supabase session to hydrate, or a recovery in flight.
+function hasStoredSupabaseSession(): boolean {
+  if (typeof window === "undefined") return false;
+  const looksLikeAuthKey = (key: string | null) =>
+    !!key && key.startsWith("sb-") && key.includes("auth-token");
+  try {
+    for (let i = 0; i < window.localStorage.length; i++) {
+      if (looksLikeAuthKey(window.localStorage.key(i))) return true;
+    }
+  } catch {
+    // ignore
+  }
+  try {
+    for (let i = 0; i < window.sessionStorage.length; i++) {
+      if (looksLikeAuthKey(window.sessionStorage.key(i))) return true;
+    }
+  } catch {
+    // ignore
+  }
+  return typeof document !== "undefined" && /sb-[^=]*auth-token/.test(document.cookie ?? "");
+}
+
 export const attachSupabaseAuth = createMiddleware({ type: "function" }).client(
   async ({ next }) => {
     const run = async (headers: Record<string, string>) => {
@@ -76,20 +101,26 @@ export const attachSupabaseAuth = createMiddleware({ type: "function" }).client(
       return run({});
     }
 
-    let token: string | undefined;
-    for (let i = 0; i < 25; i++) {
-      const { data } = await supabase.auth.getSession();
-      token = data.session?.access_token;
-      if (token) break;
-      if (isSessionRecoveryActive()) await waitForSessionRecovery(500);
-      await new Promise((r) => setTimeout(r, 200));
+    const { data: initial } = await supabase.auth.getSession();
+    let token = initial.session?.access_token;
+
+    if (!token && (hasStoredSupabaseSession() || isSessionRecoveryActive())) {
+      for (let i = 0; i < 25; i++) {
+        const { data } = await supabase.auth.getSession();
+        token = data.session?.access_token;
+        if (token) break;
+        if (isSessionRecoveryActive()) await waitForSessionRecovery(500);
+        await new Promise((r) => setTimeout(r, 200));
+      }
+      if (!token) {
+        // Try one explicit refresh before giving up.
+        const { data } = await supabase.auth.refreshSession();
+        token = data.session?.access_token;
+      }
     }
-    if (!token) {
-      // Try one explicit refresh before giving up.
-      const { data } = await supabase.auth.refreshSession();
-      token = data.session?.access_token;
-    }
+
     return run(token ? { Authorization: `Bearer ${token}` } : {});
   },
 );
+
 
