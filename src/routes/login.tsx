@@ -50,7 +50,7 @@ function normalizeMobilePhone(value: string) {
   return "";
 }
 
-async function routeForUser(userId: string, ensureRoles: () => Promise<unknown>): Promise<RouteDestination> {
+async function routeForUser(_userId: string, ensureRoles: () => Promise<unknown>): Promise<RouteDestination> {
   // Promote committee members to the "team" role so they see the full dashboard.
   try {
     await withTimeout(ensureRoles(), 5000);
