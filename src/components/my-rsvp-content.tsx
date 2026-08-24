@@ -427,119 +427,37 @@ export function MyRsvpContent() {
         )}
 
         {rsvpAttending && rsvp?.attendance_mode !== "zoom" && (
-          <Card className="p-7 space-y-5">
-            <div>
-              <h2 className="font-display text-2xl">
-                Order your catered cultural meal
-              </h2>
-              <p className="text-sm text-muted-foreground mt-1">{MEAL_INTRO_COPY}</p>
-            </div>
-            <div className="space-y-3">
-              {cuisines.map((cuisine) => {
-                const qty = cuisineCounts[cuisine.key] ?? 0;
-                const selected = qty > 0;
-                return (
-                  <div
-                    key={cuisine.key}
-                    className="rounded-md border border-border bg-card p-4 space-y-3"
-                  >
-                    <h3 className="font-display text-2xl text-ink font-bold">{cuisine.label}</h3>
-                    <MealPriceNote cuisineKey={cuisine.key} rows={restaurants} />
-                    {cuisine.photos && cuisine.photos.length > 0 && (
-                      <div className="grid grid-cols-3 gap-2">
-                        {cuisine.photos.map((src, i) => (
-                          <button
-                            key={src}
-                            type="button"
-                            onClick={() => setLightbox(src)}
-                            className="relative aspect-square overflow-hidden rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-terracotta"
-                            aria-label={`View ${cuisine.label} meal photo ${i + 1}`}
-                          >
-                            <img
-                              src={src}
-                              alt={`${cuisine.label} cultural meal — example dish ${i + 1}`}
-                              loading="lazy"
-                              className="absolute inset-0 h-full w-full object-cover"
-                            />
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {cuisine.note && (
-                      <p className="text-sm italic text-muted-foreground">{cuisine.note}</p>
-                    )}
-                    <MealRestaurantContact cuisineKey={cuisine.key} rows={restaurants} />
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-sm text-muted-foreground">Include this cuisine?</span>
-                      <div className="grid grid-cols-2 gap-2 w-36">
-                        <button
-                          type="button"
-                          onClick={() => setCuisineQty(cuisine.key, qty > 0 ? qty : 1)}
-                          className={`rounded-md border-2 px-3 py-2 text-sm font-medium transition ${
-                            selected
-                              ? "border-terracotta bg-terracotta text-cream"
-                              : "border-border bg-card hover:border-terracotta/40"
-                          }`}
-                        >
-                          Yes
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setCuisineQty(cuisine.key, 0)}
-                          className={`rounded-md border-2 px-3 py-2 text-sm font-medium transition ${
-                            !selected
-                              ? "border-ink bg-ink text-cream"
-                              : "border-border bg-card hover:border-ink/40"
-                          }`}
-                        >
-                          No
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-sm text-muted-foreground">
-                        How many meals do you want?
+          <>
+            {savedSelections.length > 0 && (
+              <Card className="p-7 space-y-3">
+                <h2 className="font-display text-2xl">Your catered meal order</h2>
+                <ul className="divide-y divide-border">
+                  {savedSelections.map((s) => (
+                    <li key={String(s.cuisine)} className="py-2 text-sm flex items-center gap-3">
+                      <span className="font-display text-lg w-8 text-terracotta">
+                        {Number(s.qty) || 0}×
                       </span>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          onClick={() => setCuisineQty(cuisine.key, qty - 1)}
-                          aria-label={`Fewer ${cuisine.label} meals`}
-                        >
-                          <Minus className="w-3 h-3" />
-                        </Button>
-                        <span className="w-10 text-center font-display text-2xl text-ink">
-                          {qty}
-                        </span>
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          onClick={() => setCuisineQty(cuisine.key, qty + 1)}
-                          aria-label={`More ${cuisine.label} meals`}
-                        >
-                          <Plus className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-muted-foreground">
-                Total meals: <span className="font-semibold text-ink">{preorderTotal}</span>
-              </p>
-              <Button
-                onClick={saveMeals}
-                disabled={savingMeals}
-                className="bg-terracotta text-cream hover:bg-terracotta/90"
-              >
-                {savingMeals ? "Saving…" : "Save meal order"}
-              </Button>
-            </div>
-          </Card>
+                      <span className="flex-1 text-ink">{String(s.cuisine)}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-xs text-muted-foreground">
+                  Numbers are locked in with the restaurants. To change anything, reply to the
+                  person who invited you.
+                </p>
+              </Card>
+            )}
+            <MealWaitingListRequest
+              token={invitation.rsvp_token}
+              defaultName={invitation.guest_name}
+              defaultPhone={invitation.guest_phone ?? ""}
+              cuisines={cuisines}
+              restaurants={restaurants}
+              onPhotoClick={setLightbox}
+            />
+          </>
         )}
+
 
         <Card className="p-7 space-y-5">
           <div>
