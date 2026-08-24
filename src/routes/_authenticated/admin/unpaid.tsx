@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Pencil, X, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -65,6 +67,7 @@ function UnpaidGuestsPage() {
   const [draftNote, setDraftNote] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const saveNote = useServerFn(saveMealFollowUpNote);
+  const queryClient = useQueryClient();
 
   const owedFor = (cuisine: string, qty: number) => {
     const prices = mealPricesForCuisine(cuisine, restaurants);
@@ -120,8 +123,16 @@ function UnpaidGuestsPage() {
           note: draftNote.trim(),
         },
       });
+      // Refetch the shared notes ledger so the saved note is visible right away
+      // instead of disappearing until the 60s staleTime expires.
+      await queryClient.invalidateQueries({ queryKey: ["meal-follow-up-notes"] });
       setEditingKey(null);
       setDraftNote("");
+      toast.success("Follow-up note saved.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? `Could not save note: ${error.message}` : "Could not save note.",
+      );
     } finally {
       setSaving(false);
     }

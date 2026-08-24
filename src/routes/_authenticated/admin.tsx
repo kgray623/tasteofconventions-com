@@ -107,12 +107,11 @@ function AdminLayout() {
     if (loading || isTeam) return;
     let cancelled = false;
     (async () => {
-      const { count } = await supabase
-        .from("user_roles")
-        .select("id", { count: "exact", head: true })
-        .eq("role", "admin");
+      // SECURITY DEFINER RPC so an expired session can't turn this into a
+      // "permission denied for table user_roles" error.
+      const { data: adminExists } = await supabase.rpc("admin_exists");
       if (cancelled) return;
-      if ((count ?? 0) > 0) {
+      if (adminExists === true) {
         navigate({ to: "/my-rsvp" });
       }
     })();
