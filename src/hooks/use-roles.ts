@@ -19,10 +19,10 @@ export function useRoles() {
     setLoading(true);
     try {
       await withTimeout(ensureRoles(), 5000).catch(() => null);
-      const { data } = await withTimeout(
-        supabase.from("user_roles").select("role").eq("user_id", user.id),
-        3000,
-      );
+      // Read roles through a SECURITY DEFINER RPC. Reading user_roles directly
+      // fails with "permission denied for table user_roles" whenever the browser
+      // session has silently expired; the RPC returns an empty list instead.
+      const { data } = await withTimeout(supabase.rpc("get_my_roles"), 3000);
       if (active()) setRoles((data ?? []).map((r) => r.role as string));
     } catch {
       if (active()) setRoles([]);
