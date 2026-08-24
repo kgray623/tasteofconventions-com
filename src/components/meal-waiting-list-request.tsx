@@ -15,6 +15,16 @@ import { getErrorMessage } from "@/lib/async-safety";
 export const MEAL_PREORDER_CLOSED_NOTICE =
   "Preorders are closed. The restaurants need time to prepare a large number of plates, so any new order goes on that restaurant's wait list: pay the restaurant directly — Zelle is their preferred method — and your plate is confirmed once the restaurant accepts your payment. Prices already include tax.";
 
+/** "Myanmar/Burmese" + restaurant "Burmese" -> "Myanmar cuisine" (no redundant name). */
+function cuisineSubtitle(label: string, restaurant: string): string {
+  const parts = label
+    .split("/")
+    .map((part) => part.trim())
+    .filter((part) => part && part.toLowerCase() !== restaurant.trim().toLowerCase());
+  const name = parts.length > 0 ? parts.join(" / ") : label.trim();
+  return `${name} cuisine`;
+}
+
 const METHODS = [
   { key: "zelle", label: "Zelle" },
   { key: "venmo", label: "Venmo" },
