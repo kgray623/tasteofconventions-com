@@ -126,7 +126,9 @@ export function useMyUnpaidMeals() {
       isAdminScope: scope === "all",
       restaurants,
       loading: rolesLoading || query.isPending,
+      notesLoading: notesQuery.isPending,
       error,
+      notesError,
       unpaidRows: unpaid,
       /** Distinct guests (households) with at least one unpaid meal. */
       count: new Set(unpaid.map((row) => row.id)).size,
@@ -136,11 +138,13 @@ export function useMyUnpaidMeals() {
       unpaidInvitationIds: invitationIds,
       unpaidNames: names,
       groups,
+      notesByKey,
+      notes,
       inviterByInvitationId,
       inviterByPhoneTail,
       inviterByName,
     };
-  }, [rows, restaurants, error, query.isPending, rolesLoading, scope]);
+  }, [rows, restaurants, error, notesError, notesByKey, notes, query.isPending, rolesLoading, scope]);
 }
 
 export const normalizeUnpaidName = normName;
