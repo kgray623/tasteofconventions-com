@@ -59,10 +59,9 @@ async function routeForUser(userId: string, ensureRoles: () => Promise<unknown>)
   }
 
   try {
-    const { data: roleData } = await withTimeout(
-      supabase.from("user_roles").select("role").eq("user_id", userId),
-      5000,
-    );
+    // SECURITY DEFINER RPC: avoids "permission denied for table user_roles"
+    // when the fresh session hasn't propagated to this client yet.
+    const { data: roleData } = await withTimeout(supabase.rpc("get_my_roles"), 5000);
     const roles = (roleData ?? []).map((r) => r.role as string);
     if (roles.includes("admin") || roles.includes("team")) return { to: "/admin" };
   } catch {
