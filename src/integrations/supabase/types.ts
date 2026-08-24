@@ -734,6 +734,64 @@ export type Database = {
         }
         Relationships: []
       }
+      meal_follow_up_notes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          created_by_label: string | null
+          cuisine: string
+          id: string
+          invitation_id: string | null
+          note: string
+          preorder_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          created_by_label?: string | null
+          cuisine: string
+          id?: string
+          invitation_id?: string | null
+          note: string
+          preorder_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          created_by_label?: string | null
+          cuisine?: string
+          id?: string
+          invitation_id?: string | null
+          note?: string
+          preorder_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_follow_up_notes_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "invitations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_follow_up_notes_preorder_id_fkey"
+            columns: ["preorder_id"]
+            isOneToOne: false
+            referencedRelation: "cuisine_preorders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_follow_up_notes_preorder_id_fkey"
+            columns: ["preorder_id"]
+            isOneToOne: false
+            referencedRelation: "meal_accounting_lines"
+            referencedColumns: ["preorder_id"]
+          },
+        ]
+      }
       meal_order_status: {
         Row: {
           confirmed: boolean

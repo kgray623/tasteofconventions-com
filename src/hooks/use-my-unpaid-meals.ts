@@ -5,6 +5,11 @@ import {
   getMyMealTexts,
   type CommitteeMealTextRow,
 } from "@/lib/committee-meal-texts.functions";
+import {
+  listMealFollowUpNotes,
+  saveMealFollowUpNote,
+  type MealFollowUpNote,
+} from "@/lib/meal-follow-up-notes.functions";
 import { isPaidState } from "@/lib/meal-communication";
 import { phoneTail } from "@/lib/phone";
 import { useRoles } from "@/hooks/use-roles";
@@ -35,6 +40,7 @@ export type UnpaidGroup = {
 export function useMyUnpaidMeals() {
   const { isTeam, isAdmin, loading: rolesLoading } = useRoles();
   const load = useServerFn(getMyMealTexts);
+  const loadNotes = useServerFn(listMealFollowUpNotes);
   // Admins and committee members all read the same committee-wide ledger so the
   // shared "Unpaid guests" page and its badge can never disagree.
   const scope: "mine" | "all" = isTeam || isAdmin ? "all" : "mine";
@@ -45,10 +51,26 @@ export function useMyUnpaidMeals() {
     staleTime: 60_000,
     retry: 1,
   });
+  const notesQuery = useQuery({
+    queryKey: ["meal-follow-up-notes"],
+    queryFn: async () => await loadNotes(),
+    enabled: !rolesLoading && (isTeam || isAdmin),
+    staleTime: 60_000,
+    retry: 1,
+  });
 
   const rows = (query.data?.rows ?? null) as CommitteeMealTextRow[] | null;
   const restaurants = query.data?.restaurants ?? null;
   const error = query.error instanceof Error ? query.error.message : null;
+  const notesError = notesQuery.error instanceof Error ? notesQuery.error.message : null;
+  const notes = (notesQuery.data ?? []) as MealFollowUpNote[];
+  const notesByKey = useMemo(() => {
+    const map = new Map<string, MealFollowUpNote>();
+    for (const n of notes) {
+      map.set(`${n.preorder_id}::${n.cuisine}`, n);
+    }
+    return map;
+  }, [notes]);
 
   return useMemo(() => {
     const unpaid = (rows ?? []).filter((row) => !isPaidState(row.state));
@@ -104,7 +126,9 @@ export function useMyUnpaidMeals() {
       isAdminScope: scope === "all",
       restaurants,
       loading: rolesLoading || query.isPending,
+      notesLoading: notesQuery.isPending,
       error,
+      notesError,
       unpaidRows: unpaid,
       /** Distinct guests (households) with at least one unpaid meal. */
       count: new Set(unpaid.map((row) => row.id)).size,
@@ -114,11 +138,13 @@ export function useMyUnpaidMeals() {
       unpaidInvitationIds: invitationIds,
       unpaidNames: names,
       groups,
+      notesByKey,
+      notes,
       inviterByInvitationId,
       inviterByPhoneTail,
       inviterByName,
     };
-  }, [rows, restaurants, error, query.isPending, rolesLoading, scope]);
+  }, [rows, restaurants, error, notesError, notesByKey, notes, query.isPending, rolesLoading, scope]);
 }
 
 export const normalizeUnpaidName = normName;

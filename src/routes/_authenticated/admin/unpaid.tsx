@@ -1,7 +1,13 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { Pencil, X, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { useMyUnpaidMeals } from "@/hooks/use-my-unpaid-meals";
+import { useServerFn } from "@tanstack/react-start";
+import { saveMealFollowUpNote } from "@/lib/meal-follow-up-notes.functions";
 import { cuisineLabel } from "@/lib/meal-text-message";
 import {
   MEAL_PAY_DEADLINE_LINE,
@@ -16,6 +22,9 @@ import {
  * (`useMyUnpaidMeals`), so no count on this page can disagree with the nav
  * badge. Presentation only: paid/unpaid comes from the server ledger and prices
  * come from the live `restaurants` rows.
+ *
+ * Follow-up notes are committee-visible only and never mark a guest paid or
+ * hide them from the unpaid list.
  */
 
 export const Route = createFileRoute("/_authenticated/admin/unpaid")({
@@ -52,6 +61,10 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 function UnpaidGuestsPage() {
   const unpaid = useMyUnpaidMeals();
   const restaurants = unpaid.restaurants ?? undefined;
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [draftNote, setDraftNote] = useState<string>("");
+  const [saving, setSaving] = useState(false);
+  const saveNote = useServerFn(saveMealFollowUpNote);
 
   const owedFor = (cuisine: string, qty: number) => {
     const prices = mealPricesForCuisine(cuisine, restaurants);
@@ -80,6 +93,38 @@ function UnpaidGuestsPage() {
     );
     if (!totals.low && !totals.high) return null;
     return `${formatMealMoney(round2(totals.low))}–${formatMealMoney(round2(totals.high))}`;
+  };
+
+  const startEdit = (row: (typeof unpaid.groups)[number]["rows"][number]) => {
+    const key = `${row.id}::${row.cuisine}`;
+    const existing = unpaid.notesByKey.get(key)?.note ?? "";
+    setEditingKey(key);
+    setDraftNote(existing);
+  };
+
+  const cancelEdit = () => {
+    setEditingKey(null);
+    setDraftNote("");
+  };
+
+  const commitEdit = async (row: (typeof unpaid.groups)[number]["rows"][number]) => {
+    const key = `${row.id}::${row.cuisine}`;
+    if (editingKey !== key) return;
+    setSaving(true);
+    try {
+      await saveNote({
+        data: {
+          preorder_id: row.id,
+          cuisine: row.cuisine,
+          invitation_id: row.invitationId ?? null,
+          note: draftNote.trim(),
+        },
+      });
+      setEditingKey(null);
+      setDraftNote("");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -122,36 +167,98 @@ function UnpaidGuestsPage() {
             </p>
           </div>
           <ul className="divide-y divide-border">
-            {group.rows.map((row) => (
-              <li key={`${row.id}::${row.cuisine}`} className="space-y-1 px-3 py-3 text-sm">
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <span className="font-semibold">{row.guestName || row.name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {row.qty} {row.qty === 1 ? "plate" : "plates"} · {cuisineLabel(row.cuisine)}
-                    {owedFor(row.cuisine, row.qty).unit?.restaurant
-                      ? ` · ${owedFor(row.cuisine, row.qty).unit?.restaurant}`
-                      : ""}
-                  </span>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  {row.phone ? (
-                    <a href={`sms:${row.phone.replace(/\D/g, "")}`} className="font-mono underline">
-                      {formatPhone(row.phone)}
-                    </a>
-                  ) : (
-                    <span className="text-muted-foreground">No phone on file</span>
-                  )}
-                  {owedLabel(row.cuisine, row.qty) && (
-                    <Badge variant="outline">{owedLabel(row.cuisine, row.qty)}</Badge>
-                  )}
-                  <Badge variant="outline">
-                    {row.zelle_sent_at
-                      ? `Payment text sent ${new Date(row.zelle_sent_at).toLocaleDateString()}`
-                      : "Payment text NOT sent"}
-                  </Badge>
-                </div>
-              </li>
-            ))}
+            {group.rows.map((row) => {
+              const key = `${row.id}::${row.cuisine}`;
+              const note = unpaid.notesByKey.get(key);
+              const isEditing = editingKey === key;
+              return (
+                <li key={key} className="space-y-1 px-3 py-3 text-sm">
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <span className="font-semibold">{row.guestName || row.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {row.qty} {row.qty === 1 ? "plate" : "plates"} · {cuisineLabel(row.cuisine)}
+                      {owedFor(row.cuisine, row.qty).unit?.restaurant
+                        ? ` · ${owedFor(row.cuisine, row.qty).unit?.restaurant}`
+                        : ""}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {row.phone ? (
+                      <a href={`sms:${row.phone.replace(/\D/g, "")}`} className="font-mono underline">
+                        {formatPhone(row.phone)}
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground">No phone on file</span>
+                    )}
+                    {owedLabel(row.cuisine, row.qty) && (
+                      <Badge variant="outline">{owedLabel(row.cuisine, row.qty)}</Badge>
+                    )}
+                    <Badge variant="outline">
+                      {row.zelle_sent_at
+                        ? `Payment text sent ${new Date(row.zelle_sent_at).toLocaleDateString()}`
+                        : "Payment text NOT sent"}
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      onClick={() => startEdit(row)}
+                      aria-label={note ? "Edit follow-up note" : "Add follow-up note"}
+                    >
+                      <Pencil className="size-3" />
+                      {note ? "Edit note" : "Note"}
+                    </Button>
+                  </div>
+
+                  {isEditing ? (
+                    <div className="pt-2 space-y-2">
+                      <Textarea
+                        value={draftNote}
+                        onChange={(e) => setDraftNote(e.target.value)}
+                        placeholder="Add a committee-visible follow-up note…"
+                        className="min-h-[60px] text-sm"
+                        maxLength={500}
+                        disabled={saving}
+                      />
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          className="h-7 text-xs"
+                          disabled={saving || !draftNote.trim()}
+                          onClick={() => commitEdit(row)}
+                        >
+                          <Check className="size-3 mr-1" />
+                          Save
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs"
+                          disabled={saving}
+                          onClick={cancelEdit}
+                        >
+                          <X className="size-3 mr-1" />
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : note ? (
+                    <div className="pt-1 text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1">
+                      <span className="font-medium text-foreground">Note:</span> {note.note}
+                      {note.created_by_label && (
+                        <span className="italic"> — {note.created_by_label}</span>
+                      )}
+                      {note.updated_at && (
+                        <span className="text-[10px] opacity-70">
+                          {" "}
+                          {new Date(note.updated_at).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         </div>
       ))}
