@@ -157,7 +157,9 @@ export function MealWaitingListRequest({
                 <h3 className="font-display text-2xl text-ink font-bold">
                   {restaurantNameForCuisine(cuisine.key, restaurants)}
                 </h3>
-                <p className="text-sm italic text-muted-foreground">{cuisine.label} cuisine</p>
+                <p className="text-sm italic text-muted-foreground">
+                  {cuisineSubtitle(cuisine.label, restaurantNameForCuisine(cuisine.key, restaurants))}
+                </p>
               </div>
               <MealPriceNote cuisineKey={cuisine.key} rows={restaurants} />
               {cuisine.photos && cuisine.photos.length > 0 && (
