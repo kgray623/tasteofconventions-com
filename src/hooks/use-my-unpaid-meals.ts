@@ -53,7 +53,7 @@ export function useMyUnpaidMeals() {
   });
   const notesQuery = useQuery({
     queryKey: ["meal-follow-up-notes"],
-    queryFn: async () => await loadNotes({ data: {} }),
+    queryFn: async () => await loadNotes(),
     enabled: !rolesLoading && (isTeam || isAdmin),
     staleTime: 60_000,
     retry: 1,
