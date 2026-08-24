@@ -101,8 +101,8 @@ export const MEAL_PRICE_SUMMARY =
 
 export const MEAL_PAY_DEADLINE = "Sunday, August 23";
 export const MEAL_PAY_DEADLINE_LINE =
-  "All catered meals must be paid for by Sunday, August 23.";
+  "Preordering is closed. This payment is to join the meal waiting list — it does not guarantee a plate.";
 
 /** One-paragraph guest explanation used above the cuisine cards. */
 export const MEAL_INTRO_COPY =
-  "Each cuisine offers a chicken or beef meal. All meals are gluten-free, MSG-free, and made only with beef tallow or butter. Prices are set by each restaurant and already include tax: Lalibela (African) $21.90 chicken / $27.38 beef, Burmese (Myanmar) $21.80 chicken / $27.25 beef, and Koen (Indonesian) $24 chicken / $29 beef (includes tax and delivery fees). You will pay the restaurant direct — the restaurants have requested that we use Zelle as the preferred method of payment. All catered meals must be paid for by Sunday, August 23.";
+  "Each cuisine offers a chicken or beef meal. All meals are gluten-free, MSG-free, and made only with beef tallow or butter. Prices are set by each restaurant and already include tax: Lalibela (African) $21.90 chicken / $27.38 beef, Burmese (Myanmar) $21.80 chicken / $27.25 beef, and Koen (Indonesian) $24 chicken / $29 beef (includes tax and delivery fees). You will pay the restaurant direct — the restaurants have requested that we use Zelle as the preferred method of payment. Preordering is now closed; this is a waiting-list request and a plate is not guaranteed until the restaurant confirms.";
