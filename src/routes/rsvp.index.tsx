@@ -281,7 +281,7 @@ function PreviewPage() {
           <Card className="p-7 space-y-5">
             <div>
               <h2 className="font-display text-2xl">
-                Order your catered cultural meal
+                Request a meal from one of our restaurants
               </h2>
               <p className="text-sm text-muted-foreground mt-1">{MEAL_INTRO_COPY}</p>
             </div>
