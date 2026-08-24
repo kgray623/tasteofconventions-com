@@ -67,6 +67,7 @@ function UnpaidGuestsPage() {
   const [draftNote, setDraftNote] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const saveNote = useServerFn(saveMealFollowUpNote);
+  const queryClient = useQueryClient();
 
   const owedFor = (cuisine: string, qty: number) => {
     const prices = mealPricesForCuisine(cuisine, restaurants);
