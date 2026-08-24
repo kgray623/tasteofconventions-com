@@ -1726,6 +1726,7 @@ export type Database = {
             }
             Returns: number
           }
+      admin_exists: { Args: never; Returns: boolean }
       claim_admin: { Args: never; Returns: boolean }
       count_referral_matches: { Args: { _raw_name: string }; Returns: number }
       delete_email: {
@@ -1744,6 +1745,12 @@ export type Database = {
         Returns: string
       }
       get_my_chat_unread: { Args: never; Returns: Json }
+      get_my_roles: {
+        Args: never
+        Returns: {
+          role: Database["public"]["Enums"]["app_role"]
+        }[]
+      }
       get_public_inviters: {
         Args: never
         Returns: {
