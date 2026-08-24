@@ -235,12 +235,12 @@ export function InvitationPage() {
             <UtensilsCrossed className="w-4 h-4" /> A cultural catered meal · Order
           </p>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Ordering a cultural catered meal is not required to attend this special event, but it is available to those who RSVP in person. Preordering has now closed so we can lock in numbers with the restaurants. If a cuisine still has room, you may pay the restaurant directly to join the prepay wait list and we will confirm with the restaurant once your payment is accepted. Each cuisine offers a chicken or beef meal, and all meals are gluten-free. Prices are set by each restaurant and already include tax: Lalibela (African) $21.90 chicken / $27.38 beef, Burmese (Myanmar) $21.80 chicken / $27.25 beef, and Koen (Indonesian) $24 chicken / $29 beef (includes tax and delivery fees). When you order, your RSVP page shows the restaurant&apos;s name and phone number so you can call and pay them directly.
+            Ordering a catered meal is optional — it’s offered to guests who RSVP in person. Preorders are now closed. The restaurants need time to prepare a large number of plates, so any new order goes on a wait list: you pay the restaurant directly, and your plate is confirmed once that restaurant accepts your payment. Each restaurant offers a chicken or beef plate, and all plates are gluten-free. Your RSVP page shows the restaurant&apos;s name and phone number so you can reach them directly.
           </p>
           <Link to="/rsvp" className="inline-block mt-5">
             <Button size="lg" className="bg-gradient-sunset text-white hover:opacity-90 px-8 shadow-glow border-0">
               <UtensilsCrossed className="mr-2 w-4 h-4" />
-              RSVP or join the prepay wait list
+              RSVP or request a meal
             </Button>
           </Link>
         </div>

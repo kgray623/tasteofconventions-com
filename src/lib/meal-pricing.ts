@@ -97,12 +97,21 @@ export function allMealPriceLines(restaurants?: RestaurantLike[] | null): string
 
 /** Short one-liner: prices vary by restaurant, tax included. */
 export const MEAL_PRICE_SUMMARY =
-  "Meal prices vary by restaurant and already include sales tax — Lalibela (African) $21.90 chicken / $27.38 beef, Burmese (Myanmar) $21.80 chicken / $27.25 beef, Koen (Indonesian) $24 chicken / $29 beef (includes tax and delivery fees).";
+  "Each restaurant sets its own prices, tax included \u2014 Lalibela (African cuisine) $21.90 chicken / $27.38 beef, Burmese (Myanmar cuisine) $21.80 chicken / $27.25 beef, Koen (Indonesian cuisine) $24 chicken / $29 beef (includes tax and delivery fees).";
 
 export const MEAL_PAY_DEADLINE = "Sunday, August 23";
 export const MEAL_PAY_DEADLINE_LINE =
-  "Preordering is closed. Pay now to join the prepay wait list — once the restaurant accepts your payment, your plate is confirmed.";
+  "Preorders are closed. Pay the restaurant directly to be added to their wait list \u2014 your plate is confirmed once the restaurant accepts your payment.";
 
 /** One-paragraph guest explanation used above the cuisine cards. */
 export const MEAL_INTRO_COPY =
-  "Each cuisine offers a chicken or beef meal. All meals are gluten-free, MSG-free, and made only with beef tallow or butter. Prices are set by each restaurant and already include tax: Lalibela (African) $21.90 chicken / $27.38 beef, Burmese (Myanmar) $21.80 chicken / $27.25 beef, and Koen (Indonesian) $24 chicken / $29 beef (includes tax and delivery fees). You will pay the restaurant direct — the restaurants have requested that we use Zelle as the preferred method of payment. Preordering is now closed; this is a prepay wait-list request and your plate is confirmed once the restaurant accepts your payment.";
+  "Preorders are closed. The restaurants need time to prepare a large number of plates, so any new order goes on that restaurant's wait list: pay the restaurant directly \u2014 Zelle is their preferred method \u2014 and your plate is confirmed once the restaurant accepts your payment. Each restaurant offers a chicken or beef plate. All plates are gluten-free, MSG-free, and made only with beef tallow or butter. Prices below already include tax.";
+
+/** Restaurant name for a cuisine key, e.g. "Myanmar" -> "Burmese". */
+export function restaurantNameForCuisine(
+  cuisine: string | null | undefined,
+  restaurants?: RestaurantLike[] | null,
+): string {
+  const prices = mealPricesForCuisine(cuisine, restaurants);
+  return prices?.restaurant || String(cuisine ?? "").trim();
+}

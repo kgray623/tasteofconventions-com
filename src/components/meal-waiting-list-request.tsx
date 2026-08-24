@@ -8,11 +8,22 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Minus, Plus, UtensilsCrossed } from "lucide-react";
 import { MealPriceNote, MealRestaurantContact } from "@/components/meal-restaurant-contact";
+import { restaurantNameForCuisine } from "@/lib/meal-pricing";
 import { requestMealWaitingList } from "@/lib/meal-waiting-list.functions";
 import { getErrorMessage } from "@/lib/async-safety";
 
 export const MEAL_PREORDER_CLOSED_NOTICE =
-  "Meal preordering is now closed — we've locked in our numbers with the restaurants. If you'd still like to request a plate, you can pay now to be added to the prepay wait list, and we'll confirm with the restaurant once your payment is accepted.";
+  "Preorders are closed. The restaurants need time to prepare a large number of plates, so any new order goes on that restaurant's wait list: pay the restaurant directly — Zelle is their preferred method — and your plate is confirmed once the restaurant accepts your payment. Prices already include tax.";
+
+/** "Myanmar/Burmese" + restaurant "Burmese" -> "Myanmar cuisine" (no redundant name). */
+function cuisineSubtitle(label: string, restaurant: string): string {
+  const parts = label
+    .split("/")
+    .map((part) => part.trim())
+    .filter((part) => part && part.toLowerCase() !== restaurant.trim().toLowerCase());
+  const name = parts.length > 0 ? parts.join(" / ") : label.trim();
+  return `${name} cuisine`;
+}
 
 const METHODS = [
   { key: "zelle", label: "Zelle" },
@@ -37,7 +48,7 @@ type Props = {
  * Preordering is closed. This replaces the cuisine/quantity preorder selector on
  * every guest surface: the guest picks a cuisine, pays the restaurant directly
  * using that restaurant's own payment details, and reports the payment. Only
- * then is a prepay wait-list request submitted.
+ * then is a wait-list request submitted to that restaurant.
  */
 export function MealWaitingListRequest({
   token,
@@ -66,7 +77,7 @@ export function MealWaitingListRequest({
     }
     if (!chosen) {
       toast.error(
-        "Choose how you paid the restaurant — payment is required to join the prepay wait list.",
+        "Choose how you paid the restaurant — payment is required to join their wait list.",
       );
       return;
     }
@@ -86,7 +97,7 @@ export function MealWaitingListRequest({
       setSubmitted((cur) => [...cur, { cuisine, qty: count }]);
       setOpenFor(null);
       toast.success(
-        "Payment reported — you're on the prepay wait list. We'll confirm with the restaurant once your payment is accepted.",
+        "Payment reported — you're on the restaurant's wait list. Your plate is confirmed once the restaurant accepts your payment.",
       );
     } catch (e: unknown) {
       toast.error(getErrorMessage(e, "Could not save your request."));
@@ -101,17 +112,19 @@ export function MealWaitingListRequest({
         <p className="text-xs uppercase tracking-[0.3em] text-magenta inline-flex items-center gap-2">
           <UtensilsCrossed className="w-4 h-4" /> Catered meals
         </p>
-        <h2 className="font-display text-2xl text-ink mt-2">Meal preordering is closed</h2>
+        <h2 className="font-display text-2xl text-ink mt-2">Request a meal from one of our restaurants</h2>
         <p className="text-sm text-muted-foreground mt-1">{MEAL_PREORDER_CLOSED_NOTICE}</p>
       </div>
 
       {submitted.length > 0 && (
         <div className="rounded-lg border-2 border-emerald-600 bg-emerald-600/10 p-3 text-sm text-ink">
-          <p className="font-medium">Prepay wait-list request received</p>
+          <p className="font-medium">Request received</p>
           <ul className="mt-1 space-y-0.5">
             {submitted.map((s) => (
               <li key={`${s.cuisine}-${s.qty}`}>
-                {s.qty}× {s.cuisine} — payment reported, awaiting restaurant confirmation
+                {s.qty} {s.qty === 1 ? "plate" : "plates"} requested from{" "}
+                {restaurantNameForCuisine(s.cuisine, restaurants)} — payment reported, waiting for
+                the restaurant to accept
               </li>
             ))}
           </ul>
@@ -150,7 +163,14 @@ export function MealWaitingListRequest({
               key={cuisine.key}
               className="rounded-md border border-border bg-card p-4 space-y-3"
             >
-              <h3 className="font-display text-2xl text-ink font-bold">{cuisine.label}</h3>
+              <div>
+                <h3 className="font-display text-2xl text-ink font-bold">
+                  {restaurantNameForCuisine(cuisine.key, restaurants)}
+                </h3>
+                <p className="text-sm italic text-muted-foreground">
+                  {cuisineSubtitle(cuisine.label, restaurantNameForCuisine(cuisine.key, restaurants))}
+                </p>
+              </div>
               <MealPriceNote cuisineKey={cuisine.key} rows={restaurants} />
               {cuisine.photos && cuisine.photos.length > 0 && (
                 <div className="grid grid-cols-3 gap-2">
@@ -180,7 +200,7 @@ export function MealWaitingListRequest({
 
               {!open ? (
                 <Button type="button" variant="outline" onClick={() => setOpenFor(cuisine.key)}>
-                  Request {cuisine.label} — I'll pay now
+                  Request from {restaurantNameForCuisine(cuisine.key, restaurants)} — I'll pay now
                 </Button>
               ) : (
                 <div className="space-y-3 rounded-md border border-terracotta/40 bg-terracotta/5 p-3">
@@ -250,7 +270,7 @@ export function MealWaitingListRequest({
                       disabled={busy !== null}
                       className="bg-terracotta text-cream hover:bg-terracotta/90"
                     >
-                      {busy === cuisine.key ? "Saving…" : "I've paid — add me to the prepay wait list"}
+                      {busy === cuisine.key ? "Saving…" : "I've paid — add me to the wait list"}
                     </Button>
                     <Button type="button" variant="ghost" onClick={() => setOpenFor(null)}>
                       Cancel
