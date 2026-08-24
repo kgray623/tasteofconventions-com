@@ -11,9 +11,9 @@ export const Route = createFileRoute("/preorder")({
   head: () => ({
     meta: [
       { title: "Catered meal requests · A Taste of Special Conventions" },
-      { name: "description", content: "Meal preordering is closed. You can still pay a restaurant directly and ask to be added to the catered meal waiting list for August 30, 2026." },
+      { name: "description", content: "Meal preordering is closed. You can still pay a restaurant directly and ask to be added to the catered meal prepay wait list for August 30, 2026." },
       { property: "og:title", content: "Catered meal requests · A Taste of Special Conventions" },
-      { property: "og:description", content: "Meal preordering is closed — pay now to join the catered meal waiting list for the August 30, 2026 evening at Eagle's Landing." },
+      { property: "og:description", content: "Meal preordering is closed — pay now to join the catered meal prepay wait list for the August 30, 2026 evening at Eagle's Landing." },
     ],
   }),
   component: PreorderPage,
