@@ -1066,6 +1066,79 @@ export type Database = {
           },
         ]
       }
+      meal_waiting_list: {
+        Row: {
+          cuisine: string
+          id: string
+          invitation_id: string | null
+          name: string
+          notes: string | null
+          payment_method: string | null
+          payment_note: string | null
+          payment_reported_at: string | null
+          phone: string | null
+          promoted_at: string | null
+          promoted_to_preorder_id: string | null
+          qty: number
+          requested_at: string
+          status: string
+        }
+        Insert: {
+          cuisine: string
+          id?: string
+          invitation_id?: string | null
+          name: string
+          notes?: string | null
+          payment_method?: string | null
+          payment_note?: string | null
+          payment_reported_at?: string | null
+          phone?: string | null
+          promoted_at?: string | null
+          promoted_to_preorder_id?: string | null
+          qty?: number
+          requested_at?: string
+          status?: string
+        }
+        Update: {
+          cuisine?: string
+          id?: string
+          invitation_id?: string | null
+          name?: string
+          notes?: string | null
+          payment_method?: string | null
+          payment_note?: string | null
+          payment_reported_at?: string | null
+          phone?: string | null
+          promoted_at?: string | null
+          promoted_to_preorder_id?: string | null
+          qty?: number
+          requested_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_waiting_list_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "invitations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_waiting_list_promoted_to_preorder_id_fkey"
+            columns: ["promoted_to_preorder_id"]
+            isOneToOne: false
+            referencedRelation: "cuisine_preorders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_waiting_list_promoted_to_preorder_id_fkey"
+            columns: ["promoted_to_preorder_id"]
+            isOneToOne: false
+            referencedRelation: "meal_accounting_lines"
+            referencedColumns: ["preorder_id"]
+          },
+        ]
+      }
       meal_zelle_text_sends: {
         Row: {
           created_at: string
