@@ -12,7 +12,7 @@ import { requestMealWaitingList } from "@/lib/meal-waiting-list.functions";
 import { getErrorMessage } from "@/lib/async-safety";
 
 export const MEAL_PREORDER_CLOSED_NOTICE =
-  "Meal preordering is now closed — we've locked in our numbers with the restaurants. If you'd still like to request a plate, you can pay now to be added to the waiting list, and we'll confirm with the restaurant.";
+  "Meal preordering is now closed — we've locked in our numbers with the restaurants. If you'd still like to request a plate, you can pay now to be added to the prepay wait list, and we'll confirm with the restaurant once your payment is accepted.";
 
 const METHODS = [
   { key: "zelle", label: "Zelle" },
@@ -37,7 +37,7 @@ type Props = {
  * Preordering is closed. This replaces the cuisine/quantity preorder selector on
  * every guest surface: the guest picks a cuisine, pays the restaurant directly
  * using that restaurant's own payment details, and reports the payment. Only
- * then is a waiting-list request submitted.
+ * then is a prepay wait-list request submitted.
  */
 export function MealWaitingListRequest({
   token,
@@ -66,7 +66,7 @@ export function MealWaitingListRequest({
     }
     if (!chosen) {
       toast.error(
-        "Choose how you paid the restaurant — payment is required to join the waiting list.",
+        "Choose how you paid the restaurant — payment is required to join the prepay wait list.",
       );
       return;
     }
@@ -86,7 +86,7 @@ export function MealWaitingListRequest({
       setSubmitted((cur) => [...cur, { cuisine, qty: count }]);
       setOpenFor(null);
       toast.success(
-        "Payment reported — you're on the waiting list. We'll confirm with the restaurant.",
+        "Payment reported — you're on the prepay wait list. We'll confirm with the restaurant once your payment is accepted.",
       );
     } catch (e: unknown) {
       toast.error(getErrorMessage(e, "Could not save your request."));
@@ -107,7 +107,7 @@ export function MealWaitingListRequest({
 
       {submitted.length > 0 && (
         <div className="rounded-lg border-2 border-emerald-600 bg-emerald-600/10 p-3 text-sm text-ink">
-          <p className="font-medium">Waiting-list request received</p>
+          <p className="font-medium">Prepay wait-list request received</p>
           <ul className="mt-1 space-y-0.5">
             {submitted.map((s) => (
               <li key={`${s.cuisine}-${s.qty}`}>
@@ -250,7 +250,7 @@ export function MealWaitingListRequest({
                       disabled={busy !== null}
                       className="bg-terracotta text-cream hover:bg-terracotta/90"
                     >
-                      {busy === cuisine.key ? "Saving…" : "I've paid — add me to the waiting list"}
+                      {busy === cuisine.key ? "Saving…" : "I've paid — add me to the prepay wait list"}
                     </Button>
                     <Button type="button" variant="ghost" onClick={() => setOpenFor(null)}>
                       Cancel
