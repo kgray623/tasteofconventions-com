@@ -51,6 +51,7 @@ import myanmarMeal1 from "@/assets/myanmar-meal-1.jpg.asset.json";
 import myanmarMeal2 from "@/assets/myanmar-meal-2.jpg.asset.json";
 import myanmarMeal3 from "@/assets/myanmar-meal-3.jpg.asset.json";
 import myanmarMeal4 from "@/assets/myanmar-meal-4.jpg.asset.json";
+import { formatEventDateRange } from "@/lib/event-time";
 
 const africanPhotos = [africanMeal1.url, africanMeal2.url, africanMeal3.url];
 const indonesianPhotos = [indonesianMeal1.url, indonesianMeal2.url, indonesianMeal3.url];
@@ -71,6 +72,7 @@ type RsvpTokenData = {
       title: string;
       description?: string | null;
       starts_at: string;
+      ends_at?: string | null;
       location?: string | null;
     };
   };
@@ -403,7 +405,7 @@ function RsvpPage() {
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
             <span className="inline-flex items-center gap-2">
               <Calendar className="w-4 h-4 text-gold" />
-              {new Date(ev.starts_at).toLocaleString()}
+              {formatEventDateRange(ev.starts_at, ev.ends_at)}
             </span>
             {ev.location && (
               <span className="inline-flex items-center gap-2">
