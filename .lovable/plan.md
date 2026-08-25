@@ -1,36 +1,59 @@
-# Autumn/Perry Carlson — record the African beef plate as paid
+# "Bring a covered dish" list — guests with no catered meal, by committee member
 
-Verified against the live database 2026-08-25 19:52 UTC.
+Read from the live database 2026-08-25 19:56 UTC.
 
-## What the two screenshots settle
+## What the database says right now
 
-1. **Text thread** with (402) 460-8121 "Perry & Autumn": Kari sent 808.278.7562, Autumn replied "You should have it! Thank you so much for your help! This was the meal my daughter really wanted!"
-2. **Wells Fargo receipt (2:49 PM)**: **$27.38 sent to Senait Gebremichael**, memo *"beef meal for (402) 460-8121 Perry Carlson"*, confirmation **WFCT22KW4N2C**.
+Counting only guests who RSVP'd **yes** and are attending **in person** (Zoom and declines excluded), and who have **no active catered-meal order** (matched by invitation link or phone):
 
-That amount and payee match the database exactly: Lalibela (African), Zelle name "Senait T Gebremichael", beef price **$27.38**. So the outstanding African plate is now paid — a **beef** plate, sent by Kari on the Carlsons' behalf.
+| Committee member | Guests | Seats |
+| --- | --- | --- |
+| Mysha Woods | 18 | 41 |
+| Kari Gray | 10 | 22 |
+| Shelley & Pat Monaghan | 8 | 12 |
+| Tamara Madlock | 5 | 8 |
+| Tina Santana | 4 | 5 |
+| Betsaida Ruiz | 3 | 6 |
+| Angela Waters | 3 | 3 |
+| Janet Blaine | 3 | 4 |
+| Jamy Elker, Jay Wilcher, Dixie Frahm, Mike and Tracey Curtis, Melissa Novotne | 1 each | 8 |
 
-## What the database shows now
+**Totals: 59 guests · 108 seats.** Everyone has a committee member recorded, but the page will still show a "No committee member recorded" group if that ever changes, so nobody is hidden.
 
-Autumn Carlson, 402-460-8121 — order on file: African 1, Indonesian 2, Myanmar 1.
+## What you get
 
-- Indonesian 2 — already paid (guest-reported, Venmo, 8/24)
-- Myanmar 1 — already paid (guest-reported, Zelle, 8/24)
-- **African 1 — no payment row; still unpaid.** Follow-up note reads only "Sent" (today 14:46 UTC).
+A new page at **/admin/covered-dish**, reachable with one tap from the Steering Committee landing page and the admin landing page as **"Covered dish reminders"** with a count badge.
 
-## Change
+At the top: total guests, total seats, and a "read from the database at HH:MM UTC" line. Then one group per committee member, sorted biggest first, each showing:
 
-1. Record her **1 African plate as paid** — Zelle, **$27.38 beef**, restaurant **Lalibela** linked, recorded by Kari Gray (committee-recorded, awaiting restaurant verification).
-   - Note: "Zelle $27.38 beef plate sent to Senait T Gebremichael 2026-08-25, confirmation WFCT22KW4N2C, memo 'beef meal for (402) 460-8121 Perry Carlson'. Paid by Kari Gray on the Carlsons' behalf. Awaiting Lalibela verification."
-2. Replace the ambiguous "Sent" follow-up note on the African line with that clear wording, so the beef choice and confirmation number stay visible.
-3. Nothing else changes: her Indonesian and Myanmar payments, plate counts, RSVP, and full text history stay exactly as they are.
+- Member name, their guest count and seat count
+- Each guest: name, **tappable phone number**, party size, and a pink **Text** button that opens your own Messages app with the covered-dish reminder prefilled
+- A **"Text all in this group"** button that opens one Messages draft addressed to every guest in that member's group who has a phone number
+- Guests with no phone number on file are still listed, clearly marked "no phone on file", so they stay visible for a call or in-person ask
 
-## Expected result after the change
+Same page and same list for admins and every committee member, matching how "Unpaid guests" already works. Nothing is deleted or hidden anywhere.
 
-- The Carlsons drop off the unpaid list on /admin/unpaid and out of the unpaid-by-committee rollup entirely
-- Their African plate appears under "Reported paid — awaiting restaurant confirmation"
-- Paid plates go up by 1; still-to-pay goes down by 1
-- Lalibela's portal shows the plate as reported, not yet verified
+## The reminder message
 
-## Technical detail
+Editable in one place (admin Event settings, same pattern as the meal text template), defaulting to:
 
-Insert one row into `meal_payments` for `preorder_id = 10c2b7c0-33bb-4fc6-8c65-8517579a4ed7`, `cuisine = 'African'`, `qty_paid = 1`, `source = 'committee_recorded'`, `method = 'zelle'`, `restaurant_id = d4c17566-10a8-4713-b4b8-4f2787dfb25b`, `verified_at` null, reported note as above. Update the matching `meal_follow_up_notes` row. No schema or code changes. All counts read back from the database and reported with a UTC timestamp.
+> Hi [name]! You're on the list for A Taste of Special Conventions — Sunday, August 30, 4:00 PM at Eagle's Landing. Since you're not having a catered meal, please bring a covered dish to share. Thanks so much! — [your name]
+
+## Access
+
+Admins and committee (`team`) members only. Guests and logged-out visitors cannot reach it.
+
+## Technical notes
+
+- New server helper `src/lib/covered-dish.server.ts` + `src/lib/covered-dish.functions.ts`: read the current event's invitations with their RSVP row and inviter, exclude `status <> 'yes'` and `attendance_mode = 'zoom'`, exclude any invitation matched to a `cuisine_preorders` row with at least one selection (by `invitation_id` or normalized phone tail — the same matching `loadCommitteeMealTexts` uses), group by inviter.
+- Reuses `phoneTail` from `src/lib/phone.ts` and the existing `SmsTextButton` component, so the tap-to-text behaviour and its fallback dialog are identical to every other Text button.
+- New route `src/routes/_authenticated/admin/covered-dish.tsx` with its own `head()` metadata; nav entries added to `src/routes/_authenticated/admin/index.tsx` and the committee landing list.
+- No schema change; no writes. This page is read-only reporting — it does not mark anything as sent, per the "only an explicit human action after the act" rule.
+
+## Also outstanding from the last approval
+
+The Carlson African beef payment (Zelle $27.38 to Senait/Lalibela, confirmation WFCT22KW4N2C, memo "beef meal for (402) 460-8121 Perry Carlson") was approved but the write was interrupted. I'll record that payment row and its follow-up note first, then build this page, and report both with read-back counts.
+
+## Verification before I call it done
+
+Playwright at 390px on the authenticated preview, as admin and as a non-admin committee login: screenshot of the totals banner and first groups with zero scrolling, a second screenshot of a named group further down, and one Text button inspected to confirm the `sms:` link carries the right number and body. Group counts re-read from the database with SQL and reported with a UTC timestamp.
