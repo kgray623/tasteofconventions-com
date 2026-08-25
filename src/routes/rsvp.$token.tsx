@@ -93,6 +93,8 @@ type RsvpTokenData = {
     paid_at: string | null;
     source?: string | null;
     method?: string | null;
+    state?: "paid_confirmed" | "paid_reported";
+    confirmed_at?: string | null;
   }> | null;
 };
 
@@ -149,7 +151,7 @@ function RsvpPage() {
   >([]);
   // Payments already on record (restaurant-confirmed or reported by the guest).
   const [mealPayments, setMealPayments] = useState<
-    Array<{ cuisine: string; qty_paid: number; paid_at: string | null; source?: string | null }>
+    Array<{ cuisine: string; qty_paid: number; paid_at: string | null; source?: string | null; state?: "paid_confirmed" | "paid_reported"; confirmed_at?: string | null }>
   >([]);
   // Saved meals with no payment recorded yet — the "I already paid" list.
   const [savedMeals, setSavedMeals] = useState<Array<{ cuisine: string; qty: number }>>([]);
@@ -634,14 +636,14 @@ function RsvpPage() {
             <h2 className="font-display text-2xl text-ink">Meal payment on record</h2>
             <ul className="divide-y divide-border">
               {mealPayments.map((p) => {
-                const confirmed = (p.source ?? "restaurant") === "restaurant";
+                  const confirmed = p.state === "paid_confirmed" || (p.source ?? "restaurant") === "restaurant";
                 return (
                   <li key={p.cuisine} className="py-2 text-sm flex items-center gap-3">
                     <span className="font-display text-lg w-8 text-emerald-700">{p.qty_paid}×</span>
                     <span className="flex-1 text-ink">{p.cuisine}</span>
                     <span className={confirmed ? "text-emerald-700" : "text-terracotta"}>
                       {confirmed ? "Paid" : "Awaiting restaurant confirmation"}
-                      {p.paid_at ? ` · ${new Date(p.paid_at).toLocaleDateString()}` : ""}
+                        {(confirmed ? p.confirmed_at || p.paid_at : p.paid_at) ? ` · ${new Date((confirmed ? p.confirmed_at || p.paid_at : p.paid_at) as string).toLocaleDateString()}` : ""}
                     </span>
                   </li>
                 );
@@ -658,7 +660,7 @@ function RsvpPage() {
           onReported={(cuisine, qty) =>
             setMealPayments((current) => [
               ...current.filter((p) => p.cuisine !== cuisine),
-              { cuisine, qty_paid: qty, paid_at: new Date().toISOString(), source: "guest_reported" },
+              { cuisine, qty_paid: qty, paid_at: new Date().toISOString(), source: "guest_reported", state: "paid_reported" },
             ])
           }
         />

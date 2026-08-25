@@ -94,6 +94,28 @@ async function findCuisinePreorder(invitationId: string, phone?: string | null) 
   return normalizePreorder(match ?? null);
 }
 
+async function loadCanonicalMealPaymentRows(preorderId: string) {
+  const { loadMealCommunicationLedger } = await import("@/lib/meal-communication.server");
+  const ledger = await loadMealCommunicationLedger(supabaseAdmin);
+  const rows = ledger.rows.filter((row) => row.id === preorderId);
+  return {
+    mealPayments: rows
+      .filter((row) => row.state === "paid_confirmed" || row.state === "paid_reported")
+      .map((row) => ({
+        cuisine: row.cuisine,
+        qty_paid: row.qty,
+        paid_at: row.paid_at,
+        source: row.paid_source,
+        method: row.paid_method,
+        state: row.state,
+        confirmed_at: row.verified_at,
+      })),
+    mealStatuses: rows
+      .filter((row) => row.state === "paid_confirmed")
+      .map((row) => ({ cuisine: row.cuisine, confirmed: true, confirmed_at: row.verified_at })),
+  };
+}
+
 // Lookup the currently signed-in guest's most recent invitation (by phone number).
 export const getMyInvitation = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -135,20 +157,7 @@ export const getMyInvitation = createServerFn({ method: "GET" })
       method: string | null;
     }> = [];
     let mealStatuses: Array<{ cuisine: string; confirmed: boolean; confirmed_at: string | null }> = [];
-    if (preorder?.id) {
-      const [{ data: paidRows }, { data: statusRows }] = await Promise.all([
-        supabaseAdmin
-          .from("meal_payments")
-          .select("cuisine,qty_paid,paid_at,source,method")
-          .eq("preorder_id", preorder.id),
-        supabaseAdmin
-          .from("meal_order_status")
-          .select("cuisine,confirmed,confirmed_at")
-          .eq("preorder_id", preorder.id),
-      ]);
-      mealPayments = (paidRows ?? []) as typeof mealPayments;
-      mealStatuses = (statusRows ?? []) as typeof mealStatuses;
-    }
+    if (preorder?.id) ({ mealPayments, mealStatuses } = await loadCanonicalMealPaymentRows(preorder.id));
     return { invitation: inv, rsvp, order, preorder, mealPayments, mealStatuses };
   });
 
@@ -241,20 +250,7 @@ export const getInvitationByToken = createServerFn({ method: "GET" })
       method: string | null;
     }> = [];
     let mealStatuses: Array<{ cuisine: string; confirmed: boolean; confirmed_at: string | null }> = [];
-    if (preorder?.id) {
-      const [{ data: paidRows }, { data: statusRows }] = await Promise.all([
-        supabaseAdmin
-          .from("meal_payments")
-          .select("cuisine,qty_paid,paid_at,source,method")
-          .eq("preorder_id", preorder.id),
-        supabaseAdmin
-          .from("meal_order_status")
-          .select("cuisine,confirmed,confirmed_at")
-          .eq("preorder_id", preorder.id),
-      ]);
-      mealPayments = (paidRows ?? []) as typeof mealPayments;
-      mealStatuses = (statusRows ?? []) as typeof mealStatuses;
-    }
+    if (preorder?.id) ({ mealPayments, mealStatuses } = await loadCanonicalMealPaymentRows(preorder.id));
     return { invitation: inv, rsvp, order, preorder, mealPayments, mealStatuses, expired: false };
   });
 

@@ -92,7 +92,7 @@ describe("meal communication accounting", () => {
   it("removes reported and confirmed payments from both unpaid queues", () => {
     const reported = buildMealCommunicationLedger({
       ...base,
-      payments: [{ preorder_id: "p1", cuisine: "African", paid_at: "2026-08-19T11:00:00Z", source: "guest_reported" }],
+      payments: [{ preorder_id: "p1", cuisine: "African", qty_paid: 2, paid_at: "2026-08-19T11:00:00Z", source: "guest_reported" }],
     });
     expect(reported.rows.find((row) => row.cuisine === "African")?.state).toBe("paid_reported");
 
@@ -106,10 +106,42 @@ describe("meal communication accounting", () => {
   it("does not let payment for one cuisine hide another cuisine", () => {
     const ledger = buildMealCommunicationLedger({
       ...base,
-      payments: [{ preorder_id: "p1", cuisine: "African", paid_at: "2026-08-19T11:00:00Z", source: "restaurant", verified_at: "2026-08-19T11:00:00Z" }],
+      payments: [{ preorder_id: "p1", cuisine: "African", qty_paid: 2, paid_at: "2026-08-19T11:00:00Z", source: "restaurant", verified_at: "2026-08-19T11:00:00Z" }],
     });
     expect(ledger.rows.find((row) => row.cuisine === "African")?.state).toBe("paid_confirmed");
     expect(ledger.rows.find((row) => row.cuisine === "Myanmar")?.state).toBe("needs_update");
+  });
+
+  it("does not treat a partial payment as paid for the order line", () => {
+    const ledger = buildMealCommunicationLedger({
+      ...base,
+      payments: [{ preorder_id: "p1", cuisine: "African", qty_paid: 1, paid_at: "2026-08-19T11:00:00Z", source: "guest_reported" }],
+    });
+    const african = ledger.rows.find((row) => row.cuisine === "African");
+    expect(african?.state).toBe("needs_update");
+    expect(african?.qty).toBe(2);
+    expect(african?.qty_paid).toBe(1);
+  });
+
+  it("places every active order line in exactly one payment status bucket", () => {
+    const ledger = buildMealCommunicationLedger({
+      ...base,
+      textEvents: [
+        { preorder_id: "p1", cuisine: "Burmese", campaign: "payment_update", action: "sent", event_at: "2026-08-19T10:00:00Z", created_at: "2026-08-19T10:00:00Z" },
+      ],
+      payments: [{ preorder_id: "p1", cuisine: "African", qty_paid: 2, paid_at: "2026-08-19T11:00:00Z", source: "guest_reported" }],
+    });
+
+    for (const row of ledger.rows) {
+      const buckets = [
+        row.state === "paid_confirmed",
+        row.state === "paid_reported",
+        row.state === "update_sent",
+        row.state === "needs_update",
+        row.state === "exception",
+      ].filter(Boolean);
+      expect(buckets).toHaveLength(1);
+    }
   });
 });
 describe("single source of truth for sent marks and confirmations", () => {
@@ -174,7 +206,7 @@ describe("single source of truth for sent marks and confirmations", () => {
     const ledger = buildMealCommunicationLedger({
       ...base,
       payments: [
-        { preorder_id: "p1", cuisine: "African", paid_at: "2026-08-08T00:00:00Z", source: "guest_reported", verified_at: null },
+        { preorder_id: "p1", cuisine: "African", qty_paid: 2, paid_at: "2026-08-08T00:00:00Z", source: "guest_reported", verified_at: null },
       ],
       confirmations: [
         { preorder_id: "p1", cuisine: "African", confirmed: true, confirmed_at: "2026-08-13T00:00:00Z" },
