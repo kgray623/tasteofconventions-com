@@ -1,43 +1,30 @@
-# Unpaid plate list update — Ben Ingles paid
+# Yetunde (Tunde) Adejunmobi — clean-up volunteer + meal already settled
 
-Timestamp: 2026-08-25 15:03 UTC
+Verified against the live database 2026-08-25 16:52 UTC.
 
-## What the text says
+## What the two texts say
 
-(531) 232-7970 = **Ben Ingles**, 1 Myanmar (Burmese) plate, currently showing unpaid. He says he paid over the phone yesterday.
+1. **Saturday 5:56 PM** — "This is Tunde and I want only one meal, the Indonesian chicken dinner. I will pay by Zelle tonight."
+2. **Today 11:50 AM** — "If you still have openings, I'd like to volunteer for clean-up after the celebration."
 
-## Change to make
+## What the database already shows
 
-1. Record 1 Myanmar plate as paid for Ben Ingles — source `guest_reported` (awaiting restaurant verification), linked to the Burmese restaurant, note quoting his 2026-08-25 text ("was able to pay over the phone yesterday").
-2. Add/refresh a follow-up note on his Myanmar line so the committee sees why it flipped to paid without a restaurant receipt.
-3. Read the totals back from the database and report the refreshed unpaid list.
+- **Yetunde Adejunmobi**, 785-477-9714 — order on file: **1 Indonesian plate**, exactly the one meal she asked for. Nothing to change.
+- Her payment is already recorded **and restaurant-verified** (recorded 8/23, marked by Kari Gray, debit card phoned to Koen, paid on her behalf along with Linda Braddock). So the "I'll pay by Zelle tonight" text is already superseded — she is not on the unpaid list and should not be chased.
+- **Clean Up** currently has 3 named volunteers (Kari Gray, Moriah Waters, Angela Waters) plus 2 unnamed slots — so there is an opening.
+- Tunde has **no** volunteer assignment on any category yet.
 
-Expected impact: paid plates 115 → 116, still-to-pay 31 → 30, and Ben Ingles drops off the unpaid list.
+## Change
 
-## Current unpaid list (before this change) — 31 plates, 25 lines
+1. Add **Yetunde Adejunmobi** as a volunteer on the **Clean Up** category, with a note recording that she offered by text on 2026-08-25 and her phone 785-477-9714 for coordination.
+2. Add a follow-up note on her meal order stating her Saturday text asked for exactly 1 Indonesian chicken dinner and that it is already paid and restaurant-verified — so no Zelle payment is expected from her and no further payment text should go out.
+3. Nothing is deleted or overwritten: her existing order, payment row, and verification stay exactly as they are.
 
-| Guest | Phone | Restaurant | Plates owed |
-|---|---|---|---|
-| Adrianna Marie Gonzalez | 402-807-6980 | Myanmar / Indonesian | 1 + 1 |
-| Autumn Carlson | 402-460-8121 | African | 1 |
-| Ben Ingles | 531-232-7970 | Myanmar | 1 (being paid now) |
-| Chanel Jones | 213-909-7589 | African / Myanmar | 1 + 1 |
-| Denise Madsen | 402-714-1491 | African | 1 |
-| Deshon Bradley | 419-371-4774 | African / Indonesian / Myanmar | 2 + 2 + 2 |
-| Dodzi Sossou (with Juliette and Sasha) | +32 486 589852 | Indonesian | 1 |
-| EhPaw | 402-203-3249 | Indonesian / Myanmar | 1 + 1 |
-| George Aderonmu | 402-706-1647 | Indonesian / African | 1 + 1 |
-| Jennifer Juliet Valadez | 402-913-7899 | Indonesian | 3 |
-| Juliette and Sasha Sossou-Etse | 402-810-4177 | Indonesian | 2 |
-| Kenda Andersen | 402-296-9922 | Indonesian | 1 |
-| Latea Glenn | 402-686-5008 | Myanmar | 1 |
-| Lydia Madlock | 402-202-3534 | African | 1 |
-| Tiana Stoddard | 402-202-8845 | African / Myanmar / Indonesian | 1 + 1 + 1 |
-| Tina Santana | 402-657-7364 | Myanmar | 2 (restaurant was closed) |
-| Whitney Stone | 402-707-5335 | Indonesian | 1 (restaurant calling her) |
+## Expected result after the change
 
-## Technical notes
+- Tunde appears in the Clean Up volunteer list on the subcommittee/volunteer screens.
+- Her meal stays in the "Restaurant confirmed paid" bucket; unpaid totals do not move.
 
-- Insert into `meal_payments` (preorder `7a8d731f-eb79-4105-9956-6dca56bea90b`, restaurant `1ccd27de-968d-4dae-8918-bb4bcfd43111`, cuisine `Myanmar`, qty 1, source `guest_reported`).
-- Follow-up note via upsert on `meal_follow_up_notes` (unique on preorder_id + cuisine).
-- Data only — no code changes; `/admin/unpaid` and the committee ledger read these tables live.
+## Technical detail
+
+One insert into `category_assignments` (category `Clean Up`, `volunteer_name` = "Yetunde Adejunmobi", note with phone + date), and one insert into `meal_follow_up_notes` for preorder `8558ada7-…` / cuisine `Indonesian`. No schema or code changes. Both rows read back from the database and reported with a UTC timestamp.
