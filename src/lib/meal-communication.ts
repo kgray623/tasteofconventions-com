@@ -146,41 +146,18 @@ export type MealSentMarks = {
  * SINGLE SOURCE OF TRUTH for "was this text marked sent?".
  *
  * `meal_text_events` is canonical: it is append-only, immutable, carries the
- * actor and the evidence source, and holds more current marks than the legacy
- * tables. `meal_text_sends` / `meal_zelle_text_sends` are read-only legacy
- * history and are consulted ONLY for a key that has no event at all.
+ * actor and the evidence source, and holds every mark. `meal_text_sends` is
+ * dead and is never read. `meal_zelle_text_sends` remains as read-only legacy
+ * history for a payment-update key that has no event at all — an event always
+ * wins when the two disagree.
  *
  * Every cuisine string is normalized here, once, so a row stored as "Burmese"
  * can never miss a row keyed as "Myanmar" and render as NOT SENT.
  */
 export function resolveMealSentMarks(input: {
-  originalSends?: SourceSend[];
   updateSends?: SourceSend[];
   textEvents?: SourceTextEvent[];
 }): MealSentMarks {
-  const original = new Map<string, string>();
-  const update = new Map<string, string>();
-  const updateActorId = new Map<string, string | null>();
-
-  const latestEvents = new Map<string, SourceTextEvent>();
-  for (const event of input.textEvents ?? []) {
-    const key = mealSentMarkKey(event.preorder_id, event.cuisine);
-    if (!key) continue;
-    const eventKey = `${event.campaign}::${key}`;
-    const existing = latestEvents.get(eventKey);
-    if (
-      !existing ||
-      event.event_at > existing.event_at ||
-      (event.event_at === existing.event_at && (event.created_at ?? "") > (existing.created_at ?? ""))
-    ) {
-      latestEvents.set(eventKey, event);
-    }
-  }
-
-  for (const row of input.originalSends ?? []) {
-    const key = mealSentMarkKey(row.preorder_id, row.cuisine);
-    if (key) original.set(key, row.sent_at);
-  }
   for (const row of input.updateSends ?? []) {
     const key = mealSentMarkKey(row.preorder_id, row.cuisine);
     if (key) {
