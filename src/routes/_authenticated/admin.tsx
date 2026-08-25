@@ -38,6 +38,15 @@ const tabs: { id?: string; to: string; label: string; icon: typeof ShieldCheck; 
     teamLabel: "Unpaid guests",
     group: "main",
   },
+  {
+    id: "covered-dish",
+    to: "/admin/covered-dish",
+    label: "Covered dish reminders",
+    icon: UtensilsCrossed,
+    team: true,
+    teamLabel: "Covered dish reminders",
+    group: "main",
+  },
   { to: "/admin/inviters", label: "Committee Guests", icon: UserPlus, team: true, teamLabel: "Committee Guests", group: "main" },
 
   { to: "/admin/reconcile", label: "Reconcile list", icon: ListChecks, group: "main" },
