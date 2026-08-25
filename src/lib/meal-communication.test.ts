@@ -218,7 +218,7 @@ describe("single source of truth for sent marks and confirmations", () => {
 
 describe("orphan sent marks", () => {
   const marksFor = (textEvents: any[]) =>
-    resolveMealSentMarks({ originalSends: [], updateSends: [], textEvents });
+    resolveMealSentMarks({ updateSends: [], textEvents });
 
   it("reports a sent mark whose cuisine was removed from the order", async () => {
     const { findOrphanSentMarks } = await import("@/lib/meal-communication");
