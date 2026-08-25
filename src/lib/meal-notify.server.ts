@@ -51,9 +51,8 @@ export async function loadMealNotifyRollup(supabaseAdmin: any) {
     bucket[bucketKey] += 1;
     byInviter.set(key, bucket);
   }
-  const [{ data: originalRows }, { data: updateRows }, { data: textEvents }, { data: committeeInvitations }, { data: auditRows }] =
+  const [{ data: updateRows }, { data: textEvents }, { data: committeeInvitations }, { data: auditRows }] =
     await Promise.all([
-      supabaseAdmin.from("meal_text_sends").select("preorder_id,cuisine,marked_by"),
       supabaseAdmin.from("meal_zelle_text_sends").select("preorder_id,cuisine,marked_by"),
       supabaseAdmin
         .from("meal_text_events")
@@ -80,7 +79,6 @@ export async function loadMealNotifyRollup(supabaseAdmin: any) {
   // this rollup can never disagree with the screens.
   const { resolveMealSentMarks } = await import("@/lib/meal-communication");
   const resolved = resolveMealSentMarks({
-    originalSends: (originalRows ?? []) as any[],
     updateSends: (updateRows ?? []) as any[],
     textEvents: (textEvents ?? []) as any[],
   });
@@ -92,13 +90,15 @@ export async function loadMealNotifyRollup(supabaseAdmin: any) {
       live_rows: legacyRows.length,
     };
   };
-  const originalSummary = summarize(resolved.original, (originalRows ?? []) as any[]);
+  // meal_text_sends is dead and never read: the legacy row count is always 0 and
+  // active marks come from meal_text_events via the canonical resolver.
+  const originalSummary = summarize(resolved.original, []);
   const updateSummary = summarize(resolved.update, (updateRows ?? []) as any[]);
 
   const deletedOriginal = ((auditRows ?? []) as any[]).filter((row) => row.target_type === "meal_text_sends").length;
   const deletedUpdates = ((auditRows ?? []) as any[]).filter((row) => row.target_type === "meal_zelle_text_sends").length;
 
-  const actorIds = [...new Set([...(originalRows ?? []), ...(updateRows ?? [])].map((row: any) => row.marked_by).filter(Boolean))] as string[];
+  const actorIds = [...new Set([...(updateRows ?? [])].map((row: any) => row.marked_by).filter(Boolean))] as string[];
   const { data: profiles } = actorIds.length
     ? await supabaseAdmin.from("profiles").select("id,display_name").in("id", actorIds)
     : { data: [] };
