@@ -44,6 +44,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
       { data: textEvents },
       { data: zelleSetting },
       ledger,
+      allLedger,
       todayEvidence,
       instructionEvidence,
     ] = await Promise.all([
@@ -68,6 +69,9 @@ export const getMealTextData = createServerFn({ method: "POST" })
         .eq("key", "meal_zelle_text_template")
         .maybeSingle(),
       loadMealNotifyRollup(supabaseAdmin),
+      import("@/lib/meal-communication.server").then(({ loadMealCommunicationLedger }) =>
+        loadMealCommunicationLedger(supabaseAdmin, { includeInactive: true }),
+      ),
       (await import("@/lib/meal-text-evidence.server")).loadTodayPaymentTextEvidence(supabaseAdmin, context.userId),
       (await import("@/lib/meal-text-evidence.server")).loadConfirmedInstructionEvidence(supabaseAdmin),
     ]);
@@ -75,7 +79,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
     // ONE source of truth for sent marks: meal_text_events is canonical, the
     // legacy send tables are read-only fallback, and every cuisine string is
     // normalized inside the resolver so no mark can miss its row.
-    const { resolveMealSentMarks, findOrphanSentMarks } = await import("@/lib/meal-communication");
+    const { resolveMealSentMarks, findOrphanSentMarks, isPaidState } = await import("@/lib/meal-communication");
     const marks = resolveMealSentMarks({
       originalSends: (sends ?? []) as any[],
       updateSends: (zelleSends ?? []) as any[],
@@ -121,18 +125,11 @@ export const getMealTextData = createServerFn({ method: "POST" })
       rsvpStatusByInvitation.set(r.id as string, (rsvps[0]?.status as string | undefined) ?? "none");
       rsvpModeByInvitation.set(r.id as string, (rsvps[0]?.attendance_mode as string | undefined) ?? "none");
     }
-    // Payments read directly, because the ledger only covers attending rows.
-    const { data: paymentRows } = await supabaseAdmin
-      .from("meal_payments")
-      .select("preorder_id,cuisine,cancelled_meal_at");
-    const paidKeys = new Set(
-      ((paymentRows ?? []) as any[])
-        .filter((r) => !r.cancelled_meal_at)
-        .map((r) => `${r.preorder_id}::${String(r.cuisine ?? "")}`),
-    );
-
     const ledgerByKey = new Map(
       ledger.rows.map((row) => [`${row.id}::${row.cuisine}`, row] as const),
+    );
+    const allLedgerByKey = new Map(
+      allLedger.rows.map((row) => [`${row.id}::${row.cuisine}`, row] as const),
     );
     const rows: MealTextRow[] = [];
     const excluded: MealTextExcludedRow[] = [];
@@ -189,7 +186,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
                     : `Meal on file while the RSVP is "${status}" (${mode}).`,
             sent_at: sentByMeal.get(`${p.id}::${cuisine}`) ?? null,
             zelle_sent_at: zelleByMeal.get(`${p.id}::${cuisine}`) ?? null,
-            paid: paidKeys.has(`${p.id}::${cuisine}`),
+            paid: isPaidState(allLedgerByKey.get(`${p.id}::${cuisine}`)?.state),
           });
           continue;
         }

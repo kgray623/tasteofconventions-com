@@ -154,13 +154,13 @@ export async function reconcilePaymentTextContact(
     throw new Error("This confirmation does not match the current meal order");
   }
 
-  const [{ data: payments, error: paymentError }, { data: confirmations, error: confirmationError }] = await Promise.all([
-    supabaseAdmin.from("meal_payments").select("cuisine").eq("preorder_id", input.preorderId).is("cancelled_meal_at", null),
-    supabaseAdmin.from("meal_order_status").select("cuisine,confirmed").eq("preorder_id", input.preorderId).eq("confirmed", true),
-  ]);
-  if (paymentError) throw new Error(paymentError.message);
-  if (confirmationError) throw new Error(confirmationError.message);
-  const paid = new Set([...(payments ?? []), ...(confirmations ?? [])].map((row: any) => normalizeCuisine(String(row.cuisine ?? ""))));
+  const { loadMealCommunicationLedger } = await import("@/lib/meal-communication.server");
+  const ledger = await loadMealCommunicationLedger(supabaseAdmin, { includeInactive: true });
+  const paid = new Set(
+    ledger.rows
+      .filter((row) => row.id === input.preorderId && (row.state === "paid_confirmed" || row.state === "paid_reported"))
+      .map((row) => normalizeCuisine(row.cuisine)),
+  );
   if (cuisines.some((cuisine) => paid.has(cuisine))) throw new Error("Payment status changed; refresh before reconciling this contact");
 
   const evidence = await loadTodayPaymentTextEvidence(supabaseAdmin, input.reviewerId);

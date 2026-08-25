@@ -1,6 +1,9 @@
 import { buildMealCommunicationLedger } from "@/lib/meal-communication";
 
-export async function loadMealCommunicationLedger(supabaseAdmin: any) {
+export async function loadMealCommunicationLedger(
+  supabaseAdmin: any,
+  options: { includeInactive?: boolean } = {},
+) {
   const [preorders, invitations, rsvps, inviters, originalSends, updateSends, textEvents, payments, confirmations] =
     await Promise.all([
       supabaseAdmin.from("cuisine_preorders").select("id,invitation_id,name,phone,selections").order("name"),
@@ -15,7 +18,7 @@ export async function loadMealCommunicationLedger(supabaseAdmin: any) {
         .order("event_at"),
       supabaseAdmin
         .from("meal_payments")
-        .select("preorder_id,cuisine,paid_at,source,method,reported_note,reported_by_label,verified_at,cancelled_meal_at"),
+        .select("id,preorder_id,cuisine,qty_paid,paid_at,source,method,reported_note,reported_by_label,verified_at,cancelled_meal_at"),
       supabaseAdmin.from("meal_order_status").select("preorder_id,cuisine,confirmed,confirmed_at"),
     ]);
   for (const result of [
@@ -35,6 +38,7 @@ export async function loadMealCommunicationLedger(supabaseAdmin: any) {
     ((rsvps.data ?? []) as any[]).map((row) => [row.invitation_id as string, row]),
   );
   const activePreorders = ((preorders.data ?? []) as any[]).filter((preorder) => {
+    if (options.includeInactive) return true;
     if (!preorder.invitation_id) return true;
     const rsvp = rsvpByInvitation.get(preorder.invitation_id);
     if (!rsvp) return true;

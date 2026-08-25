@@ -146,15 +146,26 @@ export const listRestaurantAccess = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     await assertAdminOrTeam(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const [{ data: restaurants }, { data: access }, { data: payments }] = await Promise.all([
+    const { normalizeCuisine } = await import("@/lib/preorder-math");
+    const [{ data: restaurants }, { data: access }, ledger] = await Promise.all([
       supabaseAdmin.from("restaurants").select("id,name,cuisine,phone,active").order("name"),
       supabaseAdmin.from("restaurant_portal_access").select("restaurant_id,active,rotated_at,label"),
-      supabaseAdmin.from("meal_payments").select("restaurant_id,cuisine,qty_paid"),
+      import("@/lib/meal-communication.server").then(({ loadMealCommunicationLedger }) =>
+        loadMealCommunicationLedger(supabaseAdmin),
+      ),
     ]);
+    const restaurantByCuisine = new Map(
+      ((restaurants ?? []) as Array<{ id: string; cuisine: string | null; name: string }>).map((r) => [
+        normalizeCuisine(String(r.cuisine ?? r.name)),
+        r.id,
+      ]),
+    );
     const paidByRestaurant = new Map<string, number>();
-    for (const p of (payments ?? []) as Array<{ restaurant_id: string | null; qty_paid: number }>) {
-      if (!p.restaurant_id) continue;
-      paidByRestaurant.set(p.restaurant_id, (paidByRestaurant.get(p.restaurant_id) ?? 0) + Number(p.qty_paid ?? 0));
+    for (const row of ledger.rows) {
+      if (row.state !== "paid_confirmed" && row.state !== "paid_reported") continue;
+      const restaurantId = restaurantByCuisine.get(normalizeCuisine(row.cuisine));
+      if (!restaurantId) continue;
+      paidByRestaurant.set(restaurantId, (paidByRestaurant.get(restaurantId) ?? 0) + row.qty);
     }
     const accessMap = new Map(
       ((access ?? []) as Array<{ restaurant_id: string; active: boolean; rotated_at: string; label: string | null }>).map(
@@ -206,15 +217,16 @@ export const getMealPaymentStatus = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     await assertAdminOrTeam(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data } = await supabaseAdmin
-      .from("meal_payments")
-      .select("preorder_id,cuisine,qty_paid,paid_at");
+    const { loadMealCommunicationLedger } = await import("@/lib/meal-communication.server");
+    const ledger = await loadMealCommunicationLedger(supabaseAdmin);
     return {
-      payments: ((data ?? []) as Array<{
-        preorder_id: string;
-        cuisine: string;
-        qty_paid: number;
-        paid_at: string | null;
-      }>),
+      payments: ledger.rows
+        .filter((row) => row.state === "paid_confirmed" || row.state === "paid_reported")
+        .map((row) => ({
+          preorder_id: row.id,
+          cuisine: row.cuisine,
+          qty_paid: row.qty,
+          paid_at: row.paid_at,
+        })),
     };
   });

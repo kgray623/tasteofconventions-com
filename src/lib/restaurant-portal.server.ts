@@ -2,6 +2,7 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { normalizeCuisine, parseSelections } from "@/lib/preorder-math";
 import { phoneMatches } from "@/lib/phone";
+import { isPaidState } from "@/lib/meal-communication";
 
 import type { PortalData, PortalOrderRow } from "@/lib/restaurant-portal-types";
 
@@ -70,57 +71,16 @@ export async function loadPortalData(restaurantId: string): Promise<PortalData> 
 
   const cuisine = normalizeCuisine(String(restaurant.cuisine ?? restaurant.name ?? ""));
 
-  const [{ data: preorders }, { data: payments }, { data: statuses }] = await Promise.all([
+  const [{ data: preorders }, ledger] = await Promise.all([
     supabaseAdmin
       .from("cuisine_preorders")
       .select("id,name,phone,selections,invitation_id,invitations(rsvps(status,attendance_mode))")
       .order("name"),
-    supabaseAdmin
-      .from("meal_payments")
-      .select("preorder_id,cuisine,qty_paid,paid_at,source,reported_note,verified_at"),
-    supabaseAdmin.from("meal_order_status").select("preorder_id,cuisine,confirmed,confirmed_at"),
+    import("@/lib/meal-communication.server").then(({ loadMealCommunicationLedger }) =>
+      loadMealCommunicationLedger(supabaseAdmin),
+    ),
   ]);
-
-  const confirmedMap = new Map<string, { confirmed: boolean; confirmedAt: string | null }>();
-  for (const s of (statuses ?? []) as Array<{
-    preorder_id: string;
-    cuisine: string;
-    confirmed: boolean;
-    confirmed_at: string | null;
-  }>) {
-    confirmedMap.set(`${s.preorder_id}|${normalizeCuisine(s.cuisine)}`, {
-      confirmed: !!s.confirmed,
-      confirmedAt: s.confirmed_at ?? null,
-    });
-  }
-
-  const paidMap = new Map<
-    string,
-    {
-      qty: number;
-      paidAt: string | null;
-      source: "restaurant" | "guest_reported" | "committee_recorded" | null;
-      note: string | null;
-      verifiedAt: string | null;
-    }
-  >();
-  for (const p of (payments ?? []) as Array<{
-    preorder_id: string;
-    cuisine: string;
-    qty_paid: number;
-    paid_at: string;
-    source: string | null;
-    reported_note: string | null;
-    verified_at: string | null;
-  }>) {
-    paidMap.set(`${p.preorder_id}|${normalizeCuisine(p.cuisine)}`, {
-      qty: Number(p.qty_paid ?? 0),
-      paidAt: p.paid_at ?? null,
-      source: (p.source ?? "restaurant") as "restaurant",
-      note: p.reported_note ?? null,
-      verifiedAt: p.verified_at ?? null,
-    });
-  }
+  const ledgerByKey = new Map(ledger.rows.map((row) => [`${row.id}|${row.cuisine}`, row] as const));
 
   const rows: PortalOrderRow[] = [];
   for (const p of (preorders ?? []) as Array<{
@@ -152,23 +112,24 @@ export async function loadPortalData(restaurantId: string): Promise<PortalData> 
       continue;
     for (const sel of parseSelections(p.selections)) {
       if (sel.cuisine !== cuisine) continue;
-      const paidEntry = paidMap.get(`${p.id}|${sel.cuisine}`);
-      const statusEntry = confirmedMap.get(`${p.id}|${sel.cuisine}`);
+      const status = ledgerByKey.get(`${p.id}|${sel.cuisine}`);
+      if (!status) continue;
+      const paid = isPaidState(status.state);
       rows.push({
         preorderId: p.id,
         guestName: (p.name ?? "").trim() || "Guest",
         phone: (p.phone ?? "").trim(),
         cuisine: sel.cuisine,
         qty: sel.qty,
-        paid: !!paidEntry && paidEntry.qty >= sel.qty,
-        paidAt: paidEntry?.paidAt ?? null,
-        paidSource: paidEntry?.source ?? null,
-        paidNote: paidEntry?.note ?? null,
-        qtyPaid: paidEntry?.qty ?? 0,
-        // Confirmation agrees with the money record: either the restaurant's own
-        // checklist row or a verified payment makes this line confirmed.
-        confirmed: (statusEntry?.confirmed ?? false) || !!paidEntry?.verifiedAt,
-        confirmedAt: statusEntry?.confirmedAt ?? paidEntry?.verifiedAt ?? null,
+        paid,
+        paidAt: status.paid_at,
+        paidSource: status.paid_source,
+        paidNote: status.paid_note,
+        qtyPaid: status.qty_paid,
+        // Canonical payment confirmation: restaurant/verified payment OR the
+        // restaurant checklist row, resolved once in the meal communication ledger.
+        confirmed: status.state === "paid_confirmed",
+        confirmedAt: status.verified_at,
       });
     }
   }

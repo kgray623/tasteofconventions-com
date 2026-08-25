@@ -29,10 +29,12 @@ export type MealCommunicationRow = {
   phone: string;
   cuisine: string;
   qty: number;
+  qty_paid: number;
   inviter_id: string | null;
   inviter: string;
   original_sent_at: string | null;
   update_sent_at: string | null;
+  payment_id: string | null;
   paid_at: string | null;
   paid_source: MealPaymentSource | null;
   paid_method: string | null;
@@ -89,8 +91,10 @@ type SourceTextEvent = {
 };
 
 type SourcePayment = {
+  id?: string | null;
   preorder_id: string;
   cuisine: string;
+  qty_paid?: number | string | null;
   paid_at: string | null;
   source?: string | null;
   method?: string | null;
@@ -108,6 +112,8 @@ type SourceInvitation = { id: string; inviter_id: string | null };
 type SourceInviter = { id: string; name: string | null };
 
 type PaymentFact = {
+  id: string | null;
+  qty_paid: number;
   paid_at: string | null;
   source: MealPaymentSource;
   method: string | null;
@@ -219,8 +225,10 @@ export function buildMealCommunicationLedger(input: {
     if (!cuisine) continue;
     const key = keyFor(row.preorder_id, cuisine);
     const fact: PaymentFact = {
+      id: row.id ?? null,
+      qty_paid: Math.max(0, Math.round(Number(row.qty_paid ?? 0) || 0)),
       paid_at: row.paid_at ?? null,
-      source: normalizeSource(row.source),
+      source: row.verified_at ? "restaurant" : normalizeSource(row.source),
       method: row.method?.trim() || null,
       note: row.reported_note?.trim() || null,
       reported_by_label: row.reported_by_label?.trim() || null,
@@ -240,6 +248,8 @@ export function buildMealCommunicationLedger(input: {
     const existing = paidByKey.get(key);
     if (!existing || existing.source !== "restaurant") {
       paidByKey.set(key, {
+        id: existing?.id ?? null,
+        qty_paid: existing?.qty_paid ?? 0,
         paid_at: row.confirmed_at ?? existing?.paid_at ?? null,
         source: "restaurant",
         method: existing?.method ?? null,
@@ -265,7 +275,10 @@ export function buildMealCommunicationLedger(input: {
       const key = keyFor(preorder.id, cuisine);
       const originalSentAt = originalByKey.get(key) ?? null;
       const updateSentAt = updateByKey.get(key) ?? null;
-      const payment = paidByKey.get(key) ?? null;
+      const storedPayment = paidByKey.get(key) ?? null;
+      const payment = storedPayment && (storedPayment.qty_paid === 0 || storedPayment.qty_paid >= qty)
+        ? { ...storedPayment, qty_paid: storedPayment.qty_paid || qty }
+        : null;
       const inviterId = preorder.invitation_id
         ? (inviterByInvitation.get(preorder.invitation_id) ?? null)
         : null;
@@ -294,12 +307,14 @@ export function buildMealCommunicationLedger(input: {
         phone: preorder.phone?.trim() || "",
         cuisine,
         qty,
+        qty_paid: payment?.qty_paid ?? storedPayment?.qty_paid ?? 0,
         inviter_id: inviterId,
         inviter: inviterId
           ? (inviterNameById.get(inviterId) ?? "Committee")
           : "Not linked to a committee member",
         original_sent_at: originalSentAt,
         update_sent_at: updateSentAt,
+        payment_id: payment?.id ?? storedPayment?.id ?? null,
         paid_at: payment?.paid_at ?? null,
         paid_source: payment?.source ?? null,
         paid_method: payment?.method ?? null,

@@ -61,6 +61,8 @@ type MyRsvpData = {
     paid_at: string | null;
     source?: string | null;
     method?: string | null;
+    state?: "paid_confirmed" | "paid_reported";
+    confirmed_at?: string | null;
   }> | null;
   mealStatuses?: Array<{ cuisine: string; confirmed: boolean; confirmed_at: string | null }> | null;
 };
@@ -373,7 +375,7 @@ export function MyRsvpContent() {
               {(data.mealPayments ?? [])
                 .filter((p) => Number(p.qty_paid) > 0)
                 .map((p) => {
-                  const confirmed = (p.source ?? "restaurant") === "restaurant";
+                  const confirmed = p.state === "paid_confirmed" || (p.source ?? "restaurant") === "restaurant";
                   return (
                     <li key={p.cuisine} className="py-2 flex items-center gap-3 text-sm">
                       <span className="font-display text-lg w-8 text-emerald-700">
@@ -394,7 +396,7 @@ export function MyRsvpContent() {
                         }
                       >
                         {confirmed ? "Paid" : "Awaiting restaurant confirmation"}
-                        {p.paid_at ? ` · ${new Date(p.paid_at).toLocaleDateString()}` : ""}
+                        {(confirmed ? p.confirmed_at || p.paid_at : p.paid_at) ? ` · ${new Date((confirmed ? p.confirmed_at || p.paid_at : p.paid_at) as string).toLocaleDateString()}` : ""}
                       </span>
                     </li>
                   );
@@ -419,6 +421,7 @@ export function MyRsvpContent() {
                           qty_paid: qty,
                           paid_at: new Date().toISOString(),
                           source: "guest_reported",
+                          state: "paid_reported",
                           method,
                         },
                       ],

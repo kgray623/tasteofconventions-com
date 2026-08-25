@@ -3,6 +3,7 @@
 // Nothing here ever deletes or downgrades an existing restaurant confirmation.
 
 import { normalizeCuisine, parseSelections } from "@/lib/preorder-math";
+import { loadMealCommunicationLedger } from "@/lib/meal-communication.server";
 
 export type MealPaymentReportInput = {
   preorder_id: string;
@@ -91,66 +92,24 @@ export async function recordMealPayment(supabaseAdmin: any, input: MealPaymentRe
 
 /** Payments reported by a guest or committee member that the restaurant has not confirmed yet. */
 export async function listReportedMealPayments(supabaseAdmin: any) {
-  const { data, error } = await supabaseAdmin
-    .from("meal_payments")
-    .select(
-      "id,preorder_id,cuisine,qty_paid,paid_at,source,method,reported_note,reported_by_label,verified_at",
-    )
-    .in("source", ["guest_reported", "committee_recorded"])
-    .is("verified_at", null)
-    .order("paid_at", { ascending: false });
-  if (error) throw new Error(error.message);
-
-  // A restaurant confirmation on its own checklist counts as confirmed too, so
-  // a guest the restaurant already confirmed never sits in the verify queue.
-  const { data: confirmedRows, error: confErr } = await supabaseAdmin
-    .from("meal_order_status")
-    .select("preorder_id,cuisine,confirmed")
-    .eq("confirmed", true);
-  if (confErr) throw new Error(confErr.message);
-  const normalize = (raw: string) => {
-    const lower = String(raw ?? "").toLowerCase();
-    if (lower.includes("myanmar") || lower.includes("burmese")) return "Myanmar";
-    if (lower.includes("africa") || lower.includes("mozambique")) return "African";
-    if (lower.includes("indonesia")) return "Indonesian";
-    return String(raw ?? "").trim();
-  };
-  const confirmedKeys = new Set(
-    ((confirmedRows ?? []) as any[]).map((r) => `${r.preorder_id}::${normalize(r.cuisine)}`),
-  );
-  const pending = ((data ?? []) as any[]).filter(
-    (r) => !confirmedKeys.has(`${r.preorder_id}::${normalize(r.cuisine)}`),
-  );
-
-  const ids = [...new Set(pending.map((r: any) => r.preorder_id))];
-
-  const guests = new Map<string, { name: string; phone: string }>();
-  if (ids.length) {
-    const { data: preorders, error: pErr } = await supabaseAdmin
-      .from("cuisine_preorders")
-      .select("id,name,phone")
-      .in("id", ids);
-    if (pErr) throw new Error(pErr.message);
-    for (const p of preorders ?? []) {
-      guests.set(p.id, { name: (p.name ?? "").trim() || "Guest", phone: (p.phone ?? "").trim() });
-    }
-  }
+  const ledger = await loadMealCommunicationLedger(supabaseAdmin);
+  const pending = ledger.rows.filter((row) => row.state === "paid_reported");
 
   return {
-    rows: pending.map((r: any) => ({
-      id: r.id as string,
-      preorder_id: r.preorder_id as string,
-      guest: guests.get(r.preorder_id)?.name ?? "Guest",
-      phone: guests.get(r.preorder_id)?.phone ?? "",
-      cuisine: r.cuisine as string,
-      qty: Number(r.qty_paid ?? 0),
-      paid_at: (r.paid_at ?? null) as string | null,
-      source: r.source as "guest_reported" | "committee_recorded",
-      method: (r.method ?? null) as string | null,
-      note: (r.reported_note ?? null) as string | null,
-      reported_by_label: (r.reported_by_label ?? null) as string | null,
+    rows: pending.map((row) => ({
+      id: row.payment_id ?? `${row.id}::${row.cuisine}`,
+      preorder_id: row.id,
+      guest: row.name,
+      phone: row.phone,
+      cuisine: row.cuisine,
+      qty: row.qty,
+      paid_at: row.paid_at,
+      source: row.paid_source as "guest_reported" | "committee_recorded",
+      method: row.paid_method,
+      note: row.paid_note,
+      reported_by_label: row.paid_reported_by_label,
     })),
-    generated_at: new Date().toISOString(),
+    generated_at: ledger.generated_at,
   };
 }
 
