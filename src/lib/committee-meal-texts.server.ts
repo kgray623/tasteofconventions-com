@@ -216,9 +216,6 @@ export async function loadCommitteeMealTexts(
     .select("id,name,phone,selections,invitation_id")
     .order("name");
 
-  const { data: sends } = await supabaseAdmin
-    .from("meal_text_sends")
-    .select("preorder_id,cuisine,sent_at");
   const { data: zelleSends } = await supabaseAdmin
     .from("meal_zelle_text_sends")
     .select("preorder_id,cuisine,sent_at");
@@ -231,7 +228,6 @@ export async function loadCommitteeMealTexts(
   // legacy tables are read-only fallback.
   const { resolveMealSentMarks } = await import("@/lib/meal-communication");
   const marks = resolveMealSentMarks({
-    originalSends: (sends ?? []) as any[],
     updateSends: (zelleSends ?? []) as any[],
     textEvents: (textEvents ?? []) as any[],
   });

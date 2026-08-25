@@ -16,7 +16,6 @@ const base = {
   ],
   invitations: [{ id: "i1", inviter_id: "v1" }],
   inviters: [{ id: "v1", name: "Committee One" }],
-  originalSends: [],
   updateSends: [],
   payments: [],
   confirmations: [],
@@ -147,7 +146,6 @@ describe("meal communication accounting", () => {
 describe("single source of truth for sent marks and confirmations", () => {
   it("treats an event-only sent mark as sent, with no legacy row", () => {
     const marks = resolveMealSentMarks({
-      originalSends: [],
       updateSends: [],
       textEvents: [
         {

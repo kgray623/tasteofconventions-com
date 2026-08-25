@@ -39,7 +39,6 @@ export const getMealTextData = createServerFn({ method: "POST" })
       { data: setting },
       { data: invitationRows },
       { data: inviterRows },
-      { data: sends },
       { data: zelleSends },
       { data: textEvents },
       { data: zelleSetting },
@@ -56,7 +55,6 @@ export const getMealTextData = createServerFn({ method: "POST" })
       supabaseAdmin.from("app_settings").select("value").eq("key", "meal_text_template").maybeSingle(),
       supabaseAdmin.from("invitations").select("id,inviter_id,rsvps(status,attendance_mode)"),
       supabaseAdmin.from("inviters").select("id,name"),
-      supabaseAdmin.from("meal_text_sends").select("preorder_id,cuisine,sent_at"),
       supabaseAdmin.from("meal_zelle_text_sends").select("preorder_id,cuisine,sent_at,marked_by"),
       supabaseAdmin
         .from("meal_text_events")
@@ -81,7 +79,6 @@ export const getMealTextData = createServerFn({ method: "POST" })
     // normalized inside the resolver so no mark can miss its row.
     const { resolveMealSentMarks, findOrphanSentMarks, isPaidState } = await import("@/lib/meal-communication");
     const marks = resolveMealSentMarks({
-      originalSends: (sends ?? []) as any[],
       updateSends: (zelleSends ?? []) as any[],
       textEvents: (textEvents ?? []) as any[],
     });
