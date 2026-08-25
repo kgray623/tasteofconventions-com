@@ -54,6 +54,7 @@ import { Route as AuthenticatedAdminInvitationRouteImport } from './routes/_auth
 import { Route as AuthenticatedAdminGuestsRouteImport } from './routes/_authenticated/admin/guests'
 import { Route as AuthenticatedAdminEventRouteImport } from './routes/_authenticated/admin/event'
 import { Route as AuthenticatedAdminDonationsRouteImport } from './routes/_authenticated/admin/donations'
+import { Route as AuthenticatedAdminCoveredDishRouteImport } from './routes/_authenticated/admin/covered-dish'
 import { Route as AuthenticatedAdminCommitteeMessageRouteImport } from './routes/_authenticated/admin/committee-message'
 import { Route as AuthenticatedAdminChatRouteImport } from './routes/_authenticated/admin/chat'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin/categories'
@@ -310,6 +311,12 @@ const AuthenticatedAdminDonationsRoute =
     path: '/donations',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminCoveredDishRoute =
+  AuthenticatedAdminCoveredDishRouteImport.update({
+    id: '/covered-dish',
+    path: '/covered-dish',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminCommitteeMessageRoute =
   AuthenticatedAdminCommitteeMessageRouteImport.update({
     id: '/committee-message',
@@ -410,6 +417,7 @@ export interface FileRoutesByFullPath {
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/chat': typeof AuthenticatedAdminChatRoute
   '/admin/committee-message': typeof AuthenticatedAdminCommitteeMessageRoute
+  '/admin/covered-dish': typeof AuthenticatedAdminCoveredDishRoute
   '/admin/donations': typeof AuthenticatedAdminDonationsRoute
   '/admin/event': typeof AuthenticatedAdminEventRoute
   '/admin/guests': typeof AuthenticatedAdminGuestsRoute
@@ -467,6 +475,7 @@ export interface FileRoutesByTo {
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/chat': typeof AuthenticatedAdminChatRoute
   '/admin/committee-message': typeof AuthenticatedAdminCommitteeMessageRoute
+  '/admin/covered-dish': typeof AuthenticatedAdminCoveredDishRoute
   '/admin/donations': typeof AuthenticatedAdminDonationsRoute
   '/admin/event': typeof AuthenticatedAdminEventRoute
   '/admin/guests': typeof AuthenticatedAdminGuestsRoute
@@ -527,6 +536,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/chat': typeof AuthenticatedAdminChatRoute
   '/_authenticated/admin/committee-message': typeof AuthenticatedAdminCommitteeMessageRoute
+  '/_authenticated/admin/covered-dish': typeof AuthenticatedAdminCoveredDishRoute
   '/_authenticated/admin/donations': typeof AuthenticatedAdminDonationsRoute
   '/_authenticated/admin/event': typeof AuthenticatedAdminEventRoute
   '/_authenticated/admin/guests': typeof AuthenticatedAdminGuestsRoute
@@ -587,6 +597,7 @@ export interface FileRouteTypes {
     | '/admin/categories'
     | '/admin/chat'
     | '/admin/committee-message'
+    | '/admin/covered-dish'
     | '/admin/donations'
     | '/admin/event'
     | '/admin/guests'
@@ -644,6 +655,7 @@ export interface FileRouteTypes {
     | '/admin/categories'
     | '/admin/chat'
     | '/admin/committee-message'
+    | '/admin/covered-dish'
     | '/admin/donations'
     | '/admin/event'
     | '/admin/guests'
@@ -703,6 +715,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/chat'
     | '/_authenticated/admin/committee-message'
+    | '/_authenticated/admin/covered-dish'
     | '/_authenticated/admin/donations'
     | '/_authenticated/admin/event'
     | '/_authenticated/admin/guests'
@@ -1080,6 +1093,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminDonationsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/covered-dish': {
+      id: '/_authenticated/admin/covered-dish'
+      path: '/covered-dish'
+      fullPath: '/admin/covered-dish'
+      preLoaderRoute: typeof AuthenticatedAdminCoveredDishRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/committee-message': {
       id: '/_authenticated/admin/committee-message'
       path: '/committee-message'
@@ -1173,6 +1193,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedAdminChatRoute: typeof AuthenticatedAdminChatRoute
   AuthenticatedAdminCommitteeMessageRoute: typeof AuthenticatedAdminCommitteeMessageRoute
+  AuthenticatedAdminCoveredDishRoute: typeof AuthenticatedAdminCoveredDishRoute
   AuthenticatedAdminDonationsRoute: typeof AuthenticatedAdminDonationsRoute
   AuthenticatedAdminEventRoute: typeof AuthenticatedAdminEventRoute
   AuthenticatedAdminGuestsRoute: typeof AuthenticatedAdminGuestsRoute
@@ -1201,6 +1222,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminChatRoute: AuthenticatedAdminChatRoute,
   AuthenticatedAdminCommitteeMessageRoute:
     AuthenticatedAdminCommitteeMessageRoute,
+  AuthenticatedAdminCoveredDishRoute: AuthenticatedAdminCoveredDishRoute,
   AuthenticatedAdminDonationsRoute: AuthenticatedAdminDonationsRoute,
   AuthenticatedAdminEventRoute: AuthenticatedAdminEventRoute,
   AuthenticatedAdminGuestsRoute: AuthenticatedAdminGuestsRoute,
