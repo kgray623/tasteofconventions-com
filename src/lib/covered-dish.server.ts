@@ -7,9 +7,7 @@
 // never disagree about who has a meal order.
 import { phoneTail } from "@/lib/phone";
 import { resolveIdentity } from "@/lib/committee-meal-texts.server";
-
-export const DEFAULT_COVERED_DISH_TEMPLATE =
-  "Hi {name}! You're on the list for A Taste of Special Conventions — Sunday, August 30, 4:00 PM at Eagle's Landing. Since you're not having a catered meal, please bring a covered dish to share. Thanks so much!";
+import { DEFAULT_COVERED_DISH_TEMPLATE } from "@/lib/covered-dish-text";
 
 export type CoveredDishGuest = {
   invitationId: string;
@@ -33,15 +31,6 @@ export type CoveredDishResult = {
   isAdmin: boolean;
   generated_at: string;
 };
-
-/** Fill {name} (and legacy {guest}) in the reminder template. */
-export function renderCoveredDishText(template: string, guestName: string) {
-  const first = (guestName ?? "").trim().split(/\s+/)[0] ?? "";
-  return (template || DEFAULT_COVERED_DISH_TEMPLATE)
-    .replaceAll("{name}", first || guestName || "there")
-    .replaceAll("{guest}", guestName || first || "there")
-    .replaceAll("{fullName}", guestName || first || "there");
-}
 
 export async function loadCoveredDishList(
   supabase: any,
