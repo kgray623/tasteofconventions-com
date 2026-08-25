@@ -158,6 +158,25 @@ export function resolveMealSentMarks(input: {
   updateSends?: SourceSend[];
   textEvents?: SourceTextEvent[];
 }): MealSentMarks {
+  const original = new Map<string, string>();
+  const update = new Map<string, string>();
+  const updateActorId = new Map<string, string | null>();
+
+  const latestEvents = new Map<string, SourceTextEvent>();
+  for (const event of input.textEvents ?? []) {
+    const key = mealSentMarkKey(event.preorder_id, event.cuisine);
+    if (!key) continue;
+    const eventKey = `${event.campaign}::${key}`;
+    const existing = latestEvents.get(eventKey);
+    if (
+      !existing ||
+      event.event_at > existing.event_at ||
+      (event.event_at === existing.event_at && (event.created_at ?? "") > (existing.created_at ?? ""))
+    ) {
+      latestEvents.set(eventKey, event);
+    }
+  }
+
   for (const row of input.updateSends ?? []) {
     const key = mealSentMarkKey(row.preorder_id, row.cuisine);
     if (key) {
