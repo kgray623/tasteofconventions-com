@@ -202,7 +202,7 @@ export function buildMealCommunicationLedger(input: {
   preorders: SourcePreorder[];
   invitations: SourceInvitation[];
   inviters: SourceInviter[];
-  originalSends: SourceSend[];
+  
   updateSends: SourceSend[];
   textEvents?: SourceTextEvent[];
   payments?: SourcePayment[];
