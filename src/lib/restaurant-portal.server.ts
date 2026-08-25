@@ -326,21 +326,39 @@ export async function setPaid(opts: {
   if (opts.paid) {
     // Never lower a quantity already on record — the database refuses it.
     const qtyPaid = Math.max(Number(row.qty ?? 0), Number(existingPayment?.qty_paid ?? 0));
+    const verifiedAt = new Date().toISOString();
     const { error } = await supabaseAdmin.from("meal_payments").upsert(
       {
         preorder_id: opts.preorderId,
         restaurant_id: opts.restaurantId,
         cuisine: row.cuisine,
         qty_paid: qtyPaid,
-        paid_at: new Date().toISOString(),
+        paid_at: verifiedAt,
         marked_by_label: opts.markedByLabel,
         source: "restaurant",
-        verified_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        verified_at: verifiedAt,
+        updated_at: verifiedAt,
       },
       { onConflict: "preorder_id,cuisine" },
     );
     if (error) throw new Error(error.message);
+
+    // A restaurant-verified payment IS a restaurant confirmation: write the
+    // matching meal_order_status row so the two tables can never diverge.
+    const { error: statusErr } = await supabaseAdmin.from("meal_order_status").upsert(
+      {
+        preorder_id: opts.preorderId,
+        restaurant_id: opts.restaurantId,
+        cuisine: row.cuisine,
+        confirmed: true,
+        confirmed_at: verifiedAt,
+        confirmed_by_label: opts.markedByLabel,
+        qty_confirmed: Math.max(Number(row.qty ?? 0), qtyPaid),
+        updated_at: verifiedAt,
+      },
+      { onConflict: "preorder_id,cuisine" },
+    );
+    if (statusErr) throw new Error(statusErr.message);
   } else if (existingPayment) {
     // Payment records are permanent: a restaurant cannot erase one. Only the
     // guest cancelling the meal in their own RSVP removes it from the order.
