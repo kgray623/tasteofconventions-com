@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { SmsTextButton } from "@/components/sms-text-button";
 import { useCoveredDish } from "@/hooks/use-covered-dish";
 import { saveCoveredDishTemplate } from "@/lib/covered-dish.functions";
-import { renderCoveredDishText } from "@/lib/covered-dish.server";
+import { renderCoveredDishText } from "@/lib/covered-dish-text";
 import { formatPhoneUS, digitsOnly } from "@/lib/phone";
 import { smsNumber } from "@/lib/meal-text-message";
 
