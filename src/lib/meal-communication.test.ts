@@ -111,7 +111,7 @@ describe("meal communication accounting", () => {
     expect(ledger.rows.find((row) => row.cuisine === "Myanmar")?.state).toBe("needs_update");
   });
 
-  it("does not treat a partial payment as paid for the order line", () => {
+  it("keeps a partial payment visible while leaving only the balance unpaid", () => {
     const ledger = buildMealCommunicationLedger({
       ...base,
       payments: [{ preorder_id: "p1", cuisine: "African", qty_paid: 1, paid_at: "2026-08-19T11:00:00Z", source: "guest_reported" }],
@@ -120,6 +120,10 @@ describe("meal communication accounting", () => {
     expect(african?.state).toBe("needs_update");
     expect(african?.qty).toBe(2);
     expect(african?.qty_paid).toBe(1);
+    expect(african?.paid_at).toBe("2026-08-19T11:00:00Z");
+    expect(african?.paid_source).toBe("guest_reported");
+    expect(ledger.totals.paid_meal_quantity).toBe(1);
+    expect(ledger.totals.unpaid_meal_quantity).toBe(2);
   });
 
   it("places every active order line in exactly one payment status bucket", () => {

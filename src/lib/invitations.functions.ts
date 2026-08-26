@@ -100,10 +100,10 @@ async function loadCanonicalMealPaymentRows(preorderId: string) {
   const rows = ledger.rows.filter((row) => row.id === preorderId);
   return {
     mealPayments: rows
-      .filter((row) => row.state === "paid_confirmed" || row.state === "paid_reported")
+      .filter((row) => row.qty_paid > 0 && row.paid_source)
       .map((row) => ({
         cuisine: row.cuisine,
-        qty_paid: row.qty,
+        qty_paid: row.qty_paid,
         paid_at: row.paid_at,
         source: row.paid_source,
         method: row.paid_method,

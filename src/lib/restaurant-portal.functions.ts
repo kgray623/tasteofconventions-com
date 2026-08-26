@@ -162,10 +162,10 @@ export const listRestaurantAccess = createServerFn({ method: "POST" })
     );
     const paidByRestaurant = new Map<string, number>();
     for (const row of ledger.rows) {
-      if (row.state !== "paid_confirmed" && row.state !== "paid_reported") continue;
+      if (row.qty_paid <= 0) continue;
       const restaurantId = restaurantByCuisine.get(normalizeCuisine(row.cuisine));
       if (!restaurantId) continue;
-      paidByRestaurant.set(restaurantId, (paidByRestaurant.get(restaurantId) ?? 0) + row.qty);
+      paidByRestaurant.set(restaurantId, (paidByRestaurant.get(restaurantId) ?? 0) + row.qty_paid);
     }
     const accessMap = new Map(
       ((access ?? []) as Array<{ restaurant_id: string; active: boolean; rotated_at: string; label: string | null }>).map(
@@ -221,11 +221,11 @@ export const getMealPaymentStatus = createServerFn({ method: "POST" })
     const ledger = await loadMealCommunicationLedger(supabaseAdmin);
     return {
       payments: ledger.rows
-        .filter((row) => row.state === "paid_confirmed" || row.state === "paid_reported")
+        .filter((row) => row.qty_paid > 0)
         .map((row) => ({
           preorder_id: row.id,
           cuisine: row.cuisine,
-          qty_paid: row.qty,
+          qty_paid: row.qty_paid,
           paid_at: row.paid_at,
         })),
     };
