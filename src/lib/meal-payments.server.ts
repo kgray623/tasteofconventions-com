@@ -93,7 +93,12 @@ export async function recordMealPayment(supabaseAdmin: any, input: MealPaymentRe
 /** Payments reported by a guest or committee member that the restaurant has not confirmed yet. */
 export async function listReportedMealPayments(supabaseAdmin: any) {
   const ledger = await loadMealCommunicationLedger(supabaseAdmin);
-  const pending = ledger.rows.filter((row) => row.state === "paid_reported");
+  const pending = ledger.rows.filter(
+    (row) =>
+      row.qty_paid > 0 &&
+      row.paid_source !== "restaurant" &&
+      !row.verified_at,
+  );
 
   return {
     rows: pending.map((row) => ({
@@ -102,7 +107,7 @@ export async function listReportedMealPayments(supabaseAdmin: any) {
       guest: row.name,
       phone: row.phone,
       cuisine: row.cuisine,
-      qty: row.qty,
+      qty: row.qty_paid,
       paid_at: row.paid_at,
       source: row.paid_source as "guest_reported" | "committee_recorded",
       method: row.paid_method,

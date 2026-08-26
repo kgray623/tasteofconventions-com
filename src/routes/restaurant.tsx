@@ -328,9 +328,9 @@ function RestaurantPortalPage() {
                       "no phone"
                     )}
                   </div>
-                  {r.paid && r.paidAt && (
+                  {r.qtyPaid > 0 && r.paidAt && (
                     <div className="text-xs text-muted-foreground">
-                      Paid {new Date(r.paidAt).toLocaleDateString()}
+                      {r.qtyPaid < r.qty ? `${r.qtyPaid} of ${r.qty} paid` : "Paid"} {new Date(r.paidAt).toLocaleDateString()}
                       {r.paidSource && r.paidSource !== "restaurant"
                         ? r.paidSource === "guest_reported"
                           ? " — reported by the guest, please verify"
@@ -353,6 +353,11 @@ function RestaurantPortalPage() {
                       }
                     >
                       {r.paidSource && r.paidSource !== "restaurant" ? "Paid · to verify" : "Paid"}
+                    </Badge>
+                  )}
+                  {!r.paid && r.qtyPaid > 0 && (
+                    <Badge className="bg-amber-600 text-white">
+                      Partially paid · {r.qtyPaid} of {r.qty}
                     </Badge>
                   )}
                 </div>
@@ -401,6 +406,17 @@ function RestaurantPortalPage() {
                     )}
                     <span className="text-xs text-muted-foreground self-center">
                       Payment is on the permanent record — contact the organizers to correct it.
+                    </span>
+                  </>
+                ) : r.qtyPaid > 0 ? (
+                  <>
+                    {r.paidSource && r.paidSource !== "restaurant" && (
+                      <Button size="sm" disabled={busy} onClick={() => toggle(r.preorderId, true)}>
+                        <Check className="h-4 w-4 mr-1" /> Verify payment
+                      </Button>
+                    )}
+                    <span className="text-xs text-muted-foreground self-center">
+                      {r.qtyPaid} paid · {r.qty - r.qtyPaid} still due
                     </span>
                   </>
                 ) : (

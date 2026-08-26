@@ -194,6 +194,7 @@ export const getMealTextData = createServerFn({ method: "POST" })
           phone: (p.phone ?? "").trim(),
           cuisine,
           qty,
+          qty_paid: ledgerRow.qty_paid,
           sent_at: sentByMeal.get(`${p.id}::${cuisine}`) ?? null,
           zelle_sent_at: zelleByMeal.get(`${p.id}::${cuisine}`) ?? null,
           sent_by: zelleByWhom.get(`${p.id}::${cuisine}`) ?? null,

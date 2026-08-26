@@ -272,9 +272,13 @@ export function buildMealCommunicationLedger(input: {
       const originalSentAt = originalByKey.get(key) ?? null;
       const updateSentAt = updateByKey.get(key) ?? null;
       const storedPayment = paidByKey.get(key) ?? null;
-      const payment = storedPayment && (storedPayment.qty_paid === 0 || storedPayment.qty_paid >= qty)
-        ? { ...storedPayment, qty_paid: storedPayment.qty_paid || qty }
+      // Preserve every recorded payment, including a partial one. A partial
+      // payment does not make the whole order line paid, but its quantity and
+      // evidence must remain visible so nobody is chased for money already sent.
+      const payment = storedPayment
+        ? { ...storedPayment, qty_paid: Math.min(qty, storedPayment.qty_paid || qty) }
         : null;
+      const fullyPaid = payment ? payment.qty_paid >= qty : false;
       const inviterId = preorder.invitation_id
         ? (inviterByInvitation.get(preorder.invitation_id) ?? null)
         : null;
@@ -286,7 +290,7 @@ export function buildMealCommunicationLedger(input: {
         else if (!preorder.phone?.trim()) exception = "Guest has no phone number";
       }
 
-      const state: MealCommunicationState = payment
+      const state: MealCommunicationState = fullyPaid && payment
         ? payment.source === "restaurant"
           ? "paid_confirmed"
           : "paid_reported"
@@ -310,7 +314,7 @@ export function buildMealCommunicationLedger(input: {
           : "Not linked to a committee member",
         original_sent_at: originalSentAt,
         update_sent_at: updateSentAt,
-        payment_id: payment?.id ?? storedPayment?.id ?? null,
+        payment_id: payment?.id ?? null,
         paid_at: payment?.paid_at ?? null,
         paid_source: payment?.source ?? null,
         paid_method: payment?.method ?? null,
@@ -329,12 +333,11 @@ export function buildMealCommunicationLedger(input: {
     households: new Set(rows.map((row) => row.id)).size,
     message_units: rows.length,
     meal_quantity: rows.reduce((sum, row) => sum + row.qty, 0),
-    paid_meal_quantity: rows
-      .filter((row) => row.state === "paid_confirmed" || row.state === "paid_reported")
-      .reduce((sum, row) => sum + row.qty, 0),
-    unpaid_meal_quantity: rows
-      .filter((row) => row.state !== "paid_confirmed" && row.state !== "paid_reported")
-      .reduce((sum, row) => sum + row.qty, 0),
+    paid_meal_quantity: rows.reduce((sum, row) => sum + Math.min(row.qty, row.qty_paid), 0),
+    unpaid_meal_quantity: rows.reduce(
+      (sum, row) => sum + Math.max(0, row.qty - Math.min(row.qty, row.qty_paid)),
+      0,
+    ),
     paid_confirmed: count("paid_confirmed"),
     paid_reported: count("paid_reported"),
     paid: count("paid_confirmed") + count("paid_reported"),
