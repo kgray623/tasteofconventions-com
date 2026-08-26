@@ -137,7 +137,7 @@ export async function loadPortalData(restaurantId: string): Promise<PortalData> 
   rows.sort((a, b) => Number(a.paid) - Number(b.paid) || a.guestName.localeCompare(b.guestName));
 
   const meals = rows.reduce((n, r) => n + r.qty, 0);
-  const mealsPaid = rows.reduce((n, r) => n + (r.paid ? r.qty : 0), 0);
+  const mealsPaid = rows.reduce((n, r) => n + Math.min(r.qty, r.qtyPaid), 0);
   return {
     restaurant: {
       id: restaurant.id as string,
@@ -150,7 +150,7 @@ export async function loadPortalData(restaurantId: string): Promise<PortalData> 
       meals,
       mealsPaid,
       mealsUnpaid: meals - mealsPaid,
-      mealsConfirmed: rows.reduce((n, r) => n + (r.confirmed ? r.qty : 0), 0),
+      mealsConfirmed: rows.reduce((n, r) => n + (r.confirmed ? Math.min(r.qty, r.qtyPaid) : 0), 0),
       households: rows.length,
       householdsPaid: rows.filter((r) => r.paid).length,
     },

@@ -28,6 +28,7 @@ export type CommitteeMealTextRow = {
   phone: string;
   cuisine: string;
   qty: number;
+  qty_paid: number;
   sent_at: string | null;
   zelle_sent_at: string | null;
   state: MealCommunicationState;
@@ -266,6 +267,7 @@ export async function loadCommitteeMealTexts(
         phone: ((p.phone ?? "") as string).trim() || (linked.guest_phone ?? ""),
         cuisine,
         qty,
+        qty_paid: communication.qty_paid,
         sent_at: sentByMeal.get(`${p.id}::${cuisine}`) ?? null,
         zelle_sent_at: zelleByMeal.get(`${p.id}::${cuisine}`) ?? null,
         state: communication.state,
@@ -283,8 +285,7 @@ export async function loadCommitteeMealTexts(
   }
 
   rows.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
-  const paidRows = rows.filter((row) => row.state === "paid_confirmed" || row.state === "paid_reported");
-  const paidPlates = paidRows.reduce((sum, row) => sum + row.qty, 0);
+  const paidPlates = rows.reduce((sum, row) => sum + Math.min(row.qty, row.qty_paid), 0);
   const plates = rows.reduce((sum, row) => sum + row.qty, 0);
   return {
     ...base,

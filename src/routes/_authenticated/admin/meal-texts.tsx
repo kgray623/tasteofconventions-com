@@ -96,8 +96,11 @@ function MealTextsPage() {
   const paidConfirmed = useMemo(() => rows.filter((row) => row.state === "paid_confirmed"), [rows]);
   const unpaid = [...needsText, ...textedDue];
   const totalPlates = rows.reduce((sum, row) => sum + row.qty, 0);
-  const unpaidPlates = unpaid.reduce((sum, row) => sum + row.qty, 0);
-  const paidPlates = totalPlates - unpaidPlates;
+  const paidPlates = rows.reduce(
+    (sum, row) => sum + Math.min(row.qty, Math.max(0, row.qty_paid ?? 0)),
+    0,
+  );
+  const unpaidPlates = totalPlates - paidPlates;
 
   const bodyFor = (row: MealTextRow) => {
     const restaurant = matchRestaurant(restaurants, row.cuisine);
@@ -137,10 +140,10 @@ function MealTextsPage() {
           ? "TEXT SENT — PAYMENT STILL DUE"
           : "NEEDS PAYMENT TEXT";
     const csv = [
-      ["Payment status", "Text status", "Cuisine", "Name", "Phone", "Inviter", "Plates", "Paid date"].join(","),
+      ["Payment status", "Text status", "Cuisine", "Name", "Phone", "Inviter", "Plates", "Plates paid", "Paid date"].join(","),
       ...rows.map((row) => [
         status(row), row.zelle_sent_at ? "SENT" : "NOT SENT", row.cuisine, row.name,
-        formatPhone(row.phone), row.inviter, row.qty, row.paid_at ?? "",
+        formatPhone(row.phone), row.inviter, row.qty, row.qty_paid ?? 0, row.paid_at ?? "",
       ].map(csvEscape).join(",")),
     ].join("\n");
     const result = downloadTextFile(`event-meal-payment-bookkeeping-${new Date().toISOString().slice(0, 10)}.csv`, csv);

@@ -89,6 +89,11 @@ export function CommitteeMealPayments({
                     </a>
                   )}
                   <Badge variant="outline">{r.qty} plates</Badge>
+                  {r.qty_paid > 0 && r.qty_paid < r.qty && (
+                    <Badge variant="outline">
+                      Partially paid · {r.qty_paid} paid · {r.qty - r.qty_paid} due
+                    </Badge>
+                  )}
                   <Badge variant="outline">
                     {r.zelle_sent_at
                       ? `Payment update sent ${new Date(r.zelle_sent_at).toLocaleDateString()}`

@@ -72,6 +72,8 @@ export type MealTextRow = {
   phone: string;
   cuisine: string;
   qty: number;
+  /** Number of plates with money recorded; may be less than qty. */
+  qty_paid?: number;
   sent_at: string | null;
   /** Separate mark: the Zelle/Venmo follow-up text. Never derived from sent_at. */
   zelle_sent_at: string | null;
