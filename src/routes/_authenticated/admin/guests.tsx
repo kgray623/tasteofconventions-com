@@ -268,6 +268,8 @@ function GuestsPage() {
 
       if (activeStatus !== "all" && statusOfRow(r) !== activeStatus) return false;
       if (mode && r.attendance_mode !== mode) return false;
+      // Zoom tab shows confirmed Zoom attendees only — declines are not Zoom attendees.
+      if (mode === "zoom" && statusOfRow(r) === "declined") return false;
       if (activeAudience === "guest" && r.is_committee) return false;
       if (activeAudience === "committee" && !r.is_committee) return false;
       if (activeInviter !== "all") {
