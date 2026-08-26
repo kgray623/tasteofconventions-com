@@ -36,6 +36,7 @@ import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
 import { Route as AuthenticatedInvitationsNewRouteImport } from './routes/_authenticated/invitations.new'
+import { Route as AuthenticatedAdminZoomAttendeesRouteImport } from './routes/_authenticated/admin/zoom-attendees'
 import { Route as AuthenticatedAdminUploadRouteImport } from './routes/_authenticated/admin/upload'
 import { Route as AuthenticatedAdminUnpaidRouteImport } from './routes/_authenticated/admin/unpaid'
 import { Route as AuthenticatedAdminTeamRouteImport } from './routes/_authenticated/admin/team'
@@ -204,6 +205,12 @@ const AuthenticatedInvitationsNewRoute =
     id: '/invitations/new',
     path: '/invitations/new',
     getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedAdminZoomAttendeesRoute =
+  AuthenticatedAdminZoomAttendeesRouteImport.update({
+    id: '/zoom-attendees',
+    path: '/zoom-attendees',
+    getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
 const AuthenticatedAdminUploadRoute =
   AuthenticatedAdminUploadRouteImport.update({
@@ -436,6 +443,7 @@ export interface FileRoutesByFullPath {
   '/admin/team': typeof AuthenticatedAdminTeamRoute
   '/admin/unpaid': typeof AuthenticatedAdminUnpaidRoute
   '/admin/upload': typeof AuthenticatedAdminUploadRoute
+  '/admin/zoom-attendees': typeof AuthenticatedAdminZoomAttendeesRoute
   '/invitations/new': typeof AuthenticatedInvitationsNewRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
@@ -494,6 +502,7 @@ export interface FileRoutesByTo {
   '/admin/team': typeof AuthenticatedAdminTeamRoute
   '/admin/unpaid': typeof AuthenticatedAdminUnpaidRoute
   '/admin/upload': typeof AuthenticatedAdminUploadRoute
+  '/admin/zoom-attendees': typeof AuthenticatedAdminZoomAttendeesRoute
   '/invitations/new': typeof AuthenticatedInvitationsNewRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
@@ -555,6 +564,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/team': typeof AuthenticatedAdminTeamRoute
   '/_authenticated/admin/unpaid': typeof AuthenticatedAdminUnpaidRoute
   '/_authenticated/admin/upload': typeof AuthenticatedAdminUploadRoute
+  '/_authenticated/admin/zoom-attendees': typeof AuthenticatedAdminZoomAttendeesRoute
   '/_authenticated/invitations/new': typeof AuthenticatedInvitationsNewRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
@@ -616,6 +626,7 @@ export interface FileRouteTypes {
     | '/admin/team'
     | '/admin/unpaid'
     | '/admin/upload'
+    | '/admin/zoom-attendees'
     | '/invitations/new'
     | '/lovable/email/suppression'
     | '/admin/'
@@ -674,6 +685,7 @@ export interface FileRouteTypes {
     | '/admin/team'
     | '/admin/unpaid'
     | '/admin/upload'
+    | '/admin/zoom-attendees'
     | '/invitations/new'
     | '/lovable/email/suppression'
     | '/admin'
@@ -734,6 +746,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/team'
     | '/_authenticated/admin/unpaid'
     | '/_authenticated/admin/upload'
+    | '/_authenticated/admin/zoom-attendees'
     | '/_authenticated/invitations/new'
     | '/lovable/email/suppression'
     | '/_authenticated/admin/'
@@ -966,6 +979,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/invitations/new'
       preLoaderRoute: typeof AuthenticatedInvitationsNewRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/admin/zoom-attendees': {
+      id: '/_authenticated/admin/zoom-attendees'
+      path: '/zoom-attendees'
+      fullPath: '/admin/zoom-attendees'
+      preLoaderRoute: typeof AuthenticatedAdminZoomAttendeesRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
     }
     '/_authenticated/admin/upload': {
       id: '/_authenticated/admin/upload'
@@ -1212,6 +1232,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminTeamRoute: typeof AuthenticatedAdminTeamRoute
   AuthenticatedAdminUnpaidRoute: typeof AuthenticatedAdminUnpaidRoute
   AuthenticatedAdminUploadRoute: typeof AuthenticatedAdminUploadRoute
+  AuthenticatedAdminZoomAttendeesRoute: typeof AuthenticatedAdminZoomAttendeesRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
@@ -1243,6 +1264,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminTeamRoute: AuthenticatedAdminTeamRoute,
   AuthenticatedAdminUnpaidRoute: AuthenticatedAdminUnpaidRoute,
   AuthenticatedAdminUploadRoute: AuthenticatedAdminUploadRoute,
+  AuthenticatedAdminZoomAttendeesRoute: AuthenticatedAdminZoomAttendeesRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
 
