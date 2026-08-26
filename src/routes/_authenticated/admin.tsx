@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlus, UtensilsCrossed, Mail, HandCoins, MessageSquare, Ticket, ArrowLeft, Archive, UserCheck, MessageCircle } from "lucide-react";
+import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlus, UtensilsCrossed, Mail, HandCoins, MessageSquare, Ticket, ArrowLeft, Archive, UserCheck, MessageCircle, Video } from "lucide-react";
 import { NewBadge } from "@/components/new-badge";
 import { useChatUnread } from "@/hooks/use-chat-unread";
 import { Badge } from "@/components/ui/badge";
@@ -54,6 +54,7 @@ const tabs: { id?: string; to: string; label: string; icon: typeof ShieldCheck; 
 
   { to: "/admin/meal-texts", label: "Event payment texts", icon: MessageSquare, team: true, teamLabel: "Event payment texts", group: "main" },
   { to: "/admin/meal-texts-mine", label: "My meal texts", icon: MessageSquare, team: true, teamLabel: "My meal texts", group: "committee" },
+  { to: "/admin/zoom-attendees", label: "Zoom attendees", icon: Video, team: true, teamLabel: "Zoom attendees", group: "main" },
 
   { to: "/admin/invitation", label: "Invitation page", icon: Mail, group: "main" },
   { to: "/admin/donations", label: "Donations", icon: HandCoins, group: "main" },
@@ -69,7 +70,7 @@ const tabs: { id?: string; to: string; label: string; icon: typeof ShieldCheck; 
 ];
 
 
-const teamAllowedPrefixes = ["/admin/subcommittee", "/admin/guests", "/admin/upload", "/admin/inviters", "/admin/categories", "/admin/chat", "/admin/my-volunteer-chats", "/admin/my-rsvp", "/admin/preorders", "/admin/meal-texts", "/admin/meal-texts-mine", "/admin/unpaid", "/admin/covered-dish"];
+const teamAllowedPrefixes = ["/admin/subcommittee", "/admin/guests", "/admin/upload", "/admin/inviters", "/admin/categories", "/admin/chat", "/admin/my-volunteer-chats", "/admin/my-rsvp", "/admin/preorders", "/admin/meal-texts", "/admin/meal-texts-mine", "/admin/unpaid", "/admin/covered-dish", "/admin/zoom-attendees"];
 const isTeamAllowedPath = (path: string) =>
   path === "/admin" || teamAllowedPrefixes.some((p) => path === p || path.startsWith(p + "/"));
 
