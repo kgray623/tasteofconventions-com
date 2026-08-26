@@ -341,6 +341,11 @@ function RosterSection({ title, description, rows, tone, bodyFor, busy, onMark, 
                       <Button size="sm" variant="ghost" disabled={busy === key} onClick={() => void onMark(row, false)}>Undo sent mark</Button>
                     )}
                     {!isPaidState(row.state) && isAdmin && <RecordMealPaymentDialog preorderId={row.id} guestName={row.name} orders={[{ cuisine: row.cuisine, qty: row.qty }]} onRecorded={onRefresh} label="They already paid" variant="ghost" />}
+                    {(row.qty_paid ?? 0) > 0 && (row.qty_paid ?? 0) < row.qty && (
+                      <Badge variant="outline">
+                        Partially paid · {row.qty_paid} paid · {row.qty - (row.qty_paid ?? 0)} due
+                      </Badge>
+                    )}
                     {tone === "paid" && <Badge variant="outline">{row.state === "paid_confirmed" ? "Restaurant confirmed" : "Reported paid"}{row.paid_at ? ` · ${new Date(row.paid_at).toLocaleDateString()}` : ""}</Badge>}
                     {row.exception && <span className="text-xs font-medium text-destructive">{row.exception}</span>}
                   </div>
