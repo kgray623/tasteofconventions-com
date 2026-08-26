@@ -54,6 +54,7 @@ const tabs: { id?: string; to: string; label: string; icon: typeof ShieldCheck; 
 
   { to: "/admin/meal-texts", label: "Event payment texts", icon: MessageSquare, team: true, teamLabel: "Event payment texts", group: "main" },
   { to: "/admin/meal-texts-mine", label: "My meal texts", icon: MessageSquare, team: true, teamLabel: "My meal texts", group: "committee" },
+  { to: "/admin/zoom-attendees", label: "Zoom attendees", icon: Video, team: true, teamLabel: "Zoom attendees", group: "main" },
 
   { to: "/admin/invitation", label: "Invitation page", icon: Mail, group: "main" },
   { to: "/admin/donations", label: "Donations", icon: HandCoins, group: "main" },
