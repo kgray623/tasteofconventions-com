@@ -434,24 +434,28 @@ export function MyRsvpContent() {
             token={invitation.rsvp_token}
             unpaid={unpaidOrderedCuisines}
             onReported={(cuisine, qty, method) =>
-              setData((current) =>
-                current
-                  ? {
-                      ...current,
-                      mealPayments: [
-                        ...(current.mealPayments ?? []).filter((p) => p.cuisine !== cuisine),
-                        {
-                          cuisine,
-                          qty_paid: qty,
-                          paid_at: new Date().toISOString(),
-                          source: "guest_reported",
-                          state: "paid_reported",
-                          method,
-                        },
-                      ],
-                    }
-                  : current,
-              )
+              setData((current) => {
+                if (!current) return current;
+                const existing = (current.mealPayments ?? []).find((p) => p.cuisine === cuisine);
+                const orderedQty = savedSelections
+                  .filter((s) => String(s.cuisine) === cuisine)
+                  .reduce((sum, s) => sum + (Number(s.qty) || 0), 0);
+                return {
+                  ...current,
+                  mealPayments: [
+                    ...(current.mealPayments ?? []).filter((p) => p.cuisine !== cuisine),
+                    {
+                      cuisine,
+                      qty: existing?.qty ?? orderedQty,
+                      qty_paid: (Number(existing?.qty_paid) || 0) + qty,
+                      paid_at: new Date().toISOString(),
+                      source: "guest_reported",
+                      state: "paid_reported",
+                      method,
+                    },
+                  ],
+                };
+              })
             }
           />
         )}
