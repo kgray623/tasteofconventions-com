@@ -385,10 +385,13 @@ export function MyRsvpContent() {
                 .filter((p) => Number(p.qty_paid) > 0)
                 .map((p) => {
                   const confirmed = p.state === "paid_confirmed" || (p.source ?? "restaurant") === "restaurant";
+                  const ordered = Number(p.qty) || 0;
+                  const paid = Number(p.qty_paid) || 0;
+                  const stillDue = ordered > paid ? ordered - paid : 0;
                   return (
                     <li key={p.cuisine} className="py-2 flex items-center gap-3 text-sm">
-                      <span className="font-display text-lg w-8 text-emerald-700">
-                        {p.qty_paid}×
+                      <span className="font-display text-lg w-12 text-emerald-700">
+                        {stillDue > 0 ? `${paid}/${ordered}` : `${paid}×`}
                       </span>
                       <span className="flex-1 text-ink">
                         {p.cuisine}
@@ -396,15 +399,27 @@ export function MyRsvpContent() {
                           ? ` — confirmed by ${findRestaurantForCuisine(restaurants, p.cuisine)!.name}`
                           : ""}
                         {!confirmed ? " — you reported this payment" : ""}
+                        {stillDue > 0 ? (
+                          <span className="block text-terracotta font-medium">
+                            {stillDue} plate{stillDue === 1 ? "" : "s"} still to pay — report it below
+                            once you have paid the restaurant.
+                          </span>
+                        ) : null}
                       </span>
                       <span
                         className={
-                          confirmed
-                            ? "text-emerald-700 font-medium"
-                            : "text-terracotta font-medium"
+                          stillDue > 0
+                            ? "text-terracotta font-medium"
+                            : confirmed
+                              ? "text-emerald-700 font-medium"
+                              : "text-terracotta font-medium"
                         }
                       >
-                        {confirmed ? "Paid" : "Awaiting restaurant confirmation"}
+                        {stillDue > 0
+                          ? `Partly paid · ${paid} of ${ordered}`
+                          : confirmed
+                            ? "Paid"
+                            : "Awaiting restaurant confirmation"}
                         {(confirmed ? p.confirmed_at || p.paid_at : p.paid_at) ? ` · ${new Date((confirmed ? p.confirmed_at || p.paid_at : p.paid_at) as string).toLocaleDateString()}` : ""}
                       </span>
                     </li>
