@@ -26,6 +26,14 @@ export type UnpaidGroup = {
 };
 
 /**
+ * Unpaid is derived only from the current canonical ledger response. Keeping
+ * this as an exported pure helper makes the accounting boundary testable and
+ * prevents paid-reported rows from being treated differently by another view.
+ */
+export const unpaidMealRows = (rows: CommitteeMealTextRow[]) =>
+  rows.filter((row) => !isPaidState(row.state));
+
+/**
  * Read-only view of guests who still owe for their meal.
  *
  * No new calculation: it reuses the same server ledger (`getMyMealTexts`) and
@@ -45,10 +53,12 @@ export function useMyUnpaidMeals() {
   // shared "Unpaid guests" page and its badge can never disagree.
   const scope: "mine" | "all" = isTeam || isAdmin ? "all" : "mine";
   const query = useQuery({
-    queryKey: ["my-unpaid-meals", scope],
+    queryKey: ["my-unpaid-meals", "live-ledger-v2", scope],
     queryFn: async () => await load({ data: { scope } }),
     enabled: !rolesLoading,
-    staleTime: 60_000,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
     retry: 1,
   });
   const notesQuery = useQuery({
@@ -73,7 +83,7 @@ export function useMyUnpaidMeals() {
   }, [notes]);
 
   return useMemo(() => {
-    const unpaid = (rows ?? []).filter((row) => !isPaidState(row.state));
+    const unpaid = unpaidMealRows(rows ?? []);
     const tails = new Set<string>();
     const invitationIds = new Set<string>();
     const names = new Set<string>();
