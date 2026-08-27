@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Camera, Loader2, Upload } from "lucide-react";
+import { Camera, Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -15,6 +15,8 @@ type GalleryPhoto = {
   caption: string | null;
   created_at: string;
   url: string | null;
+  storage_path: string;
+  uploaded_by: string | null;
 };
 
 /**
