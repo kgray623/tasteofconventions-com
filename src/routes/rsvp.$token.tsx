@@ -391,6 +391,7 @@ function RsvpPage() {
   return (
     <div className="min-h-screen bg-gradient-warm">
       <div className="mx-auto max-w-3xl px-4 py-5 space-y-5 sm:px-6 sm:py-12 sm:space-y-6">
+        <SharedPhotoAlbum guestName={data.invitation.guest_name} />
         <Link
           to="/"
           className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-ink"
@@ -700,7 +701,7 @@ function RsvpPage() {
         )}
 
 
-        <SharedPhotoAlbum guestName={data.invitation.guest_name} />
+        
 
 
         <Card className="p-5 space-y-4 border-terracotta/30 bg-card">
