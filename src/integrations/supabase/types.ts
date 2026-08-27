@@ -1539,6 +1539,33 @@ export type Database = {
           },
         ]
       }
+      shared_photos: {
+        Row: {
+          caption: string | null
+          created_at: string
+          guest_name: string
+          id: string
+          storage_path: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          guest_name: string
+          id?: string
+          storage_path: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          guest_name?: string
+          id?: string
+          storage_path?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string
