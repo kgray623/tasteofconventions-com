@@ -153,7 +153,7 @@ function RsvpPage() {
   >([]);
   // Payments already on record (restaurant-confirmed or reported by the guest).
   const [mealPayments, setMealPayments] = useState<
-    Array<{ cuisine: string; qty_paid: number; paid_at: string | null; source?: string | null; state?: "paid_confirmed" | "paid_reported"; confirmed_at?: string | null }>
+    Array<{ cuisine: string; qty?: number | null; qty_paid: number; paid_at: string | null; source?: string | null; state?: "paid_confirmed" | "paid_reported"; confirmed_at?: string | null }>
   >([]);
   // Saved meals with no payment recorded yet — the "I already paid" list.
   const [savedMeals, setSavedMeals] = useState<Array<{ cuisine: string; qty: number }>>([]);
