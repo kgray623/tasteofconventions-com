@@ -31,12 +31,15 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
   const [caption, setCaption] = useState("");
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  const [myUserId, setMyUserId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const hasSession = Boolean(sessionData.session);
     setSignedIn(hasSession);
+    setMyUserId(sessionData.session?.user.id ?? null);
     if (!hasSession) {
       setPhotos([]);
       setLoading(false);
@@ -44,7 +47,7 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
     }
     const { data, error } = await supabase
       .from("shared_photos")
-      .select("id, guest_name, caption, created_at, storage_path")
+      .select("id, guest_name, caption, created_at, storage_path, uploaded_by")
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) {
@@ -69,11 +72,35 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
         guest_name: r.guest_name,
         caption: r.caption,
         created_at: r.created_at,
+        storage_path: r.storage_path,
+        uploaded_by: r.uploaded_by,
         url: urlByPath.get(r.storage_path) ?? null,
       })),
     );
     setLoading(false);
   }, []);
+
+  const handleDelete = async (photo: GalleryPhoto) => {
+    if (deletingId) return;
+    if (typeof window !== "undefined" && !window.confirm("Remove this photo from the shared album?")) return;
+    setDeletingId(photo.id);
+    try {
+      const { error: rowError } = await supabase
+        .from("shared_photos")
+        .delete()
+        .eq("id", photo.id);
+      if (rowError) {
+        toast.error("Could not remove that photo.");
+        return;
+      }
+      await supabase.storage.from(BUCKET).remove([photo.storage_path]);
+      toast.success("Photo removed.");
+      await load();
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
 
   useEffect(() => {
     void load();
