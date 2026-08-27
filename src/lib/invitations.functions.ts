@@ -103,6 +103,7 @@ async function loadCanonicalMealPaymentRows(preorderId: string) {
       .filter((row) => row.qty_paid > 0 && row.paid_source)
       .map((row) => ({
         cuisine: row.cuisine,
+        qty: row.qty,
         qty_paid: row.qty_paid,
         paid_at: row.paid_at,
         source: row.paid_source,
