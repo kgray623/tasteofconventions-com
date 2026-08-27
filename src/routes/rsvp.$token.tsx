@@ -90,6 +90,7 @@ type RsvpTokenData = {
   mealStatuses?: Array<{ cuisine: string; confirmed: boolean; confirmed_at: string | null }> | null;
   mealPayments?: Array<{
     cuisine: string;
+    qty?: number | null;
     qty_paid: number;
     paid_at: string | null;
     source?: string | null;
