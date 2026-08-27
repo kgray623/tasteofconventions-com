@@ -1830,6 +1830,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_event_participant: { Args: { _user_id: string }; Returns: boolean }
       merge_preorder_selections: {
         Args: { _existing: Json; _incoming: Json }
         Returns: Json
