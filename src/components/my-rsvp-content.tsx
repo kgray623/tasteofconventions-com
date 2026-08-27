@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Card } from "@/components/ui/card";
 
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Users, Check, X, UtensilsCrossed, Minus, Plus } from "lucide-react";
+import { Calendar, MapPin, Users, Check, X, UtensilsCrossed, Minus, Plus, Camera } from "lucide-react";
 import { withTimeout } from "@/lib/async-safety";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
