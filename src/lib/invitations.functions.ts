@@ -103,6 +103,7 @@ async function loadCanonicalMealPaymentRows(preorderId: string) {
       .filter((row) => row.qty_paid > 0 && row.paid_source)
       .map((row) => ({
         cuisine: row.cuisine,
+        qty: row.qty,
         qty_paid: row.qty_paid,
         paid_at: row.paid_at,
         source: row.paid_source,
@@ -151,6 +152,7 @@ export const getMyInvitation = createServerFn({ method: "GET" })
     ]);
     let mealPayments: Array<{
       cuisine: string;
+      qty: number;
       qty_paid: number;
       paid_at: string | null;
       source: string | null;
@@ -244,6 +246,7 @@ export const getInvitationByToken = createServerFn({ method: "GET" })
     ]);
     let mealPayments: Array<{
       cuisine: string;
+      qty: number;
       qty_paid: number;
       paid_at: string | null;
       source: string | null;

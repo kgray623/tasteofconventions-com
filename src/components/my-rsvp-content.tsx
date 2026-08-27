@@ -59,6 +59,8 @@ type MyRsvpData = {
   preorder?: { selections?: unknown; updated_at?: string | null } | null;
   mealPayments?: Array<{
     cuisine: string;
+    /** Plates ordered of this cuisine, so partial payments can be shown honestly. */
+    qty?: number | null;
     qty_paid: number;
     paid_at: string | null;
     source?: string | null;
@@ -174,15 +176,18 @@ export function MyRsvpContent() {
     const savedSelections = Array.isArray(data.preorder?.selections)
       ? (data.preorder!.selections as unknown[]).filter(isCuisineSelection)
       : [];
+    // Plates still owed: ordered quantity minus whatever is already on record.
+    // A partially paid cuisine stays here so the guest can report the rest.
     const unpaidOrderedCuisines = savedSelections
-      .map((s) => ({ cuisine: String(s.cuisine), qty: Number(s.qty) || 0 }))
-      .filter(
-        (s) =>
-          s.qty > 0 &&
-          !(data.mealPayments ?? []).some(
-            (p) => p.cuisine === s.cuisine && Number(p.qty_paid) > 0,
-          ),
-      );
+      .map((s) => {
+        const cuisine = String(s.cuisine);
+        const qty = Number(s.qty) || 0;
+        const paid = (data.mealPayments ?? [])
+          .filter((p) => p.cuisine === cuisine)
+          .reduce((sum, p) => sum + (Number(p.qty_paid) || 0), 0);
+        return { cuisine, qty: Math.max(0, qty - paid) };
+      })
+      .filter((s) => s.qty > 0);
     const setCuisineQty = (cuisine: string, qty: number) => {
       setCuisineCounts((current) => ({
         ...current,
@@ -380,10 +385,13 @@ export function MyRsvpContent() {
                 .filter((p) => Number(p.qty_paid) > 0)
                 .map((p) => {
                   const confirmed = p.state === "paid_confirmed" || (p.source ?? "restaurant") === "restaurant";
+                  const ordered = Number(p.qty) || 0;
+                  const paid = Number(p.qty_paid) || 0;
+                  const stillDue = ordered > paid ? ordered - paid : 0;
                   return (
                     <li key={p.cuisine} className="py-2 flex items-center gap-3 text-sm">
-                      <span className="font-display text-lg w-8 text-emerald-700">
-                        {p.qty_paid}×
+                      <span className="font-display text-lg w-12 text-emerald-700">
+                        {stillDue > 0 ? `${paid}/${ordered}` : `${paid}×`}
                       </span>
                       <span className="flex-1 text-ink">
                         {p.cuisine}
@@ -391,15 +399,27 @@ export function MyRsvpContent() {
                           ? ` — confirmed by ${findRestaurantForCuisine(restaurants, p.cuisine)!.name}`
                           : ""}
                         {!confirmed ? " — you reported this payment" : ""}
+                        {stillDue > 0 ? (
+                          <span className="block text-terracotta font-medium">
+                            {stillDue} plate{stillDue === 1 ? "" : "s"} still to pay — report it below
+                            once you have paid the restaurant.
+                          </span>
+                        ) : null}
                       </span>
                       <span
                         className={
-                          confirmed
-                            ? "text-emerald-700 font-medium"
-                            : "text-terracotta font-medium"
+                          stillDue > 0
+                            ? "text-terracotta font-medium"
+                            : confirmed
+                              ? "text-emerald-700 font-medium"
+                              : "text-terracotta font-medium"
                         }
                       >
-                        {confirmed ? "Paid" : "Awaiting restaurant confirmation"}
+                        {stillDue > 0
+                          ? `Partly paid · ${paid} of ${ordered}`
+                          : confirmed
+                            ? "Paid"
+                            : "Awaiting restaurant confirmation"}
                         {(confirmed ? p.confirmed_at || p.paid_at : p.paid_at) ? ` · ${new Date((confirmed ? p.confirmed_at || p.paid_at : p.paid_at) as string).toLocaleDateString()}` : ""}
                       </span>
                     </li>
@@ -414,24 +434,28 @@ export function MyRsvpContent() {
             token={invitation.rsvp_token}
             unpaid={unpaidOrderedCuisines}
             onReported={(cuisine, qty, method) =>
-              setData((current) =>
-                current
-                  ? {
-                      ...current,
-                      mealPayments: [
-                        ...(current.mealPayments ?? []).filter((p) => p.cuisine !== cuisine),
-                        {
-                          cuisine,
-                          qty_paid: qty,
-                          paid_at: new Date().toISOString(),
-                          source: "guest_reported",
-                          state: "paid_reported",
-                          method,
-                        },
-                      ],
-                    }
-                  : current,
-              )
+              setData((current) => {
+                if (!current) return current;
+                const existing = (current.mealPayments ?? []).find((p) => p.cuisine === cuisine);
+                const orderedQty = savedSelections
+                  .filter((s) => String(s.cuisine) === cuisine)
+                  .reduce((sum, s) => sum + (Number(s.qty) || 0), 0);
+                return {
+                  ...current,
+                  mealPayments: [
+                    ...(current.mealPayments ?? []).filter((p) => p.cuisine !== cuisine),
+                    {
+                      cuisine,
+                      qty: existing?.qty ?? orderedQty,
+                      qty_paid: (Number(existing?.qty_paid) || 0) + qty,
+                      paid_at: new Date().toISOString(),
+                      source: "guest_reported",
+                      state: "paid_reported",
+                      method,
+                    },
+                  ],
+                };
+              })
             }
           />
         )}
