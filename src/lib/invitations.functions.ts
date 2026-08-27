@@ -152,6 +152,7 @@ export const getMyInvitation = createServerFn({ method: "GET" })
     ]);
     let mealPayments: Array<{
       cuisine: string;
+      qty: number;
       qty_paid: number;
       paid_at: string | null;
       source: string | null;
