@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Card } from "@/components/ui/card";
 
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Users, Check, X, UtensilsCrossed, Minus, Plus } from "lucide-react";
+import { Calendar, MapPin, Users, Check, X, UtensilsCrossed, Minus, Plus, Camera } from "lucide-react";
 import { withTimeout } from "@/lib/async-safety";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -511,7 +511,27 @@ export function MyRsvpContent() {
             </Button>
           </Link>
         </Card>
+        <Card className="p-5 space-y-3 border-2 border-gold/60">
+          <div className="flex items-center gap-2">
+            <Camera className="w-5 h-5 text-gold" />
+            <h2 className="font-display text-2xl">Share Your Photos</h2>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Add your favorite Taste of Conventions photos to our shared album!
+          </p>
+          <a
+            href="https://photos.app.goo.gl/z98u5LLudwMyYajC6"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block"
+          >
+            <Button className="w-full bg-gold text-ink hover:bg-gold/90">
+              Open the shared photo album
+            </Button>
+          </a>
+        </Card>
         <Card className="p-5 space-y-3">
+
           <h2 className="font-display text-2xl">Want to help?</h2>
           <p className="text-sm text-muted-foreground">
             We need volunteers for set up, clean up, hospitality and more. Pick any roles you'd like
