@@ -26,6 +26,7 @@ import {
   Users,
   Video,
   UtensilsCrossed,
+  Camera,
 } from "lucide-react";
 import { InvitationPage } from "@/components/invitation-page";
 import { withTimeout } from "@/lib/async-safety";
