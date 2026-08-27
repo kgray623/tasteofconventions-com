@@ -214,24 +214,43 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
         ) : (
           <div className="grid grid-cols-3 gap-2">
             {photos.map((p) => (
-              <button
+              <div
                 key={p.id}
-                type="button"
-                onClick={() => p.url && setLightbox(p.url)}
                 className="group relative aspect-square overflow-hidden rounded-md border border-border bg-muted"
               >
-                {p.url ? (
-                  <img
-                    src={p.url}
-                    alt={p.caption ? p.caption : `Photo shared by ${p.guest_name}`}
-                    loading="lazy"
-                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                  />
+                <button
+                  type="button"
+                  onClick={() => p.url && setLightbox(p.url)}
+                  className="block h-full w-full"
+                >
+                  {p.url ? (
+                    <img
+                      src={p.url}
+                      alt={p.caption ? p.caption : `Photo shared by ${p.guest_name}`}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                    />
+                  ) : null}
+                  <span className="absolute inset-x-0 bottom-0 truncate bg-ink/70 px-1 py-0.5 text-[10px] text-cream">
+                    {p.guest_name}
+                  </span>
+                </button>
+                {myUserId && p.uploaded_by === myUserId ? (
+                  <button
+                    type="button"
+                    aria-label="Delete my photo"
+                    disabled={deletingId === p.id}
+                    onClick={() => void handleDelete(p)}
+                    className="absolute right-1 top-1 rounded-full bg-ink/80 p-1 text-cream hover:bg-terracotta disabled:opacity-50"
+                  >
+                    {deletingId === p.id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <X className="h-3.5 w-3.5" />
+                    )}
+                  </button>
                 ) : null}
-                <span className="absolute inset-x-0 bottom-0 truncate bg-ink/70 px-1 py-0.5 text-[10px] text-cream">
-                  {p.guest_name}
-                </span>
-              </button>
+              </div>
             ))}
           </div>
         )}
