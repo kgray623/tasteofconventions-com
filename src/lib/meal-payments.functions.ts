@@ -51,10 +51,23 @@ export const reportMyMealPayment = createServerFn({ method: "POST" })
     if (pErr) throw new Error(pErr.message);
     if (!preorder) throw new Error("No catered meal order was found for you.");
 
+    // A guest reporting the *remaining* plates must add to what is already on
+    // record, never overwrite it — meal_payments holds one row per cuisine.
+    const { data: existingPayment } = await supabaseAdmin
+      .from("meal_payments")
+      .select("qty_paid,source")
+      .eq("preorder_id", preorder.id)
+      .eq("cuisine", data.cuisine)
+      .maybeSingle();
+    const alreadyPaid =
+      existingPayment && existingPayment.source !== "restaurant"
+        ? Math.max(0, Number(existingPayment.qty_paid) || 0)
+        : 0;
+
     return recordMealPayment(supabaseAdmin, {
       preorder_id: preorder.id,
       cuisine: data.cuisine,
-      qty: data.qty,
+      qty: alreadyPaid + data.qty,
       method: data.method,
       note: data.note ?? null,
       source: "guest_reported",
