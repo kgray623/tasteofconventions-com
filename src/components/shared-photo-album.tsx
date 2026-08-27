@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Camera, Loader2, Upload } from "lucide-react";
+import { Camera, Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -15,6 +15,8 @@ type GalleryPhoto = {
   caption: string | null;
   created_at: string;
   url: string | null;
+  storage_path: string;
+  uploaded_by: string | null;
 };
 
 /**
@@ -29,12 +31,15 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
   const [caption, setCaption] = useState("");
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  const [myUserId, setMyUserId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const hasSession = Boolean(sessionData.session);
     setSignedIn(hasSession);
+    setMyUserId(sessionData.session?.user.id ?? null);
     if (!hasSession) {
       setPhotos([]);
       setLoading(false);
@@ -42,7 +47,7 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
     }
     const { data, error } = await supabase
       .from("shared_photos")
-      .select("id, guest_name, caption, created_at, storage_path")
+      .select("id, guest_name, caption, created_at, storage_path, uploaded_by")
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) {
@@ -67,11 +72,35 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
         guest_name: r.guest_name,
         caption: r.caption,
         created_at: r.created_at,
+        storage_path: r.storage_path,
+        uploaded_by: r.uploaded_by,
         url: urlByPath.get(r.storage_path) ?? null,
       })),
     );
     setLoading(false);
   }, []);
+
+  const handleDelete = async (photo: GalleryPhoto) => {
+    if (deletingId) return;
+    if (typeof window !== "undefined" && !window.confirm("Remove this photo from the shared album?")) return;
+    setDeletingId(photo.id);
+    try {
+      const { error: rowError } = await supabase
+        .from("shared_photos")
+        .delete()
+        .eq("id", photo.id);
+      if (rowError) {
+        toast.error("Could not remove that photo.");
+        return;
+      }
+      await supabase.storage.from(BUCKET).remove([photo.storage_path]);
+      toast.success("Photo removed.");
+      await load();
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
 
   useEffect(() => {
     void load();
@@ -185,24 +214,43 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
         ) : (
           <div className="grid grid-cols-3 gap-2">
             {photos.map((p) => (
-              <button
+              <div
                 key={p.id}
-                type="button"
-                onClick={() => p.url && setLightbox(p.url)}
                 className="group relative aspect-square overflow-hidden rounded-md border border-border bg-muted"
               >
-                {p.url ? (
-                  <img
-                    src={p.url}
-                    alt={p.caption ? p.caption : `Photo shared by ${p.guest_name}`}
-                    loading="lazy"
-                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                  />
+                <button
+                  type="button"
+                  onClick={() => p.url && setLightbox(p.url)}
+                  className="block h-full w-full"
+                >
+                  {p.url ? (
+                    <img
+                      src={p.url}
+                      alt={p.caption ? p.caption : `Photo shared by ${p.guest_name}`}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                    />
+                  ) : null}
+                  <span className="absolute inset-x-0 bottom-0 truncate bg-ink/70 px-1 py-0.5 text-[10px] text-cream">
+                    {p.guest_name}
+                  </span>
+                </button>
+                {myUserId && p.uploaded_by === myUserId ? (
+                  <button
+                    type="button"
+                    aria-label="Delete my photo"
+                    disabled={deletingId === p.id}
+                    onClick={() => void handleDelete(p)}
+                    className="absolute right-1 top-1 rounded-full bg-ink/80 p-1 text-cream hover:bg-terracotta disabled:opacity-50"
+                  >
+                    {deletingId === p.id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <X className="h-3.5 w-3.5" />
+                    )}
+                  </button>
                 ) : null}
-                <span className="absolute inset-x-0 bottom-0 truncate bg-ink/70 px-1 py-0.5 text-[10px] text-cream">
-                  {p.guest_name}
-                </span>
-              </button>
+              </div>
             ))}
           </div>
         )}

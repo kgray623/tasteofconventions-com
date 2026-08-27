@@ -235,6 +235,8 @@ export function MyRsvpContent() {
 
     return (
       <div className="mx-auto max-w-3xl space-y-6">
+        <SharedPhotoAlbum guestName={invitation.guest_name} />
+        
         
         <div className="text-center">
           <p className="text-xs uppercase tracking-[0.3em] text-terracotta">My RSVP</p>
@@ -513,7 +515,7 @@ export function MyRsvpContent() {
             </Button>
           </Link>
         </Card>
-        <SharedPhotoAlbum guestName={invitation.guest_name} />
+        
 
         <Card className="p-5 space-y-3">
 
