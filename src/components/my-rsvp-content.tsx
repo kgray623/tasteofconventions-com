@@ -59,6 +59,8 @@ type MyRsvpData = {
   preorder?: { selections?: unknown; updated_at?: string | null } | null;
   mealPayments?: Array<{
     cuisine: string;
+    /** Plates ordered of this cuisine, so partial payments can be shown honestly. */
+    qty?: number | null;
     qty_paid: number;
     paid_at: string | null;
     source?: string | null;
