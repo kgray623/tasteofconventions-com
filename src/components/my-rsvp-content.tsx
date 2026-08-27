@@ -176,15 +176,18 @@ export function MyRsvpContent() {
     const savedSelections = Array.isArray(data.preorder?.selections)
       ? (data.preorder!.selections as unknown[]).filter(isCuisineSelection)
       : [];
+    // Plates still owed: ordered quantity minus whatever is already on record.
+    // A partially paid cuisine stays here so the guest can report the rest.
     const unpaidOrderedCuisines = savedSelections
-      .map((s) => ({ cuisine: String(s.cuisine), qty: Number(s.qty) || 0 }))
-      .filter(
-        (s) =>
-          s.qty > 0 &&
-          !(data.mealPayments ?? []).some(
-            (p) => p.cuisine === s.cuisine && Number(p.qty_paid) > 0,
-          ),
-      );
+      .map((s) => {
+        const cuisine = String(s.cuisine);
+        const qty = Number(s.qty) || 0;
+        const paid = (data.mealPayments ?? [])
+          .filter((p) => p.cuisine === cuisine)
+          .reduce((sum, p) => sum + (Number(p.qty_paid) || 0), 0);
+        return { cuisine, qty: Math.max(0, qty - paid) };
+      })
+      .filter((s) => s.qty > 0);
     const setCuisineQty = (cuisine: string, qty: number) => {
       setCuisineCounts((current) => ({
         ...current,
