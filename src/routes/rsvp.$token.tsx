@@ -26,8 +26,8 @@ import {
   Users,
   Video,
   UtensilsCrossed,
-  Camera,
 } from "lucide-react";
+import { SharedPhotoAlbum } from "@/components/shared-photo-album";
 import { InvitationPage } from "@/components/invitation-page";
 import { withTimeout } from "@/lib/async-safety";
 import { clearDraftScope, useDraftState } from "@/hooks/use-draft-state";
