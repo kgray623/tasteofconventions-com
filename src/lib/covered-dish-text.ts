@@ -7,7 +7,8 @@ export const DEFAULT_COVERED_DISH_TEMPLATE =
 /** Fill {name} (first name) and {fullName}/{guest} in the reminder template. */
 export function renderCoveredDishText(template: string, guestName: string) {
   const full = (guestName ?? "").trim();
-  const first = full.split(/\s+/)[0] ?? "";
+  // Strip trailing punctuation so a stored "Dan, Amanda" renders as "Dan".
+  const first = (full.split(/\s+/)[0] ?? "").replace(/[,;:.]+$/, "");
   return (template || DEFAULT_COVERED_DISH_TEMPLATE)
     .replaceAll("{name}", first || full || "there")
     .replaceAll("{guest}", full || first || "there")
