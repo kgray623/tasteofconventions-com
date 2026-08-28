@@ -77,6 +77,50 @@ export type Database = {
         }
         Relationships: []
       }
+      burmese_recheck_text_sends: {
+        Row: {
+          created_at: string
+          guest_name: string | null
+          id: string
+          invitation_id: string | null
+          marked_by: string | null
+          marked_by_label: string | null
+          phone_normalized: string
+          sent_at: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          guest_name?: string | null
+          id?: string
+          invitation_id?: string | null
+          marked_by?: string | null
+          marked_by_label?: string | null
+          phone_normalized: string
+          sent_at?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          guest_name?: string | null
+          id?: string
+          invitation_id?: string | null
+          marked_by?: string | null
+          marked_by_label?: string | null
+          phone_normalized?: string
+          sent_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "burmese_recheck_text_sends_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "invitations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string
