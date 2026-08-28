@@ -35,3 +35,14 @@ export const saveCoveredDishTemplate = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/** Manual "I sent that text" mark — only ever set by an explicit human action. */
+export const setCoveredDishTextSent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ invitationId: z.string().uuid(), sent: z.boolean() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { markCoveredDishTextSent } = await import("@/lib/covered-dish.server");
+    return markCoveredDishTextSent(context.supabase, context.userId, data);
+  });

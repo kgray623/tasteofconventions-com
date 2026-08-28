@@ -199,3 +199,52 @@ export async function loadCoveredDishList(
     },
   };
 }
+
+/**
+ * Manual "I sent that covered-dish reminder" mark. Only ever written by an
+ * explicit human tap on /admin/covered-dish — nothing auto-marks.
+ */
+export async function markCoveredDishTextSent(
+  supabase: any,
+  userId: string,
+  input: { invitationId: string; sent: boolean },
+) {
+  const { assertMealStaff } = await import("@/lib/meal-text-tracking.server");
+  await assertMealStaff(supabase, userId);
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("display_name")
+    .eq("id", userId)
+    .maybeSingle();
+  const label = ((profile?.display_name as string | null) ?? "").trim() || null;
+
+  if (!input.sent) {
+    const { error } = await supabaseAdmin
+      .from("covered_dish_text_sends")
+      .delete()
+      .eq("invitation_id", input.invitationId);
+    if (error) throw new Error(error.message);
+    return { ok: true, sentAt: null };
+  }
+
+  const sentAt = new Date().toISOString();
+  const { data, error } = await supabaseAdmin
+    .from("covered_dish_text_sends")
+    .upsert(
+      {
+        invitation_id: input.invitationId,
+        sent_at: sentAt,
+        marked_by: userId,
+        marked_by_label: label,
+        updated_at: sentAt,
+      },
+      { onConflict: "invitation_id" },
+    )
+    .select("invitation_id,sent_at")
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("The covered-dish text mark could not be verified");
+  return { ok: true, sentAt: data.sent_at as string };
+}
