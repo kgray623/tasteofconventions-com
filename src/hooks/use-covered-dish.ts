@@ -24,7 +24,7 @@ export function useCoveredDish() {
     loading: rolesLoading || query.isPending,
     error: query.error instanceof Error ? query.error.message : null,
     groups: data?.groups ?? [],
-    totals: data?.totals ?? { guests: 0, seats: 0, members: 0 },
+    totals: data?.totals ?? { guests: 0, seats: 0, members: 0, sent: 0, toSend: 0 },
     template: data?.template ?? "",
     isAdmin: data?.isAdmin ?? isAdmin,
     generatedAt: data?.generated_at ?? null,
