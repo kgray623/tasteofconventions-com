@@ -9,7 +9,10 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { SmsTextButton } from "@/components/sms-text-button";
 import { useCoveredDish } from "@/hooks/use-covered-dish";
-import { saveCoveredDishTemplate } from "@/lib/covered-dish.functions";
+import {
+  saveCoveredDishTemplate,
+  setCoveredDishTextSent,
+} from "@/lib/covered-dish.functions";
 import { renderCoveredDishText } from "@/lib/covered-dish-text";
 import { formatPhoneUS, digitsOnly } from "@/lib/phone";
 import { smsNumber } from "@/lib/meal-text-message";
@@ -18,7 +21,7 @@ import { smsNumber } from "@/lib/meal-text-message";
  * "Covered dish reminders": every guest coming in person who did NOT order a
  * catered meal, grouped under the committee member who invited them, with a
  * tappable phone number and a Text button that opens the phone's own Messages
- * app. Read-only — nothing on this page marks anything as sent.
+ * app. Sent marks are written only by an explicit "Mark sent" tap.
  */
 export const Route = createFileRoute("/_authenticated/admin/covered-dish")({
   head: () => ({
@@ -49,6 +52,8 @@ export const Route = createFileRoute("/_authenticated/admin/covered-dish")({
 function CoveredDishPage() {
   const list = useCoveredDish();
   const saveTemplate = useServerFn(saveCoveredDishTemplate);
+  const markSent = useServerFn(setCoveredDishTextSent);
+  const [busy, setBusy] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
@@ -62,6 +67,21 @@ function CoveredDishPage() {
         : null,
     [list.generatedAt],
   );
+
+  const toggleSent = async (invitationId: string, sent: boolean) => {
+    setBusy(invitationId);
+    try {
+      await markSent({ data: { invitationId, sent } });
+      await queryClient.invalidateQueries({ queryKey: ["covered-dish-list"] });
+      toast.success(sent ? "Marked as texted." : "Sent mark removed.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not save that mark.",
+      );
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const commit = async () => {
     const next = draft.trim();
@@ -88,6 +108,11 @@ function CoveredDishPage() {
     <div className="space-y-4 pb-16">
       <Card className="p-3 border-terracotta/40 bg-terracotta/5">
         <h1 className="font-display text-2xl">Covered dish reminders</h1>
+        {!list.loading && !list.error && (
+          <p className="font-display text-xl pt-1">
+            {list.totals.sent} of {list.totals.guests} texted
+          </p>
+        )}
         <p className="text-sm text-muted-foreground pt-1">
           {list.loading
             ? "Reading the guest list from the database…"
@@ -100,6 +125,7 @@ function CoveredDishPage() {
             <Badge variant="outline">{list.totals.guests} guests</Badge>
             <Badge variant="outline">{list.totals.seats} seats</Badge>
             <Badge variant="outline">{list.totals.members} committee members</Badge>
+            <Badge variant="outline">{list.totals.toSend} still to text</Badge>
             {readAt && <Badge variant="outline">Read from the database {readAt} UTC</Badge>}
           </div>
         )}
@@ -165,7 +191,8 @@ function CoveredDishPage() {
                 <h2 className="font-semibold">{group.inviterName}</h2>
                 <p className="text-xs text-muted-foreground">
                   {group.guests.length} guest{group.guests.length === 1 ? "" : "s"} · {group.seats}{" "}
-                  seat{group.seats === 1 ? "" : "s"} with no catered meal
+                  seat{group.seats === 1 ? "" : "s"} with no catered meal · {group.sent} of{" "}
+                  {group.guests.length} texted
                 </p>
               </div>
               {numbers.length > 1 && (
@@ -198,14 +225,31 @@ function CoveredDishPage() {
                     <Badge variant="outline">
                       {guest.partySize} {guest.partySize === 1 ? "seat" : "seats"}
                     </Badge>
-                    {number && (
-                      <SmsTextButton
-                        numbers={[number]}
-                        body={renderCoveredDishText(template, guest.name)}
-                        label="Text"
-                        className="ml-auto"
-                      />
+                    {guest.sentAt ? (
+                      <span className="text-xs text-emerald-700 w-full">
+                        Text sent {new Date(guest.sentAt).toLocaleString()}
+                        {guest.markedByLabel ? ` · ${guest.markedByLabel}` : ""}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground w-full">Not texted yet</span>
                     )}
+                    <div className="ml-auto flex items-center gap-2">
+                      {number && (
+                        <SmsTextButton
+                          numbers={[number]}
+                          body={renderCoveredDishText(template, guest.name)}
+                          label="Text"
+                        />
+                      )}
+                      <Button
+                        size="sm"
+                        variant={guest.sentAt ? "outline" : "default"}
+                        disabled={busy === guest.invitationId}
+                        onClick={() => void toggleSent(guest.invitationId, !guest.sentAt)}
+                      >
+                        {guest.sentAt ? "Undo sent" : "Mark sent"}
+                      </Button>
+                    </div>
                   </li>
                 );
               })}
