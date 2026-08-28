@@ -175,9 +175,14 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
       </p>
 
       {signedIn === false ? (
-        <p className="text-sm text-terracotta">
-          Sign in with your last name and phone number to add and browse photos.
-        </p>
+        <div className="space-y-2">
+          <p className="text-sm text-terracotta">
+            Sign in with your last name and phone number to add and browse photos.
+          </p>
+          <Button asChild className="w-full bg-gold text-ink hover:bg-gold/90">
+            <a href="/auth">Sign in to share photos</a>
+          </Button>
+        </div>
       ) : (
         <div className="space-y-3">
           <Input
