@@ -15,6 +15,8 @@ export type CoveredDishGuest = {
   phone: string;
   partySize: number;
   attendanceMode: string;
+  sentAt: string | null;
+  markedByLabel: string | null;
 };
 
 export type CoveredDishGroup = {
@@ -22,11 +24,12 @@ export type CoveredDishGroup = {
   inviterName: string;
   guests: CoveredDishGuest[];
   seats: number;
+  sent: number;
 };
 
 export type CoveredDishResult = {
   groups: CoveredDishGroup[];
-  totals: { guests: number; seats: number; members: number };
+  totals: { guests: number; seats: number; members: number; sent: number; toSend: number };
   template: string;
   isAdmin: boolean;
   generated_at: string;
@@ -41,7 +44,7 @@ export async function loadCoveredDishList(
 
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-  const [{ data: events }, { data: inviterRows }, { data: setting }] = await Promise.all([
+  const [{ data: events }, { data: inviterRows }, { data: setting }, { data: sends }] = await Promise.all([
     supabaseAdmin.from("events").select("id").order("starts_at").limit(1),
     supabaseAdmin.from("inviters").select("id,name"),
     supabaseAdmin
@@ -49,7 +52,21 @@ export async function loadCoveredDishList(
       .select("value")
       .eq("key", "covered_dish_text_template")
       .maybeSingle(),
+    supabaseAdmin
+      .from("covered_dish_text_sends")
+      .select("invitation_id,sent_at,marked_by_label"),
   ]);
+
+  // Sent marks are only ever written by an explicit human tap on this page.
+  const sentByInvitation = new Map(
+    (
+      (sends ?? []) as Array<{
+        invitation_id: string;
+        sent_at: string;
+        marked_by_label: string | null;
+      }>
+    ).map((s) => [s.invitation_id, s] as const),
+  );
 
   const template = (setting?.value as string | undefined) ?? DEFAULT_COVERED_DISH_TEMPLATE;
   const inviterNameById = new Map(
@@ -60,7 +77,12 @@ export async function loadCoveredDishList(
 
   const eventId = events?.[0]?.id as string | undefined;
   const base = { template, isAdmin: identity.isAdmin, generated_at: new Date().toISOString() };
-  if (!eventId) return { ...base, groups: [], totals: { guests: 0, seats: 0, members: 0 } };
+  if (!eventId)
+    return {
+      ...base,
+      groups: [],
+      totals: { guests: 0, seats: 0, members: 0, sent: 0, toSend: 0 },
+    };
 
   const [{ data: invitations }, { data: rsvps }, { data: preorders }] = await Promise.all([
     supabaseAdmin
@@ -128,24 +150,32 @@ export async function loadCoveredDishList(
           : "No committee member recorded",
         guests: [],
         seats: 0,
+        sent: 0,
       } as CoveredDishGroup);
     const partySize = Math.max(1, Number(rsvp.party_size ?? 1) || 1);
+    const sent = sentByInvitation.get(inv.id) ?? null;
     group.guests.push({
       invitationId: inv.id,
       name: (inv.guest_name ?? "").trim() || "Guest",
       phone: (inv.guest_phone ?? "").trim(),
       partySize,
       attendanceMode: mode,
+      sentAt: sent?.sent_at ?? null,
+      markedByLabel: sent?.marked_by_label ?? null,
     });
     group.seats += partySize;
+    if (sent) group.sent += 1;
     groupMap.set(key, group);
   }
 
   const groups = Array.from(groupMap.values())
     .map((g) => ({
       ...g,
-      guests: g.guests.sort((a, b) =>
-        a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+      // Not-yet-texted guests first inside each committee group, then A-Z.
+      guests: g.guests.sort(
+        (a, b) =>
+          (a.sentAt ? 1 : 0) - (b.sentAt ? 1 : 0) ||
+          a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
       ),
     }))
     .sort(
@@ -161,6 +191,11 @@ export async function loadCoveredDishList(
       guests: groups.reduce((sum, g) => sum + g.guests.length, 0),
       seats: groups.reduce((sum, g) => sum + g.seats, 0),
       members: groups.length,
+      sent: groups.reduce((sum, g) => sum + g.sent, 0),
+      toSend: groups.reduce(
+        (sum, g) => sum + g.guests.filter((x) => !x.sentAt).length,
+        0,
+      ),
     },
   };
 }
