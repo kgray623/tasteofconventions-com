@@ -59,6 +59,7 @@ import { Route as AuthenticatedAdminCoveredDishRouteImport } from './routes/_aut
 import { Route as AuthenticatedAdminCommitteeMessageRouteImport } from './routes/_authenticated/admin/committee-message'
 import { Route as AuthenticatedAdminChatRouteImport } from './routes/_authenticated/admin/chat'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin/categories'
+import { Route as AuthenticatedAdminBurmeseUnpaidRecheckRouteImport } from './routes/_authenticated/admin/burmese-unpaid-recheck'
 import { Route as AuthenticatedAdminBackupsRouteImport } from './routes/_authenticated/admin/backups'
 import { Route as AuthenticatedAdminAuditLogRouteImport } from './routes/_authenticated/admin/audit-log'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
@@ -341,6 +342,12 @@ const AuthenticatedAdminCategoriesRoute =
     path: '/categories',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminBurmeseUnpaidRecheckRoute =
+  AuthenticatedAdminBurmeseUnpaidRecheckRouteImport.update({
+    id: '/burmese-unpaid-recheck',
+    path: '/burmese-unpaid-recheck',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminBackupsRoute =
   AuthenticatedAdminBackupsRouteImport.update({
     id: '/backups',
@@ -421,6 +428,7 @@ export interface FileRoutesByFullPath {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/audit-log': typeof AuthenticatedAdminAuditLogRoute
   '/admin/backups': typeof AuthenticatedAdminBackupsRoute
+  '/admin/burmese-unpaid-recheck': typeof AuthenticatedAdminBurmeseUnpaidRecheckRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/chat': typeof AuthenticatedAdminChatRoute
   '/admin/committee-message': typeof AuthenticatedAdminCommitteeMessageRoute
@@ -480,6 +488,7 @@ export interface FileRoutesByTo {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/audit-log': typeof AuthenticatedAdminAuditLogRoute
   '/admin/backups': typeof AuthenticatedAdminBackupsRoute
+  '/admin/burmese-unpaid-recheck': typeof AuthenticatedAdminBurmeseUnpaidRecheckRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/chat': typeof AuthenticatedAdminChatRoute
   '/admin/committee-message': typeof AuthenticatedAdminCommitteeMessageRoute
@@ -542,6 +551,7 @@ export interface FileRoutesById {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/admin/audit-log': typeof AuthenticatedAdminAuditLogRoute
   '/_authenticated/admin/backups': typeof AuthenticatedAdminBackupsRoute
+  '/_authenticated/admin/burmese-unpaid-recheck': typeof AuthenticatedAdminBurmeseUnpaidRecheckRoute
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/chat': typeof AuthenticatedAdminChatRoute
   '/_authenticated/admin/committee-message': typeof AuthenticatedAdminCommitteeMessageRoute
@@ -604,6 +614,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/admin/audit-log'
     | '/admin/backups'
+    | '/admin/burmese-unpaid-recheck'
     | '/admin/categories'
     | '/admin/chat'
     | '/admin/committee-message'
@@ -663,6 +674,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/admin/audit-log'
     | '/admin/backups'
+    | '/admin/burmese-unpaid-recheck'
     | '/admin/categories'
     | '/admin/chat'
     | '/admin/committee-message'
@@ -724,6 +736,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/admin/audit-log'
     | '/_authenticated/admin/backups'
+    | '/_authenticated/admin/burmese-unpaid-recheck'
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/chat'
     | '/_authenticated/admin/committee-message'
@@ -1141,6 +1154,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminCategoriesRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/burmese-unpaid-recheck': {
+      id: '/_authenticated/admin/burmese-unpaid-recheck'
+      path: '/burmese-unpaid-recheck'
+      fullPath: '/admin/burmese-unpaid-recheck'
+      preLoaderRoute: typeof AuthenticatedAdminBurmeseUnpaidRecheckRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/backups': {
       id: '/_authenticated/admin/backups'
       path: '/backups'
@@ -1210,6 +1230,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAuditLogRoute: typeof AuthenticatedAdminAuditLogRoute
   AuthenticatedAdminBackupsRoute: typeof AuthenticatedAdminBackupsRoute
+  AuthenticatedAdminBurmeseUnpaidRecheckRoute: typeof AuthenticatedAdminBurmeseUnpaidRecheckRoute
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedAdminChatRoute: typeof AuthenticatedAdminChatRoute
   AuthenticatedAdminCommitteeMessageRoute: typeof AuthenticatedAdminCommitteeMessageRoute
@@ -1239,6 +1260,8 @@ interface AuthenticatedAdminRouteChildren {
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminAuditLogRoute: AuthenticatedAdminAuditLogRoute,
   AuthenticatedAdminBackupsRoute: AuthenticatedAdminBackupsRoute,
+  AuthenticatedAdminBurmeseUnpaidRecheckRoute:
+    AuthenticatedAdminBurmeseUnpaidRecheckRoute,
   AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
   AuthenticatedAdminChatRoute: AuthenticatedAdminChatRoute,
   AuthenticatedAdminCommitteeMessageRoute:

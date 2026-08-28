@@ -47,6 +47,16 @@ const tabs: { id?: string; to: string; label: string; icon: typeof ShieldCheck; 
     teamLabel: "Covered dish reminders",
     group: "main",
   },
+  {
+    id: "burmese-unpaid-recheck",
+    to: "/admin/burmese-unpaid-recheck",
+    label: "Burmese payment recheck",
+    icon: MessageSquare,
+    team: true,
+    teamLabel: "Burmese payment recheck",
+    group: "main",
+  },
+
   { to: "/admin/inviters", label: "Committee Guests", icon: UserPlus, team: true, teamLabel: "Committee Guests", group: "main" },
 
   { to: "/admin/reconcile", label: "Reconcile list", icon: ListChecks, group: "main" },
