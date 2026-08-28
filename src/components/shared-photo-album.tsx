@@ -104,6 +104,18 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
 
   useEffect(() => {
     void load();
+    // Invitation-link guests may have their session restored asynchronously
+    // (phone cookie -> setSession), so re-read the album when auth changes.
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) void load();
+      else {
+        setSignedIn(false);
+        setMyUserId(null);
+        setPhotos([]);
+        setLoading(false);
+      }
+    });
+    return () => sub.subscription.unsubscribe();
   }, [load]);
 
   const handleFiles = async (files: FileList | null) => {
@@ -163,9 +175,14 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
       </p>
 
       {signedIn === false ? (
-        <p className="text-sm text-terracotta">
-          Sign in with your last name and phone number to add and browse photos.
-        </p>
+        <div className="space-y-2">
+          <p className="text-sm text-terracotta">
+            Sign in with your last name and phone number to add and browse photos.
+          </p>
+          <Button asChild className="w-full bg-gold text-ink hover:bg-gold/90">
+            <a href="/auth">Sign in to share photos</a>
+          </Button>
+        </div>
       ) : (
         <div className="space-y-3">
           <Input
