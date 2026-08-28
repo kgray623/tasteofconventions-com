@@ -91,7 +91,7 @@ export async function loadCoveredDishList(
       .eq("event_id", eventId),
     supabaseAdmin
       .from("rsvps")
-      .select("invitation_id,status,attendance_mode,party_size"),
+      .select("invitation_id,status,attendance_mode,party_size,ordering_food"),
     supabaseAdmin.from("cuisine_preorders").select("id,phone,selections,invitation_id"),
   ]);
 
@@ -112,7 +112,12 @@ export async function loadCoveredDishList(
 
   const rsvpByInvitation = new Map<
     string,
-    { status: string; attendance_mode: string | null; party_size: number | null }
+    {
+      status: string;
+      attendance_mode: string | null;
+      party_size: number | null;
+      ordering_food: boolean | null;
+    }
   >();
   for (const r of (rsvps ?? []) as any[]) {
     if (!r?.invitation_id) continue;
@@ -120,6 +125,7 @@ export async function loadCoveredDishList(
       status: (r.status ?? "") as string,
       attendance_mode: (r.attendance_mode ?? null) as string | null,
       party_size: (r.party_size ?? null) as number | null,
+      ordering_food: (r.ordering_food ?? null) as boolean | null,
     });
   }
 
