@@ -142,14 +142,15 @@ export async function loadCoveredDishList(
     if (mode === "zoom") continue;
 
     const tail = phoneTail(inv.guest_phone);
-    // A guest who said "yes, ordering a catered meal" counts as having a meal
-    // even if their preorder has no plates recorded yet. ordering_food = null
-    // (never answered) keeps the previous behaviour.
+    // Only an actual completed preorder with plates counts as "has a meal".
+    // rsvps.ordering_food is intentionally NOT used: it is not cleared when a
+    // guest cancels an already-placed preorder, so it would wrongly exclude
+    // cancelled guests from the covered-dish reminder list.
     const hasMeal =
-      rsvp.ordering_food === true ||
       orderedInvitationIds.has(inv.id) ||
       (tail.length >= 7 && orderedTails.has(tail));
     if (hasMeal) continue;
+
 
     const key = inv.inviter_id ?? "__none__";
     const group =
