@@ -142,8 +142,13 @@ export async function loadCoveredDishList(
     if (mode === "zoom") continue;
 
     const tail = phoneTail(inv.guest_phone);
+    // A guest who said "yes, ordering a catered meal" counts as having a meal
+    // even if their preorder has no plates recorded yet. ordering_food = null
+    // (never answered) keeps the previous behaviour.
     const hasMeal =
-      orderedInvitationIds.has(inv.id) || (tail.length >= 7 && orderedTails.has(tail));
+      rsvp.ordering_food === true ||
+      orderedInvitationIds.has(inv.id) ||
+      (tail.length >= 7 && orderedTails.has(tail));
     if (hasMeal) continue;
 
     const key = inv.inviter_id ?? "__none__";
