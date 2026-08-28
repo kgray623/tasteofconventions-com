@@ -227,6 +227,44 @@ export type Database = {
           },
         ]
       }
+      covered_dish_text_sends: {
+        Row: {
+          created_at: string
+          id: string
+          invitation_id: string
+          marked_by: string | null
+          marked_by_label: string | null
+          sent_at: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invitation_id: string
+          marked_by?: string | null
+          marked_by_label?: string | null
+          sent_at?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invitation_id?: string
+          marked_by?: string | null
+          marked_by_label?: string | null
+          sent_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "covered_dish_text_sends_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: true
+            referencedRelation: "invitations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cuisine_preorders: {
         Row: {
           created_at: string
