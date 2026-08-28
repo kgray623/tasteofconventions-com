@@ -91,7 +91,7 @@ export async function loadCoveredDishList(
       .eq("event_id", eventId),
     supabaseAdmin
       .from("rsvps")
-      .select("invitation_id,status,attendance_mode,party_size"),
+      .select("invitation_id,status,attendance_mode,party_size,ordering_food"),
     supabaseAdmin.from("cuisine_preorders").select("id,phone,selections,invitation_id"),
   ]);
 
@@ -112,7 +112,12 @@ export async function loadCoveredDishList(
 
   const rsvpByInvitation = new Map<
     string,
-    { status: string; attendance_mode: string | null; party_size: number | null }
+    {
+      status: string;
+      attendance_mode: string | null;
+      party_size: number | null;
+      ordering_food: boolean | null;
+    }
   >();
   for (const r of (rsvps ?? []) as any[]) {
     if (!r?.invitation_id) continue;
@@ -120,6 +125,7 @@ export async function loadCoveredDishList(
       status: (r.status ?? "") as string,
       attendance_mode: (r.attendance_mode ?? null) as string | null,
       party_size: (r.party_size ?? null) as number | null,
+      ordering_food: (r.ordering_food ?? null) as boolean | null,
     });
   }
 
@@ -136,8 +142,13 @@ export async function loadCoveredDishList(
     if (mode === "zoom") continue;
 
     const tail = phoneTail(inv.guest_phone);
+    // A guest who said "yes, ordering a catered meal" counts as having a meal
+    // even if their preorder has no plates recorded yet. ordering_food = null
+    // (never answered) keeps the previous behaviour.
     const hasMeal =
-      orderedInvitationIds.has(inv.id) || (tail.length >= 7 && orderedTails.has(tail));
+      rsvp.ordering_food === true ||
+      orderedInvitationIds.has(inv.id) ||
+      (tail.length >= 7 && orderedTails.has(tail));
     if (hasMeal) continue;
 
     const key = inv.inviter_id ?? "__none__";
