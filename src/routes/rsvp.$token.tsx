@@ -5,6 +5,7 @@ import {
   getInvitationByToken,
   submitRsvp,
   submitCuisinePreorder,
+  MEAL_PREORDER_CLOSED_MESSAGE,
 } from "@/lib/invitations.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -331,7 +332,9 @@ function RsvpPage() {
       clearDraftScope(orderDraftScope);
       toast.success(selections.length === 0 ? "Meal order cancelled" : "Meal order saved");
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Could not save meal order");
+      const message = e instanceof Error ? e.message : "Could not save meal order";
+      if (message === MEAL_PREORDER_CLOSED_MESSAGE) toast.info(message);
+      else toast.error(message);
     } finally {
       setSavingMeals(false);
     }

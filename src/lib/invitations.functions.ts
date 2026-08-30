@@ -8,7 +8,8 @@ function publicDbError(
   error: { message?: string } | null | undefined,
   fallback = "Something went wrong. Please try again.",
 ): Error {
-  if (error?.message) console.error("[invitations] db error:", error.message);
+  if (error?.message)
+    console.error("[invitations] db error:", error.message, new Error("trace").stack);
   return new Error(fallback);
 }
 
@@ -185,30 +186,26 @@ async function shouldWaitlist(
   const eventId = (inv as { event_id?: string | null } | null)?.event_id;
   if (!eventId) return false;
 
-  const { data: invitations, error: invitationsError } = await supabaseAdmin
-    .from("invitations")
-    .select("id")
-    .eq("event_id", eventId);
-  if (invitationsError) throw publicDbError(invitationsError);
-
-  const otherInvitationIds = ((invitations ?? []) as Array<{ id: string }>)
-    .map((row) => row.id)
-    .filter((id) => id !== invitationId);
-
-  if (otherInvitationIds.length === 0) return partySize > BUILDING_IN_PERSON_CAPACITY;
-
+  // Join through invitations instead of sending every invitation id in the URL:
+  // with hundreds of invitations the id list produced a request URL large enough
+  // to make the fetch fail outright, which aborted the whole RSVP submission.
   const { data: yesRsvps, error: rsvpsError } = await supabaseAdmin
     .from("rsvps")
-    .select("party_size,attendance_mode")
-    .in("invitation_id", otherInvitationIds)
+    .select("invitation_id,party_size,attendance_mode,invitations!inner(event_id)")
+    .eq("invitations.event_id", eventId)
     .eq("status", "yes");
   if (rsvpsError) throw publicDbError(rsvpsError);
 
   const confirmedInPerson = (
-    (yesRsvps ?? []) as Array<{ party_size?: number | null; attendance_mode?: string | null }>
+    (yesRsvps ?? []) as Array<{
+      invitation_id?: string | null;
+      party_size?: number | null;
+      attendance_mode?: string | null;
+    }>
   )
-    .filter((row) => row.attendance_mode !== "zoom")
+    .filter((row) => row.attendance_mode !== "zoom" && row.invitation_id !== invitationId)
     .reduce((sum, row) => sum + (row.party_size ?? 1), 0);
+
 
   return confirmedInPerson + partySize > BUILDING_IN_PERSON_CAPACITY;
 }
@@ -397,8 +394,19 @@ const StandaloneCuisinePreorderInput = z.object({
     .max(10),
 });
 
+// Expected, normal state after the pre-order cutoff — not a technical error.
+export const MEAL_PREORDER_CLOSED_MESSAGE =
+  "Meal preordering has closed. You're welcome to pay for a meal at the event, or bring a covered dish.";
+
+function isPreordersClosed(error: { message?: string } | null | undefined): boolean {
+  return (error?.message ?? "").includes("PREORDERS_CLOSED");
+}
+
 function mealWriteError(error: { message?: string } | null): Error {
   const message = error?.message ?? "";
+  if (isPreordersClosed(error)) {
+    return new Error(MEAL_PREORDER_CLOSED_MESSAGE);
+  }
   if (message.includes("MEAL_REMOVAL_NOT_CONFIRMED")) {
     const cuisine = message.split("MEAL_REMOVAL_NOT_CONFIRMED:")[1]?.trim() || "that";
     return new Error(
@@ -972,6 +980,7 @@ async function submitPublicRsvpInner(data: z.infer<typeof PublicRsvpInput>) {
   // Capture cuisine pre-order interest (separate table, no restaurant binding yet).
   // Additive only: an RSVP submission can add or raise meals, but it can never
   // reduce, remove, or delete meals already on record.
+  let mealPreorderClosed = false;
   if (selections.length > 0 && (data.guest_name || phone)) {
     const { error: mealErr } = await supabaseAdmin.rpc("save_meal_order" as any, {
       _invitation_id: invitationId,
@@ -981,7 +990,12 @@ async function submitPublicRsvpInner(data: z.infer<typeof PublicRsvpInput>) {
       _confirmed_removals: [],
       _mode: "additive",
     });
-    if (mealErr) throw publicDbError(mealErr);
+    if (mealErr) {
+      // Past the pre-order cutoff this is expected: the RSVP itself is already
+      // saved, so keep it and tell the guest the meal step is closed.
+      if (!isPreordersClosed(mealErr)) throw publicDbError(mealErr);
+      mealPreorderClosed = true;
+    }
   }
 
 
@@ -990,6 +1004,7 @@ async function submitPublicRsvpInner(data: z.infer<typeof PublicRsvpInput>) {
     invitation_id: invitationId,
     waitlisted,
     referrerNeedsReview: invitedBy.needsReview,
+    mealPreorderClosed,
   };
 }
 
