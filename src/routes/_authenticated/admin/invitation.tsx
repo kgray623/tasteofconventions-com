@@ -32,6 +32,9 @@ type Content = {
   location_name: string;
   location_subtitle: string;
   location_body: string;
+  map_lat: number;
+  map_lng: number;
+
   dress_body: string;
   gifts_body: string;
 };
