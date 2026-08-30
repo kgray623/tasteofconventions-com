@@ -1,7 +1,11 @@
 import { Link, Navigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { getMyInvitation, submitCuisinePreorder } from "@/lib/invitations.functions";
+import {
+  getMyInvitation,
+  submitCuisinePreorder,
+  MEAL_PREORDER_CLOSED_MESSAGE,
+} from "@/lib/invitations.functions";
 import { useAuth } from "@/hooks/use-auth";
 import { Card } from "@/components/ui/card";
 
@@ -231,7 +235,9 @@ export function MyRsvpContent() {
         );
         toast.success(selections.length === 0 ? "Meal order cancelled." : "Meal order saved.");
       } catch (e: unknown) {
-        toast.error(e instanceof Error ? e.message : "Could not save meal order");
+        const message = e instanceof Error ? e.message : "Could not save meal order";
+        if (message === MEAL_PREORDER_CLOSED_MESSAGE) toast.info(message);
+        else toast.error(message);
       } finally {
         setSavingMeals(false);
       }

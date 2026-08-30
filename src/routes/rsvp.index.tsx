@@ -17,6 +17,7 @@ import { Check, X, Minus, Plus, ArrowLeft, Users, Video } from "lucide-react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { MEAL_INTRO_COPY } from "@/lib/meal-pricing";
+import { MEAL_PREORDER_CLOSED_MESSAGE } from "@/lib/invitations.functions";
 import {
   MealPriceNote,
   MealRestaurantContact,
@@ -91,6 +92,7 @@ function PreviewPage() {
   const save = useServerFn(submitPublicRsvp);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [mealClosed, setMealClosed] = useState(false);
   const hasSubmitted = saved || Boolean(submittedAt);
 
   const handleSave = async () => {
@@ -139,6 +141,14 @@ function PreviewPage() {
         );
       } else {
         toast.success("RSVP saved — thank you!");
+      }
+      if (
+        result &&
+        typeof result === "object" &&
+        Boolean((result as { mealPreorderClosed?: boolean }).mealPreorderClosed)
+      ) {
+        setMealClosed(true);
+        toast.info(MEAL_PREORDER_CLOSED_MESSAGE);
       }
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Could not save RSVP");
@@ -398,6 +408,12 @@ function PreviewPage() {
           >
             {saving ? "Submitting…" : "Submit RSVP"}
           </Button>
+          {mealClosed && (
+            <div className="rounded-md border border-border bg-cream/60 p-4 text-sm text-ink">
+              <p className="font-medium">Your RSVP is saved.</p>
+              <p className="mt-1">{MEAL_PREORDER_CLOSED_MESSAGE}</p>
+            </div>
+          )}
           {hasSubmitted && (
             <div className="rounded-md border border-border bg-cream/40 p-4 text-sm text-ink space-y-3">
               <p className="font-medium">
