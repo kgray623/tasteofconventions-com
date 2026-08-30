@@ -54,11 +54,20 @@ type Content = {
   location_name: string;
   location_subtitle: string;
   location_body: string;
+  map_lat: number;
+  map_lng: number;
   dress_body: string;
   gifts_body: string;
 };
 
+
+// Exact venue coordinates: 901 Allied Rd, Bellevue, NE 68123
+// (Hanke Hall / Falconwood Park at Eagle's Landing)
+const VENUE_LAT = 41.0656704;
+const VENUE_LNG = -95.9158954;
+
 const tabs = [
+
   { id: "datetime", label: "Date & Time" },
   { id: "location", label: "Location" },
   { id: "dress", label: "Dress Code" },
@@ -81,6 +90,9 @@ const defaultContent: Content = {
   location_name: "Eagle's Landing",
   location_subtitle: "La Platte, Nebraska",
   location_body: "GPS coordinates and map will appear here once confirmed.",
+  map_lat: VENUE_LAT,
+  map_lng: VENUE_LNG,
+
   dress_body:
     "This is an international event, so international attire is encouraged. Is there a culture you love to dress in? Please do — it'll make the evening more fun and beautiful for everyone.",
   gifts_body:
@@ -325,14 +337,23 @@ export function InvitationPage() {
               <div className="relative aspect-[16/9] rounded-xl overflow-hidden border border-border">
                 <iframe
                   title={`${content.location_name} on Google Maps`}
-                  src={`https://www.google.com/maps?q=${encodeURIComponent(`${content.location_name} ${content.location_subtitle}`)}&output=embed`}
+                  src={`https://www.google.com/maps?q=${content.map_lat ?? VENUE_LAT},${content.map_lng ?? VENUE_LNG}&output=embed`}
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
                   className="absolute inset-0 w-full h-full border-0"
                   allowFullScreen
                 />
               </div>
+              <a
+                href={`https://www.google.com/maps/dir/?api=1&destination=${content.map_lat ?? VENUE_LAT},${content.map_lng ?? VENUE_LNG}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl border border-sunset/40 bg-sunset/10 px-4 py-2 text-sm font-medium text-ink hover:bg-sunset/20"
+              >
+                <MapPin className="w-4 h-4 text-sunset" /> Get Directions
+              </a>
               <p className="text-sm whitespace-pre-line">{content.location_body}</p>
+
             </AccordionContent>
           </AccordionItem>
 

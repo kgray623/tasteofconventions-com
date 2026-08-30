@@ -662,6 +662,8 @@ export type Database = {
           location_body: string
           location_name: string
           location_subtitle: string
+          map_lat: number
+          map_lng: number
           singleton: boolean
           updated_at: string
           video_url: string | null
@@ -682,6 +684,8 @@ export type Database = {
           location_body?: string
           location_name?: string
           location_subtitle?: string
+          map_lat?: number
+          map_lng?: number
           singleton?: boolean
           updated_at?: string
           video_url?: string | null
@@ -702,6 +706,8 @@ export type Database = {
           location_body?: string
           location_name?: string
           location_subtitle?: string
+          map_lat?: number
+          map_lng?: number
           singleton?: boolean
           updated_at?: string
           video_url?: string | null
