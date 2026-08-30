@@ -8,8 +8,7 @@ function publicDbError(
   error: { message?: string } | null | undefined,
   fallback = "Something went wrong. Please try again.",
 ): Error {
-  if (error?.message)
-    console.error("[invitations] db error:", error.message, new Error("trace").stack);
+  if (error?.message) console.error("[invitations] db error:", error.message);
   return new Error(fallback);
 }
 
