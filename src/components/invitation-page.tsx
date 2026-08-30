@@ -84,6 +84,9 @@ const defaultContent: Content = {
   location_name: "Eagle's Landing",
   location_subtitle: "La Platte, Nebraska",
   location_body: "GPS coordinates and map will appear here once confirmed.",
+  map_lat: VENUE_LAT,
+  map_lng: VENUE_LNG,
+
   dress_body:
     "This is an international event, so international attire is encouraged. Is there a culture you love to dress in? Please do — it'll make the evening more fun and beautiful for everyone.",
   gifts_body:
