@@ -174,7 +174,12 @@ function InvitationAdminPage() {
           <Field label="Venue name"><Input value={c.location_name} onChange={(e) => update("location_name", e.target.value)} /></Field>
           <Field label="Subtitle (city/state)"><Input value={c.location_subtitle} onChange={(e) => update("location_subtitle", e.target.value)} /></Field>
         </div>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <Field label="Map latitude"><Input type="number" step="any" value={c.map_lat ?? ""} onChange={(e) => update("map_lat", Number(e.target.value))} /></Field>
+          <Field label="Map longitude"><Input type="number" step="any" value={c.map_lng ?? ""} onChange={(e) => update("map_lng", Number(e.target.value))} /></Field>
+        </div>
         <Field label="Body"><Textarea rows={3} value={c.location_body} onChange={(e) => update("location_body", e.target.value)} /></Field>
+
       </Card>
 
       <Card className="p-5 space-y-3">
