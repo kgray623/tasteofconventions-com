@@ -61,7 +61,13 @@ type Content = {
 };
 
 
+// Exact venue coordinates: 901 Allied Rd, Bellevue, NE 68123
+// (Hanke Hall / Falconwood Park at Eagle's Landing)
+const VENUE_LAT = 41.0656704;
+const VENUE_LNG = -95.9158954;
+
 const tabs = [
+
   { id: "datetime", label: "Date & Time" },
   { id: "location", label: "Location" },
   { id: "dress", label: "Dress Code" },
