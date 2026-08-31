@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Camera, Grid3X3, Loader2, Rows3, Upload, X } from "lucide-react";
+import { Camera, Grid3X3, Loader2, Play, Rows3, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -7,9 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useRoles } from "@/hooks/use-roles";
 import { PhotoComments, type PhotoComment } from "@/components/photo-comments";
+import { PhotoLikes, type PhotoLike } from "@/components/photo-likes";
 import { PhotoViewer } from "@/components/photo-viewer";
 
 const BUCKET = "guest-photos";
+/** Bucket file size limit (50MB) — roughly 30 seconds of phone video. */
+const MAX_FILE_BYTES = 50 * 1024 * 1024;
 
 type GalleryPhoto = {
   id: string;
@@ -19,17 +22,19 @@ type GalleryPhoto = {
   url: string | null;
   storage_path: string;
   uploaded_by: string | null;
+  media_type: string;
 };
 
 /**
- * In-platform shared photo album. Fully self-contained: uploads to the
+ * In-platform shared album for photos and short videos. Uploads to the
  * `guest-photos` storage bucket and records a row in `shared_photos`.
- * Comments live in `photo_comments`. Does not touch RSVP, meal, payment or
- * texting data.
+ * Comments live in `photo_comments`, likes in `photo_likes`. Does not touch
+ * RSVP, meal, payment or texting data.
  */
 export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
   const [photos, setPhotos] = useState<GalleryPhoto[]>([]);
   const [comments, setComments] = useState<PhotoComment[]>([]);
+  const [likes, setLikes] = useState<PhotoLike[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [caption, setCaption] = useState("");
@@ -41,17 +46,25 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
   const fileInput = useRef<HTMLInputElement>(null);
   const { isAdmin } = useRoles();
 
-  const loadComments = useCallback(async (photoIds: string[]) => {
+  const loadEngagement = useCallback(async (photoIds: string[]) => {
     if (photoIds.length === 0) {
       setComments([]);
+      setLikes([]);
       return;
     }
-    const { data } = await supabase
-      .from("photo_comments")
-      .select("id, photo_id, user_id, commenter_name, comment_text, created_at")
-      .in("photo_id", photoIds)
-      .order("created_at", { ascending: true });
-    setComments(data ?? []);
+    const [commentRes, likeRes] = await Promise.all([
+      supabase
+        .from("photo_comments")
+        .select("id, photo_id, user_id, commenter_name, comment_text, created_at")
+        .in("photo_id", photoIds)
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("photo_likes")
+        .select("id, photo_id, user_id, liker_name")
+        .in("photo_id", photoIds),
+    ]);
+    setComments(commentRes.data ?? []);
+    setLikes(likeRes.data ?? []);
   }, []);
 
   const load = useCallback(async () => {
@@ -62,12 +75,13 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
     if (!hasSession) {
       setPhotos([]);
       setComments([]);
+      setLikes([]);
       setLoading(false);
       return;
     }
     const { data, error } = await supabase
       .from("shared_photos")
-      .select("id, guest_name, caption, created_at, storage_path, uploaded_by")
+      .select("id, guest_name, caption, created_at, storage_path, uploaded_by, media_type")
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) {
@@ -94,16 +108,17 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
         created_at: r.created_at,
         storage_path: r.storage_path,
         uploaded_by: r.uploaded_by,
+        media_type: r.media_type ?? "image",
         url: urlByPath.get(r.storage_path) ?? null,
       })),
     );
-    await loadComments(rows.map((r) => r.id));
+    await loadEngagement(rows.map((r) => r.id));
     setLoading(false);
-  }, [loadComments]);
+  }, [loadEngagement]);
 
-  const refreshComments = useCallback(
-    () => loadComments(photos.map((p) => p.id)),
-    [loadComments, photos],
+  const refreshEngagement = useCallback(
+    () => loadEngagement(photos.map((p) => p.id)),
+    [loadEngagement, photos],
   );
 
   const commentsByPhoto = useMemo(() => {
@@ -114,21 +129,31 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
     return map;
   }, [comments]);
 
+  const likesByPhoto = useMemo(() => {
+    const map: Record<string, PhotoLike[]> = {};
+    for (const l of likes) {
+      (map[l.photo_id] ??= []).push(l);
+    }
+    return map;
+  }, [likes]);
+
   const handleDelete = async (photo: GalleryPhoto) => {
     if (deletingId) return;
-    if (typeof window !== "undefined" && !window.confirm("Remove this photo from the shared album?")) return;
+    if (typeof window !== "undefined" && !window.confirm("Remove this from the shared album?")) return;
     setDeletingId(photo.id);
     try {
+      // Remove the stored file first: the album row is what grants read
+      // access to the file, so deleting the row first orphans the object.
+      await supabase.storage.from(BUCKET).remove([photo.storage_path]);
       const { error: rowError } = await supabase
         .from("shared_photos")
         .delete()
         .eq("id", photo.id);
       if (rowError) {
-        toast.error("Could not remove that photo.");
+        toast.error("Could not remove that item.");
         return;
       }
-      await supabase.storage.from(BUCKET).remove([photo.storage_path]);
-      toast.success("Photo removed.");
+      toast.success("Removed.");
       setViewerIndex(null);
       await load();
     } finally {
@@ -148,6 +173,7 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
         setMyUserId(null);
         setPhotos([]);
         setComments([]);
+        setLikes([]);
         setLoading(false);
       }
     });
@@ -167,8 +193,17 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
     let added = 0;
     try {
       for (const file of Array.from(files)) {
-        if (!file.type.startsWith("image/")) continue;
-        const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+        const isImage = file.type.startsWith("image/");
+        const isVideo = file.type.startsWith("video/");
+        if (!isImage && !isVideo) {
+          toast.error(`${file.name} is not a photo or video.`);
+          continue;
+        }
+        if (file.size > MAX_FILE_BYTES) {
+          toast.error(`${file.name} is too large — files must be under 50 MB.`);
+          continue;
+        }
+        const ext = (file.name.split(".").pop() || (isVideo ? "mp4" : "jpg")).toLowerCase();
         const path = `${session.user.id}/${crypto.randomUUID()}.${ext}`;
         const { error: uploadError } = await supabase.storage
           .from(BUCKET)
@@ -182,6 +217,7 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
           guest_name: name,
           caption: caption.trim() || null,
           uploaded_by: session.user.id,
+          media_type: isVideo ? "video" : "image",
         });
         if (insertError) {
           toast.error(`Could not save ${file.name}`);
@@ -190,7 +226,7 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
         added += 1;
       }
       if (added > 0) {
-        toast.success(`${added} photo${added === 1 ? "" : "s"} shared. Thank you!`);
+        toast.success(`${added} item${added === 1 ? "" : "s"} shared. Thank you!`);
         setCaption("");
         await load();
       }
@@ -207,7 +243,7 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
         <h2 className="font-display text-2xl">Share Your Photos</h2>
       </div>
       <p className="text-sm text-muted-foreground">
-        Add your favorite Taste of Conventions photos to our shared album!
+        Add your favorite Taste of Conventions photos and short videos to our shared album!
       </p>
 
       {signedIn === false ? (
@@ -230,7 +266,7 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
           <input
             ref={fileInput}
             type="file"
-            accept="image/*"
+            accept="image/*,video/*"
             multiple
             className="hidden"
             onChange={(e) => void handleFiles(e.target.files)}
@@ -247,10 +283,13 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
               </>
             ) : (
               <>
-                <Upload className="w-4 h-4 mr-2" /> Upload photos
+                <Upload className="w-4 h-4 mr-2" /> Upload photos or videos
               </>
             )}
           </Button>
+          <p className="text-xs text-muted-foreground">
+            Photos and short videos up to 50 MB each (about 30 seconds of video).
+          </p>
         </div>
       )}
 
@@ -296,11 +335,26 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
               >
                 <button
                   type="button"
-                  aria-label={`Open photo shared by ${p.guest_name}`}
+                  aria-label={`Open ${p.media_type === "video" ? "video" : "photo"} shared by ${p.guest_name}`}
                   onClick={() => setViewerIndex(i)}
                   className="block h-full w-full"
                 >
-                  {p.url ? (
+                  {p.url && p.media_type === "video" ? (
+                    <>
+                      <video
+                        src={p.url}
+                        muted
+                        playsInline
+                        preload="metadata"
+                        className="h-full w-full bg-black object-cover"
+                      />
+                      <span className="absolute inset-0 flex items-center justify-center">
+                        <span className="rounded-full bg-ink/70 p-2 text-cream">
+                          <Play className="h-4 w-4" />
+                        </span>
+                      </span>
+                    </>
+                  ) : p.url ? (
                     <img
                       src={p.url}
                       alt={p.caption ? p.caption : `Photo shared by ${p.guest_name}`}
@@ -358,23 +412,53 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
                   ) : null}
                 </div>
 
-                <button
-                  type="button"
-                  aria-label={`Open photo shared by ${p.guest_name}`}
-                  onClick={() => setViewerIndex(i)}
-                  className="block w-full overflow-hidden rounded-md border border-border bg-muted"
-                >
-                  {p.url ? (
-                    <img
-                      src={p.url}
-                      alt={p.caption ? p.caption : `Photo shared by ${p.guest_name}`}
-                      loading="lazy"
-                      className="max-h-80 w-full object-cover"
-                    />
-                  ) : null}
-                </button>
+                {p.url && p.media_type === "video" ? (
+                  <video
+                    src={p.url}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    data-testid="feed-video"
+                    className="max-h-80 w-full rounded-md border border-border bg-black"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    aria-label={`Open photo shared by ${p.guest_name}`}
+                    onClick={() => setViewerIndex(i)}
+                    className="block w-full overflow-hidden rounded-md border border-border bg-muted"
+                  >
+                    {p.url ? (
+                      <img
+                        src={p.url}
+                        alt={p.caption ? p.caption : `Photo shared by ${p.guest_name}`}
+                        loading="lazy"
+                        className="max-h-80 w-full object-cover"
+                      />
+                    ) : null}
+                  </button>
+                )}
 
                 {p.caption ? <p className="text-sm">{p.caption}</p> : null}
+
+                <div className="flex items-center gap-2">
+                  <PhotoLikes
+                    photoId={p.id}
+                    likes={likesByPhoto[p.id] ?? []}
+                    myUserId={myUserId}
+                    guestName={guestName}
+                    onChanged={refreshEngagement}
+                  />
+                  {p.media_type === "video" ? (
+                    <button
+                      type="button"
+                      onClick={() => setViewerIndex(i)}
+                      className="text-xs text-muted-foreground underline-offset-2 hover:text-gold hover:underline"
+                    >
+                      Open in viewer
+                    </button>
+                  ) : null}
+                </div>
 
                 <PhotoComments
                   photoId={p.id}
@@ -382,7 +466,7 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
                   myUserId={myUserId}
                   isAdmin={isAdmin}
                   guestName={guestName}
-                  onChanged={refreshComments}
+                  onChanged={refreshEngagement}
                 />
               </div>
             ))}
@@ -396,10 +480,12 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
         onIndexChange={setViewerIndex}
         onClose={() => setViewerIndex(null)}
         commentsByPhoto={commentsByPhoto}
+        likesByPhoto={likesByPhoto}
         myUserId={myUserId}
         isAdmin={isAdmin}
         guestName={guestName}
-        onCommentsChanged={refreshComments}
+        onCommentsChanged={refreshEngagement}
+        onLikesChanged={refreshEngagement}
       />
     </Card>
   );
