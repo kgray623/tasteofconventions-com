@@ -224,11 +224,16 @@ function AlbumTextsPage() {
                       <span className="text-muted-foreground">No phone on file</span>
                     )}
                     <Badge variant="outline" className="text-[10px] uppercase">
-                      {guest.attendanceMode === "zoom" ? "Zoom" : "In person"}
+                      {guest.audience === "zoom"
+                        ? "Zoom"
+                        : guest.audience === "no_reply"
+                          ? "No reply"
+                          : "In person"}
                     </Badge>
                     <Badge variant="outline" className="text-[10px] uppercase">
                       {guest.status}
                     </Badge>
+
                     {guest.sentAt ? (
                       <span className="text-xs text-emerald-700 w-full">
                         Text sent {new Date(guest.sentAt).toLocaleString()}
