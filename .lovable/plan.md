@@ -1,45 +1,52 @@
-# Photo album: swipeable viewer + comments
+# Shared album: video uploads + likes
 
-Turn the shared photo album into a simple social feed: full-screen viewer with next/previous navigation, and per-photo comments visible under each photo. Nothing outside the photo album is touched (no RSVP, meal, payment, or texting code).
+Two additions to the shared photo album only. No RSVP, meal, payment, or texting code is touched.
 
 ## What you'll see
 
-1. **Viewer navigation** — Open any photo and move with left/right arrows, keyboard arrow keys, or swipe on a phone. Photo counter ("4 of 27"), caption, and who posted it show inside the viewer. Closing is still one tap.
-2. **Comments** — Under each photo (both in the viewer and in the feed view) there's a comment list and a box to add one. Your name is filled in automatically from your guest name. Admin and guests can comment; you can delete your own comment, and admin can delete any comment.
-3. **Feed layout** — Below the existing upload card, photos render as a feed: image, "Posted by <name>", caption, comment count, and the latest comments. A compact grid toggle stays available so a large album is still easy to scan.
+1. **Videos in the album** — The upload button accepts short videos as well as photos. A video shows up in the feed with normal play/pause/volume controls, and opens in the same full-screen viewer, where it sits in the same next/previous order as photos (arrows, keyboard, swipe all work the same). The grid view shows a video thumbnail with a small play badge.
+2. **Likes** — Every photo and video gets a heart button with a count, in the feed card and in the viewer. Tap to like, tap again to unlike; one like per person per item. Your own like shows the heart filled in gold/berry; the count reads like "12".
 
-## New database table
+Upload limits: videos are capped by the album bucket's file size limit. The bucket is currently 15 MB, which is too small for phone video, so it will be raised to 50 MB. If the workspace-wide storage limit rejects that, the plan falls back to the highest allowed value and the upload form states the cap plainly ("videos up to X MB, about 30 seconds"). Oversized files are rejected client-side with a friendly message instead of a raw storage error.
 
-`public.photo_comments`
-- `photo_id` → references `shared_photos(id)` with cascade delete
-- `commenter_name` (text)
-- `comment_text` (text)
-- `user_id` (owner, from auth)
-- standard `id`, `created_at`, `updated_at` + update trigger
+## Database changes
 
-Access rules (mirroring the existing photo rules):
-- Only signed-in event participants can view comments (same `is_event_participant()` check already used by `shared_photos`).
-- A signed-in participant may add a comment only as themselves.
-- A person may delete/edit their own comment; admins may delete any comment.
-- GRANTs for `authenticated` and `service_role`; no anonymous access.
+One migration:
+
+- `shared_photos` gains `media_type text not null default 'image'` with a check constraint allowing `'image'` and `'video'`. Existing rows stay `'image'` — nothing is dropped or rewritten.
+- New `public.photo_likes`:
+  - `photo_id` → `shared_photos(id)` on delete cascade
+  - `user_id` (the liker, from auth)
+  - `liker_name` (text, for display consistency with comments)
+  - `id`, `created_at`
+  - `unique (photo_id, user_id)` — enforces one like per person per item
+- Access rules mirroring `photo_comments`:
+  - Only signed-in event participants can view likes (`is_event_participant()`).
+  - A participant may add a like only as themselves.
+  - A person may remove only their own like; admins may remove any.
+  - GRANTs for `authenticated` and `service_role`; no anonymous access.
+  - Admin check reads `user_roles` directly (same as the fixed comments delete policy, since `has_role` is not executable by `authenticated`).
+
+Bucket: `guest-photos` file size limit raised to 50 MB via the storage bucket tool (not SQL). Bucket stays private; playback keeps using signed URLs.
 
 ## Technical details
 
 Files:
-- `src/components/shared-photo-album.tsx` — main rework: feed/grid rendering, new `PhotoViewer` state (index-based instead of single URL), keyboard + swipe handlers, comment section wiring. Keeps current upload, signed-URL, owner-delete, and auth-restore logic intact.
-- `src/components/photo-comments.tsx` (new) — comment list + add form for one photo, reused in the feed card and the viewer.
-- `src/components/photo-viewer.tsx` (new) — dialog-based lightbox: prev/next buttons, index counter, `ArrowLeft`/`ArrowRight`/`Escape` keys, touch swipe via pointer events, caption/uploader header, comments panel.
-- One migration creating `photo_comments` with grants, RLS, and policies as above.
 
-Implementation notes:
-- Reads/writes go through the existing browser Supabase client with RLS, same as photos today — no new server functions needed.
-- Viewer state becomes `activeIndex: number | null`; wrap-around at both ends; signed URLs are already batch-created for all rows so navigation needs no extra fetch.
-- Comments load in one query for all visible photos (`in('photo_id', ids)`), grouped client-side, so no N+1 per photo.
-- Admin-any-delete uses the existing `has_role(auth.uid(),'admin')` function inside the policy.
+- `src/components/shared-photo-album.tsx` — accept `image/*,video/*` in the file input, detect type from the file MIME, set `media_type` on insert, client-side size check, load likes in one batched query (`in('photo_id', ids)`), group client-side, render `<video controls preload="metadata">` for video rows in the feed, keep the existing upload / signed-URL / owner-delete / auth-restore logic intact.
+- `src/components/photo-viewer.tsx` — render `<video controls>` instead of `<img>` when `media_type === 'video'`, pause the video when navigating away, keep arrows/keys/swipe and the "N of M" counter unchanged (swipe still works; the control bar keeps its own touch handling).
+- `src/components/photo-likes.tsx` (new) — heart button + count, optimistic toggle, insert/delete against `photo_likes`, error toast on failure. Reused in the feed card and the viewer.
+- One migration as described above.
+
+Notes:
+- Media type is stored, not guessed from the file extension at render time, so playback is reliable.
+- Likes and comments are loaded together with the album so navigation needs no extra fetch.
 - Styling continues the existing gold/berry card language; no design-token changes.
 
 ## Verification before reporting done
 
-- Playwright at 390x844 signed in as admin on `/my-rsvp`: open a photo, step forward and back through several photos without closing, confirm counter changes and image `src` changes.
-- Post a comment, read it back from the database, confirm it renders under the photo in both feed and viewer, then delete it and confirm zero leftover test rows.
-- Repeat the open/next check on `/rsvp/$token` (guest path) to confirm both guest surfaces behave the same.
+- Playwright at 390x844 signed in as admin on `/admin/my-rsvp`: upload a real short test video, confirm the feed renders a `<video>` element with controls and the row's `media_type` is `'video'` in the database.
+- Open the viewer, confirm the video appears in navigation order (counter changes, element switches between `img` and `video` as expected) with no console errors.
+- Like an item, read the `photo_likes` row back from the database, confirm the count shows and the heart is filled; unlike and confirm the row is gone.
+- Confirm the guest surface `/rsvp/$token` renders the same album without errors.
+- Delete every test upload/like afterwards and confirm zero leftover rows and zero leftover storage objects.
