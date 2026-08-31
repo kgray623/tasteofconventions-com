@@ -12,8 +12,8 @@ import { MediaSaveButton } from "@/components/media-save-button";
 import { PhotoViewer } from "@/components/photo-viewer";
 
 const BUCKET = "guest-photos";
-/** Bucket file size limit (50MB) — roughly 30 seconds of phone video. */
-const MAX_FILE_BYTES = 50 * 1024 * 1024;
+/** Storage bucket ceiling (500MB) — plenty for full-length phone videos. */
+const MAX_FILE_BYTES = 500 * 1024 * 1024;
 
 type GalleryPhoto = {
   id: string;
@@ -201,7 +201,7 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
           continue;
         }
         if (file.size > MAX_FILE_BYTES) {
-          toast.error(`${file.name} is too large — files must be under 50 MB.`);
+          toast.error(`${file.name} is very large — files must be under 500 MB.`);
           continue;
         }
         const ext = (file.name.split(".").pop() || (isVideo ? "mp4" : "jpg")).toLowerCase();
@@ -210,7 +210,7 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
           .from(BUCKET)
           .upload(path, file, { contentType: file.type, upsert: false });
         if (uploadError) {
-          toast.error(`Could not upload ${file.name}`);
+          toast.error(`Could not upload ${file.name}: ${uploadError.message}`);
           continue;
         }
         const { error: insertError } = await supabase.from("shared_photos").insert({
@@ -289,7 +289,7 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
             )}
           </Button>
           <p className="text-xs text-muted-foreground">
-            Photos and short videos up to 50 MB each (about 30 seconds of video).
+            Photos and videos — full-length phone videos are fine.
           </p>
         </div>
       )}
