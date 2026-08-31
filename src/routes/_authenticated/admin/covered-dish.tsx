@@ -113,20 +113,17 @@ function CoveredDishPage() {
             {list.totals.sent} of {list.totals.guests} texted
           </p>
         )}
-        <p className="text-sm text-muted-foreground pt-1">
-          {list.loading
-            ? "Reading the guest list from the database…"
-            : list.error
-              ? `Could not load the list: ${list.error}`
-              : `${list.totals.guests} guests coming in person did not order a catered meal (${list.totals.seats} seats), grouped by the committee member who invited them. Guests who declined or are Zoom-only are excluded. Tap Text to open your own Messages app with the reminder ready to send.`}
-        </p>
+        {list.error && (
+          <p className="text-sm text-muted-foreground pt-1">
+            Could not load the list: {list.error}
+          </p>
+        )}
         {!list.loading && !list.error && (
           <div className="flex flex-wrap gap-2 pt-2">
             <Badge variant="outline">{list.totals.guests} guests</Badge>
             <Badge variant="outline">{list.totals.seats} seats</Badge>
             <Badge variant="outline">{list.totals.members} committee members</Badge>
             <Badge variant="outline">{list.totals.toSend} still to text</Badge>
-            {readAt && <Badge variant="outline">Read from the database {readAt} UTC</Badge>}
           </div>
         )}
       </Card>

@@ -118,11 +118,6 @@ export function MealPaymentsToVerify() {
         </ul>
       )}
 
-      {readAt && (
-        <p className="text-xs text-muted-foreground">
-          Read from the database {new Date(readAt).toISOString().replace("T", " ").slice(0, 16)} UTC.
-        </p>
-      )}
     </Card>
   );
 }
