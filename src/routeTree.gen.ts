@@ -62,6 +62,7 @@ import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_auth
 import { Route as AuthenticatedAdminBurmeseUnpaidRecheckRouteImport } from './routes/_authenticated/admin/burmese-unpaid-recheck'
 import { Route as AuthenticatedAdminBackupsRouteImport } from './routes/_authenticated/admin/backups'
 import { Route as AuthenticatedAdminAuditLogRouteImport } from './routes/_authenticated/admin/audit-log'
+import { Route as AuthenticatedAdminAlbumTextsRouteImport } from './routes/_authenticated/admin/album-texts'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
@@ -360,6 +361,12 @@ const AuthenticatedAdminAuditLogRoute =
     path: '/audit-log',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminAlbumTextsRoute =
+  AuthenticatedAdminAlbumTextsRouteImport.update({
+    id: '/album-texts',
+    path: '/album-texts',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const Char91DotmcpChar93InvokeToolToolRoute =
   Char91DotmcpChar93InvokeToolToolRouteImport.update({
     id: '/.mcp/invoke-tool/$tool',
@@ -426,6 +433,7 @@ export interface FileRoutesByFullPath {
   '/rsvp/': typeof RsvpIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/admin/album-texts': typeof AuthenticatedAdminAlbumTextsRoute
   '/admin/audit-log': typeof AuthenticatedAdminAuditLogRoute
   '/admin/backups': typeof AuthenticatedAdminBackupsRoute
   '/admin/burmese-unpaid-recheck': typeof AuthenticatedAdminBurmeseUnpaidRecheckRoute
@@ -486,6 +494,7 @@ export interface FileRoutesByTo {
   '/rsvp': typeof RsvpIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/admin/album-texts': typeof AuthenticatedAdminAlbumTextsRoute
   '/admin/audit-log': typeof AuthenticatedAdminAuditLogRoute
   '/admin/backups': typeof AuthenticatedAdminBackupsRoute
   '/admin/burmese-unpaid-recheck': typeof AuthenticatedAdminBurmeseUnpaidRecheckRoute
@@ -549,6 +558,7 @@ export interface FileRoutesById {
   '/rsvp/': typeof RsvpIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/_authenticated/admin/album-texts': typeof AuthenticatedAdminAlbumTextsRoute
   '/_authenticated/admin/audit-log': typeof AuthenticatedAdminAuditLogRoute
   '/_authenticated/admin/backups': typeof AuthenticatedAdminBackupsRoute
   '/_authenticated/admin/burmese-unpaid-recheck': typeof AuthenticatedAdminBurmeseUnpaidRecheckRoute
@@ -612,6 +622,7 @@ export interface FileRouteTypes {
     | '/rsvp/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/admin/album-texts'
     | '/admin/audit-log'
     | '/admin/backups'
     | '/admin/burmese-unpaid-recheck'
@@ -672,6 +683,7 @@ export interface FileRouteTypes {
     | '/rsvp'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/admin/album-texts'
     | '/admin/audit-log'
     | '/admin/backups'
     | '/admin/burmese-unpaid-recheck'
@@ -734,6 +746,7 @@ export interface FileRouteTypes {
     | '/rsvp/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/_authenticated/admin/album-texts'
     | '/_authenticated/admin/audit-log'
     | '/_authenticated/admin/backups'
     | '/_authenticated/admin/burmese-unpaid-recheck'
@@ -1175,6 +1188,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAuditLogRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/album-texts': {
+      id: '/_authenticated/admin/album-texts'
+      path: '/album-texts'
+      fullPath: '/admin/album-texts'
+      preLoaderRoute: typeof AuthenticatedAdminAlbumTextsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/.mcp/invoke-tool/$tool': {
       id: '/.mcp/invoke-tool/$tool'
       path: '/.mcp/invoke-tool/$tool'
@@ -1228,6 +1248,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminAlbumTextsRoute: typeof AuthenticatedAdminAlbumTextsRoute
   AuthenticatedAdminAuditLogRoute: typeof AuthenticatedAdminAuditLogRoute
   AuthenticatedAdminBackupsRoute: typeof AuthenticatedAdminBackupsRoute
   AuthenticatedAdminBurmeseUnpaidRecheckRoute: typeof AuthenticatedAdminBurmeseUnpaidRecheckRoute
@@ -1258,6 +1279,7 @@ interface AuthenticatedAdminRouteChildren {
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminAlbumTextsRoute: AuthenticatedAdminAlbumTextsRoute,
   AuthenticatedAdminAuditLogRoute: AuthenticatedAdminAuditLogRoute,
   AuthenticatedAdminBackupsRoute: AuthenticatedAdminBackupsRoute,
   AuthenticatedAdminBurmeseUnpaidRecheckRoute:
