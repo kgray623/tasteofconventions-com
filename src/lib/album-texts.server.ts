@@ -8,6 +8,8 @@
 import { resolveIdentity } from "@/lib/committee-meal-texts.server";
 import { DEFAULT_ALBUM_TEXT_TEMPLATE } from "@/lib/album-text";
 import { phoneTail } from "@/lib/phone";
+import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
+
 
 export type AlbumAudience = "in_person" | "zoom";
 
