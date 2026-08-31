@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { PhotoComments, type PhotoComment } from "@/components/photo-comments";
 import { PhotoLikes, type PhotoLike } from "@/components/photo-likes";
+import { MediaSaveButton } from "@/components/media-save-button";
 
 export type ViewerPhoto = {
   id: string;
@@ -167,13 +168,21 @@ export function PhotoViewer({
                 <p className="text-sm text-muted-foreground">{photo.caption}</p>
               ) : null}
             </div>
-            <PhotoLikes
-              photoId={photo.id}
-              likes={likes}
-              myUserId={myUserId}
-              guestName={guestName}
-              onChanged={onLikesChanged}
-            />
+            <div className="flex shrink-0 items-center gap-2">
+              <PhotoLikes
+                photoId={photo.id}
+                likes={likes}
+                myUserId={myUserId}
+                guestName={guestName}
+                onChanged={onLikesChanged}
+              />
+              <MediaSaveButton
+                url={photo.url}
+                guestName={photo.guest_name}
+                itemNumber={index + 1}
+                isVideo={photo.media_type === "video"}
+              />
+            </div>
           </div>
           <PhotoComments
             photoId={photo.id}
