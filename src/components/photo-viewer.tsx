@@ -167,13 +167,21 @@ export function PhotoViewer({
                 <p className="text-sm text-muted-foreground">{photo.caption}</p>
               ) : null}
             </div>
-            <PhotoLikes
-              photoId={photo.id}
-              likes={likes}
-              myUserId={myUserId}
-              guestName={guestName}
-              onChanged={onLikesChanged}
-            />
+            <div className="flex shrink-0 items-center gap-2">
+              <PhotoLikes
+                photoId={photo.id}
+                likes={likes}
+                myUserId={myUserId}
+                guestName={guestName}
+                onChanged={onLikesChanged}
+              />
+              <MediaSaveButton
+                url={photo.url}
+                guestName={photo.guest_name}
+                itemNumber={index + 1}
+                isVideo={photo.media_type === "video"}
+              />
+            </div>
           </div>
           <PhotoComments
             photoId={photo.id}
