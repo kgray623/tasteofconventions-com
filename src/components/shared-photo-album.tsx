@@ -449,6 +449,12 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
                     guestName={guestName}
                     onChanged={refreshEngagement}
                   />
+                  <MediaSaveButton
+                    url={p.url}
+                    guestName={p.guest_name}
+                    itemNumber={i + 1}
+                    isVideo={p.media_type === "video"}
+                  />
                   {p.media_type === "video" ? (
                     <button
                       type="button"
