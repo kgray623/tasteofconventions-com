@@ -32,7 +32,11 @@ export function useAlbumTexts() {
         noPhone: 0,
         inPerson: 0,
         zoom: 0,
+        peopleInPerson: 0,
+        peopleZoom: 0,
+        peopleTotal: 0,
       },
+
 
     template: data?.template ?? "",
     isAdmin: data?.isAdmin ?? isAdmin,
