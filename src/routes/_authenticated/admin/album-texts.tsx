@@ -110,13 +110,14 @@ function AlbumTextsPage() {
             ? "Reading the guest list from the database…"
             : list.error
               ? `Could not load the list: ${list.error}`
-              : "Everyone who attended — in person or on Zoom — grouped by the committee member who invited them. Guests who declined are excluded. Tap Text to open your own Messages app with the album instructions ready to send, then tap Mark sent."}
+              : "Everyone who attended or never replied — in person, on Zoom, or no reply — grouped by the committee member who invited them. Guests who declined are excluded, and duplicate phone numbers are only listed once. Tap Text to open your own Messages app with the album instructions ready to send, then tap Mark sent."}
         </p>
         {!list.loading && !list.error && (
           <div className="flex flex-wrap gap-2 pt-2">
-            <Badge variant="outline">{list.totals.guests} guests</Badge>
+            <Badge variant="outline">{list.totals.guests} people</Badge>
             <Badge variant="outline">{list.totals.inPerson} in person</Badge>
             <Badge variant="outline">{list.totals.zoom} Zoom</Badge>
+            <Badge variant="outline">{list.totals.noReply} no reply</Badge>
             <Badge variant="outline">{list.totals.toSend} still to text</Badge>
             {list.totals.noPhone > 0 && (
               <Badge variant="outline">{list.totals.noPhone} with no phone on file</Badge>
@@ -124,6 +125,7 @@ function AlbumTextsPage() {
             {readAt && <Badge variant="outline">Read from the database {readAt} UTC</Badge>}
           </div>
         )}
+
       </Card>
 
       <Card className="p-3 space-y-2">
@@ -222,11 +224,16 @@ function AlbumTextsPage() {
                       <span className="text-muted-foreground">No phone on file</span>
                     )}
                     <Badge variant="outline" className="text-[10px] uppercase">
-                      {guest.attendanceMode === "zoom" ? "Zoom" : "In person"}
+                      {guest.audience === "zoom"
+                        ? "Zoom"
+                        : guest.audience === "no_reply"
+                          ? "No reply"
+                          : "In person"}
                     </Badge>
                     <Badge variant="outline" className="text-[10px] uppercase">
                       {guest.status}
                     </Badge>
+
                     {guest.sentAt ? (
                       <span className="text-xs text-emerald-700 w-full">
                         Text sent {new Date(guest.sentAt).toLocaleString()}
