@@ -33,7 +33,12 @@ export type AlbumTextResult = {
     noPhone: number;
     inPerson: number;
     zoom: number;
+    /** People (seats), matching the Admin overview RSVP totals exactly. */
+    peopleInPerson: number;
+    peopleZoom: number;
+    peopleTotal: number;
   };
+
   template: string;
   isAdmin: boolean;
   generated_at: string;
