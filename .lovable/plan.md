@@ -1,24 +1,19 @@
-# Album text page: keep Indonesia reminder, correct numbers, usable from the public side
+# Photo album texts: make the existing page work on the live site
 
-## What stays exactly as you set it
+No new system. `/admin/album-texts` already exists and works exactly like the invite, RSVP, covered-dish and Burmese texting pages: one row per guest, Text button that opens your own Messages app with your saved message, and Mark sent / Undo. Your saved wording — including the Indonesia social-media reminder — is intact in the database.
 
-- Your saved album message (with the Indonesia line: "Please don't share on social media any Indonesia segment pictures from the videos for the safety of friends there from banned countries") is still in the database, saved at 20:03 UTC Aug 31. **It will not be overwritten.** Nothing in this change touches that saved wording.
-- The confirmed header numbers stay: **247 in person · 129 Zoom · 376 people total · 246 phone numbers to text.**
+The only real problem: it is not showing up for you on the live site. That is the same stale-published-build issue we hit before.
 
-## Changes
+## Steps
 
-1. **Bake the Indonesia reminder into the built-in default wording** (`src/lib/album-text.ts`), so if the saved message is ever reset, the default still contains the same Indonesia social-media reminder and your current login-instructions wording. This only changes the fallback default — your saved message keeps priority.
+1. **Confirm the page is complete as-is** (no rebuild): flat list of the 246 phone numbers, header showing 247 in person / 129 Zoom / 376 people total / 246 phone numbers to text, Text + Mark sent / Undo wired to `album_text_sends`.
 
-2. **Make the album visible and working on the public side.**
-   - Show the "Share Your Photos" album on the public homepage (`src/components/invitation-page.tsx`) for anyone who is signed in — guests and you as admin — so nobody needs their personal RSVP link to upload, view, like, comment, or save photos/videos.
-   - Signed-out visitors see the page unchanged (no album, no sign-in wall added).
+2. **Keep the Indonesia reminder permanent.** Your saved message already has it. I will also put that same Indonesia sentence into the built-in default wording in `src/lib/album-text.ts`, so it can never be lost if the message is ever reset. Your saved version keeps priority and is not overwritten.
 
-3. **Make the texting page reachable and make texting work from a computer too.**
-   - The "Photo album texts" entry on the Admin overview already links to `/admin/album-texts`; verify the link and badge work end-to-end.
-   - Add a desktop fallback to the Text buttons (`src/components/sms-text-button.tsx`): on a computer where `sms:` links do nothing, tapping Text copies the full message and phone number to the clipboard and says so, so it can be pasted into Google Voice/WhatsApp/etc. On phones it still opens Messages directly.
+3. **Make it reachable where you actually use it.** Verify the "Photo album texts" entry with its count badge appears in the committee/admin menu for your account, and that the page loads at phone width on the live domain.
 
-## Verification
+4. **Publish a fresh build** with cache busting so tasteofconventions.com serves the current version, then load the live page on a phone-width browser and confirm: the menu entry is visible, tapping Text opens Messages with the message prefilled, and Mark sent records and reads back from the database.
 
-- Database read-back: saved album template still contains the Indonesia sentence after the change; RSVP rollup still returns 247 / 129 / 376 / 246.
-- Playwright at phone width (390px) signed in as admin: homepage shows the album, `/admin/album-texts` shows the four counts and the Indonesia sentence in the message wording, and Text buttons produce either an `sms:` link or a clipboard copy.
-- Then publish so the live site has it.
+## What I will not touch
+
+RSVP, meal, payment, waiting-list or existing texting pages. No new tables. No wording changes to your saved album message.
