@@ -189,7 +189,18 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
       toast.error("Sign in with your last name and phone number to add photos.");
       return;
     }
-    const name = (guestName ?? "").trim() || "Guest";
+    // The poster label must be the signed-in person, never the name on
+    // whatever invitation page the album happens to be rendered on.
+    let name = "";
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", session.user.id)
+      .maybeSingle();
+    name = (profile?.display_name ?? "").trim();
+    if (!name) name = (guestName ?? "").trim();
+    if (!name) name = "Guest";
+
     setUploading(true);
     let added = 0;
     try {
