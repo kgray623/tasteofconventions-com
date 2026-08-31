@@ -367,21 +367,30 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
                     {p.guest_name}
                   </span>
                 </button>
-                {myUserId && p.uploaded_by === myUserId ? (
-                  <button
-                    type="button"
-                    aria-label="Delete my photo"
-                    disabled={deletingId === p.id}
-                    onClick={() => void handleDelete(p)}
-                    className="absolute right-1 top-1 rounded-full bg-ink/80 p-1 text-cream hover:bg-terracotta disabled:opacity-50"
-                  >
-                    {deletingId === p.id ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <X className="h-3.5 w-3.5" />
-                    )}
-                  </button>
-                ) : null}
+                <div className="absolute right-1 top-1 flex items-center gap-1">
+                  <MediaSaveButton
+                    url={p.url}
+                    guestName={p.guest_name}
+                    itemNumber={i + 1}
+                    isVideo={p.media_type === "video"}
+                    className="rounded-full bg-ink/80 p-1 text-cream hover:bg-gold hover:text-ink disabled:opacity-50"
+                  />
+                  {myUserId && p.uploaded_by === myUserId ? (
+                    <button
+                      type="button"
+                      aria-label="Delete my photo"
+                      disabled={deletingId === p.id}
+                      onClick={() => void handleDelete(p)}
+                      className="rounded-full bg-ink/80 p-1 text-cream hover:bg-terracotta disabled:opacity-50"
+                    >
+                      {deletingId === p.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <X className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  ) : null}
+                </div>
               </div>
             ))}
           </div>
