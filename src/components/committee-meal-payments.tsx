@@ -147,12 +147,6 @@ export function CommitteeMealPayments({
         ))}
       </section>
 
-      {generatedAt && (
-        <p className="text-xs text-muted-foreground">
-          Read from the database {new Date(generatedAt).toISOString().replace("T", " ").slice(0, 16)}{" "}
-          UTC.
-        </p>
-      )}
     </Card>
   );
 }

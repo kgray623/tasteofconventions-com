@@ -136,7 +136,6 @@ function BurmeseRecheckPage() {
             <Badge variant="outline">{list.totals.guests} households</Badge>
             <Badge variant="outline">{list.totals.members} committee members</Badge>
             <Badge variant="outline">{list.totals.toSend} still to text</Badge>
-            {readAt && <Badge variant="outline">Read from the database {readAt} UTC</Badge>}
             {allNumbers.length > 1 && (
               <SmsTextButton
                 numbers={allNumbers}

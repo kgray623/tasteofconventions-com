@@ -221,32 +221,14 @@ export function RsvpTotalsCard({ personalHostIds, refreshKey = 0 }: Props) {
         </div>
 
         <p className="text-xs text-muted-foreground">
-          In-person attendees in the building: {" "}
-          <span className="font-semibold text-ink tabular-nums">
-            {loading ? "—" : event.confirmed}
-          </span>
-          {" of "}
-          <span className="font-semibold text-ink tabular-nums">{TOTAL_SEATS}</span>
-          {" seats. Seats remaining: "}
+          {"Seats remaining: "}
           <span className="font-semibold text-ink tabular-nums">{loading ? "—" : available}</span>
-          {". Zoom attendees: "}
-          <span className="font-semibold text-ink tabular-nums">
-            {loading ? "—" : event.virtual}
-          </span>
-          {" — unlimited, doesn't use seats."}
         </p>
       </div>
-
-
-      <DataQualityWarnings dq={event.dataQuality} inPersonAssumedPeople={event.inPersonAssumed} />
-
-      <p className="text-xs text-muted-foreground italic leading-relaxed">
-        Only in-person guests use spots. Not everyone you invite will say yes, so plan to invite
-        more guests than your approved in-person spots.
-      </p>
     </Card>
   );
 }
+
 
 function DataQualityWarnings({
   dq,

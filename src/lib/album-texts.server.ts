@@ -8,6 +8,8 @@
 import { resolveIdentity } from "@/lib/committee-meal-texts.server";
 import { DEFAULT_ALBUM_TEXT_TEMPLATE } from "@/lib/album-text";
 import { phoneTail } from "@/lib/phone";
+import { buildDuplicateGroupIds, computeRsvpRollup } from "@/lib/rsvp-math";
+
 
 export type AlbumAudience = "in_person" | "zoom";
 
@@ -33,7 +35,12 @@ export type AlbumTextResult = {
     noPhone: number;
     inPerson: number;
     zoom: number;
+    /** People (seats), matching the Admin overview RSVP totals exactly. */
+    peopleInPerson: number;
+    peopleZoom: number;
+    peopleTotal: number;
   };
+
   template: string;
   isAdmin: boolean;
   generated_at: string;
@@ -72,11 +79,26 @@ export async function loadAlbumTextList(
 
   const eventId = events?.[0]?.id as string | undefined;
   const base = { template, isAdmin: identity.isAdmin, generated_at: new Date().toISOString() };
-  const emptyTotals = { guests: 0, sent: 0, toSend: 0, noPhone: 0, inPerson: 0, zoom: 0 };
+  const emptyTotals = {
+    guests: 0,
+    sent: 0,
+    toSend: 0,
+    noPhone: 0,
+    inPerson: 0,
+    zoom: 0,
+    peopleInPerson: 0,
+    peopleZoom: 0,
+    peopleTotal: 0,
+  };
+
   if (!eventId) return { ...base, guests: [], totals: emptyTotals };
 
   const [{ data: invitations }, { data: rsvps }] = await Promise.all([
-    supabaseAdmin.from("invitations").select("id,guest_name,guest_phone").eq("event_id", eventId),
+    supabaseAdmin
+      .from("invitations")
+      .select("id,guest_name,guest_phone,guest_phone_normalized")
+      .eq("event_id", eventId),
+
     supabaseAdmin
       .from("rsvps")
       .select("invitation_id,status,attendance_mode,party_size")
@@ -144,6 +166,30 @@ export async function loadAlbumTextList(
 
   guests.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
 
+  // People (seats) counted with the exact same math the Admin overview RSVP
+  // totals card uses, so the two screens can never disagree.
+  const idToGroup = buildDuplicateGroupIds(
+    (invitations ?? []).map((inv: any) => ({
+      id: inv.id as string,
+      guest_name: (inv.guest_name ?? null) as string | null,
+      guest_phone_normalized: (inv.guest_phone_normalized ?? null) as string | null,
+    })),
+  );
+  const rollup = computeRsvpRollup(
+    (invitations ?? []).map((inv: any) => {
+      const rsvp = rsvpByInvitation.get(inv.id as string);
+      return {
+        id: inv.id as string,
+        groupId: idToGroup.get(inv.id as string) ?? (inv.id as string),
+        status: rsvp ? "yes" : null,
+        party_size: rsvp?.party_size ?? 1,
+        attendance_mode: rsvp?.attendance_mode ?? null,
+      };
+    }),
+  );
+  const peopleInPerson = rollup.people.inPerson;
+  const peopleZoom = rollup.people.zoom;
+
   return {
     ...base,
     guests,
@@ -154,9 +200,13 @@ export async function loadAlbumTextList(
       noPhone: guests.filter((g) => !g.hasPhone).length,
       inPerson: guests.filter((g) => g.audience === "in_person").length,
       zoom: guests.filter((g) => g.audience === "zoom").length,
+      peopleInPerson,
+      peopleZoom,
+      peopleTotal: peopleInPerson + peopleZoom,
     },
   };
 }
+
 
 
 /**
