@@ -164,6 +164,30 @@ export async function loadAlbumTextList(
 
   guests.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
 
+  // People (seats) counted with the exact same math the Admin overview RSVP
+  // totals card uses, so the two screens can never disagree.
+  const idToGroup = buildDuplicateGroupIds(
+    (invitations ?? []).map((inv: any) => ({
+      id: inv.id as string,
+      guest_name: (inv.guest_name ?? null) as string | null,
+      guest_phone_normalized: (inv.guest_phone_normalized ?? null) as string | null,
+    })),
+  );
+  const rollup = computeRsvpRollup(
+    (invitations ?? []).map((inv: any) => {
+      const rsvp = rsvpByInvitation.get(inv.id as string);
+      return {
+        id: inv.id as string,
+        groupId: idToGroup.get(inv.id as string) ?? (inv.id as string),
+        status: rsvp ? "yes" : null,
+        party_size: rsvp?.party_size ?? 1,
+        attendance_mode: rsvp?.attendance_mode ?? null,
+      };
+    }),
+  );
+  const peopleInPerson = rollup.people.inPerson;
+  const peopleZoom = rollup.people.zoom;
+
   return {
     ...base,
     guests,
@@ -174,9 +198,13 @@ export async function loadAlbumTextList(
       noPhone: guests.filter((g) => !g.hasPhone).length,
       inPerson: guests.filter((g) => g.audience === "in_person").length,
       zoom: guests.filter((g) => g.audience === "zoom").length,
+      peopleInPerson,
+      peopleZoom,
+      peopleTotal: peopleInPerson + peopleZoom,
     },
   };
 }
+
 
 
 /**
