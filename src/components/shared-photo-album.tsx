@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Camera, Loader2, Upload, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Camera, Grid3X3, Loader2, Rows3, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { useRoles } from "@/hooks/use-roles";
+import { PhotoComments, type PhotoComment } from "@/components/photo-comments";
+import { PhotoViewer } from "@/components/photo-viewer";
 
 const BUCKET = "guest-photos";
 
@@ -22,18 +24,35 @@ type GalleryPhoto = {
 /**
  * In-platform shared photo album. Fully self-contained: uploads to the
  * `guest-photos` storage bucket and records a row in `shared_photos`.
- * Does not touch RSVP, meal, payment or texting data.
+ * Comments live in `photo_comments`. Does not touch RSVP, meal, payment or
+ * texting data.
  */
 export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
   const [photos, setPhotos] = useState<GalleryPhoto[]>([]);
+  const [comments, setComments] = useState<PhotoComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [caption, setCaption] = useState("");
-  const [lightbox, setLightbox] = useState<string | null>(null);
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  const [layout, setLayout] = useState<"feed" | "grid">("feed");
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [myUserId, setMyUserId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const { isAdmin } = useRoles();
+
+  const loadComments = useCallback(async (photoIds: string[]) => {
+    if (photoIds.length === 0) {
+      setComments([]);
+      return;
+    }
+    const { data } = await supabase
+      .from("photo_comments")
+      .select("id, photo_id, user_id, commenter_name, comment_text, created_at")
+      .in("photo_id", photoIds)
+      .order("created_at", { ascending: true });
+    setComments(data ?? []);
+  }, []);
 
   const load = useCallback(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -42,6 +61,7 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
     setMyUserId(sessionData.session?.user.id ?? null);
     if (!hasSession) {
       setPhotos([]);
+      setComments([]);
       setLoading(false);
       return;
     }
@@ -77,8 +97,22 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
         url: urlByPath.get(r.storage_path) ?? null,
       })),
     );
+    await loadComments(rows.map((r) => r.id));
     setLoading(false);
-  }, []);
+  }, [loadComments]);
+
+  const refreshComments = useCallback(
+    () => loadComments(photos.map((p) => p.id)),
+    [loadComments, photos],
+  );
+
+  const commentsByPhoto = useMemo(() => {
+    const map: Record<string, PhotoComment[]> = {};
+    for (const c of comments) {
+      (map[c.photo_id] ??= []).push(c);
+    }
+    return map;
+  }, [comments]);
 
   const handleDelete = async (photo: GalleryPhoto) => {
     if (deletingId) return;
@@ -95,6 +129,7 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
       }
       await supabase.storage.from(BUCKET).remove([photo.storage_path]);
       toast.success("Photo removed.");
+      setViewerIndex(null);
       await load();
     } finally {
       setDeletingId(null);
@@ -112,6 +147,7 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
         setSignedIn(false);
         setMyUserId(null);
         setPhotos([]);
+        setComments([]);
         setLoading(false);
       }
     });
@@ -218,26 +254,50 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
         </div>
       )}
 
-      <div className="space-y-2">
-        <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
-          Shared album{photos.length > 0 ? ` · ${photos.length}` : ""}
-        </p>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
+            Shared album{photos.length > 0 ? ` · ${photos.length}` : ""}
+          </p>
+          {photos.length > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              aria-label={layout === "feed" ? "Switch to grid view" : "Switch to feed view"}
+              onClick={() => setLayout((l) => (l === "feed" ? "grid" : "feed"))}
+              className="h-8 gap-1.5 text-xs"
+            >
+              {layout === "feed" ? (
+                <>
+                  <Grid3X3 className="h-3.5 w-3.5" /> Grid
+                </>
+              ) : (
+                <>
+                  <Rows3 className="h-3.5 w-3.5" /> Feed
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+
         {loading ? (
           <p className="text-sm text-muted-foreground">Loading photos…</p>
         ) : photos.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             No photos yet — be the first to share one.
           </p>
-        ) : (
+        ) : layout === "grid" ? (
           <div className="grid grid-cols-3 gap-2">
-            {photos.map((p) => (
+            {photos.map((p, i) => (
               <div
                 key={p.id}
                 className="group relative aspect-square overflow-hidden rounded-md border border-border bg-muted"
               >
                 <button
                   type="button"
-                  onClick={() => p.url && setLightbox(p.url)}
+                  aria-label={`Open photo shared by ${p.guest_name}`}
+                  onClick={() => setViewerIndex(i)}
                   className="block h-full w-full"
                 >
                   {p.url ? (
@@ -270,17 +330,77 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
               </div>
             ))}
           </div>
+        ) : (
+          <div className="space-y-5">
+            {photos.map((p, i) => (
+              <div key={p.id} className="space-y-2 rounded-lg border border-border bg-card p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">Posted by {p.guest_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(p.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                  {myUserId && p.uploaded_by === myUserId ? (
+                    <button
+                      type="button"
+                      aria-label="Delete my photo"
+                      disabled={deletingId === p.id}
+                      onClick={() => void handleDelete(p)}
+                      className="rounded-full bg-ink/80 p-1 text-cream hover:bg-terracotta disabled:opacity-50"
+                    >
+                      {deletingId === p.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <X className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  ) : null}
+                </div>
+
+                <button
+                  type="button"
+                  aria-label={`Open photo shared by ${p.guest_name}`}
+                  onClick={() => setViewerIndex(i)}
+                  className="block w-full overflow-hidden rounded-md border border-border bg-muted"
+                >
+                  {p.url ? (
+                    <img
+                      src={p.url}
+                      alt={p.caption ? p.caption : `Photo shared by ${p.guest_name}`}
+                      loading="lazy"
+                      className="max-h-80 w-full object-cover"
+                    />
+                  ) : null}
+                </button>
+
+                {p.caption ? <p className="text-sm">{p.caption}</p> : null}
+
+                <PhotoComments
+                  photoId={p.id}
+                  comments={commentsByPhoto[p.id] ?? []}
+                  myUserId={myUserId}
+                  isAdmin={isAdmin}
+                  guestName={guestName}
+                  onChanged={refreshComments}
+                />
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
-      <Dialog open={lightbox !== null} onOpenChange={(o) => !o && setLightbox(null)}>
-        <DialogContent className="max-w-2xl p-2 bg-ink border-ink">
-          <DialogTitle className="sr-only">Shared photo</DialogTitle>
-          {lightbox && (
-            <img src={lightbox} alt="Shared photo" className="w-full h-auto rounded-md" />
-          )}
-        </DialogContent>
-      </Dialog>
+      <PhotoViewer
+        photos={photos}
+        index={viewerIndex}
+        onIndexChange={setViewerIndex}
+        onClose={() => setViewerIndex(null)}
+        commentsByPhoto={commentsByPhoto}
+        myUserId={myUserId}
+        isAdmin={isAdmin}
+        guestName={guestName}
+        onCommentsChanged={refreshComments}
+      />
     </Card>
   );
 }
