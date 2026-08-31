@@ -2,18 +2,20 @@ import { useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { PhotoComments, type PhotoComment } from "@/components/photo-comments";
+import { PhotoLikes, type PhotoLike } from "@/components/photo-likes";
 
 export type ViewerPhoto = {
   id: string;
   guest_name: string;
   caption: string | null;
   url: string | null;
+  media_type: string;
 };
 
 /**
- * Full-screen photo viewer with next/previous navigation (buttons, arrow keys,
- * swipe) and the per-photo comment thread. Purely presentational: photo rows
- * and signed URLs come from the album component.
+ * Full-screen viewer with next/previous navigation (buttons, arrow keys,
+ * swipe), inline video playback and the per-item comment thread + likes.
+ * Purely presentational: rows and signed URLs come from the album component.
  */
 export function PhotoViewer({
   photos,
@@ -21,26 +23,33 @@ export function PhotoViewer({
   onIndexChange,
   onClose,
   commentsByPhoto,
+  likesByPhoto,
   myUserId,
   isAdmin,
   guestName,
   onCommentsChanged,
+  onLikesChanged,
 }: {
   photos: ViewerPhoto[];
   index: number | null;
   onIndexChange: (next: number) => void;
   onClose: () => void;
   commentsByPhoto: Record<string, PhotoComment[]>;
+  likesByPhoto: Record<string, PhotoLike[]>;
   myUserId: string | null;
   isAdmin: boolean;
   guestName?: string | null;
   onCommentsChanged: () => void | Promise<void>;
+  onLikesChanged: () => void | Promise<void>;
 }) {
   const open = index !== null && index >= 0 && index < photos.length;
   const touchStartX = useRef<number | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const step = (delta: number) => {
     if (index === null || photos.length === 0) return;
+    // Stop playback before moving on so audio never continues off-screen.
+    videoRef.current?.pause();
     const next = (index + delta + photos.length) % photos.length;
     onIndexChange(next);
   };
@@ -48,6 +57,8 @@ export function PhotoViewer({
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
       if (e.key === "ArrowRight") {
         e.preventDefault();
         step(1);
@@ -70,13 +81,15 @@ export function PhotoViewer({
   }
 
   const photo = photos[index];
+  const isVideo = photo.media_type === "video";
   const comments = commentsByPhoto[photo.id] ?? [];
+  const likes = likesByPhoto[photo.id] ?? [];
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-3xl gap-0 bg-ink p-0 text-cream border-ink">
         <DialogTitle className="sr-only">
-          Photo {index + 1} of {photos.length} shared by {photo.guest_name}
+          {isVideo ? "Video" : "Photo"} {index + 1} of {photos.length} shared by {photo.guest_name}
         </DialogTitle>
 
         <div
@@ -94,7 +107,18 @@ export function PhotoViewer({
             step(dx < 0 ? 1 : -1);
           }}
         >
-          {photo.url ? (
+          {photo.url && isVideo ? (
+            <video
+              key={photo.id}
+              ref={videoRef}
+              src={photo.url}
+              controls
+              playsInline
+              preload="metadata"
+              data-testid="viewer-video"
+              className="mx-auto max-h-[60vh] w-auto max-w-full bg-black"
+            />
+          ) : photo.url ? (
             <img
               src={photo.url}
               alt={photo.caption ? photo.caption : `Photo shared by ${photo.guest_name}`}
@@ -102,7 +126,7 @@ export function PhotoViewer({
             />
           ) : (
             <div className="flex h-48 items-center justify-center text-sm text-cream/70">
-              Photo unavailable
+              {isVideo ? "Video unavailable" : "Photo unavailable"}
             </div>
           )}
 
@@ -136,11 +160,20 @@ export function PhotoViewer({
         </div>
 
         <div className="space-y-3 bg-card p-4 text-foreground">
-          <div>
-            <p className="text-sm font-medium">Posted by {photo.guest_name}</p>
-            {photo.caption ? (
-              <p className="text-sm text-muted-foreground">{photo.caption}</p>
-            ) : null}
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-sm font-medium">Posted by {photo.guest_name}</p>
+              {photo.caption ? (
+                <p className="text-sm text-muted-foreground">{photo.caption}</p>
+              ) : null}
+            </div>
+            <PhotoLikes
+              photoId={photo.id}
+              likes={likes}
+              myUserId={myUserId}
+              guestName={guestName}
+              onChanged={onLikesChanged}
+            />
           </div>
           <PhotoComments
             photoId={photo.id}
