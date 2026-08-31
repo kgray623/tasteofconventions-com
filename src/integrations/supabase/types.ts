@@ -1435,6 +1435,38 @@ export type Database = {
           },
         ]
       }
+      photo_likes: {
+        Row: {
+          created_at: string
+          id: string
+          liker_name: string
+          photo_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          liker_name?: string
+          photo_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          liker_name?: string
+          photo_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photo_likes_photo_id_fkey"
+            columns: ["photo_id"]
+            isOneToOne: false
+            referencedRelation: "shared_photos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1671,6 +1703,7 @@ export type Database = {
           created_at: string
           guest_name: string
           id: string
+          media_type: string
           storage_path: string
           uploaded_by: string | null
         }
@@ -1679,6 +1712,7 @@ export type Database = {
           created_at?: string
           guest_name: string
           id?: string
+          media_type?: string
           storage_path: string
           uploaded_by?: string | null
         }
@@ -1687,6 +1721,7 @@ export type Database = {
           created_at?: string
           guest_name?: string
           id?: string
+          media_type?: string
           storage_path?: string
           uploaded_by?: string | null
         }
