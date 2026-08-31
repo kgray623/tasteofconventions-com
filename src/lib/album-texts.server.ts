@@ -1,15 +1,15 @@
 // Server-only helper for the "Photo album announcement" texting screen.
 //
-// Everyone who could have been there: RSVP yes/maybe (in person or Zoom) PLUS
-// invitations that never submitted an RSVP at all ("No reply"). Declined guests
-// (RSVP "no") are excluded. Guests with no phone on file are still returned
-// (flagged) so they stay visible instead of quietly disappearing. Duplicate
-// phone numbers collapse to a single row so nobody gets two texts.
+// Audience: every guest whose RSVP is "yes" — in person and Zoom together — as
+// one flat list. Declines, "maybe", and invitations that never replied are all
+// excluded. Duplicate phone numbers collapse to a single row so nobody gets two
+// texts. Guests with no phone on file are still returned (flagged) so they stay
+// visible instead of quietly disappearing.
 import { resolveIdentity } from "@/lib/committee-meal-texts.server";
 import { DEFAULT_ALBUM_TEXT_TEMPLATE } from "@/lib/album-text";
 import { phoneTail } from "@/lib/phone";
 
-export type AlbumAudience = "in_person" | "zoom" | "no_reply";
+export type AlbumAudience = "in_person" | "zoom";
 
 export type AlbumTextGuest = {
   invitationId: string;
@@ -24,30 +24,20 @@ export type AlbumTextGuest = {
   markedByLabel: string | null;
 };
 
-export type AlbumTextGroup = {
-  inviterId: string | null;
-  inviterName: string;
-  guests: AlbumTextGuest[];
-  sent: number;
-};
-
 export type AlbumTextResult = {
-  groups: AlbumTextGroup[];
+  guests: AlbumTextGuest[];
   totals: {
     guests: number;
-    members: number;
     sent: number;
     toSend: number;
     noPhone: number;
     inPerson: number;
     zoom: number;
-    noReply: number;
   };
   template: string;
   isAdmin: boolean;
   generated_at: string;
 };
-
 
 export async function loadAlbumTextList(
   supabase: any,
@@ -58,17 +48,15 @@ export async function loadAlbumTextList(
 
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-  const [{ data: events }, { data: inviterRows }, { data: setting }, { data: sends }] =
-    await Promise.all([
-      supabaseAdmin.from("events").select("id").order("starts_at").limit(1),
-      supabaseAdmin.from("inviters").select("id,name"),
-      supabaseAdmin
-        .from("app_settings")
-        .select("value")
-        .eq("key", "album_text_template")
-        .maybeSingle(),
-      supabaseAdmin.from("album_text_sends").select("invitation_id,sent_at,marked_by_label"),
-    ]);
+  const [{ data: events }, { data: setting }, { data: sends }] = await Promise.all([
+    supabaseAdmin.from("events").select("id").order("starts_at").limit(1),
+    supabaseAdmin
+      .from("app_settings")
+      .select("value")
+      .eq("key", "album_text_template")
+      .maybeSingle(),
+    supabaseAdmin.from("album_text_sends").select("invitation_id,sent_at,marked_by_label"),
+  ]);
 
   const sentByInvitation = new Map(
     (
@@ -81,78 +69,49 @@ export async function loadAlbumTextList(
   );
 
   const template = (setting?.value as string | undefined) ?? DEFAULT_ALBUM_TEXT_TEMPLATE;
-  const inviterNameById = new Map(
-    ((inviterRows ?? []) as Array<{ id: string; name: string | null }>).map(
-      (r) => [r.id, (r.name ?? "").trim() || "Committee member"] as const,
-    ),
-  );
 
   const eventId = events?.[0]?.id as string | undefined;
   const base = { template, isAdmin: identity.isAdmin, generated_at: new Date().toISOString() };
-  const emptyTotals = {
-    guests: 0,
-    members: 0,
-    sent: 0,
-    toSend: 0,
-    noPhone: 0,
-    inPerson: 0,
-    zoom: 0,
-    noReply: 0,
-  };
-  if (!eventId) return { ...base, groups: [], totals: emptyTotals };
+  const emptyTotals = { guests: 0, sent: 0, toSend: 0, noPhone: 0, inPerson: 0, zoom: 0 };
+  if (!eventId) return { ...base, guests: [], totals: emptyTotals };
 
   const [{ data: invitations }, { data: rsvps }] = await Promise.all([
+    supabaseAdmin.from("invitations").select("id,guest_name,guest_phone").eq("event_id", eventId),
     supabaseAdmin
-      .from("invitations")
-      .select("id,guest_name,guest_phone,inviter_id")
-      .eq("event_id", eventId),
-    // Every RSVP, including declines — declines are what we must exclude, and
-    // an invitation with no RSVP row at all still gets the announcement.
-    supabaseAdmin.from("rsvps").select("invitation_id,status,attendance_mode,party_size"),
+      .from("rsvps")
+      .select("invitation_id,status,attendance_mode,party_size")
+      .eq("status", "yes"),
   ]);
 
-  // One RSVP per invitation; a "yes" always wins over "maybe" or "no".
-  const rsvpRank = (status: string) => (status === "yes" ? 3 : status === "maybe" ? 2 : 1);
+  // One "yes" RSVP per invitation.
   const rsvpByInvitation = new Map<
     string,
-    { status: string; attendance_mode: string | null; party_size: number | null }
+    { attendance_mode: string | null; party_size: number | null }
   >();
   for (const r of (rsvps ?? []) as any[]) {
     if (!r?.invitation_id) continue;
-    const status = (r.status ?? "") as string;
-    const existing = rsvpByInvitation.get(r.invitation_id as string);
-    if (existing && rsvpRank(existing.status) >= rsvpRank(status)) continue;
+    if (rsvpByInvitation.has(r.invitation_id as string)) continue;
     rsvpByInvitation.set(r.invitation_id as string, {
-      status,
       attendance_mode: (r.attendance_mode ?? null) as string | null,
       party_size: (r.party_size ?? null) as number | null,
     });
   }
 
-  const groupMap = new Map<string, AlbumTextGroup>();
-  // One text per phone number: first row wins, and a row with an RSVP beats a
-  // bare invitation with no reply.
+  // One text per phone number: first row wins, unless a later row is the one
+  // already marked as texted.
   const seenPhone = new Map<string, AlbumTextGuest>();
-  const rows: Array<{
-    inv: { id: string; guest_name: string; guest_phone: string | null; inviter_id: string | null };
-    guest: AlbumTextGuest;
-  }> = [];
+  const guests: AlbumTextGuest[] = [];
 
   for (const inv of (invitations ?? []) as Array<{
     id: string;
     guest_name: string;
     guest_phone: string | null;
-    inviter_id: string | null;
   }>) {
-    const rsvp = rsvpByInvitation.get(inv.id) ?? null;
-    if (rsvp && rsvp.status === "no") continue;
+    const rsvp = rsvpByInvitation.get(inv.id);
+    if (!rsvp) continue;
 
-    const audience: AlbumAudience = !rsvp
-      ? "no_reply"
-      : (rsvp.attendance_mode ?? "in_person") === "zoom"
-        ? "zoom"
-        : "in_person";
-
+    const audience: AlbumAudience =
+      (rsvp.attendance_mode ?? "in_person") === "zoom" ? "zoom" : "in_person";
     const rawPhone = (inv.guest_phone ?? "").trim();
     const hasPhone = phoneTail(rawPhone).length >= 7;
     const sent = sentByInvitation.get(inv.id) ?? null;
@@ -161,10 +120,10 @@ export async function loadAlbumTextList(
       name: (inv.guest_name ?? "").trim() || "Guest",
       phone: hasPhone ? rawPhone : "",
       hasPhone,
-      status: rsvp?.status ?? "no reply",
-      attendanceMode: rsvp?.attendance_mode ?? (rsvp ? "in_person" : "unknown"),
+      status: "yes",
+      attendanceMode: rsvp.attendance_mode ?? "in_person",
       audience,
-      partySize: Math.max(1, Number(rsvp?.party_size ?? 1) || 1),
+      partySize: Math.max(1, Number(rsvp.party_size ?? 1) || 1),
       sentAt: sent?.sent_at ?? null,
       markedByLabel: sent?.marked_by_label ?? null,
     };
@@ -173,70 +132,32 @@ export async function loadAlbumTextList(
       const key = phoneTail(rawPhone);
       const kept = seenPhone.get(key);
       if (kept) {
-        // Prefer a row that actually replied, or one already marked as texted.
-        const better =
-          (kept.audience === "no_reply" && audience !== "no_reply") ||
-          (!kept.sentAt && !!guest.sentAt);
-        if (!better) continue;
-        const idx = rows.findIndex((r) => r.guest.invitationId === kept.invitationId);
-        if (idx >= 0) rows.splice(idx, 1);
+        if (!(!kept.sentAt && guest.sentAt)) continue;
+        const idx = guests.findIndex((g) => g.invitationId === kept.invitationId);
+        if (idx >= 0) guests.splice(idx, 1);
       }
       seenPhone.set(key, guest);
     }
 
-    rows.push({ inv, guest });
+    guests.push(guest);
   }
 
-  for (const { inv, guest } of rows) {
-    const key = inv.inviter_id ?? "__none__";
-    const group =
-      groupMap.get(key) ??
-      ({
-        inviterId: inv.inviter_id ?? null,
-        inviterName: inv.inviter_id
-          ? (inviterNameById.get(inv.inviter_id) ?? "Committee member")
-          : "No committee member recorded",
-        guests: [],
-        sent: 0,
-      } as AlbumTextGroup);
-    group.guests.push(guest);
-    if (guest.sentAt) group.sent += 1;
-    groupMap.set(key, group);
-  }
+  guests.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
 
-  const groups = Array.from(groupMap.values())
-    .map((g) => ({
-      ...g,
-      // Not-yet-texted guests first inside each committee group, then A-Z.
-      guests: g.guests.sort(
-        (a, b) =>
-          (a.sentAt ? 1 : 0) - (b.sentAt ? 1 : 0) ||
-          a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
-      ),
-    }))
-    .sort(
-      (a, b) =>
-        b.guests.length - a.guests.length ||
-        a.inviterName.localeCompare(b.inviterName, undefined, { sensitivity: "base" }),
-    );
-
-  const all = groups.flatMap((g) => g.guests);
   return {
     ...base,
-    groups,
+    guests,
     totals: {
-      guests: all.length,
-      members: groups.length,
-      sent: all.filter((g) => g.sentAt).length,
-      toSend: all.filter((g) => !g.sentAt).length,
-      noPhone: all.filter((g) => !g.hasPhone).length,
-      inPerson: all.filter((g) => g.audience === "in_person").length,
-      zoom: all.filter((g) => g.audience === "zoom").length,
-      noReply: all.filter((g) => g.audience === "no_reply").length,
+      guests: guests.length,
+      sent: guests.filter((g) => g.sentAt).length,
+      toSend: guests.filter((g) => !g.sentAt).length,
+      noPhone: guests.filter((g) => !g.hasPhone).length,
+      inPerson: guests.filter((g) => g.audience === "in_person").length,
+      zoom: guests.filter((g) => g.audience === "zoom").length,
     },
   };
-
 }
+
 
 /**
  * Manual "I sent that album announcement" mark. Only ever written by an explicit

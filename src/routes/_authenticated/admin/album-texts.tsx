@@ -54,6 +54,11 @@ function AlbumTextsPage() {
   const [saving, setSaving] = useState(false);
 
   const template = list.template;
+  const allNumbers = useMemo(
+    () => list.guests.map((g) => smsNumber(g.phone)).filter((n): n is string => !!n),
+    [list.guests],
+  );
+
   const readAt = useMemo(
     () =>
       list.generatedAt
@@ -110,14 +115,13 @@ function AlbumTextsPage() {
             ? "Reading the guest list from the database…"
             : list.error
               ? `Could not load the list: ${list.error}`
-              : "Everyone who attended or never replied — in person, on Zoom, or no reply — grouped by the committee member who invited them. Guests who declined are excluded, and duplicate phone numbers are only listed once. Tap Text to open your own Messages app with the album instructions ready to send, then tap Mark sent."}
+              : "Every guest who RSVP'd yes — in person and Zoom together, in one list. Duplicate phone numbers are only listed once. Tap Text to open your own Messages app with the album instructions ready to send, then tap Mark sent."}
         </p>
         {!list.loading && !list.error && (
           <div className="flex flex-wrap gap-2 pt-2">
-            <Badge variant="outline">{list.totals.guests} people</Badge>
+            <Badge variant="outline">{list.totals.guests} yes RSVPs</Badge>
             <Badge variant="outline">{list.totals.inPerson} in person</Badge>
             <Badge variant="outline">{list.totals.zoom} Zoom</Badge>
-            <Badge variant="outline">{list.totals.noReply} no reply</Badge>
             <Badge variant="outline">{list.totals.toSend} still to text</Badge>
             {list.totals.noPhone > 0 && (
               <Badge variant="outline">{list.totals.noPhone} with no phone on file</Badge>
@@ -125,8 +129,8 @@ function AlbumTextsPage() {
             {readAt && <Badge variant="outline">Read from the database {readAt} UTC</Badge>}
           </div>
         )}
-
       </Card>
+
 
       <Card className="p-3 space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -176,96 +180,80 @@ function AlbumTextsPage() {
         )}
       </Card>
 
-      {!list.loading && !list.error && list.groups.length === 0 && (
-        <Card className="p-4 text-sm text-muted-foreground">
-          No attending guests found to text.
-        </Card>
+      {!list.loading && !list.error && list.guests.length === 0 && (
+        <Card className="p-4 text-sm text-muted-foreground">No yes RSVPs found to text.</Card>
       )}
 
-      {list.groups.map((group) => {
-        const numbers = group.guests
-          .map((g) => smsNumber(g.phone))
-          .filter((n): n is string => !!n);
-        return (
-          <div key={group.inviterId ?? "__none__"} className="border border-border">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
-              <div>
-                <h2 className="font-semibold">{group.inviterName}</h2>
-                <p className="text-xs text-muted-foreground">
-                  {group.guests.length} guest{group.guests.length === 1 ? "" : "s"} · {group.sent} of{" "}
-                  {group.guests.length} texted
-                </p>
-              </div>
-              {numbers.length > 1 && (
-                <SmsTextButton
-                  numbers={numbers}
-                  body={renderAlbumText(template, "there")}
-                  label={`Text all ${numbers.length}`}
-                />
-              )}
+      {!list.loading && !list.error && list.guests.length > 0 && (
+        <div className="border border-border">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
+            <div>
+              <h2 className="font-semibold">Yes RSVPs</h2>
+              <p className="text-xs text-muted-foreground">
+                {list.totals.guests} guest{list.totals.guests === 1 ? "" : "s"} · {list.totals.sent}{" "}
+                of {list.totals.guests} texted
+              </p>
             </div>
-            <ul className="divide-y divide-border">
-              {group.guests.map((guest) => {
-                const number = smsNumber(guest.phone);
-                return (
-                  <li
-                    key={guest.invitationId}
-                    className="flex flex-wrap items-center gap-2 px-3 py-3 text-sm"
-                  >
-                    <span className="font-semibold">{guest.name}</span>
-                    {guest.hasPhone ? (
-                      <a
-                        href={`sms:${number}`}
-                        className="font-mono underline text-muted-foreground"
-                      >
-                        {formatPhoneUS(guest.phone)}
-                      </a>
-                    ) : (
-                      <span className="text-muted-foreground">No phone on file</span>
-                    )}
-                    <Badge variant="outline" className="text-[10px] uppercase">
-                      {guest.audience === "zoom"
-                        ? "Zoom"
-                        : guest.audience === "no_reply"
-                          ? "No reply"
-                          : "In person"}
-                    </Badge>
-                    <Badge variant="outline" className="text-[10px] uppercase">
-                      {guest.status}
-                    </Badge>
-
-                    {guest.sentAt ? (
-                      <span className="text-xs text-emerald-700 w-full">
-                        Text sent {new Date(guest.sentAt).toLocaleString()}
-                        {guest.markedByLabel ? ` · ${guest.markedByLabel}` : ""}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground w-full">Not texted yet</span>
-                    )}
-                    <div className="ml-auto flex items-center gap-2">
-                      {number && (
-                        <SmsTextButton
-                          numbers={[number]}
-                          body={renderAlbumText(template, guest.name)}
-                          label="Text"
-                        />
-                      )}
-                      <Button
-                        size="sm"
-                        variant={guest.sentAt ? "outline" : "default"}
-                        disabled={busy === guest.invitationId}
-                        onClick={() => void toggleSent(guest.invitationId, !guest.sentAt)}
-                      >
-                        {guest.sentAt ? "Undo sent" : "Mark sent"}
-                      </Button>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+            {allNumbers.length > 1 && (
+              <SmsTextButton
+                numbers={allNumbers}
+                body={renderAlbumText(template, "there")}
+                label={`Text all ${allNumbers.length}`}
+              />
+            )}
           </div>
-        );
-      })}
+          <ul className="divide-y divide-border">
+            {list.guests.map((guest) => {
+              const number = smsNumber(guest.phone);
+              return (
+                <li
+                  key={guest.invitationId}
+                  className="flex flex-wrap items-center gap-2 px-3 py-3 text-sm"
+                >
+                  <span className="font-semibold">{guest.name}</span>
+                  {guest.hasPhone ? (
+                    <a href={`sms:${number}`} className="font-mono underline text-muted-foreground">
+                      {formatPhoneUS(guest.phone)}
+                    </a>
+                  ) : (
+                    <span className="text-muted-foreground">No phone on file</span>
+                  )}
+                  <Badge variant="outline" className="text-[10px] uppercase">
+                    {guest.audience === "zoom" ? "Zoom" : "In person"}
+                  </Badge>
+
+                  {guest.sentAt ? (
+                    <span className="text-xs text-emerald-700 w-full">
+                      Text sent {new Date(guest.sentAt).toLocaleString()}
+                      {guest.markedByLabel ? ` · ${guest.markedByLabel}` : ""}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground w-full">Not texted yet</span>
+                  )}
+                  <div className="ml-auto flex items-center gap-2">
+                    {number && (
+                      <SmsTextButton
+                        numbers={[number]}
+                        body={renderAlbumText(template, guest.name)}
+                        label="Text"
+                      />
+                    )}
+                    <Button
+                      size="sm"
+                      variant={guest.sentAt ? "outline" : "default"}
+                      disabled={busy === guest.invitationId}
+                      onClick={() => void toggleSent(guest.invitationId, !guest.sentAt)}
+                    >
+                      {guest.sentAt ? "Undo sent" : "Mark sent"}
+                    </Button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
     </div>
   );
 }

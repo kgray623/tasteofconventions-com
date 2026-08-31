@@ -4,7 +4,7 @@ import { getAlbumTextList, type AlbumTextResult } from "@/lib/album-texts.functi
 import { useRoles } from "@/hooks/use-roles";
 
 /**
- * Everyone who attended (in person or Zoom) with their album-announcement text
+ * Every "yes" RSVP (in person and Zoom) with their album-announcement text
  * status. Shared through the Query cache so the nav badge and the page can never
  * show different numbers.
  */
@@ -23,19 +23,17 @@ export function useAlbumTexts() {
   return {
     loading: rolesLoading || query.isPending,
     error: query.error instanceof Error ? query.error.message : null,
-    groups: data?.groups ?? [],
+    guests: data?.guests ?? [],
     totals:
       data?.totals ?? {
         guests: 0,
-        members: 0,
         sent: 0,
         toSend: 0,
         noPhone: 0,
         inPerson: 0,
         zoom: 0,
-        noReply: 0,
-
       },
+
     template: data?.template ?? "",
     isAdmin: data?.isAdmin ?? isAdmin,
     generatedAt: data?.generated_at ?? null,
