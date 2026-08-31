@@ -97,6 +97,7 @@ export async function loadAlbumTextList(
     noPhone: 0,
     inPerson: 0,
     zoom: 0,
+    noReply: 0,
   };
   if (!eventId) return { ...base, groups: [], totals: emptyTotals };
 
@@ -105,38 +106,88 @@ export async function loadAlbumTextList(
       .from("invitations")
       .select("id,guest_name,guest_phone,inviter_id")
       .eq("event_id", eventId),
-    supabaseAdmin
-      .from("rsvps")
-      .select("invitation_id,status,attendance_mode,party_size")
-      .in("status", ["yes", "maybe"]),
+    // Every RSVP, including declines — declines are what we must exclude, and
+    // an invitation with no RSVP row at all still gets the announcement.
+    supabaseAdmin.from("rsvps").select("invitation_id,status,attendance_mode,party_size"),
   ]);
 
-  // One RSVP per invitation; a "yes" always wins over "maybe".
+  // One RSVP per invitation; a "yes" always wins over "maybe" or "no".
+  const rsvpRank = (status: string) => (status === "yes" ? 3 : status === "maybe" ? 2 : 1);
   const rsvpByInvitation = new Map<
     string,
     { status: string; attendance_mode: string | null; party_size: number | null }
   >();
   for (const r of (rsvps ?? []) as any[]) {
     if (!r?.invitation_id) continue;
+    const status = (r.status ?? "") as string;
     const existing = rsvpByInvitation.get(r.invitation_id as string);
-    if (existing && existing.status === "yes") continue;
+    if (existing && rsvpRank(existing.status) >= rsvpRank(status)) continue;
     rsvpByInvitation.set(r.invitation_id as string, {
-      status: (r.status ?? "") as string,
+      status,
       attendance_mode: (r.attendance_mode ?? null) as string | null,
       party_size: (r.party_size ?? null) as number | null,
     });
   }
 
   const groupMap = new Map<string, AlbumTextGroup>();
+  // One text per phone number: first row wins, and a row with an RSVP beats a
+  // bare invitation with no reply.
+  const seenPhone = new Map<string, AlbumTextGuest>();
+  const rows: Array<{
+    inv: { id: string; guest_name: string; guest_phone: string | null; inviter_id: string | null };
+    guest: AlbumTextGuest;
+  }> = [];
+
   for (const inv of (invitations ?? []) as Array<{
     id: string;
     guest_name: string;
     guest_phone: string | null;
     inviter_id: string | null;
   }>) {
-    const rsvp = rsvpByInvitation.get(inv.id);
-    if (!rsvp) continue;
+    const rsvp = rsvpByInvitation.get(inv.id) ?? null;
+    if (rsvp && rsvp.status === "no") continue;
 
+    const audience: AlbumAudience = !rsvp
+      ? "no_reply"
+      : (rsvp.attendance_mode ?? "in_person") === "zoom"
+        ? "zoom"
+        : "in_person";
+
+    const rawPhone = (inv.guest_phone ?? "").trim();
+    const hasPhone = phoneTail(rawPhone).length >= 7;
+    const sent = sentByInvitation.get(inv.id) ?? null;
+    const guest: AlbumTextGuest = {
+      invitationId: inv.id,
+      name: (inv.guest_name ?? "").trim() || "Guest",
+      phone: hasPhone ? rawPhone : "",
+      hasPhone,
+      status: rsvp?.status ?? "no reply",
+      attendanceMode: rsvp?.attendance_mode ?? (rsvp ? "in_person" : "unknown"),
+      audience,
+      partySize: Math.max(1, Number(rsvp?.party_size ?? 1) || 1),
+      sentAt: sent?.sent_at ?? null,
+      markedByLabel: sent?.marked_by_label ?? null,
+    };
+
+    if (hasPhone) {
+      const key = phoneTail(rawPhone);
+      const kept = seenPhone.get(key);
+      if (kept) {
+        // Prefer a row that actually replied, or one already marked as texted.
+        const better =
+          (kept.audience === "no_reply" && audience !== "no_reply") ||
+          (!kept.sentAt && !!guest.sentAt);
+        if (!better) continue;
+        const idx = rows.findIndex((r) => r.guest.invitationId === kept.invitationId);
+        if (idx >= 0) rows.splice(idx, 1);
+      }
+      seenPhone.set(key, guest);
+    }
+
+    rows.push({ inv, guest });
+  }
+
+  for (const { inv, guest } of rows) {
     const key = inv.inviter_id ?? "__none__";
     const group =
       groupMap.get(key) ??
@@ -148,22 +199,8 @@ export async function loadAlbumTextList(
         guests: [],
         sent: 0,
       } as AlbumTextGroup);
-
-    const rawPhone = (inv.guest_phone ?? "").trim();
-    const hasPhone = phoneTail(rawPhone).length >= 7;
-    const sent = sentByInvitation.get(inv.id) ?? null;
-    group.guests.push({
-      invitationId: inv.id,
-      name: (inv.guest_name ?? "").trim() || "Guest",
-      phone: hasPhone ? rawPhone : "",
-      hasPhone,
-      status: rsvp.status,
-      attendanceMode: rsvp.attendance_mode ?? "in_person",
-      partySize: Math.max(1, Number(rsvp.party_size ?? 1) || 1),
-      sentAt: sent?.sent_at ?? null,
-      markedByLabel: sent?.marked_by_label ?? null,
-    });
-    if (sent) group.sent += 1;
+    group.guests.push(guest);
+    if (guest.sentAt) group.sent += 1;
     groupMap.set(key, group);
   }
 
@@ -193,10 +230,12 @@ export async function loadAlbumTextList(
       sent: all.filter((g) => g.sentAt).length,
       toSend: all.filter((g) => !g.sentAt).length,
       noPhone: all.filter((g) => !g.hasPhone).length,
-      inPerson: all.filter((g) => g.attendanceMode !== "zoom").length,
-      zoom: all.filter((g) => g.attendanceMode === "zoom").length,
+      inPerson: all.filter((g) => g.audience === "in_person").length,
+      zoom: all.filter((g) => g.audience === "zoom").length,
+      noReply: all.filter((g) => g.audience === "no_reply").length,
     },
   };
+
 }
 
 /**
