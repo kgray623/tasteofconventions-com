@@ -210,7 +210,7 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
           .from(BUCKET)
           .upload(path, file, { contentType: file.type, upsert: false });
         if (uploadError) {
-          toast.error(`Could not upload ${file.name}`);
+          toast.error(`Could not upload ${file.name}: ${uploadError.message}`);
           continue;
         }
         const { error: insertError } = await supabase.from("shared_photos").insert({
