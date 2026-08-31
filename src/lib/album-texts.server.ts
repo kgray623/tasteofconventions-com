@@ -1,12 +1,15 @@
 // Server-only helper for the "Photo album announcement" texting screen.
 //
-// Every guest who attended — in person or on Zoom — meaning RSVP status yes or
-// maybe, grouped by the committee member who invited them. Declined guests are
-// excluded. Guests with no phone on file are still returned (flagged) so they
-// stay visible instead of quietly disappearing.
+// Everyone who could have been there: RSVP yes/maybe (in person or Zoom) PLUS
+// invitations that never submitted an RSVP at all ("No reply"). Declined guests
+// (RSVP "no") are excluded. Guests with no phone on file are still returned
+// (flagged) so they stay visible instead of quietly disappearing. Duplicate
+// phone numbers collapse to a single row so nobody gets two texts.
 import { resolveIdentity } from "@/lib/committee-meal-texts.server";
 import { DEFAULT_ALBUM_TEXT_TEMPLATE } from "@/lib/album-text";
 import { phoneTail } from "@/lib/phone";
+
+export type AlbumAudience = "in_person" | "zoom" | "no_reply";
 
 export type AlbumTextGuest = {
   invitationId: string;
@@ -15,6 +18,7 @@ export type AlbumTextGuest = {
   hasPhone: boolean;
   status: string;
   attendanceMode: string;
+  audience: AlbumAudience;
   partySize: number;
   sentAt: string | null;
   markedByLabel: string | null;
@@ -37,11 +41,13 @@ export type AlbumTextResult = {
     noPhone: number;
     inPerson: number;
     zoom: number;
+    noReply: number;
   };
   template: string;
   isAdmin: boolean;
   generated_at: string;
 };
+
 
 export async function loadAlbumTextList(
   supabase: any,
