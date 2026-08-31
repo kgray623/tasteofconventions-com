@@ -77,7 +77,18 @@ export async function loadAlbumTextList(
 
   const eventId = events?.[0]?.id as string | undefined;
   const base = { template, isAdmin: identity.isAdmin, generated_at: new Date().toISOString() };
-  const emptyTotals = { guests: 0, sent: 0, toSend: 0, noPhone: 0, inPerson: 0, zoom: 0 };
+  const emptyTotals = {
+    guests: 0,
+    sent: 0,
+    toSend: 0,
+    noPhone: 0,
+    inPerson: 0,
+    zoom: 0,
+    peopleInPerson: 0,
+    peopleZoom: 0,
+    peopleTotal: 0,
+  };
+
   if (!eventId) return { ...base, guests: [], totals: emptyTotals };
 
   const [{ data: invitations }, { data: rsvps }] = await Promise.all([
