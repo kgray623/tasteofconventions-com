@@ -31,12 +31,15 @@ export function MediaSaveButton({
   itemNumber,
   isVideo,
   className,
+  iconOnly = false,
 }: {
   url: string | null;
   guestName: string;
   itemNumber: number;
   isVideo: boolean;
   className?: string;
+  /** Compact form used on grid tiles: icon only, no visible label. */
+  iconOnly?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
 
@@ -89,7 +92,7 @@ export function MediaSaveButton({
       ) : (
         <Download className="h-3.5 w-3.5" />
       )}
-      Save
+      {iconOnly ? null : "Save"}
     </button>
   );
 }

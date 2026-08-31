@@ -373,6 +373,7 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
                     guestName={p.guest_name}
                     itemNumber={i + 1}
                     isVideo={p.media_type === "video"}
+                    iconOnly
                     className="rounded-full bg-ink/80 p-1 text-cream hover:bg-gold hover:text-ink disabled:opacity-50"
                   />
                   {myUserId && p.uploaded_by === myUserId ? (
