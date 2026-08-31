@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { useRoles } from "@/hooks/use-roles";
 import { PhotoComments, type PhotoComment } from "@/components/photo-comments";
 import { PhotoLikes, type PhotoLike } from "@/components/photo-likes";
+import { MediaSaveButton } from "@/components/media-save-button";
 import { PhotoViewer } from "@/components/photo-viewer";
 
 const BUCKET = "guest-photos";
