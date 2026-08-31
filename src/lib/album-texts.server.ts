@@ -92,7 +92,11 @@ export async function loadAlbumTextList(
   if (!eventId) return { ...base, guests: [], totals: emptyTotals };
 
   const [{ data: invitations }, { data: rsvps }] = await Promise.all([
-    supabaseAdmin.from("invitations").select("id,guest_name,guest_phone").eq("event_id", eventId),
+    supabaseAdmin
+      .from("invitations")
+      .select("id,guest_name,guest_phone,guest_phone_normalized")
+      .eq("event_id", eventId),
+
     supabaseAdmin
       .from("rsvps")
       .select("invitation_id,status,attendance_mode,party_size")
