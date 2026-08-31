@@ -289,7 +289,7 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
             )}
           </Button>
           <p className="text-xs text-muted-foreground">
-            Photos and short videos up to 50 MB each (about 30 seconds of video).
+            Photos and videos — full-length phone videos are fine.
           </p>
         </div>
       )}
