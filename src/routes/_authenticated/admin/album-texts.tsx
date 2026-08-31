@@ -110,25 +110,24 @@ function AlbumTextsPage() {
             {list.totals.sent} of {list.totals.guests} texted
           </p>
         )}
-        <p className="text-sm text-muted-foreground pt-1">
-          {list.loading
-            ? "Reading the guest list from the database…"
-            : list.error
-              ? `Could not load the list: ${list.error}`
-              : "Every guest who RSVP'd yes — in person and Zoom together, in one list. Duplicate phone numbers are only listed once. Tap Text to open your own Messages app with the album instructions ready to send, then tap Mark sent."}
-        </p>
+        {list.error && (
+          <p className="text-sm text-muted-foreground pt-1">
+            Could not load the list: {list.error}
+          </p>
+        )}
         {!list.loading && !list.error && (
           <div className="flex flex-wrap gap-2 pt-2">
-            <Badge variant="outline">{list.totals.guests} yes RSVPs</Badge>
-            <Badge variant="outline">{list.totals.inPerson} in person</Badge>
-            <Badge variant="outline">{list.totals.zoom} Zoom</Badge>
+            <Badge variant="outline">{list.totals.peopleInPerson} in person</Badge>
+            <Badge variant="outline">{list.totals.peopleZoom} Zoom</Badge>
+            <Badge variant="outline">{list.totals.peopleTotal} people total</Badge>
+            <Badge variant="outline">{list.totals.guests} phone numbers to text</Badge>
             <Badge variant="outline">{list.totals.toSend} still to text</Badge>
             {list.totals.noPhone > 0 && (
               <Badge variant="outline">{list.totals.noPhone} with no phone on file</Badge>
             )}
-            {readAt && <Badge variant="outline">Read from the database {readAt} UTC</Badge>}
           </div>
         )}
+
       </Card>
 
 
