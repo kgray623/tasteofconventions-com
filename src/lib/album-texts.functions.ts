@@ -2,13 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-export type {
-  AlbumTextGuest,
-  AlbumTextGroup,
-  AlbumTextResult,
-} from "@/lib/album-texts.server";
+export type { AlbumTextGuest, AlbumTextResult } from "@/lib/album-texts.server";
 
-/** Guests who attended (in person or Zoom), grouped by committee member. */
+/** Every "yes" RSVP (in person and Zoom) as one flat list. */
+
 export const getAlbumTextList = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
