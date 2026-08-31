@@ -201,7 +201,7 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
           continue;
         }
         if (file.size > MAX_FILE_BYTES) {
-          toast.error(`${file.name} is too large — files must be under 50 MB.`);
+          toast.error(`${file.name} is very large — files must be under 500 MB.`);
           continue;
         }
         const ext = (file.name.split(".").pop() || (isVideo ? "mp4" : "jpg")).toLowerCase();
