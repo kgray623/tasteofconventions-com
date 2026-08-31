@@ -289,7 +289,7 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
             )}
           </Button>
           <p className="text-xs text-muted-foreground">
-            Photos and videos — full-length phone videos are fine.
+            720p videos: about 10–15 minutes. 1080p videos: about 5–7 minutes.
           </p>
         </div>
       )}
