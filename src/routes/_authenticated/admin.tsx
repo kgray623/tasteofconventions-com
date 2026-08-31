@@ -10,12 +10,13 @@ import { Button } from "@/components/ui/button";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlus, UtensilsCrossed, Mail, HandCoins, MessageSquare, Ticket, ArrowLeft, Archive, UserCheck, MessageCircle, Video } from "lucide-react";
+import { ShieldCheck, Users, ListChecks, Upload, MessagesSquare, LogOut, UserPlus, UtensilsCrossed, Mail, HandCoins, MessageSquare, Ticket, ArrowLeft, Archive, UserCheck, MessageCircle, Video, Images } from "lucide-react";
 import { NewBadge } from "@/components/new-badge";
 import { useChatUnread } from "@/hooks/use-chat-unread";
 import { Badge } from "@/components/ui/badge";
 import { GuestSearchBar } from "@/components/guest-search-bar";
 import { useMyUnpaidMeals } from "@/hooks/use-my-unpaid-meals";
+import { useAlbumTexts } from "@/hooks/use-album-texts";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — A Taste of Special Conventions" }] }),
@@ -45,6 +46,15 @@ const tabs: { id?: string; to: string; label: string; icon: typeof ShieldCheck; 
     icon: UtensilsCrossed,
     team: true,
     teamLabel: "Covered dish reminders",
+    group: "main",
+  },
+  {
+    id: "album-texts",
+    to: "/admin/album-texts",
+    label: "Photo album texts",
+    icon: Images,
+    team: true,
+    teamLabel: "Photo album texts",
     group: "main",
   },
   {
@@ -80,7 +90,7 @@ const tabs: { id?: string; to: string; label: string; icon: typeof ShieldCheck; 
 ];
 
 
-const teamAllowedPrefixes = ["/admin/subcommittee", "/admin/guests", "/admin/upload", "/admin/inviters", "/admin/categories", "/admin/chat", "/admin/my-volunteer-chats", "/admin/my-rsvp", "/admin/preorders", "/admin/meal-texts", "/admin/meal-texts-mine", "/admin/unpaid", "/admin/covered-dish", "/admin/zoom-attendees", "/admin/burmese-unpaid-recheck"];
+const teamAllowedPrefixes = ["/admin/subcommittee", "/admin/guests", "/admin/upload", "/admin/inviters", "/admin/categories", "/admin/chat", "/admin/my-volunteer-chats", "/admin/my-rsvp", "/admin/preorders", "/admin/meal-texts", "/admin/meal-texts-mine", "/admin/unpaid", "/admin/covered-dish", "/admin/zoom-attendees", "/admin/burmese-unpaid-recheck", "/admin/album-texts"];
 const isTeamAllowedPath = (path: string) =>
   path === "/admin" || teamAllowedPrefixes.some((p) => path === p || path.startsWith(p + "/"));
 
@@ -97,6 +107,7 @@ function AdminLayout() {
   const [displayName, setDisplayName] = useState<string>("");
   const chatUnread = useChatUnread();
   const unpaidMeals = useMyUnpaidMeals();
+  const albumTexts = useAlbumTexts();
   const committeeSearch = isAdmin ? { view: undefined } : { view: "committee" as const };
 
   useEffect(() => {
@@ -215,6 +226,7 @@ function AdminLayout() {
           >
             {groupTabs.map((t) => {
               const isUnpaid = t.id === "unpaid-guests";
+              const isAlbum = t.id === "album-texts";
               const active = t.exact ? path === t.to : path.startsWith(t.to);
               const label = !isAdmin && t.teamLabel ? t.teamLabel : t.label;
               const isVolChats = t.to === "/admin/my-volunteer-chats";
@@ -239,6 +251,11 @@ function AdminLayout() {
                   {isUnpaid && (
                     <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-terracotta text-cream text-[10px] font-semibold inline-flex items-center justify-center tabular-nums">
                       {unpaidMeals.loading ? "…" : unpaidMeals.count}
+                    </span>
+                  )}
+                  {isAlbum && albumTexts.totals.guests > 0 && (
+                    <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-terracotta text-cream text-[10px] font-semibold inline-flex items-center justify-center tabular-nums">
+                      {albumTexts.loading ? "…" : albumTexts.totals.toSend}
                     </span>
                   )}
                   {isVolChats && volUnread > 0 && (
