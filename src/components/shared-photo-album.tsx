@@ -12,8 +12,8 @@ import { MediaSaveButton } from "@/components/media-save-button";
 import { PhotoViewer } from "@/components/photo-viewer";
 
 const BUCKET = "guest-photos";
-/** Bucket file size limit (50MB) — roughly 30 seconds of phone video. */
-const MAX_FILE_BYTES = 50 * 1024 * 1024;
+/** Storage bucket ceiling (500MB) — plenty for full-length phone videos. */
+const MAX_FILE_BYTES = 500 * 1024 * 1024;
 
 type GalleryPhoto = {
   id: string;
