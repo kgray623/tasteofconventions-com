@@ -48,6 +48,15 @@ const tabs: { id?: string; to: string; label: string; icon: typeof ShieldCheck; 
     group: "main",
   },
   {
+    id: "album-texts",
+    to: "/admin/album-texts",
+    label: "Photo album texts",
+    icon: Images,
+    team: true,
+    teamLabel: "Photo album texts",
+    group: "main",
+  },
+  {
     id: "burmese-unpaid-recheck",
     to: "/admin/burmese-unpaid-recheck",
     label: "Burmese payment recheck",
