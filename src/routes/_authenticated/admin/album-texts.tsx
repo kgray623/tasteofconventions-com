@@ -54,6 +54,11 @@ function AlbumTextsPage() {
   const [saving, setSaving] = useState(false);
 
   const template = list.template;
+  const allNumbers = useMemo(
+    () => list.guests.map((g) => smsNumber(g.phone)).filter((n): n is string => !!n),
+    [list.guests],
+  );
+
   const readAt = useMemo(
     () =>
       list.generatedAt
