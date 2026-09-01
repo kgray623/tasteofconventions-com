@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Loader2, MessageCircle, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveAlbumPosterName } from "@/lib/album-poster-name";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
