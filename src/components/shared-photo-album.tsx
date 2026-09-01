@@ -83,7 +83,9 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
     }
     const { data, error } = await supabase
       .from("shared_photos")
-      .select("id, guest_name, caption, created_at, storage_path, uploaded_by, media_type")
+      .select(
+        "id, guest_name, caption, created_at, storage_path, external_url, uploaded_by, media_type",
+      )
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) {
@@ -91,14 +93,14 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
       return;
     }
     const rows = data ?? [];
+    const storagePaths = rows
+      .map((r) => r.storage_path)
+      .filter((p): p is string => typeof p === "string" && p.length > 0);
     let urls: Array<{ path?: string | null; signedUrl: string | null }> = [];
-    if (rows.length > 0) {
+    if (storagePaths.length > 0) {
       const { data: signed } = await supabase.storage
         .from(BUCKET)
-        .createSignedUrls(
-          rows.map((r) => r.storage_path),
-          60 * 60,
-        );
+        .createSignedUrls(storagePaths, 60 * 60);
       urls = signed ?? [];
     }
     const urlByPath = new Map(urls.map((u) => [u.path ?? "", u.signedUrl]));
@@ -109,9 +111,10 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
         caption: r.caption,
         created_at: r.created_at,
         storage_path: r.storage_path,
+        external_url: r.external_url ?? null,
         uploaded_by: r.uploaded_by,
         media_type: r.media_type ?? "image",
-        url: urlByPath.get(r.storage_path) ?? null,
+        url: r.storage_path ? (urlByPath.get(r.storage_path) ?? null) : (r.external_url ?? null),
       })),
     );
     await loadEngagement(rows.map((r) => r.id));
