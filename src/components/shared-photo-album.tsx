@@ -120,7 +120,8 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
         external_url: r.external_url ?? null,
         uploaded_by: r.uploaded_by,
         media_type: r.media_type ?? "image",
-        url: r.storage_path ? (urlByPath.get(r.storage_path) ?? null) : (r.external_url ?? null),
+        // Link items have no downloadable file URL — playback uses external_url.
+        url: r.storage_path ? (urlByPath.get(r.storage_path) ?? null) : null,
       })),
     );
     await loadEngagement(rows.map((r) => r.id));
