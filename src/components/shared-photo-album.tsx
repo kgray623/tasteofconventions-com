@@ -583,7 +583,38 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
                   ) : null}
                 </div>
 
-                {p.url && p.media_type === "video" ? (
+                {p.media_type === "link" ? (
+                  (() => {
+                    const info = parseVideoLink(p.external_url ?? "");
+                    if (!info) return null;
+                    return info.embedUrl ? (
+                      <div className="overflow-hidden rounded-md border border-border bg-black">
+                        <iframe
+                          src={info.embedUrl}
+                          title={p.caption ? p.caption : `Video shared by ${p.guest_name}`}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          data-testid="feed-video-embed"
+                          className="aspect-video w-full"
+                        />
+                      </div>
+                    ) : (
+                      <a
+                        href={info.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        data-testid="feed-video-link"
+                        className="flex items-center gap-2 rounded-md border border-gold/60 bg-cream/40 px-3 py-3 text-sm hover:border-gold"
+                      >
+                        <Link2 className="h-4 w-4 shrink-0 text-gold" />
+                        <span className="min-w-0 flex-1 truncate">
+                          Watch on {info.provider}
+                        </span>
+                        <Play className="h-4 w-4 shrink-0 text-gold" />
+                      </a>
+                    );
+                  })()
+                ) : p.url && p.media_type === "video" ? (
                   <video
                     src={p.url}
                     controls
@@ -621,11 +652,22 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
                     onChanged={refreshEngagement}
                   />
                   <MediaSaveButton
-                    url={p.url}
+                    url={p.media_type === "link" ? null : p.url}
                     guestName={p.guest_name}
                     itemNumber={i + 1}
                     isVideo={p.media_type === "video"}
                   />
+                  {p.media_type === "link" ? (
+                    <a
+                      href={p.external_url ?? "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-muted-foreground underline-offset-2 hover:text-gold hover:underline"
+                    >
+                      Open link
+                    </a>
+                  ) : null}
+
                   {p.media_type === "video" ? (
                     <button
                       type="button"
