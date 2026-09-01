@@ -365,8 +365,70 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
             )}
           </Button>
           <p className="text-xs text-muted-foreground">
-            720p videos: about 10–15 minutes. 1080p videos: about 5–7 minutes.
+            Videos up to 1,000 MB (1 GB) — about 20–30 minutes at 720p, or about 10–15 minutes at
+            1080p. Longer than that? Post it to YouTube (or Google Drive, Dropbox, iCloud) and share
+            the link below.
           </p>
+
+          {showLinkForm ? (
+            <div className="space-y-2 rounded-lg border border-gold/50 bg-cream/40 p-3">
+              <p className="text-sm font-medium">Share a longer video by link</p>
+              <Input
+                value={linkUrl}
+                onChange={(e) => {
+                  setLinkUrl(e.target.value);
+                  setLinkError(null);
+                }}
+                inputMode="url"
+                placeholder="Paste the video link (https://youtu.be/…)"
+                aria-label="Video link"
+                className="bg-card"
+              />
+              <Input
+                value={linkCaption}
+                onChange={(e) => setLinkCaption(e.target.value)}
+                placeholder="Add a caption (optional)"
+                aria-label="Video link caption"
+                className="bg-card"
+              />
+              {linkError ? <p className="text-xs text-terracotta">{linkError}</p> : null}
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  disabled={savingLink}
+                  onClick={() => void handleAddLink()}
+                  className="flex-1 bg-berry text-cream hover:bg-berry/90"
+                >
+                  {savingLink ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Adding…
+                    </>
+                  ) : (
+                    "Add video link"
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowLinkForm(false);
+                    setLinkError(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowLinkForm(true)}
+              className="w-full border-gold/70"
+            >
+              <Link2 className="w-4 h-4 mr-2" /> Have a longer video? Add a link
+            </Button>
+          )}
         </div>
       )}
 
