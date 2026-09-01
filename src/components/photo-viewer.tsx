@@ -11,6 +11,8 @@ export type ViewerPhoto = {
   caption: string | null;
   url: string | null;
   media_type: string;
+  /** Set for videos shared as an external link (YouTube, Drive, …). */
+  external_url?: string | null;
 };
 
 /**
