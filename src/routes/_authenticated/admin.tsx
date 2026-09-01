@@ -89,7 +89,7 @@ const tabs: { id?: string; to: string; label: string; icon: typeof ShieldCheck; 
 ];
 
 
-const teamAllowedPrefixes = ["/admin/subcommittee", "/admin/guests", "/admin/upload", "/admin/inviters", "/admin/categories", "/admin/chat", "/admin/my-volunteer-chats", "/admin/my-rsvp", "/admin/preorders", "/admin/meal-texts", "/admin/meal-texts-mine", "/admin/unpaid", "/admin/covered-dish", "/admin/zoom-attendees", "/admin/burmese-unpaid-recheck", "/admin/album-texts"];
+const teamAllowedPrefixes = ["/admin/subcommittee", "/admin/guests", "/admin/upload", "/admin/inviters", "/admin/categories", "/admin/chat", "/admin/my-volunteer-chats", "/admin/my-rsvp", "/admin/preorders", "/admin/meal-texts", "/admin/meal-texts-mine", "/admin/covered-dish", "/admin/zoom-attendees", "/admin/burmese-unpaid-recheck", "/admin/album-texts"];
 const isTeamAllowedPath = (path: string) =>
   path === "/admin" || teamAllowedPrefixes.some((p) => path === p || path.startsWith(p + "/"));
 
