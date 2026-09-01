@@ -478,7 +478,28 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
                   onClick={() => setViewerIndex(i)}
                   className="block h-full w-full"
                 >
-                  {p.url && p.media_type === "video" ? (
+                  {p.media_type === "link" ? (
+                    <>
+                      {parseVideoLink(p.external_url ?? "")?.thumbnailUrl ? (
+                        <img
+                          src={parseVideoLink(p.external_url ?? "")!.thumbnailUrl!}
+                          alt={p.caption ? p.caption : `Video shared by ${p.guest_name}`}
+                          loading="lazy"
+                          className="h-full w-full bg-black object-cover"
+                        />
+                      ) : (
+                        <span className="flex h-full w-full flex-col items-center justify-center gap-1 bg-ink px-1 text-center text-[10px] text-cream">
+                          <Link2 className="h-4 w-4 text-gold" />
+                          {parseVideoLink(p.external_url ?? "")?.provider ?? "Video link"}
+                        </span>
+                      )}
+                      <span className="absolute inset-0 flex items-center justify-center">
+                        <span className="rounded-full bg-ink/70 p-2 text-cream">
+                          <Play className="h-4 w-4" />
+                        </span>
+                      </span>
+                    </>
+                  ) : p.url && p.media_type === "video" ? (
                     <>
                       <video
                         src={p.url}
@@ -507,13 +528,14 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
                 </button>
                 <div className="absolute right-1 top-1 flex items-center gap-1">
                   <MediaSaveButton
-                    url={p.url}
+                    url={p.media_type === "link" ? null : p.url}
                     guestName={p.guest_name}
                     itemNumber={i + 1}
                     isVideo={p.media_type === "video"}
                     iconOnly
                     className="rounded-full bg-ink/80 p-1 text-cream hover:bg-gold hover:text-ink disabled:opacity-50"
                   />
+
                   {myUserId && p.uploaded_by === myUserId ? (
                     <button
                       type="button"
