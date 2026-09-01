@@ -46,11 +46,15 @@ export function PhotoLikes({
           return;
         }
       } else {
+        // Label the like with the signed-in person, not the guest name of the
+        // invitation page this album is rendered on.
+        const likerName = await resolveAlbumPosterName(myUserId);
         const { error } = await supabase.from("photo_likes").insert({
           photo_id: photoId,
           user_id: myUserId,
-          liker_name: (guestName ?? "").trim() || "Guest",
+          liker_name: likerName,
         });
+
         if (error) {
           toast.error("Could not save your like.");
           return;
