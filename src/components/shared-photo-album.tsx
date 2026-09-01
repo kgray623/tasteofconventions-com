@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Camera, Grid3X3, Loader2, Play, Rows3, Upload, X } from "lucide-react";
+import { Camera, Grid3X3, Link2, Loader2, Play, Rows3, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { PhotoComments, type PhotoComment } from "@/components/photo-comments";
 import { PhotoLikes, type PhotoLike } from "@/components/photo-likes";
 import { MediaSaveButton } from "@/components/media-save-button";
 import { PhotoViewer } from "@/components/photo-viewer";
+import { parseVideoLink } from "@/lib/video-links";
 
 const BUCKET = "guest-photos";
 /** Storage bucket ceiling (1000MB / 1GB) — plenty for full-length phone videos. */
@@ -21,7 +22,8 @@ type GalleryPhoto = {
   caption: string | null;
   created_at: string;
   url: string | null;
-  storage_path: string;
+  storage_path: string | null;
+  external_url: string | null;
   uploaded_by: string | null;
   media_type: string;
 };
@@ -39,6 +41,11 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [caption, setCaption] = useState("");
+  const [showLinkForm, setShowLinkForm] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkCaption, setLinkCaption] = useState("");
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const [savingLink, setSavingLink] = useState(false);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [layout, setLayout] = useState<"feed" | "grid">("feed");
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
@@ -82,7 +89,9 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
     }
     const { data, error } = await supabase
       .from("shared_photos")
-      .select("id, guest_name, caption, created_at, storage_path, uploaded_by, media_type")
+      .select(
+        "id, guest_name, caption, created_at, storage_path, external_url, uploaded_by, media_type",
+      )
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) {
@@ -90,14 +99,14 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
       return;
     }
     const rows = data ?? [];
+    const storagePaths = rows
+      .map((r) => r.storage_path)
+      .filter((p): p is string => typeof p === "string" && p.length > 0);
     let urls: Array<{ path?: string | null; signedUrl: string | null }> = [];
-    if (rows.length > 0) {
+    if (storagePaths.length > 0) {
       const { data: signed } = await supabase.storage
         .from(BUCKET)
-        .createSignedUrls(
-          rows.map((r) => r.storage_path),
-          60 * 60,
-        );
+        .createSignedUrls(storagePaths, 60 * 60);
       urls = signed ?? [];
     }
     const urlByPath = new Map(urls.map((u) => [u.path ?? "", u.signedUrl]));
@@ -108,9 +117,11 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
         caption: r.caption,
         created_at: r.created_at,
         storage_path: r.storage_path,
+        external_url: r.external_url ?? null,
         uploaded_by: r.uploaded_by,
         media_type: r.media_type ?? "image",
-        url: urlByPath.get(r.storage_path) ?? null,
+        // Link items have no downloadable file URL — playback uses external_url.
+        url: r.storage_path ? (urlByPath.get(r.storage_path) ?? null) : null,
       })),
     );
     await loadEngagement(rows.map((r) => r.id));
@@ -145,7 +156,10 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
     try {
       // Remove the stored file first: the album row is what grants read
       // access to the file, so deleting the row first orphans the object.
-      await supabase.storage.from(BUCKET).remove([photo.storage_path]);
+      // Link-only items have no stored file.
+      if (photo.storage_path) {
+        await supabase.storage.from(BUCKET).remove([photo.storage_path]);
+      }
       const { error: rowError } = await supabase
         .from("shared_photos")
         .delete()
@@ -248,6 +262,58 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
     }
   };
 
+  /**
+   * Videos too long for the 1 GB upload cap are shared as links (YouTube,
+   * Google Drive, Dropbox, …). No storage upload — just an album row.
+   */
+  const handleAddLink = async () => {
+    if (savingLink) return;
+    const parsed = parseVideoLink(linkUrl);
+    if (!parsed) {
+      setLinkError("That doesn't look like a video web address. Paste the full link, e.g. https://youtu.be/…");
+      return;
+    }
+    setLinkError(null);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const session = sessionData.session;
+    if (!session) {
+      toast.error("Sign in with your last name and phone number to add a video link.");
+      return;
+    }
+    let name = "";
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", session.user.id)
+      .maybeSingle();
+    name = (profile?.display_name ?? "").trim();
+    if (!name) name = (guestName ?? "").trim();
+    if (!name) name = "Guest";
+
+    setSavingLink(true);
+    try {
+      const { error: insertError } = await supabase.from("shared_photos").insert({
+        storage_path: null,
+        external_url: parsed.url,
+        guest_name: name,
+        caption: linkCaption.trim() || null,
+        uploaded_by: session.user.id,
+        media_type: "link",
+      });
+      if (insertError) {
+        toast.error("Could not save that video link.");
+        return;
+      }
+      toast.success(`${parsed.provider} video link shared. Thank you!`);
+      setLinkUrl("");
+      setLinkCaption("");
+      setShowLinkForm(false);
+      await load();
+    } finally {
+      setSavingLink(false);
+    }
+  };
+
   return (
     <Card className="p-5 space-y-4 border-2 border-gold/60">
       <div className="flex items-center gap-2">
@@ -300,8 +366,73 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
             )}
           </Button>
           <p className="text-xs text-muted-foreground">
-            720p videos: about 10–15 minutes. 1080p videos: about 5–7 minutes.
+            Videos up to 1,000 MB (1 GB) — about 20–30 minutes at 720p, or about 10–15 minutes at
+            1080p. Longer than that? Post it to YouTube (or Google Drive, Dropbox, iCloud) and share
+            the link below.
           </p>
+
+          {showLinkForm ? (
+            <div className="space-y-2 rounded-lg border border-gold/50 bg-cream/40 p-3">
+              <p className="text-sm font-medium">Share a longer video by link</p>
+              <Input
+                value={linkUrl}
+                onChange={(e) => {
+                  setLinkUrl(e.target.value);
+                  setLinkError(null);
+                }}
+                inputMode="url"
+                placeholder="Paste the video link (https://youtu.be/…)"
+                aria-label="Video link"
+                data-testid="video-link-url"
+                className="bg-card"
+              />
+              <Input
+                value={linkCaption}
+                onChange={(e) => setLinkCaption(e.target.value)}
+                placeholder="Add a caption (optional)"
+                aria-label="Video link caption"
+                data-testid="video-link-caption"
+                className="bg-card"
+              />
+              {linkError ? <p className="text-xs text-terracotta">{linkError}</p> : null}
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  disabled={savingLink}
+                  onClick={() => void handleAddLink()}
+                  data-testid="video-link-submit"
+                  className="flex-1 bg-terracotta text-cream hover:bg-terracotta/90"
+                >
+                  {savingLink ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Adding…
+                    </>
+                  ) : (
+                    "Add video link"
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowLinkForm(false);
+                    setLinkError(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowLinkForm(true)}
+              className="w-full border-gold/70"
+            >
+              <Link2 className="w-4 h-4 mr-2" /> Have a longer video? Add a link
+            </Button>
+          )}
         </div>
       )}
 
@@ -351,7 +482,28 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
                   onClick={() => setViewerIndex(i)}
                   className="block h-full w-full"
                 >
-                  {p.url && p.media_type === "video" ? (
+                  {p.media_type === "link" ? (
+                    <>
+                      {parseVideoLink(p.external_url ?? "")?.thumbnailUrl ? (
+                        <img
+                          src={parseVideoLink(p.external_url ?? "")!.thumbnailUrl!}
+                          alt={p.caption ? p.caption : `Video shared by ${p.guest_name}`}
+                          loading="lazy"
+                          className="h-full w-full bg-black object-cover"
+                        />
+                      ) : (
+                        <span className="flex h-full w-full flex-col items-center justify-center gap-1 bg-ink px-1 text-center text-[10px] text-cream">
+                          <Link2 className="h-4 w-4 text-gold" />
+                          {parseVideoLink(p.external_url ?? "")?.provider ?? "Video link"}
+                        </span>
+                      )}
+                      <span className="absolute inset-0 flex items-center justify-center">
+                        <span className="rounded-full bg-ink/70 p-2 text-cream">
+                          <Play className="h-4 w-4" />
+                        </span>
+                      </span>
+                    </>
+                  ) : p.url && p.media_type === "video" ? (
                     <>
                       <video
                         src={p.url}
@@ -380,13 +532,14 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
                 </button>
                 <div className="absolute right-1 top-1 flex items-center gap-1">
                   <MediaSaveButton
-                    url={p.url}
+                    url={p.media_type === "link" ? null : p.url}
                     guestName={p.guest_name}
                     itemNumber={i + 1}
                     isVideo={p.media_type === "video"}
                     iconOnly
                     className="rounded-full bg-ink/80 p-1 text-cream hover:bg-gold hover:text-ink disabled:opacity-50"
                   />
+
                   {myUserId && p.uploaded_by === myUserId ? (
                     <button
                       type="button"
@@ -434,7 +587,38 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
                   ) : null}
                 </div>
 
-                {p.url && p.media_type === "video" ? (
+                {p.media_type === "link" ? (
+                  (() => {
+                    const info = parseVideoLink(p.external_url ?? "");
+                    if (!info) return null;
+                    return info.embedUrl ? (
+                      <div className="overflow-hidden rounded-md border border-border bg-black">
+                        <iframe
+                          src={info.embedUrl}
+                          title={p.caption ? p.caption : `Video shared by ${p.guest_name}`}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          data-testid="feed-video-embed"
+                          className="aspect-video w-full"
+                        />
+                      </div>
+                    ) : (
+                      <a
+                        href={info.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        data-testid="feed-video-link"
+                        className="flex items-center gap-2 rounded-md border border-gold/60 bg-cream/40 px-3 py-3 text-sm hover:border-gold"
+                      >
+                        <Link2 className="h-4 w-4 shrink-0 text-gold" />
+                        <span className="min-w-0 flex-1 truncate">
+                          Watch on {info.provider}
+                        </span>
+                        <Play className="h-4 w-4 shrink-0 text-gold" />
+                      </a>
+                    );
+                  })()
+                ) : p.url && p.media_type === "video" ? (
                   <video
                     src={p.url}
                     controls
@@ -472,11 +656,22 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
                     onChanged={refreshEngagement}
                   />
                   <MediaSaveButton
-                    url={p.url}
+                    url={p.media_type === "link" ? null : p.url}
                     guestName={p.guest_name}
                     itemNumber={i + 1}
                     isVideo={p.media_type === "video"}
                   />
+                  {p.media_type === "link" ? (
+                    <a
+                      href={p.external_url ?? "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-muted-foreground underline-offset-2 hover:text-gold hover:underline"
+                    >
+                      Open link
+                    </a>
+                  ) : null}
+
                   {p.media_type === "video" ? (
                     <button
                       type="button"

@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { PhotoComments, type PhotoComment } from "@/components/photo-comments";
 import { PhotoLikes, type PhotoLike } from "@/components/photo-likes";
 import { MediaSaveButton } from "@/components/media-save-button";
+import { parseVideoLink } from "@/lib/video-links";
 
 export type ViewerPhoto = {
   id: string;
@@ -11,6 +12,8 @@ export type ViewerPhoto = {
   caption: string | null;
   url: string | null;
   media_type: string;
+  /** Set for videos shared as an external link (YouTube, Drive, …). */
+  external_url?: string | null;
 };
 
 /**
@@ -82,7 +85,9 @@ export function PhotoViewer({
   }
 
   const photo = photos[index];
-  const isVideo = photo.media_type === "video";
+  const isLink = photo.media_type === "link";
+  const linkInfo = isLink ? parseVideoLink(photo.external_url ?? "") : null;
+  const isVideo = photo.media_type === "video" || isLink;
   const comments = commentsByPhoto[photo.id] ?? [];
   const likes = likesByPhoto[photo.id] ?? [];
 
@@ -108,7 +113,31 @@ export function PhotoViewer({
             step(dx < 0 ? 1 : -1);
           }}
         >
-          {photo.url && isVideo ? (
+          {isLink ? (
+            linkInfo?.embedUrl ? (
+              <iframe
+                key={photo.id}
+                src={linkInfo.embedUrl}
+                title={photo.caption ? photo.caption : `Video shared by ${photo.guest_name}`}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                data-testid="viewer-video-embed"
+                className="mx-auto aspect-video max-h-[60vh] w-full bg-black"
+              />
+            ) : (
+              <div className="flex h-48 items-center justify-center p-4">
+                <a
+                  href={linkInfo?.url ?? photo.external_url ?? "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="viewer-video-link"
+                  className="rounded-md border border-gold px-4 py-2 text-sm text-cream hover:bg-gold hover:text-ink"
+                >
+                  Watch on {linkInfo?.provider ?? "the video site"}
+                </a>
+              </div>
+            )
+          ) : photo.url && isVideo ? (
             <video
               key={photo.id}
               ref={videoRef}
@@ -177,7 +206,7 @@ export function PhotoViewer({
                 onChanged={onLikesChanged}
               />
               <MediaSaveButton
-                url={photo.url}
+                url={isLink ? null : photo.url}
                 guestName={photo.guest_name}
                 itemNumber={index + 1}
                 isVideo={photo.media_type === "video"}
