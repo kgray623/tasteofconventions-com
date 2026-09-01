@@ -383,6 +383,7 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
                 inputMode="url"
                 placeholder="Paste the video link (https://youtu.be/…)"
                 aria-label="Video link"
+                data-testid="video-link-url"
                 className="bg-card"
               />
               <Input
