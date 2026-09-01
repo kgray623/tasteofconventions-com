@@ -10,6 +10,7 @@ import { PhotoComments, type PhotoComment } from "@/components/photo-comments";
 import { PhotoLikes, type PhotoLike } from "@/components/photo-likes";
 import { MediaSaveButton } from "@/components/media-save-button";
 import { PhotoViewer } from "@/components/photo-viewer";
+import { parseVideoLink } from "@/lib/video-links";
 
 const BUCKET = "guest-photos";
 /** Storage bucket ceiling (1000MB / 1GB) — plenty for full-length phone videos. */
