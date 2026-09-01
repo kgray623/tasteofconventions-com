@@ -49,12 +49,16 @@ export function PhotoComments({
     }
     setSaving(true);
     try {
+      // Label the comment with the signed-in person, not the guest name of the
+      // invitation page this album is rendered on.
+      const commenterName = await resolveAlbumPosterName(myUserId);
       const { error } = await supabase.from("photo_comments").insert({
         photo_id: photoId,
         user_id: myUserId,
-        commenter_name: (guestName ?? "").trim() || "Guest",
+        commenter_name: commenterName,
         comment_text: body,
       });
+
       if (error) {
         toast.error("Could not post that comment.");
         return;
