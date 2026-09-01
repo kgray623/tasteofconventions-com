@@ -49,9 +49,10 @@ export function useMyUnpaidMeals() {
   const { isTeam, isAdmin, loading: rolesLoading } = useRoles();
   const load = useServerFn(getMyMealTexts);
   const loadNotes = useServerFn(listMealFollowUpNotes);
-  // Admins and committee members all read the same committee-wide ledger so the
-  // shared "Unpaid guests" page and its badge can never disagree.
-  const scope: "mine" | "all" = isTeam || isAdmin ? "all" : "mine";
+  // Only admins read the committee-wide ledger; committee members keep their own
+  // guests so no committee-wide unpaid count is exposed to them.
+  const scope: "mine" | "all" = isAdmin ? "all" : "mine";
+
   const query = useQuery({
     queryKey: ["my-unpaid-meals", "live-ledger-v2", scope],
     queryFn: async () => await load({ data: { scope } }),

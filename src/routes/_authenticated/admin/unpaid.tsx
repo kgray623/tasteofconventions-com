@@ -1,5 +1,7 @@
-import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useRoles } from "@/hooks/use-roles";
+
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Pencil, X, Check } from "lucide-react";
@@ -61,7 +63,14 @@ const formatPhone = (value: string) => {
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 function UnpaidGuestsPage() {
+  // Admin-only surface: committee members are sent back to their workspace.
+  const { isAdmin, loading: rolesLoading } = useRoles();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!rolesLoading && !isAdmin) navigate({ to: "/admin" });
+  }, [rolesLoading, isAdmin, navigate]);
   const unpaid = useMyUnpaidMeals();
+
   const restaurants = unpaid.restaurants ?? undefined;
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [draftNote, setDraftNote] = useState<string>("");
