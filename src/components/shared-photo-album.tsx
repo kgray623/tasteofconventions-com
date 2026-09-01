@@ -255,6 +255,58 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
     }
   };
 
+  /**
+   * Videos too long for the 1 GB upload cap are shared as links (YouTube,
+   * Google Drive, Dropbox, …). No storage upload — just an album row.
+   */
+  const handleAddLink = async () => {
+    if (savingLink) return;
+    const parsed = parseVideoLink(linkUrl);
+    if (!parsed) {
+      setLinkError("That doesn't look like a video web address. Paste the full link, e.g. https://youtu.be/…");
+      return;
+    }
+    setLinkError(null);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const session = sessionData.session;
+    if (!session) {
+      toast.error("Sign in with your last name and phone number to add a video link.");
+      return;
+    }
+    let name = "";
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", session.user.id)
+      .maybeSingle();
+    name = (profile?.display_name ?? "").trim();
+    if (!name) name = (guestName ?? "").trim();
+    if (!name) name = "Guest";
+
+    setSavingLink(true);
+    try {
+      const { error: insertError } = await supabase.from("shared_photos").insert({
+        storage_path: null,
+        external_url: parsed.url,
+        guest_name: name,
+        caption: linkCaption.trim() || null,
+        uploaded_by: session.user.id,
+        media_type: "link",
+      });
+      if (insertError) {
+        toast.error("Could not save that video link.");
+        return;
+      }
+      toast.success(`${parsed.provider} video link shared. Thank you!`);
+      setLinkUrl("");
+      setLinkCaption("");
+      setShowLinkForm(false);
+      await load();
+    } finally {
+      setSavingLink(false);
+    }
+  };
+
   return (
     <Card className="p-5 space-y-4 border-2 border-gold/60">
       <div className="flex items-center gap-2">
