@@ -35,10 +35,9 @@ const tabs: { id?: string; to: string; label: string; icon: typeof ShieldCheck; 
     to: "/admin/unpaid",
     label: "Unpaid guests",
     icon: HandCoins,
-    team: true,
-    teamLabel: "Unpaid guests",
     group: "main",
   },
+
   {
     id: "covered-dish",
     to: "/admin/covered-dish",
