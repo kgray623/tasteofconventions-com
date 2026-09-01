@@ -391,6 +391,7 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
                 onChange={(e) => setLinkCaption(e.target.value)}
                 placeholder="Add a caption (optional)"
                 aria-label="Video link caption"
+                data-testid="video-link-caption"
                 className="bg-card"
               />
               {linkError ? <p className="text-xs text-terracotta">{linkError}</p> : null}
@@ -399,6 +400,7 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
                   type="button"
                   disabled={savingLink}
                   onClick={() => void handleAddLink()}
+                  data-testid="video-link-submit"
                   className="flex-1 bg-terracotta text-cream hover:bg-terracotta/90"
                 >
                   {savingLink ? (
