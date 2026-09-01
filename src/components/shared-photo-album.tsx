@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Camera, Grid3X3, Loader2, Play, Rows3, Upload, X } from "lucide-react";
+import { Camera, Grid3X3, Link2, Loader2, Play, Rows3, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
