@@ -41,6 +41,11 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [caption, setCaption] = useState("");
+  const [showLinkForm, setShowLinkForm] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkCaption, setLinkCaption] = useState("");
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const [savingLink, setSavingLink] = useState(false);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [layout, setLayout] = useState<"feed" | "grid">("feed");
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
