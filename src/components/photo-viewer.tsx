@@ -84,7 +84,9 @@ export function PhotoViewer({
   }
 
   const photo = photos[index];
-  const isVideo = photo.media_type === "video";
+  const isLink = photo.media_type === "link";
+  const linkInfo = isLink ? parseVideoLink(photo.external_url ?? "") : null;
+  const isVideo = photo.media_type === "video" || isLink;
   const comments = commentsByPhoto[photo.id] ?? [];
   const likes = likesByPhoto[photo.id] ?? [];
 
