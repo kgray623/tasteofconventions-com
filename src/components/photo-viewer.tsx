@@ -113,7 +113,31 @@ export function PhotoViewer({
             step(dx < 0 ? 1 : -1);
           }}
         >
-          {photo.url && isVideo ? (
+          {isLink ? (
+            linkInfo?.embedUrl ? (
+              <iframe
+                key={photo.id}
+                src={linkInfo.embedUrl}
+                title={photo.caption ? photo.caption : `Video shared by ${photo.guest_name}`}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                data-testid="viewer-video-embed"
+                className="mx-auto aspect-video max-h-[60vh] w-full bg-black"
+              />
+            ) : (
+              <div className="flex h-48 items-center justify-center p-4">
+                <a
+                  href={linkInfo?.url ?? photo.external_url ?? "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="viewer-video-link"
+                  className="rounded-md border border-gold px-4 py-2 text-sm text-cream hover:bg-gold hover:text-ink"
+                >
+                  Watch on {linkInfo?.provider ?? "the video site"}
+                </a>
+              </div>
+            )
+          ) : photo.url && isVideo ? (
             <video
               key={photo.id}
               ref={videoRef}
