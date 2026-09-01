@@ -1739,28 +1739,31 @@ export type Database = {
         Row: {
           caption: string | null
           created_at: string
+          external_url: string | null
           guest_name: string
           id: string
           media_type: string
-          storage_path: string
+          storage_path: string | null
           uploaded_by: string | null
         }
         Insert: {
           caption?: string | null
           created_at?: string
+          external_url?: string | null
           guest_name: string
           id?: string
           media_type?: string
-          storage_path: string
+          storage_path?: string | null
           uploaded_by?: string | null
         }
         Update: {
           caption?: string | null
           created_at?: string
+          external_url?: string | null
           guest_name?: string
           id?: string
           media_type?: string
-          storage_path?: string
+          storage_path?: string | null
           uploaded_by?: string | null
         }
         Relationships: []
