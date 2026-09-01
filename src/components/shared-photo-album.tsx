@@ -149,7 +149,10 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
     try {
       // Remove the stored file first: the album row is what grants read
       // access to the file, so deleting the row first orphans the object.
-      await supabase.storage.from(BUCKET).remove([photo.storage_path]);
+      // Link-only items have no stored file.
+      if (photo.storage_path) {
+        await supabase.storage.from(BUCKET).remove([photo.storage_path]);
+      }
       const { error: rowError } = await supabase
         .from("shared_photos")
         .delete()
