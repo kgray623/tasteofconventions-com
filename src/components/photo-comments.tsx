@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Loader2, MessageCircle, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveAlbumPosterName } from "@/lib/album-poster-name";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -49,12 +51,16 @@ export function PhotoComments({
     }
     setSaving(true);
     try {
+      // Label the comment with the signed-in person, not the guest name of the
+      // invitation page this album is rendered on.
+      const commenterName = await resolveAlbumPosterName(myUserId);
       const { error } = await supabase.from("photo_comments").insert({
         photo_id: photoId,
         user_id: myUserId,
-        commenter_name: (guestName ?? "").trim() || "Guest",
+        commenter_name: commenterName,
         comment_text: body,
       });
+
       if (error) {
         toast.error("Could not post that comment.");
         return;
