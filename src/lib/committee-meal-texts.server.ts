@@ -117,9 +117,10 @@ export async function loadCommitteeMealTexts(
   }
 
   // Committee-wide scope: every committee member's guests at once (plus guests
-  // with no committee member recorded). Available to admins AND committee (team)
-  // members so the shared "Unpaid guests" page shows one identical list.
-  const allScope = options?.scope === "all" && identity.isStaff && !actingForInviterId;
+  // with no committee member recorded). Admin-only — committee (team) members
+  // see only their own guests.
+  const allScope = options?.scope === "all" && identity.isAdmin && !actingForInviterId;
+
 
   let actingFor: { id: string; name: string } | null = null;
   let targetInviterIds = Array.from(mine);
