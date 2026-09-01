@@ -4,7 +4,7 @@
 
 The first screenshot batch (A through H, 8:12–8:30 PM) has already been recorded: 60 invitation records matched those phone numbers and were marked texted.
 
-The additional screenshots extend the evidence through V and show messages sent from 8:31 PM onward. I will process all screenshots together, not stop at the earlier I–M batch.
+The additional screenshots now extend the evidence through Yolanda and show messages sent from 8:31 PM through the newest messages. I will process all screenshots together, not stop at any earlier batch.
 
 ## Scope
 
