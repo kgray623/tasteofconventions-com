@@ -52,6 +52,8 @@ function googleDriveId(url: URL): string | null {
 export function parseVideoLink(raw: string): VideoLinkInfo | null {
   const trimmed = (raw ?? "").trim();
   if (!trimmed) return null;
+  // A scheme other than http(s) (mailto:, sms:, javascript:) is never a video page.
+  if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed) && !/^https?:\/\//i.test(trimmed)) return null;
   const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
   let url: URL;
   try {
