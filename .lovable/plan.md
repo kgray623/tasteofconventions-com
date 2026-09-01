@@ -1,47 +1,35 @@
-# Mark the rest of your album texts as sent
+# Mark every album text shown in your screenshots
 
-2026-09-01 02:49 UTC
+2026-09-01 02:50 UTC
 
-The first batch (A through H, 8:12–8:30 PM) is already marked — 60 guests were matched and recorded on the Photo album texts page from your earlier screenshots.
+The first screenshot batch (A through H, 8:12–8:30 PM) has already been recorded: 60 invitation records matched those phone numbers and were marked texted.
 
-This second batch of screenshots covers 8:31–8:43 PM (I through M names). Same treatment: read each phone number, match it to the guest, and record a "texted" mark.
+The additional screenshots extend the evidence through V and show messages sent from 8:31 PM onward. I will process all screenshots together, not stop at the earlier I–M batch.
 
-## What will be marked from this batch
+## Scope
 
-Phone numbers read off the screenshots:
+1. Extract every visible phone number from all screenshots and match it to the album roster using normalized phone digits, including international numbers.
+2. For contact-name-only threads, match the displayed contact/first name to the roster only when there is one unambiguous guest.
+3. Record an additive `album_text_sends` mark for each matched invitation, skipping any already recorded so nobody receives a duplicate database row.
+4. Include conversations showing a reply or later message (such as “You’re welcome,” an emoji, or “Image”) when the thread itself identifies a roster guest; these screenshots still document that the guest was contacted.
+5. Do **not** mark the Sonja message with the red failure symbol as sent. Report it separately as failed so it remains on the still-to-text list.
+6. Do not guess ambiguous name-only contacts. Report each unmatched or ambiguous thread for confirmation.
 
-402-960-6589, 402-378-5424, 402-677-9043, 402-913-6508, 402-612-3689,
-402-913-7899, 917-532-9859, 708-214-0846, 347-643-8667, 402-917-0578,
-402-469-5215, 402-203-5207, 402-651-7937, 402-905-2445, 402-714-6206,
-402-203-1672, 314-250-2831, 402-216-7691, 773-886-2304, 720-404-9198,
-417-824-4078, 402-680-5946, 402-359-0467, 402-301-6751, 402-968-1680,
-402-570-9844, 402-810-4177, 402-981-5700, 402-984-0368, 402-686-5008,
-308-530-6543, 402-616-8205, 502-644-1141, 402-296-9922, 804-931-4514,
-417-439-6438, 646-228-3195, 402-651-7573, 929-355-2673, 402-321-5203,
-402-813-2696, 708-705-8612, 505-398-5414, 402-202-3534, 402-238-8375,
-402-213-1461, 402-515-7916, 402-981-4025, 402-999-2600, 402-547-9159,
-531-203-6157, 402-320-7780, 646-323-6963, 925-334-9519, 402-917-4152,
-402-871-8841, 402-507-1651, 402-850-4808, 347-847-6743, 303-946-5800,
-702-203-0468, 502-709-1424, +62 895-1748-7266 (Meidellin), +7 733-505-1619 (Lee)
+## Verification and report
 
-Threads shown only by contact name with no visible number (BW Jamy Elker, NE Jacqueline
-Graves WB, Jacquelyn, Jennifer, NE Jen Gray BW, NeJana Weinberger WB, NE TOC Janet Blaine,
-NE Andres Rosa Guiterrez, BW Jay Wilcher, NE Julie Hegnet, MO Lenora, NE Mari Elva Uribe,
-Maribel May) cannot be matched by number. I will match those by first name against the
-album list and report each one I matched, plus any I could not, rather than guessing.
+After recording the marks, read the database back and report:
 
-## Steps
+- exact number newly marked from all screenshot batches;
+- exact total marked texted on `/admin/album-texts`;
+- exact number still to text;
+- every screenshot phone/name that did not match the yes-RSVP album roster;
+- every name-only thread that could not be matched uniquely;
+- the failed Sonja number separately.
 
-1. Match every number above against guest phone numbers on the album list (last 10 digits, so
-   formatting differences don't matter), and record a texted mark for each match.
-2. Match the name-only threads by first name; only mark ones with a single unambiguous match.
-   List anything ambiguous or unmatched for you to confirm.
-3. Read back from the database and report exact counts: total texted, still to text, and any
-   numbers in the screenshots that are not on the album list at all.
-4. Nothing is deleted or overwritten — marks are additive, and Undo still works per guest.
+No guest, RSVP, message wording, photo, video, meal record, or prior text mark will be deleted or overwritten. Per-guest Undo remains available.
 
 ## Technical notes
 
-- Inserts into `album_text_sends` keyed by `invitation_id`, skipping guests already marked,
-  labelled as coming from your Messages screenshots.
-- No changes to code, RSVP data, meal data, or the album message wording.
+- Match against `invitations.guest_phone_normalized` / `guest_phone` and the existing yes-RSVP album roster.
+- Insert only missing rows into `album_text_sends`, labelled as evidence from Kari’s Messages screenshots.
+- No application-code change is needed.
