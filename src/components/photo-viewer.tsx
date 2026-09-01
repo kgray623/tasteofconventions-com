@@ -206,7 +206,7 @@ export function PhotoViewer({
                 onChanged={onLikesChanged}
               />
               <MediaSaveButton
-                url={photo.url}
+                url={isLink ? null : photo.url}
                 guestName={photo.guest_name}
                 itemNumber={index + 1}
                 isVideo={photo.media_type === "video"}
