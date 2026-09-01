@@ -12,8 +12,8 @@ import { MediaSaveButton } from "@/components/media-save-button";
 import { PhotoViewer } from "@/components/photo-viewer";
 
 const BUCKET = "guest-photos";
-/** Storage bucket ceiling (500MB) — plenty for full-length phone videos. */
-const MAX_FILE_BYTES = 500 * 1024 * 1024;
+/** Storage bucket ceiling (1000MB / 1GB) — plenty for full-length phone videos. */
+const MAX_FILE_BYTES = 1000 * 1024 * 1024;
 
 type GalleryPhoto = {
   id: string;
@@ -212,7 +212,7 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
           continue;
         }
         if (file.size > MAX_FILE_BYTES) {
-          toast.error(`${file.name} is very large — files must be under 500 MB.`);
+          toast.error(`${file.name} is very large — files must be under 1,000 MB (1 GB).`);
           continue;
         }
         const ext = (file.name.split(".").pop() || (isVideo ? "mp4" : "jpg")).toLowerCase();
