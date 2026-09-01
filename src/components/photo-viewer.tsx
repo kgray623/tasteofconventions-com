@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { PhotoComments, type PhotoComment } from "@/components/photo-comments";
 import { PhotoLikes, type PhotoLike } from "@/components/photo-likes";
 import { MediaSaveButton } from "@/components/media-save-button";
+import { parseVideoLink } from "@/lib/video-links";
 
 export type ViewerPhoto = {
   id: string;
