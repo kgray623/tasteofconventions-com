@@ -397,7 +397,7 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
                   type="button"
                   disabled={savingLink}
                   onClick={() => void handleAddLink()}
-                  className="flex-1 bg-berry text-cream hover:bg-berry/90"
+                  className="flex-1 bg-terracotta text-cream hover:bg-terracotta/90"
                 >
                   {savingLink ? (
                     <>
