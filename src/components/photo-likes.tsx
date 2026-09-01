@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Heart } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveAlbumPosterName } from "@/lib/album-poster-name";
+
 
 export type PhotoLike = {
   id: string;
