@@ -21,7 +21,8 @@ type GalleryPhoto = {
   caption: string | null;
   created_at: string;
   url: string | null;
-  storage_path: string;
+  storage_path: string | null;
+  external_url: string | null;
   uploaded_by: string | null;
   media_type: string;
 };
