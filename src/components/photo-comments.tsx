@@ -26,7 +26,7 @@ export function PhotoComments({
   comments,
   myUserId,
   isAdmin,
-  guestName,
+  onCommentAdded,
   onChanged,
   compact,
 }: {
@@ -34,7 +34,7 @@ export function PhotoComments({
   comments: PhotoComment[];
   myUserId: string | null;
   isAdmin: boolean;
-  guestName?: string | null;
+  onCommentAdded: (comment: PhotoComment) => void;
   onChanged: () => void | Promise<void>;
   compact?: boolean;
 }) {
@@ -54,18 +54,23 @@ export function PhotoComments({
       // Label the comment with the signed-in person, not the guest name of the
       // invitation page this album is rendered on.
       const commenterName = await resolveAlbumPosterName(myUserId);
-      const { error } = await supabase.from("photo_comments").insert({
-        photo_id: photoId,
-        user_id: myUserId,
-        commenter_name: commenterName,
-        comment_text: body,
-      });
+      const { data: inserted, error } = await supabase
+        .from("photo_comments")
+        .insert({
+          photo_id: photoId,
+          user_id: myUserId,
+          commenter_name: commenterName,
+          comment_text: body,
+        })
+        .select("id, photo_id, user_id, commenter_name, comment_text, created_at")
+        .single();
 
-      if (error) {
+      if (error || !inserted) {
         toast.error("Could not post that comment.");
         return;
       }
       setText("");
+      onCommentAdded(inserted);
       await onChanged();
     } finally {
       setSaving(false);
