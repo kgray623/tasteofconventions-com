@@ -227,7 +227,8 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
             const deleted = payload.old as { id?: string };
             if (!deleted.id) return;
             committedComments.current.delete(deleted.id);
-            setComments((current) => removeAlbumComment(current, deleted.id as string));
+            const deletedId = deleted.id;
+            setComments((current) => removeAlbumComment(current, deletedId));
             return;
           }
           const changed = payload.new as PhotoComment;
@@ -755,7 +756,7 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
         myUserId={myUserId}
         isAdmin={isAdmin}
         guestName={guestName}
-          onCommentAdded={handleCommentAdded}
+        onCommentAdded={handleCommentAdded}
         onCommentsChanged={refreshEngagement}
         onLikesChanged={refreshEngagement}
       />
