@@ -33,6 +33,7 @@ export function PhotoViewer({
   guestName,
   onCommentsChanged,
   onLikesChanged,
+  onCommentAdded,
 }: {
   photos: ViewerPhoto[];
   index: number | null;
@@ -45,6 +46,7 @@ export function PhotoViewer({
   guestName?: string | null;
   onCommentsChanged: () => void | Promise<void>;
   onLikesChanged: () => void | Promise<void>;
+  onCommentAdded: (comment: PhotoComment) => void;
 }) {
   const open = index !== null && index >= 0 && index < photos.length;
   const touchStartX = useRef<number | null>(null);
@@ -218,7 +220,7 @@ export function PhotoViewer({
             comments={comments}
             myUserId={myUserId}
             isAdmin={isAdmin}
-            guestName={guestName}
+            onCommentAdded={onCommentAdded}
             onChanged={onCommentsChanged}
             compact
           />

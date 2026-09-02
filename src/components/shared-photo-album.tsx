@@ -11,6 +11,11 @@ import { PhotoLikes, type PhotoLike } from "@/components/photo-likes";
 import { MediaSaveButton } from "@/components/media-save-button";
 import { PhotoViewer } from "@/components/photo-viewer";
 import { parseVideoLink } from "@/lib/video-links";
+import {
+  reconcileAlbumComments,
+  removeAlbumComment,
+  upsertAlbumComment,
+} from "@/lib/photo-comments-state";
 
 const BUCKET = "guest-photos";
 /** Storage bucket ceiling (1000MB / 1GB) — plenty for full-length phone videos. */
@@ -52,9 +57,12 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
   const [myUserId, setMyUserId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const engagementRequest = useRef(0);
+  const committedComments = useRef(new Map<string, PhotoComment>());
   const { isAdmin } = useRoles();
 
   const loadEngagement = useCallback(async (photoIds: string[]) => {
+    const requestId = ++engagementRequest.current;
     if (photoIds.length === 0) {
       setComments([]);
       setLikes([]);
@@ -71,8 +79,20 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
         .select("id, photo_id, user_id, liker_name")
         .in("photo_id", photoIds),
     ]);
-    setComments(commentRes.data ?? []);
+    if (requestId !== engagementRequest.current) return;
+    if (commentRes.error || likeRes.error) {
+      toast.error("Could not refresh album comments and likes. Your submitted comments are still saved.");
+      return;
+    }
+    const remoteComments = commentRes.data ?? [];
+    for (const row of remoteComments) committedComments.current.delete(row.id);
+    setComments(reconcileAlbumComments(remoteComments, committedComments.current.values()));
     setLikes(likeRes.data ?? []);
+  }, []);
+
+  const handleCommentAdded = useCallback((comment: PhotoComment) => {
+    committedComments.current.set(comment.id, comment);
+    setComments((current) => upsertAlbumComment(current, comment));
   }, []);
 
   const load = useCallback(async () => {
@@ -194,6 +214,34 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
     });
     return () => sub.subscription.unsubscribe();
   }, [load]);
+
+  useEffect(() => {
+    if (!myUserId) return;
+    const channel = supabase
+      .channel(`album-comments-${myUserId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "photo_comments" },
+        (payload) => {
+          if (payload.eventType === "DELETE") {
+            const deleted = payload.old as { id?: string };
+            if (!deleted.id) return;
+            committedComments.current.delete(deleted.id);
+            setComments((current) => removeAlbumComment(current, deleted.id as string));
+            return;
+          }
+          const changed = payload.new as PhotoComment;
+          if (!changed.id) return;
+          committedComments.current.delete(changed.id);
+          setComments((current) => upsertAlbumComment(current, changed));
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [myUserId]);
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -688,7 +736,7 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
                   comments={commentsByPhoto[p.id] ?? []}
                   myUserId={myUserId}
                   isAdmin={isAdmin}
-                  guestName={guestName}
+                  onCommentAdded={handleCommentAdded}
                   onChanged={refreshEngagement}
                 />
               </div>
@@ -707,6 +755,7 @@ export function SharedPhotoAlbum({ guestName }: { guestName?: string | null }) {
         myUserId={myUserId}
         isAdmin={isAdmin}
         guestName={guestName}
+          onCommentAdded={handleCommentAdded}
         onCommentsChanged={refreshEngagement}
         onLikesChanged={refreshEngagement}
       />
